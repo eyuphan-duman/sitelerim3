@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://furkanmanav.com'),
   title: {
     default: "Psikolog Furkan Manav | Varoluşçu Psikanalitik Psikoterapi | Ankara",
     template: "%s | Psikolog Furkan Manav",
@@ -45,19 +46,49 @@ export const metadata: Metadata = {
     title: "Psikolog Furkan Manav | Varoluşçu Psikanalitik Psikoterapi",
     description:
       "Varoluşçu-psikanalitik yaklaşımla psikoterapi, psikoloji yazıları, forum ve video içerikler. Ankara & Online.",
+    url: 'https://furkanmanav.com',
     type: "website",
     locale: "tr_TR",
     siteName: "Psikolog Furkan Manav",
+    images: [
+      {
+        url: '/pskfurkanmanav.jpeg',
+        width: 1200,
+        height: 630,
+        alt: 'Psikolog Furkan Manav',
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Psikolog Furkan Manav | Varoluşçu Psikanalitik Psikoterapi",
     description: "Psikoloji yazıları, forum tartışmaları ve video içerikler.",
+    images: ['/pskfurkanmanav.jpeg'],
   },
   alternates: {
     canonical: "/",
   },
-  verification: {},
+  verification: {
+    google: 'google-site-verification-kodunuz-buraya', // Buraya Google Search Console kodunu ekleyin
+  },
+  manifest: '/manifest.json',
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Furkan Manav",
+  "jobTitle": "Psikolog",
+  "url": "https://furkanmanav.com",
+  "sameAs": [
+    "https://www.instagram.com/furkanmanav", // Örnek sosyal medya linkleri
+  ],
+  "description": "Varoluşçu ve psikanalitik yaklaşımla psikoterapi, derinlemesine psikoloji yazıları ve forum tartışmaları.",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Ankara",
+    "addressCountry": "TR"
+  }
 };
 
 export default function RootLayout({
@@ -70,6 +101,10 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <link rel="canonical" href="https://furkanmanav.com" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
       <body>
         <AuthProvider>
