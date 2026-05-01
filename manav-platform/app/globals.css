@@ -645,3 +645,15 @@ body {
     justify-content: center !important;
   }
 }
+
+/* ─── MOBILE BOTTOM NAVIGATION BAR ─── */
+@media (max-width: 1024px) {
+  .forum-mobile-bottom-nav {
+    display: flex !important;
+  }
+
+  /* Add padding so content isn't hidden behind the bottom bar */
+  .forum-grid-3col main {
+    padding-bottom: 80px !important;
+  }
+}

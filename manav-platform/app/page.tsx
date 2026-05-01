@@ -1,9 +1,9 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Quote } from 'lucide-react';
-import { collection, query, orderBy, limit, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { ArrowRight, Quote, Search, X, FileText, MessageCircle } from 'lucide-react';
+import { collection, query, orderBy, limit, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -14,6 +14,11 @@ export default function HomePage() {
   const { user } = useAuth();
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
   const [realPosts, setRealPosts] = useState<any[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   const QUOTES = [
     { text: "Varoluş özden önce gelir. Siz kim olacağınızı kendi eylemlerinizle belirliyorsunuz.", author: "Jean-Paul Sartre" },
     { text: "Kendi alevinle yanmaya hazır olmalısın; önce kül olmadan nasıl yeniden doğabilirsin ki?", author: "Friedrich Nietzsche" },
@@ -35,12 +40,43 @@ export default function HomePage() {
         const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(3));
         const snap = await getDocs(q);
         setRealPosts(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })));
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
     }
     fetchLatest();
   }, []);
+
+  useEffect(() => {
+    if (!searchOpen) { setSearchQ(''); setSearchResults([]); return; }
+    setTimeout(() => searchRef.current?.focus(), 100);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (!searchQ.trim()) { setSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const q = searchQ.toLowerCase();
+        const [postsSnap, forumSnap] = await Promise.all([
+          getDocs(query(collection(db, 'posts'), limit(20))),
+          getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(30))),
+        ]);
+        const results: any[] = [];
+        postsSnap.docs.forEach(d => {
+          const data = d.data();
+          if ((data.title||'').toLowerCase().includes(q) || (data.excerpt||'').toLowerCase().includes(q))
+            results.push({ id: d.id, type: 'post', title: data.title, excerpt: data.excerpt, href: '/yazilarim' });
+        });
+        forumSnap.docs.forEach(d => {
+          const data = d.data();
+          if ((data.body||'').toLowerCase().includes(q) || (data.authorName||'').toLowerCase().includes(q))
+            results.push({ id: d.id, type: 'forum', title: data.authorName, excerpt: data.body?.slice(0, 100), category: data.category, href: '/forum' });
+        });
+        setSearchResults(results.slice(0, 8));
+      } catch (e) { console.error(e); }
+      finally { setSearching(false); }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQ]);
 
   const deletePost = async (id: string, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
@@ -150,13 +186,23 @@ export default function HomePage() {
             </p>
 
             {/* CTA */}
-            <div className="fade-up fade-up-4" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 64 }}>
-              <Link href="/forum" className="btn-gold">
-                Foruma Katıl
-              </Link>
-              <Link href="/iletisim" className="btn-ghost">
-                İletişime Geçin <ArrowRight size={14}/>
-              </Link>
+            <div className="fade-up fade-up-4" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 40 }}>
+              <Link href="/forum" className="btn-gold">Foruma Katıl</Link>
+              <Link href="/iletisim" className="btn-ghost">İletişime Geçin <ArrowRight size={14}/></Link>
+            </div>
+
+            {/* Search bar */}
+            <div className="fade-up fade-up-4" style={{ marginBottom: 64 }}>
+              <button
+                onClick={() => setSearchOpen(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: '14px 24px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', width: '100%', maxWidth: 420, transition: 'all 0.2s' }}
+                onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = 'white'; }}
+                onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+              >
+                <Search size={16} />
+                <span>Site içinde ara — yazılar, forum, içerikler...</span>
+                <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', borderRadius: 6, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em' }}>⌘K</span>
+              </button>
             </div>
 
 
@@ -182,12 +228,13 @@ export default function HomePage() {
             </h2>
             <div className="gold-line" style={{ marginBottom: 32, margin: '0 auto' }}/>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 36, textAlign: 'left' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 36, textAlign: 'left' }}>
               {[
-                "Zonguldak Bülent Ecevit Üniversitesi Psikoloji Bölümü'nden lisans derecesine sahibim. Düşünsel arka planımla varoluşçu çerçevede içerikler üretmekteyim.",
-                "Bağımsız bir platformda freudiyen düşünceler ile varoluşsal temaları birleştirerek dijital topluluklara değer kazandırmaktayım. Psikoterapi ve psikanaliz üzerine yönelimimle insan doğasının derinliklerine ışık tutmayı hedefliyorum."
+                "Ben Psikolog Furkan Manav. Varoluşçu-Psikanalitik yönelimli bir yaklaşımla, yetişkinlere yönelik bireysel psikolojik danışmanlık hizmeti sunmaktayım.",
+                "Geçmiş değiştirilemez belki ama geçmişle kurulan ilişki ve bağ değişebilir. Bastırılmış ya da reddedilmiş yaşantılara yer açıldığında, kişi kendi hikâyesine yeni bir anlam kazandırabilir. Varoluşçu Psikanalitik Psikoterapi, bu dönüşümü mümkün kılan derin bir karşılaşmadır.",
+                "Terapide kişi; yalnızca ne hissettiğini değil, neden öyle hissettiğini ve düşüncelerinin ardında hangi anlamların gizlendiğini keşfetmeye başlar. Semptomlar çoğu zaman yalnızca birer şikâyet değil, daha derin psikolojik süreçlerin birer yansımasıdır. Bu süreçte, sözcüklerin ötesine geçerek bilinçdışı örüntüleri anlamaya ve kişinin kendi hakikatiyle karşılaşmasına eşlik ediyorum."
               ].map((p, i) => (
-                <p key={i} className="crimson" style={{ color: 'var(--muted)', fontSize: '1.05rem', textAlign: 'center' }}>{p}</p>
+                <p key={i} className="crimson" style={{ color: 'var(--muted)', fontSize: '1.05rem', lineHeight: 1.75, textAlign: 'center' }}>{p}</p>
               ))}
             </div>
 
@@ -273,11 +320,75 @@ export default function HomePage() {
           <p style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 520, margin: '0 auto 44px', lineHeight: 1.7, fontSize: '0.95rem' }}>
             Yalnızca yazılara ve düşüncelere alan tanıyan bu platformda tartışmalara katılın.
           </p>
-          <Link href="/forum" className="btn-gold">
-            Foruma Git
-          </Link>
+          <Link href="/forum" className="btn-gold">Foruma Git</Link>
         </div>
       </section>
+
+      {/* ══════════════════ GLOBAL SEARCH MODAL ══════════════════ */}
+      {searchOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,22,40,0.85)', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10vh', padding: '10vh 20px 20px' }}
+          onClick={() => setSearchOpen(false)}
+        >
+          <div style={{ width: '100%', maxWidth: 640, background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
+            {/* Search input */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
+              <Search size={20} color="#94a3b8" />
+              <input
+                ref={searchRef}
+                value={searchQ}
+                onChange={e => setSearchQ(e.target.value)}
+                placeholder="Yazı, forum gönderisi, konu ara..."
+                style={{ flex: 1, border: 'none', outline: 'none', fontSize: '1.05rem', color: '#0f172a', background: 'transparent' }}
+              />
+              {searching && <div style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#0f172a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />}
+              <button onClick={() => setSearchOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex' }}><X size={20} /></button>
+            </div>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+            {/* Results */}
+            {searchResults.length > 0 && (
+              <div style={{ maxHeight: 420, overflowY: 'auto' }}>
+                {searchResults.map((r, i) => (
+                  <Link key={i} href={r.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', gap: 14, padding: '14px 20px', borderBottom: '1px solid #f8fafc', textDecoration: 'none', transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: r.type === 'post' ? 'linear-gradient(135deg,#0f172a,#1e293b)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {r.type === 'post' ? <FileText size={16} color="white" /> : <MessageCircle size={16} color="white" />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                        <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
+                        <span style={{ background: r.type === 'post' ? '#f1f5f9' : '#ede9fe', color: r.type === 'post' ? '#475569' : '#7c3aed', fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', flexShrink: 0 }}>{r.type === 'post' ? 'Yazı' : (r.category || 'Forum')}</span>
+                      </div>
+                      <p style={{ fontSize: '0.83rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{r.excerpt}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {searchQ && !searching && searchResults.length === 0 && (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
+                <div style={{ fontSize: '2rem', marginBottom: 12 }}>🔍</div>
+                <p style={{ fontWeight: 700 }}>"<em>{searchQ}</em>" için sonuç bulunamadı</p>
+              </div>
+            )}
+
+            {!searchQ && (
+              <div style={{ padding: '24px 20px' }}>
+                <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {[{ label: 'Yazılarım', href: '/yazilarim', icon: '📝' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Ben Kimim', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
+                    <Link key={l.href} href={l.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, textDecoration: 'none', color: '#334155', fontSize: '0.92rem', fontWeight: 500, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                      <span style={{ fontSize: '1.1rem' }}>{l.icon}</span> {l.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.78rem', marginTop: 16 }}>ESC veya dışarı tıklayarak kapat</p>
+        </div>
+      )}
     </>
   );
 }

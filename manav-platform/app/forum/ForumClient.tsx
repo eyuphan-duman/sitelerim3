@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ForumModal from '@/components/forum/ForumModal';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -39,6 +39,7 @@ export default function ForumClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
   const [usersMap, setUsersMap] = useState<Record<string, any>>({});
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   useEffect(() => { return onSnapshot(collection(db, 'users'), snap => { const m: Record<string, any> = {}; snap.docs.forEach(d => m[d.id] = d.data()); setUsersMap(m); }); }, []);
   useEffect(() => { const q = query(collection(db, 'forum'), orderBy('createdAt', 'desc')); return onSnapshot(q, snap => { setThreads(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[]); }); }, []);
@@ -249,6 +250,90 @@ export default function ForumClient() {
         <ForumModal post={{ ...activeThread, authorPhotoURL: usersMap[activeThread.uid]?.photoURL }} comments={comments.map(c => ({ ...c, authorPhotoURL: usersMap[c.uid]?.photoURL }))} currentUser={user} userProfile={userProfile} adminEmails={ADMIN_EMAILS} onClose={() => setActiveThread(null)} onReact={handleReact} onCommentReact={async () => {}} onSubmitComment={submitComment} onDeleteComment={deleteComment} onOpenAuth={() => setAuthOpen(true)} />
       )}
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
+
+      {/* Mobile Search Overlay */}
+      {mobileSearchOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', padding: '20px 16px' }} onClick={() => setMobileSearchOpen(false)}>
+          <div style={{ background: 'white', borderRadius: 16, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+            <Search size={18} color="#94a3b8" />
+            <input
+              autoFocus
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Forumda ara..."
+              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '1rem', color: '#0f172a', background: 'transparent' }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex' }}>
+                <X size={18} />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <div style={{ marginTop: 12, background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+              {threads.filter(t => t.body.toLowerCase().includes(searchQuery.toLowerCase()) || t.authorName.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5).map(t => (
+                <div key={t.id} onClick={() => { openThread(t); setMobileSearchOpen(false); setSearchQuery(''); }} style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a', marginBottom: 2 }}>{t.authorName}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.body}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="forum-mobile-bottom-nav" style={{
+        display: 'none',
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 64,
+        background: 'rgba(255,255,255,0.97)',
+        backdropFilter: 'blur(20px)',
+        borderTop: '1px solid #e2e8f0',
+        zIndex: 400,
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        boxShadow: '0 -4px 20px rgba(15,23,42,0.06)',
+      }}>
+        {/* Search */}
+        <button
+          onClick={() => setMobileSearchOpen(true)}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '8px 20px', borderRadius: 12, transition: 'all 0.15s' }}
+        >
+          <Search size={24} />
+          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Ara</span>
+        </button>
+
+        {/* Home - center, prominent */}
+        <button
+          onClick={() => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: feedTab === 'all' && filter === 'Tümü' ? '#0f172a' : '#f1f5f9', border: 'none', cursor: 'pointer', color: feedTab === 'all' && filter === 'Tümü' ? 'white' : '#475569', padding: '10px 24px', borderRadius: 16, transition: 'all 0.2s', transform: feedTab === 'all' && filter === 'Tümü' ? 'scale(1.05)' : 'scale(1)', boxShadow: feedTab === 'all' && filter === 'Tümü' ? '0 4px 12px rgba(15,23,42,0.25)' : 'none' }}
+        >
+          <Home size={24} />
+          <span style={{ fontSize: '0.65rem', fontWeight: 700 }}>Anasayfa</span>
+        </button>
+
+        {/* Notifications */}
+        <Link
+          href={user && !user.isAnonymous ? '/bildirimler' : '#'}
+          onClick={!user || user.isAnonymous ? (e) => { e.preventDefault(); setAuthOpen(true); } : undefined}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, color: '#64748b', textDecoration: 'none', padding: '8px 20px', borderRadius: 12, position: 'relative' }}
+        >
+          <div style={{ position: 'relative' }}>
+            <Bell size={24} />
+            {unreadCount > 0 && (
+              <div style={{ position: 'absolute', top: -5, right: -5, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </div>
+            )}
+          </div>
+          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Bildirim</span>
+        </Link>
+      </nav>
     </div>
   );
 }
