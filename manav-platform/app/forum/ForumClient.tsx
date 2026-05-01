@@ -164,7 +164,7 @@ export default function ForumClient() {
         {/* MAIN FEED */}
         <main style={{ borderRight: '1px solid #e2e8f0', minHeight: 'calc(100vh - 72px)', background: 'white' }}>
           {/* Tabs */}
-          <div style={{ position: 'sticky', top: 72, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e2e8f0', zIndex: 40 }}>
+          <div style={{ position: 'sticky', top: 72, background: '#ffffff', borderBottom: '1px solid #e2e8f0', zIndex: 40 }}>
             <div style={{ display: 'flex' }}>
               {[{ key: 'all', label: 'Ana Akış' }, { key: 'following', label: 'Takip Ettiklerim' }].map(tab => (
                 <button key={tab.key} onClick={() => tab.key === 'following' && !user?.uid ? setAuthOpen(true) : setFeedTab(tab.key as any)}
