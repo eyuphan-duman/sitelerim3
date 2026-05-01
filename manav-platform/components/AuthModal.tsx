@@ -79,7 +79,7 @@ export default function AuthModal({ isOpen, onClose }: Props) {
 
   return (
     <div 
-      className={`fixed inset-0 z-[1000] flex items-center justify-center sm:p-4 transition-all duration-200 ${
+      className={`fixed inset-0 z-[3000] flex items-center justify-center sm:p-4 transition-all duration-200 ${
         show ? 'bg-black/40' : 'bg-transparent'
       }`} 
       onClick={onClose}

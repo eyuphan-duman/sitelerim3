@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Quote, Search, X, FileText, MessageCircle } from 'lucide-react';
+import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User } from 'lucide-react';
 import { collection, query, orderBy, limit, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
@@ -56,9 +56,10 @@ export default function HomePage() {
       setSearching(true);
       try {
         const q = searchQ.toLowerCase();
-        const [postsSnap, forumSnap] = await Promise.all([
+        const [postsSnap, forumSnap, usersSnap] = await Promise.all([
           getDocs(query(collection(db, 'posts'), limit(30))),
           getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(50))),
+          getDocs(query(collection(db, 'users'), limit(50))),
         ]);
         const results: any[] = [];
         
@@ -84,6 +85,11 @@ export default function HomePage() {
           const data = d.data();
           if ((data.body||'').toLowerCase().includes(q) || (data.authorName||'').toLowerCase().includes(q))
             results.push({ id: d.id, type: 'forum', title: data.authorName, excerpt: data.body?.slice(0, 100), category: data.category, href: '/forum?thread=' + d.id });
+        });
+        usersSnap.docs.forEach(d => {
+          const data = d.data();
+          if ((data.displayName||'').toLowerCase().includes(q) || (data.username||'').toLowerCase().includes(q) || (data.bio||'').toLowerCase().includes(q))
+            results.push({ id: d.id, type: 'profile', title: data.displayName || 'Kullanıcı', excerpt: data.bio?.slice(0, 100) || `@${data.username}`, href: `/forum/profil/${data.username}` });
         });
         
         setSearchResults(results.slice(0, 10));
@@ -366,13 +372,13 @@ export default function HomePage() {
               <div style={{ maxHeight: 420, overflowY: 'auto' }}>
                 {searchResults.map((r, i) => (
                   <Link key={i} href={r.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', gap: 14, padding: '14px 20px', borderBottom: '1px solid #f8fafc', textDecoration: 'none', transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: r.type === 'post' ? 'linear-gradient(135deg,#0f172a,#1e293b)' : r.type === 'page' ? 'linear-gradient(135deg,#0ea5e9,#2563eb)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {r.type === 'post' ? <FileText size={16} color="white" /> : r.type === 'page' ? <ArrowRight size={16} color="white" /> : <MessageCircle size={16} color="white" />}
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: r.type === 'profile' ? 'linear-gradient(135deg,#f59e0b,#d97706)' : r.type === 'post' ? 'linear-gradient(135deg,#0f172a,#1e293b)' : r.type === 'page' ? 'linear-gradient(135deg,#0ea5e9,#2563eb)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {r.type === 'profile' ? <User size={16} color="white" /> : r.type === 'post' ? <FileText size={16} color="white" /> : r.type === 'page' ? <ArrowRight size={16} color="white" /> : <MessageCircle size={16} color="white" />}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                         <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
-                        <span style={{ background: r.type === 'post' ? '#f1f5f9' : r.type === 'page' ? '#e0f2fe' : '#ede9fe', color: r.type === 'post' ? '#475569' : r.type === 'page' ? '#0369a1' : '#7c3aed', fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', flexShrink: 0 }}>{r.type === 'post' ? 'Yazı' : r.type === 'page' ? 'Sayfa' : (r.category || 'Forum')}</span>
+                        <span style={{ background: r.type === 'profile' ? '#fef3c7' : r.type === 'post' ? '#f1f5f9' : r.type === 'page' ? '#e0f2fe' : '#ede9fe', color: r.type === 'profile' ? '#b45309' : r.type === 'post' ? '#475569' : r.type === 'page' ? '#0369a1' : '#7c3aed', fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', flexShrink: 0 }}>{r.type === 'profile' ? 'Kullanıcı' : r.type === 'post' ? 'Yazı' : r.type === 'page' ? 'Sayfa' : (r.category || 'Forum')}</span>
                       </div>
                       <p style={{ fontSize: '0.83rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{r.excerpt}</p>
                     </div>

@@ -1,12 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ForumModal from '@/components/forum/ForumModal';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -314,7 +314,7 @@ export default function ForumClient() {
         background: 'rgba(255,255,255,0.97)',
         backdropFilter: 'blur(20px)',
         borderTop: '1px solid #e2e8f0',
-        zIndex: 400,
+        zIndex: 2100,
         alignItems: 'center',
         justifyContent: 'space-around',
         paddingBottom: 'env(safe-area-inset-bottom)',

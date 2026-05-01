@@ -121,7 +121,7 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
             </div>
           )}
 
-          <div style={{ borderTop: '4px solid #f8fafc' }}>
+          <div style={{ borderTop: '4px solid #f8fafc', paddingBottom: 80 }}>
             {comments.map(c => {
               const cu = c.authorUsername || c.authorName.toLowerCase().replace(/\s+/g, '');
               const canDeleteComment = (currentUser?.uid && currentUser.uid === c.uid) || isAdmin;
