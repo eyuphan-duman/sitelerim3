@@ -11,6 +11,38 @@ import toast from 'react-hot-toast';
 interface Post { id: string; body: string; authorName: string; uid: string; createdAt: any; commentCount: number; reactionsData?: Record<string, string>; category?: string; }
 const ADMIN = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
+function Empty({ icon, text }: { icon: string; text: string }) {
+  return <div style={{ padding:'60px 20px', textAlign:'center', color:'#94a3b8' }}><div style={{ fontSize:'2.5rem', marginBottom:12 }}>{icon}</div><p style={{ fontWeight:700 }}>{text}</p></div>;
+}
+
+function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isOwn: boolean; userEmail: string; onDelete: (id: string) => void }) {
+  return (
+    <div style={{ display:'flex', gap:12, padding:'16px 20px', borderBottom:'1px solid #f1f5f9' }}>
+      <div style={{ width:42, height:42, borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', overflow:'hidden', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800 }}>
+        {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : (pd.displayName||'U')[0].toUpperCase()}
+      </div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:4 }}>
+          <span style={{ fontWeight:700, color:'#0f172a', fontSize:'0.92rem' }}>{pd.displayName||pd.username}</span>
+          <span style={{ color:'#94a3b8', fontSize:'0.82rem' }}>@{pd.username}</span>
+          <span style={{ color:'#94a3b8', fontSize:'0.8rem' }}>· {p.createdAt?.toLocaleDateString?.('tr-TR')}</span>
+          {p.category && <span style={{ background:'#f1f5f9', color:'#64748b', fontSize:'0.68rem', fontWeight:700, padding:'2px 8px', borderRadius:999, textTransform:'uppercase' }}>{p.category}</span>}
+        </div>
+        <p style={{ color:'#334155', fontSize:'0.95rem', lineHeight:1.6, whiteSpace:'pre-wrap', wordBreak:'break-word', margin:0 }}>{p.body}</p>
+        <div style={{ display:'flex', gap:16, marginTop:10, color:'#94a3b8', fontSize:'0.82rem' }}>
+          <span style={{ display:'flex', alignItems:'center', gap:4 }}><MessageCircle size={14}/>{p.commentCount}</span>
+          <span style={{ display:'flex', alignItems:'center', gap:4 }}><Heart size={14}/>{Object.keys(p.reactionsData||{}).length}</span>
+          {(isOwn || ADMIN.includes(userEmail)) && (
+            <button onClick={() => onDelete(p.id)} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:'#94a3b8', display:'flex', alignItems:'center', gap:4, fontSize:'0.8rem', padding:'2px 6px', borderRadius:4 }} onMouseOver={e=>{e.currentTarget.style.color='#ef4444'}} onMouseOut={e=>{e.currentTarget.style.color='#94a3b8'}}>
+              <Trash2 size={13}/>Sil
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilClient({ username }: { username: string }) {
   const { user, userProfile } = useAuth();
   const [pd, setPd] = useState<any>(null);
@@ -33,30 +65,41 @@ export default function ProfilClient({ username }: { username: string }) {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      let data: any = null;
-      const strats = [
-        () => getDocs(query(collection(db,'users'), where('username','==',username))),
-        () => getDocs(query(collection(db,'users'), where('username','==',username.toLowerCase()))),
-        () => getDocs(query(collection(db,'users'), where('displayName','==',username))),
-      ];
-      for (const s of strats) { const snap = await s(); if (!snap.empty) { data = snap.docs[0].data(); break; } }
-      if (!data) { const d = await getDoc(doc(db,'users',username)); if (d.exists()) data = d.data(); }
-      if (data) {
-        setPd(data);
-        setEd({ displayName: data.displayName||'', bio: data.bio||'', location: data.location||'', website: data.website||'' });
-        const ps = await getDocs(query(collection(db,'forum'), where('uid','==',data.uid)));
-        const pList = ps.docs.map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[];
-        setPosts(pList.sort((a,b) => b.createdAt - a.createdAt));
-        const all = await getDocs(collection(db,'forum'));
-        setLikes(all.docs.filter(d => d.data().reactionsData?.[data.uid]).map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[]);
-        const rList: any[] = [];
-        for (const p of all.docs) {
-          const cs = await getDocs(query(collection(db,'forum',p.id,'comments'), where('uid','==',data.uid)));
-          cs.docs.forEach(c => rList.push({ ...c.data(), id:c.id, postId:p.id, postBody:p.data().body?.slice(0,60), createdAt:c.data().createdAt?.toDate()||new Date() }));
+      try {
+        let data: any = null;
+        const strats = [
+          () => getDocs(query(collection(db,'users'), where('username','==',username))),
+          () => getDocs(query(collection(db,'users'), where('username','==',username.toLowerCase()))),
+          () => getDocs(query(collection(db,'users'), where('displayName','==',username))),
+        ];
+        for (const s of strats) { try { const snap = await s(); if (!snap.empty) { data = snap.docs[0].data(); break; } } catch {} }
+        if (!data) { try { const d = await getDoc(doc(db,'users',username)); if (d.exists()) data = d.data(); } catch {} }
+        if (data) {
+          setPd(data);
+          setEd({ displayName: data.displayName||'', bio: data.bio||'', location: data.location||'', website: data.website||'' });
+          try {
+            const ps = await getDocs(query(collection(db,'forum'), where('uid','==',data.uid)));
+            const pList = ps.docs.map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[];
+            setPosts(pList.sort((a,b) => b.createdAt - a.createdAt));
+          } catch (e) { console.error('Posts fetch error:', e); }
+          try {
+            const all = await getDocs(collection(db,'forum'));
+            setLikes(all.docs.filter(d => d.data().reactionsData?.[data.uid]).map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[]);
+            const rList: any[] = [];
+            for (const p of all.docs) {
+              try {
+                const cs = await getDocs(query(collection(db,'forum',p.id,'comments'), where('uid','==',data.uid)));
+                cs.docs.forEach(c => rList.push({ ...c.data(), id:c.id, postId:p.id, postBody:p.data().body?.slice(0,60), createdAt:c.data().createdAt?.toDate()||new Date() }));
+              } catch {}
+            }
+            setReplies(rList.sort((a,b) => b.createdAt - a.createdAt));
+          } catch (e) { console.error('Likes/replies fetch error:', e); }
         }
-        setReplies(rList.sort((a,b) => b.createdAt - a.createdAt));
+      } catch (e) {
+        console.error('Profile fetch error:', e);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [username]);
 
@@ -111,36 +154,6 @@ export default function ProfilClient({ username }: { username: string }) {
 
   const isOwn = user?.uid === pd.uid;
   const joined = pd.createdAt?.toDate?.().toLocaleDateString('tr-TR', { month:'long', year:'numeric' }) || '';
-
-  const PostCard = ({ p }: { p: Post }) => (
-    <div style={{ display:'flex', gap:12, padding:'16px 20px', borderBottom:'1px solid #f1f5f9' }}>
-      <div style={{ width:42, height:42, borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', overflow:'hidden', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800 }}>
-        {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : (pd.displayName||'U')[0].toUpperCase()}
-      </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginBottom:4 }}>
-          <span style={{ fontWeight:700, color:'#0f172a', fontSize:'0.92rem' }}>{pd.displayName||pd.username}</span>
-          <span style={{ color:'#94a3b8', fontSize:'0.82rem' }}>@{pd.username}</span>
-          <span style={{ color:'#94a3b8', fontSize:'0.8rem' }}>· {p.createdAt?.toLocaleDateString?.('tr-TR')}</span>
-          {p.category && <span style={{ background:'#f1f5f9', color:'#64748b', fontSize:'0.68rem', fontWeight:700, padding:'2px 8px', borderRadius:999, textTransform:'uppercase' }}>{p.category}</span>}
-        </div>
-        <p style={{ color:'#334155', fontSize:'0.95rem', lineHeight:1.6, whiteSpace:'pre-wrap', wordBreak:'break-word', margin:0 }}>{p.body}</p>
-        <div style={{ display:'flex', gap:16, marginTop:10, color:'#94a3b8', fontSize:'0.82rem' }}>
-          <span style={{ display:'flex', alignItems:'center', gap:4 }}><MessageCircle size={14}/>{p.commentCount}</span>
-          <span style={{ display:'flex', alignItems:'center', gap:4 }}><Heart size={14}/>{Object.keys(p.reactionsData||{}).length}</span>
-          {(isOwn || ADMIN.includes(user?.email||'')) && (
-            <button onClick={() => delPost(p.id)} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:'#94a3b8', display:'flex', alignItems:'center', gap:4, fontSize:'0.8rem', padding:'2px 6px', borderRadius:4 }} onMouseOver={e=>{e.currentTarget.style.color='#ef4444'}} onMouseOut={e=>{e.currentTarget.style.color='#94a3b8'}}>
-              <Trash2 size={13}/>Sil
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  const Empty = ({ icon, text }: { icon: string; text: string }) => (
-    <div style={{ padding:'60px 20px', textAlign:'center', color:'#94a3b8' }}><div style={{ fontSize:'2.5rem', marginBottom:12 }}>{icon}</div><p style={{ fontWeight:700 }}>{text}</p></div>
-  );
 
   return (
     <div style={{ minHeight:'100vh', background:'#f8fafc' }}>
@@ -212,7 +225,7 @@ export default function ProfilClient({ username }: { username: string }) {
         </div>
 
         {/* Tab content */}
-        {tab === 'posts' && (posts.length === 0 ? <Empty icon="📝" text="Henüz gönderi yok" /> : posts.map(p => <PostCard key={p.id} p={p} />))}
+        {tab === 'posts' && (posts.length === 0 ? <Empty icon="📝" text="Henüz gönderi yok" /> : posts.map(p => <PostCard key={p.id} p={p} pd={pd} isOwn={isOwn} userEmail={user?.email||''} onDelete={delPost} />))}
         {tab === 'replies' && (replies.length === 0 ? <Empty icon="💬" text="Henüz yanıt yok" /> : replies.map((r,i) => (
           <div key={i} style={{ padding:'16px 20px', borderBottom:'1px solid #f1f5f9' }}>
             <p style={{ fontSize:'0.78rem', color:'#94a3b8', marginBottom:8 }}>Yanıtladı: <em>"{r.postBody}..."</em></p>
