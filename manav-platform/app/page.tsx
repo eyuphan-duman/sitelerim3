@@ -83,7 +83,7 @@ export default function HomePage() {
         });
         forumSnap.docs.forEach(d => {
           const data = d.data();
-          if ((data.body||'').toLowerCase().includes(q) || (data.authorName||'').toLowerCase().includes(q))
+          if ((data.body||'').toLowerCase().includes(q) || (data.authorName||'').toLowerCase().includes(q) || (data.category||'').toLowerCase().includes(q))
             results.push({ id: d.id, type: 'forum', title: data.authorName, excerpt: data.body?.slice(0, 100), category: data.category, href: '/forum?thread=' + d.id });
         });
         usersSnap.docs.forEach(d => {

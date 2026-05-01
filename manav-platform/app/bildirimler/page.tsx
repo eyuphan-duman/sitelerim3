@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, where, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, MessageCircle, Heart, ArrowLeft } from 'lucide-react';
+import { Bell, MessageCircle, Heart, ArrowLeft, Home, Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface Notification {
@@ -128,6 +128,57 @@ export default function BildirimlerPage() {
           ))}
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="forum-mobile-bottom-nav" style={{
+        display: 'none',
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 64,
+        background: 'rgba(255,255,255,0.97)',
+        backdropFilter: 'blur(20px)',
+        borderTop: '1px solid #e2e8f0',
+        zIndex: 2100,
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        boxShadow: '0 -4px 20px rgba(15,23,42,0.06)',
+      }}>
+        {/* Search */}
+        <Link
+          href="/forum"
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '8px 20px', borderRadius: 12, transition: 'all 0.15s', textDecoration: 'none' }}
+        >
+          <Search size={24} />
+          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Ara</span>
+        </Link>
+
+        {/* Home - center, prominent */}
+        <Link
+          href="/forum"
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#475569', padding: '10px 24px', borderRadius: 16, transition: 'all 0.2s', textDecoration: 'none' }}
+        >
+          <Home size={24} />
+          <span style={{ fontSize: '0.65rem', fontWeight: 700 }}>Anasayfa</span>
+        </Link>
+
+        {/* Notifications (Active) */}
+        <div
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, color: 'white', background: '#0f172a', padding: '8px 20px', borderRadius: 12, position: 'relative', boxShadow: '0 4px 12px rgba(15,23,42,0.25)', transform: 'scale(1.05)' }}
+        >
+          <div style={{ position: 'relative' }}>
+            <Bell size={24} />
+            {notifications.filter(n => !n.read).length > 0 && (
+              <div style={{ position: 'absolute', top: -5, right: -5, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {notifications.filter(n => !n.read).length > 9 ? '9+' : notifications.filter(n => !n.read).length}
+              </div>
+            )}
+          </div>
+          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Bildirim</span>
+        </div>
+      </nav>
     </div>
   );
 }
