@@ -172,7 +172,7 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                 />
                 <label
                   htmlFor="x_username"
-                  className="absolute text-gray-500 text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
+                  className="absolute text-gray-500 text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
                 >
                   {mode === 'signin' ? 'Kullanıcı Adı veya E-posta' : 'Kullanıcı Adı belirle'}
                 </label>
@@ -192,7 +192,7 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                   />
                   <label
                     htmlFor="x_email"
-                    className="absolute text-gray-500 text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
+                    className="absolute text-gray-500 text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
                   >
                     E-posta bağla
                   </label>
@@ -212,7 +212,7 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                 />
                 <label
                   htmlFor="x_password"
-                  className="absolute text-gray-500 text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
+                  className="absolute text-gray-500 text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
                 >
                   Şifre gir
                 </label>

@@ -9,6 +9,7 @@ import ForumModal from '@/components/forum/ForumModal';
 import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface Post {
   id: string; title?: string; body: string; category: string;
@@ -27,6 +28,8 @@ const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
 export default function ForumClient() {
   const { user, userProfile } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [threads, setThreads] = useState<Post[]>([]);
   const [filter, setFilter] = useState('Tümü');
   const [feedTab, setFeedTab] = useState<'all' | 'following'>('all');
@@ -76,10 +79,28 @@ export default function ForumClient() {
 
   const openThread = (t: Post) => {
     setActiveThread(t);
+    router.replace(`/forum?thread=${t.id}`, { scroll: false });
     onSnapshot(query(collection(db, 'forum', t.id, 'comments'), orderBy('createdAt', 'asc')), snap => {
       setComments(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Comment[]);
     });
   };
+
+  const closeThread = () => {
+    setActiveThread(null);
+    router.replace('/forum', { scroll: false });
+  };
+
+  useEffect(() => {
+    if (threads.length > 0) {
+      const threadId = searchParams.get('thread');
+      if (threadId && !activeThread) {
+        const found = threads.find(t => t.id === threadId);
+        if (found) {
+          openThread(found);
+        }
+      }
+    }
+  }, [threads, searchParams, activeThread]);
 
   const submitComment = async (text: string) => {
     if (!user || !text.trim() || !activeThread) return;
@@ -247,7 +268,7 @@ export default function ForumClient() {
       </div>
 
       {activeThread && (
-        <ForumModal post={{ ...activeThread, authorPhotoURL: usersMap[activeThread.uid]?.photoURL }} comments={comments.map(c => ({ ...c, authorPhotoURL: usersMap[c.uid]?.photoURL }))} currentUser={user} userProfile={userProfile} adminEmails={ADMIN_EMAILS} onClose={() => setActiveThread(null)} onReact={handleReact} onCommentReact={async () => {}} onSubmitComment={submitComment} onDeleteComment={deleteComment} onOpenAuth={() => setAuthOpen(true)} />
+        <ForumModal post={{ ...activeThread, authorPhotoURL: usersMap[activeThread.uid]?.photoURL }} comments={comments.map(c => ({ ...c, authorPhotoURL: usersMap[c.uid]?.photoURL }))} currentUser={user} userProfile={userProfile} adminEmails={ADMIN_EMAILS} onClose={closeThread} onReact={handleReact} onCommentReact={async () => {}} onSubmitComment={submitComment} onDeleteComment={deleteComment} onOpenAuth={() => setAuthOpen(true)} />
       )}
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
 

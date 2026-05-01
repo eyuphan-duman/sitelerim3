@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface Comment { id: string; authorName: string; text: string; createdAt: Date; uid: string; }
 interface Post { id: string; title: string; category: string; excerpt: string; content: string; date: string; likes: number; commentCount: number; createdAt: Date; }
@@ -16,6 +17,8 @@ const CATEGORIES = ['Tümü', 'Psikanaliz', 'Varoluşçuluk', 'Günlük Yaşam',
 
 export default function YazilarimClient() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [active, setActive] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -41,10 +44,29 @@ export default function YazilarimClient() {
 
   const openPost = async (post: Post) => {
     setActive(post); setText(''); setLoadingC(true);
+    // Update URL quietly to support sharing the open post link
+    router.replace(`/yazilarim?post=${post.id}`, { scroll: false });
     onSnapshot(query(collection(db, 'posts', post.id, 'comments'), orderBy('createdAt', 'desc')), snap => {
       setComments(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Comment[]);
       setLoadingC(false);
     });
+  };
+
+  useEffect(() => {
+    if (posts.length > 0) {
+      const postId = searchParams.get('post');
+      if (postId && !active) {
+        const found = posts.find(p => p.id === postId);
+        if (found) {
+          openPost(found);
+        }
+      }
+    }
+  }, [posts, searchParams, active]);
+
+  const closePost = () => {
+    setActive(null);
+    router.replace('/yazilarim', { scroll: false });
   };
 
   const submit = async () => {
@@ -230,11 +252,11 @@ export default function YazilarimClient() {
 
       {/* Post Modal */}
       {active && (
-        <div className="modal-backdrop" onClick={() => setActive(null)} style={{ background: 'rgba(255,255,255,0.95)', alignItems: 'stretch', padding: 0 }}>
+        <div className="modal-backdrop" onClick={closePost} style={{ background: 'rgba(255,255,255,0.95)', alignItems: 'stretch', padding: 0 }}>
           <div style={{ background: '#fff', width: '100%', maxWidth: 800, margin: '0 auto', boxShadow: '0 0 40px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #ddd', borderRight: '1px solid #ddd' }} onClick={e => e.stopPropagation()}>
             {/* Toolbar */}
             <div style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #eaeaea', display: 'flex', justifyContent: 'space-between', padding: '16px 24px', zIndex: 10 }}>
-              <button onClick={() => setActive(null)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: '#111', textTransform: 'uppercase' }}>
+              <button onClick={closePost} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: '#111', textTransform: 'uppercase' }}>
                 <X size={16}/> Kapat
               </button>
               <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.8rem' }}>

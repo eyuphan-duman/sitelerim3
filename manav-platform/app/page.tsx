@@ -57,21 +57,36 @@ export default function HomePage() {
       try {
         const q = searchQ.toLowerCase();
         const [postsSnap, forumSnap] = await Promise.all([
-          getDocs(query(collection(db, 'posts'), limit(20))),
-          getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(30))),
+          getDocs(query(collection(db, 'posts'), limit(30))),
+          getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(50))),
         ]);
         const results: any[] = [];
+        
+        // Static content search
+        const staticPages = [
+          { title: 'Ben Kimim?', excerpt: 'Varoluşçu-Psikanalitik yönelimli bir psikolog olarak, kişinin kendi iç dünyasını keşfetmesine alan açmayı hedefliyorum.', type: 'page', href: '/ben-kimim' },
+          { title: 'İletişim & Randevu', excerpt: 'Terapötik sürece başlamak veya detaylı bilgi almak için iletişime geçebilirsiniz. Polatlı / Ankara.', type: 'page', href: '/iletisim' },
+          { title: 'Videolarım', excerpt: 'Psikoloji, psikanaliz ve varoluşçuluk üzerine hazırladığım video içerikleri.', type: 'page', href: '/videolarim' }
+        ];
+        
+        staticPages.forEach(p => {
+          if (p.title.toLowerCase().includes(q) || p.excerpt.toLowerCase().includes(q)) {
+            results.push({ ...p, id: p.href });
+          }
+        });
+
         postsSnap.docs.forEach(d => {
           const data = d.data();
-          if ((data.title||'').toLowerCase().includes(q) || (data.excerpt||'').toLowerCase().includes(q))
-            results.push({ id: d.id, type: 'post', title: data.title, excerpt: data.excerpt, href: '/yazilarim' });
+          if ((data.title||'').toLowerCase().includes(q) || (data.excerpt||'').toLowerCase().includes(q) || (data.content||'').toLowerCase().includes(q))
+            results.push({ id: d.id, type: 'post', title: data.title, excerpt: data.excerpt?.slice(0,100) || data.content?.slice(0,100), href: '/yazilarim?post=' + d.id });
         });
         forumSnap.docs.forEach(d => {
           const data = d.data();
           if ((data.body||'').toLowerCase().includes(q) || (data.authorName||'').toLowerCase().includes(q))
-            results.push({ id: d.id, type: 'forum', title: data.authorName, excerpt: data.body?.slice(0, 100), category: data.category, href: '/forum' });
+            results.push({ id: d.id, type: 'forum', title: data.authorName, excerpt: data.body?.slice(0, 100), category: data.category, href: '/forum?thread=' + d.id });
         });
-        setSearchResults(results.slice(0, 8));
+        
+        setSearchResults(results.slice(0, 10));
       } catch (e) { console.error(e); }
       finally { setSearching(false); }
     }, 350);
@@ -351,13 +366,13 @@ export default function HomePage() {
               <div style={{ maxHeight: 420, overflowY: 'auto' }}>
                 {searchResults.map((r, i) => (
                   <Link key={i} href={r.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', gap: 14, padding: '14px 20px', borderBottom: '1px solid #f8fafc', textDecoration: 'none', transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: r.type === 'post' ? 'linear-gradient(135deg,#0f172a,#1e293b)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {r.type === 'post' ? <FileText size={16} color="white" /> : <MessageCircle size={16} color="white" />}
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: r.type === 'post' ? 'linear-gradient(135deg,#0f172a,#1e293b)' : r.type === 'page' ? 'linear-gradient(135deg,#0ea5e9,#2563eb)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {r.type === 'post' ? <FileText size={16} color="white" /> : r.type === 'page' ? <ArrowRight size={16} color="white" /> : <MessageCircle size={16} color="white" />}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                         <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
-                        <span style={{ background: r.type === 'post' ? '#f1f5f9' : '#ede9fe', color: r.type === 'post' ? '#475569' : '#7c3aed', fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', flexShrink: 0 }}>{r.type === 'post' ? 'Yazı' : (r.category || 'Forum')}</span>
+                        <span style={{ background: r.type === 'post' ? '#f1f5f9' : r.type === 'page' ? '#e0f2fe' : '#ede9fe', color: r.type === 'post' ? '#475569' : r.type === 'page' ? '#0369a1' : '#7c3aed', fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', flexShrink: 0 }}>{r.type === 'post' ? 'Yazı' : r.type === 'page' ? 'Sayfa' : (r.category || 'Forum')}</span>
                       </div>
                       <p style={{ fontSize: '0.83rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{r.excerpt}</p>
                     </div>
