@@ -4,7 +4,7 @@ import { collection, query, where, getDocs, orderBy, doc, getDoc, setDoc, delete
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, MessageCircle, Heart, Calendar, MapPin, BadgeCheck, Camera, Edit3, UserPlus, UserCheck, Settings, Trash2, Hash, TrendingUp } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Heart, Calendar, MapPin, BadgeCheck, Camera, Edit3, UserPlus, UserCheck, Settings, Trash2, Hash, TrendingUp, LinkIcon, Cake } from 'lucide-react';
 import Link from 'next/link';
 import { use } from 'react';
 import toast from 'react-hot-toast';
@@ -23,14 +23,16 @@ export default function ProfilPage({ params: paramsPromise }: { params: Promise<
   const username = decodeURIComponent(params.username);
 
   const [profileData, setProfileData] = useState<any>(null);
-  const [tab, setTab] = useState<'posts' | 'likes'>('posts');
+  const [tab, setTab] = useState<'posts' | 'replies' | 'likes'>('posts');
+  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
+  const [replies, setReplies] = useState<any[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
-  const [editData, setEditData] = useState({ displayName: '', location: '', bio: '' });
+  const [editData, setEditData] = useState({ displayName: '', location: '', bio: '', website: '', birthday: '' });
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -65,10 +67,23 @@ export default function ProfilPage({ params: paramsPromise }: { params: Promise<
         }
         if (pData) {
           setProfileData(pData);
-          setEditData({ displayName: pData.displayName || '', location: pData.location || '', bio: pData.bio || '' });
+          setEditData({ displayName: pData.displayName || '', location: pData.location || '', bio: pData.bio || '', website: pData.website || '', birthday: pData.birthday || '' });
           const postsSnap = await getDocs(query(collection(db, 'forum'), where('uid', '==', pData.uid)));
           const fetched = postsSnap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
           setPosts(fetched.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+
+          // Fetch liked posts
+          const allPostsSnap = await getDocs(collection(db, 'forum'));
+          const liked = allPostsSnap.docs.filter(d => d.data().reactionsData?.[pData.uid]).map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
+          setLikedPosts(liked.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+
+          // Fetch replies
+          const repliesList: any[] = [];
+          for (const p of allPostsSnap.docs) {
+            const commSnap = await getDocs(query(collection(db, 'forum', p.id, 'comments'), where('uid', '==', pData.uid)));
+            commSnap.docs.forEach(c => repliesList.push({ ...c.data(), id: c.id, postId: p.id, postBody: p.data().body?.slice(0, 80), createdAt: c.data().createdAt?.toDate() || new Date() }));
+          }
+          setReplies(repliesList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
         }
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
@@ -146,7 +161,7 @@ export default function ProfilPage({ params: paramsPromise }: { params: Promise<
     if (!user || !profileData) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'users', user.uid), { displayName: editData.displayName, location: editData.location, bio: editData.bio });
+      await updateDoc(doc(db, 'users', user.uid), { displayName: editData.displayName, location: editData.location, bio: editData.bio, website: editData.website, birthday: editData.birthday });
       setProfileData((prev: any) => ({ ...prev, ...editData }));
       setEditOpen(false);
       toast.success('Profil güncellendi!');
@@ -280,6 +295,8 @@ export default function ProfilPage({ params: paramsPromise }: { params: Promise<
               {(editData.bio || profileData.bio) && <p style={{ color: '#334155', fontSize: '0.97rem', lineHeight: 1.6, marginBottom: 12 }}>{profileData.bio}</p>}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px', color: '#94a3b8', fontSize: '0.88rem' }}>
                 {profileData.location && <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><MapPin size={15} /> {profileData.location}</span>}
+                {profileData.website && <a href={profileData.website.startsWith('http') ? profileData.website : `https://${profileData.website}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#2563eb', textDecoration: 'none' }}><LinkIcon size={15} /> {profileData.website.replace(/^https?:\/\//, '')}</a>}
+                {profileData.birthday && <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Cake size={15} /> {profileData.birthday}</span>}
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Calendar size={15} /> {joinDate} katıldı</span>
               </div>
             </div>
@@ -298,7 +315,7 @@ export default function ProfilPage({ params: paramsPromise }: { params: Promise<
 
             {/* Tabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 8, marginLeft: -24, marginRight: -24, paddingLeft: 24 }}>
-              {[{ key: 'posts', label: 'Gönderiler' }, { key: 'likes', label: 'Beğeniler' }].map(t => (
+              {[{ key: 'posts', label: 'Gönderiler' }, { key: 'replies', label: 'Yanıtlar' }, { key: 'likes', label: 'Beğeniler' }].map(t => (
                 <button key={t.key} onClick={() => setTab(t.key as any)} style={{
                   padding: '14px 20px', border: 'none', cursor: 'pointer', background: 'transparent',
                   fontWeight: 700, fontSize: '0.95rem', color: tab === t.key ? '#0f172a' : '#94a3b8',
@@ -347,11 +364,61 @@ export default function ProfilPage({ params: paramsPromise }: { params: Promise<
               ))
             )
           )}
+          {tab === 'replies' && (
+            replies.length === 0 ? (
+              <div style={{ padding: '60px 24px', textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', marginBottom: 12 }}>💬</div>
+                <h3 style={{ color: '#94a3b8', fontWeight: 700 }}>Henüz yanıt yok</h3>
+              </div>
+            ) : (
+              replies.map((r, i) => (
+                <div key={i} style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <MessageCircle size={13} /> <span>Yanıt verdi:</span> <span style={{ color: '#64748b', fontStyle: 'italic' }}>"{r.postBody}..."</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.9rem', flexShrink: 0, overflow: 'hidden' }}>
+                      {profileData.photoURL ? <img src={profileData.photoURL} alt="pp" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (profileData.displayName || 'U')[0].toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>{profileData.displayName}</span>
+                        <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>@{profileData.username}</span>
+                        <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>· {r.createdAt?.toLocaleDateString?.('tr-TR') || ''}</span>
+                      </div>
+                      <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6 }}>{r.text}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )
+          )}
           {tab === 'likes' && (
-            <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: 12 }}>❤️</div>
-              <h3 style={{ color: '#94a3b8', fontWeight: 700 }}>Beğeniler gizli</h3>
-            </div>
+            likedPosts.length === 0 ? (
+              <div style={{ padding: '60px 24px', textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', marginBottom: 12 }}>❤️</div>
+                <h3 style={{ color: '#94a3b8', fontWeight: 700 }}>Henüz beğeni yok</h3>
+              </div>
+            ) : (
+              likedPosts.map(post => (
+                <div key={post.id} style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 16 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0 }}>
+                    {(post.authorName || 'U')[0].toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>{post.authorName}</span>
+                      <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>· {post.createdAt?.toLocaleDateString?.('tr-TR') || ''}</span>
+                    </div>
+                    <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{post.body}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 20, color: '#94a3b8', fontSize: '0.85rem', marginTop: 10 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><MessageCircle size={15} /> {post.commentCount}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#ef4444' }}><Heart size={15} fill="#ef4444" /> {Object.keys(post.reactionsData || {}).length}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )
           )}
           </div>
 
@@ -401,6 +468,16 @@ export default function ProfilPage({ params: paramsPromise }: { params: Promise<
                   <textarea value={editData.bio} onChange={e => setEditData({ ...editData, bio: e.target.value })}
                     placeholder="Kendinizden bahsedin..." rows={3}
                     style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '12px 14px', fontSize: '0.97rem', outline: 'none', color: '#0f172a', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Web Sitesi</label>
+                  <input value={editData.website} onChange={e => setEditData({ ...editData, website: e.target.value })}
+                    placeholder="ornek.com" style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '12px 14px', fontSize: '0.97rem', outline: 'none', color: '#0f172a', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Doğum Tarihi</label>
+                  <input type="date" value={editData.birthday} onChange={e => setEditData({ ...editData, birthday: e.target.value })}
+                    style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '12px 14px', fontSize: '0.97rem', outline: 'none', color: '#0f172a', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>

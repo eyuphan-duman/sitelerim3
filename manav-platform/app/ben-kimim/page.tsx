@@ -406,12 +406,6 @@ export default function BenKimimPage() {
             }}
           />
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div
-              className="eyebrow"
-              style={{ marginBottom: 12, color: 'var(--gold)' }}
-            >
-              Seans Almak İster Misiniz?
-            </div>
             <h2
               style={{
                 fontFamily: 'Playfair Display, serif',

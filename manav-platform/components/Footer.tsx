@@ -17,14 +17,8 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="mb-4">
-              <p className="text-[0.6rem] uppercase tracking-[0.2em] text-[#b8965a] font-semibold mb-1">
-                Uzm. Psk. Furkan Manav
-              </p>
-              <h3
-                className="text-2xl font-bold text-white"
-                style={{ fontFamily: 'Playfair Display, serif' }}
-              >
-                Furkan Manav
+              <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', fontWeight: 700, color: 'white', letterSpacing: '0.02em' }}>
+                Psikolog Furkan Manav
               </h3>
             </div>
             <div className="divider-gold mb-5" />

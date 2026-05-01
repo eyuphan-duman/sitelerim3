@@ -12,7 +12,6 @@ const links = [
   { href: '/', label: 'Anasayfa' },
   { href: '/ben-kimim', label: 'Ben Kimim' },
   { href: '/yazilarim', label: 'Yazılarım' },
-  { href: '/videolarim', label: 'Videolarım' },
   { href: '/forum', label: 'Forum' },
   { href: '/iletisim', label: 'İletişim' },
 ];

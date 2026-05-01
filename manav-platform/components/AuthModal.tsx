@@ -56,8 +56,9 @@ export default function AuthModal({ isOpen, onClose }: Props) {
       await signInWithGoogle();
       toast.success('Google ile giriş yapıldı!');
       onClose();
-    } catch {
-      toast.error('Google girişi başarısız. Lütfen tekrar dene.');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Google girişi başarısız: ' + (err.message || 'Lütfen Firebase ayarlarını kontrol edin.'));
     } finally {
       setLoading(false);
     }
@@ -123,6 +124,7 @@ export default function AuthModal({ isOpen, onClose }: Props) {
             {/* Social Buttons */}
             <div className="flex flex-col gap-3">
               <button
+                type="button"
                 onClick={handleGoogle}
                 disabled={loading}
                 className="w-full h-[40px] flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50 focus:bg-[#E6E6E6] transition-colors text-[15px] font-semibold text-black outline-none relative"
@@ -139,6 +141,7 @@ export default function AuthModal({ isOpen, onClose }: Props) {
               </button>
 
               <button
+                type="button"
                 onClick={handleGuest}
                 disabled={loading}
                 className="w-full h-[40px] flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 focus:bg-[#E6E6E6] transition-colors text-[15px] font-semibold text-black outline-none"
