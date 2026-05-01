@@ -553,6 +553,12 @@ body {
   /* Profile 3-column → single column */
   .profile-grid-3col {
     grid-template-columns: 1fr !important;
+    padding-top: 64px !important;
+  }
+  /* Profile sidebars hidden on mobile */
+  .profile-sidebar-left,
+  .profile-sidebar-right {
+    display: none !important;
   }
   /* Forum sidebars hidden on tablet/mobile */
   .forum-sidebar-left,
