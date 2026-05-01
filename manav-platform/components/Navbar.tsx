@@ -105,14 +105,14 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {open && (
-          <div style={{ background: 'rgba(10,22,40,0.98)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border)', padding: '24px 40px 32px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ position: 'fixed', top: 64, left: 0, right: 0, background: 'rgba(10,22,40,0.99)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border)', padding: '24px 28px 32px', zIndex: 999 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {links.map(l => (
-                <Link key={l.href} href={l.href} className="nav-link" style={{ fontSize: '0.9rem' }} onClick={() => setOpen(false)}>
+                <Link key={l.href} href={l.href} className="nav-link" style={{ fontSize: '1rem', padding: '8px 0', display: 'block', borderBottom: '1px solid rgba(201,169,110,0.1)' }} onClick={() => setOpen(false)}>
                   {l.label}
                 </Link>
               ))}
-              <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+              <div style={{ paddingTop: 12 }}>
                 {user ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <Link href={`/forum/profil/${encodeURIComponent(userProfile?.username || user.displayName?.toLowerCase().replace(/\s+/g,'') || '')}`} className="btn-ghost" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setOpen(false)}>
