@@ -188,8 +188,8 @@ export default function HomePage() {
 
         <div className="container-main" style={{ position: 'relative', zIndex: 2, width: '100%' }}>
           <div style={{ maxWidth: 680 }}>
-            {/* Eyebrow */}
-            <div className="eyebrow fade-up fade-up-1" style={{ marginBottom: 28 }}>
+            {/* Eyebrow (Desktop) */}
+            <div className="eyebrow fade-up fade-up-1 hidden md:block" style={{ marginBottom: 28 }}>
               Varoluşçu · Psikanalitik · Psikoterapi
             </div>
 
@@ -207,9 +207,14 @@ export default function HomePage() {
             </p>
 
             {/* CTA */}
-            <div className="fade-up fade-up-4" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 40 }}>
+            <div className="fade-up fade-up-4" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
               <Link href="/forum" className="btn-gold">Foruma Katıl</Link>
               <Link href="/iletisim" className="btn-ghost">İletişime Geçin <ArrowRight size={14}/></Link>
+            </div>
+
+            {/* Eyebrow (Mobile) */}
+            <div className="eyebrow fade-up fade-up-1 block md:hidden" style={{ marginBottom: 40, textAlign: 'center', opacity: 0.8 }}>
+              Varoluşçu · Psikanalitik · Psikoterapi
             </div>
 
             {/* Search bar */}

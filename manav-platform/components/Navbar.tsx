@@ -103,36 +103,37 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile menu */}
-        {open && (
-          <div style={{ position: 'fixed', top: 64, left: 0, right: 0, background: '#0a1628', borderTop: '1px solid var(--border)', padding: '24px 28px 32px', zIndex: 999 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {links.map(l => (
-                <Link key={l.href} href={l.href} className="nav-link" style={{ fontSize: '1rem', padding: '8px 0', display: 'block', borderBottom: '1px solid rgba(201,169,110,0.1)' }} onClick={() => setOpen(false)}>
-                  {l.label}
-                </Link>
-              ))}
-              <div style={{ paddingTop: 12 }}>
-                {user ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <Link href={`/forum/profil/${encodeURIComponent(userProfile?.username || user.displayName?.toLowerCase().replace(/\s+/g,'') || '')}`} className="btn-ghost" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setOpen(false)}>
-                      Profilim
-                    </Link>
-                    <button onClick={() => { logout(); setOpen(false); }} className="btn-ghost" style={{ width: '100%', justifyContent: 'center', color: '#fca5a5', borderColor: 'rgba(252,165,165,0.2)' }}>
-                      <LogOut size={14}/> Çıkış Yap
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => { setAuthOpen(true); setOpen(false); }} className="btn-gold" style={{ width: '100%', justifyContent: 'center' }}>
-                    Giriş / Üye Ol
+      )}
+
+      {/* Mobile menu (Moved outside nav to guarantee top-level stacking) */}
+      {!isProfilePage && open && (
+        <div style={{ position: 'fixed', top: 64, left: 0, right: 0, background: '#0a1628', borderTop: '1px solid var(--border)', padding: '24px 28px 32px', zIndex: 999999 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {links.map(l => (
+              <Link key={l.href} href={l.href} className="nav-link" style={{ fontSize: '1rem', padding: '8px 0', display: 'block', borderBottom: '1px solid rgba(201,169,110,0.1)' }} onClick={() => setOpen(false)}>
+                {l.label}
+              </Link>
+            ))}
+            <div style={{ paddingTop: 12 }}>
+              {user ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <Link href={`/forum/profil/${encodeURIComponent(userProfile?.username || user.displayName?.toLowerCase().replace(/\s+/g,'') || '')}`} className="btn-ghost" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setOpen(false)}>
+                    Profilim
+                  </Link>
+                  <button onClick={() => { logout(); setOpen(false); }} className="btn-ghost" style={{ width: '100%', justifyContent: 'center', color: '#fca5a5', borderColor: 'rgba(252,165,165,0.2)' }}>
+                    <LogOut size={14}/> Çıkış Yap
                   </button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <button onClick={() => { setAuthOpen(true); setOpen(false); }} className="btn-gold" style={{ width: '100%', justifyContent: 'center' }}>
+                  Giriş / Üye Ol
+                </button>
+              )}
             </div>
           </div>
-        )}
-      </nav>
+        </div>
       )}
+
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   );
