@@ -119,7 +119,7 @@ export default function ForumClient() {
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
 
       {/* Mobile category pills */}
-      <div className="forum-mobile-cats" style={{ display: 'none', overflowX: 'auto', padding: '8px 12px', gap: 8, background: 'white', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 64, zIndex: 40, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+      <div className="forum-mobile-cats" style={{ display: 'none', overflowX: 'auto', padding: '8px 12px', gap: 8, background: 'white', borderBottom: '1px solid #e2e8f0', position: 'relative', zIndex: 10, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
         {CATEGORIES.map(c => (
           <button key={c} onClick={() => { setFilter(c); setFeedTab('all'); }} style={{ flexShrink: 0, padding: '6px 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, background: filter === c ? '#0f172a' : '#f1f5f9', color: filter === c ? 'white' : '#64748b', whiteSpace: 'nowrap' }}>
             {c}
@@ -164,7 +164,7 @@ export default function ForumClient() {
         {/* MAIN FEED */}
         <main style={{ borderRight: '1px solid #e2e8f0', minHeight: 'calc(100vh - 72px)', background: 'white' }}>
           {/* Tabs */}
-          <div style={{ position: 'sticky', top: 72, background: '#ffffff', borderBottom: '1px solid #e2e8f0', zIndex: 40 }}>
+          <div style={{ position: 'relative', background: '#ffffff', borderBottom: '1px solid #e2e8f0', zIndex: 10 }}>
             <div style={{ display: 'flex' }}>
               {[{ key: 'all', label: 'Ana Akış' }, { key: 'following', label: 'Takip Ettiklerim' }].map(tab => (
                 <button key={tab.key} onClick={() => tab.key === 'following' && !user?.uid ? setAuthOpen(true) : setFeedTab(tab.key as any)}
