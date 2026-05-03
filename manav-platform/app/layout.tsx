@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
+import CookieConsent from "@/components/CookieConsent";
 
 
 export const metadata: Metadata = {
@@ -139,7 +140,9 @@ export default function RootLayout({
           <Navbar />
           <main>{children}</main>
           <Footer />
+          <CookieConsent />
         </AuthProvider>
+
       </body>
     </html>
   );
