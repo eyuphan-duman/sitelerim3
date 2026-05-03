@@ -208,7 +208,10 @@ export default function HomePage() {
 
             {/* CTA */}
             <div className="fade-up fade-up-4" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
-              <Link href="/forum" className="btn-gold">Foruma Katıl</Link>
+              <Link href="/forum" className="btn-gold" style={{ position: 'relative' }}>
+                Foruma Katıl
+                <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: 'var(--navy)', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>BETA</span>
+              </Link>
               <Link href="/iletisim" className="btn-ghost">İletişime Geçin <ArrowRight size={14}/></Link>
             </div>
 
@@ -266,8 +269,10 @@ export default function HomePage() {
 
             {/* Tags */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 40 }}>
-              {['Psikanaliz','Varoluşçu Yaklaşım','Felsefe','Topluluk','Blog','Forum'].map(t => (
-                <span key={t} className="tag-navy">{t}</span>
+              {['Psikanaliz','Varoluşçu Yaklaşım','Felsefe','Topluluk','Videolarım','Blog','Forum'].map(t => (
+                <span key={t} className="tag-navy">{t === 'Videolarım' ? (
+                  <Link href="/videolarim" style={{ textDecoration: 'none', color: 'inherit' }}>{t}</Link>
+                ) : t}</span>
               ))}
             </div>
 
@@ -346,7 +351,10 @@ export default function HomePage() {
           <p style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 520, margin: '0 auto 44px', lineHeight: 1.7, fontSize: '0.95rem' }}>
             Yalnızca yazılara ve düşüncelere alan tanıyan bu platformda tartışmalara katılın.
           </p>
-          <Link href="/forum" className="btn-gold">Foruma Git</Link>
+          <Link href="/forum" className="btn-gold" style={{ position: 'relative' }}>
+            Foruma Git
+            <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: '#fff', color: 'var(--navy)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>BETA</span>
+          </Link>
         </div>
       </section>
 
@@ -403,7 +411,7 @@ export default function HomePage() {
               <div style={{ padding: '24px 20px' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {[{ label: 'Yazılarım', href: '/yazilarim', icon: '📝' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Ben Kimim', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
+                  {[{ label: 'Yazılarım', href: '/yazilarim', icon: '📝' }, { label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Ben Kimim', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
                     <Link key={l.href} href={l.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, textDecoration: 'none', color: '#334155', fontSize: '0.92rem', fontWeight: 500, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                       <span style={{ fontSize: '1.1rem' }}>{l.icon}</span> {l.label}
                     </Link>

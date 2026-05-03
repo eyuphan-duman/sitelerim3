@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ForumModal from '@/components/forum/ForumModal';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -139,11 +139,12 @@ export default function ForumClient() {
             </h1>
             <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 4 }}>Psikoloji forumu</p>
           </div>
-          {[{ label: 'Ana Akış', action: () => { setFeedTab('all'); setFilter('Tümü'); }, active: feedTab === 'all' },
-            { label: 'Takip Ettiklerim', action: () => !user?.uid ? setAuthOpen(true) : setFeedTab('following'), active: feedTab === 'following' },
+          {[{ label: 'Ana Akış', action: () => { setFeedTab('all'); setFilter('Tümü'); }, active: feedTab === 'all', icon: <Home size={20} /> },
+            { label: 'Takip Ettiklerim', action: () => !user?.uid ? setAuthOpen(true) : setFeedTab('following'), active: feedTab === 'following', icon: <Users size={20} /> },
+            { label: 'Videolarım', action: () => router.push('/videolarim'), active: false, icon: <Film size={20} /> },
           ].map(item => (
             <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', background: item.active ? '#0f172a' : 'transparent', color: item.active ? 'white' : '#475569', fontWeight: 600, fontSize: '0.95rem', transition: 'all 0.2s' }}>
-              {item.label === 'Ana Akış' ? <Home size={20} /> : <Users size={20} />} {item.label}
+              {item.icon} {item.label}
             </button>
           ))}
           <div style={{ margin: '16px 0 8px', padding: '0 8px', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Kategoriler</div>

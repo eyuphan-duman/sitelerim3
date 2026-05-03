@@ -13,7 +13,7 @@ const links = [
   { href: '/ben-kimim', label: 'Ben Kimim' },
   { href: '/yazilarim', label: 'Yazılarım' },
   { href: '/videolarim', label: 'Videolarım' },
-  { href: '/forum', label: 'Forum' },
+  { href: '/forum', label: 'Forum', badge: 'BETA' },
   { href: '/iletisim', label: 'İletişim' },
 ];
 
@@ -59,8 +59,13 @@ export default function Navbar() {
           {/* Desktop nav */}
           <div className="hidden lg:flex" style={{ gap: 36, alignItems: 'center' }}>
             {links.map(l => (
-              <Link key={l.href} href={l.href} className={`nav-link ${pathname === l.href ? 'nav-link-active' : ''}`}>
+              <Link key={l.href} href={l.href} className={`nav-link ${pathname === l.href ? 'nav-link-active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 {l.label}
+                {l.badge && (
+                  <span style={{ fontSize: '0.55rem', background: 'var(--gold)', color: 'var(--navy)', padding: '1px 5px', borderRadius: 4, fontWeight: 800, marginLeft: 2 }}>
+                    {l.badge}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
@@ -112,8 +117,13 @@ export default function Navbar() {
         <div style={{ position: 'fixed', top: 64, left: 0, right: 0, background: '#0a1628', borderTop: '1px solid var(--border)', padding: '24px 28px 32px', zIndex: 999999 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {links.map(l => (
-              <Link key={l.href} href={l.href} className="nav-link" style={{ fontSize: '1rem', padding: '8px 0', display: 'block', borderBottom: '1px solid rgba(201,169,110,0.1)' }} onClick={() => setOpen(false)}>
+              <Link key={l.href} href={l.href} className="nav-link" style={{ fontSize: '1rem', padding: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(201,169,110,0.1)' }} onClick={() => setOpen(false)}>
                 {l.label}
+                {l.badge && (
+                  <span style={{ fontSize: '0.6rem', background: 'var(--gold)', color: 'var(--navy)', padding: '2px 8px', borderRadius: 6, fontWeight: 800 }}>
+                    {l.badge}
+                  </span>
+                )}
               </Link>
             ))}
             <div style={{ paddingTop: 12 }}>
