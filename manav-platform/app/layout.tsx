@@ -4,9 +4,11 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Toaster } from "react-hot-toast";
+import Script from "next/script";
+
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://furkanmanav.com'),
+  metadataBase: new URL('https://pskfurkanmanav.com'),
   title: {
     default: "Psikolog Furkan Manav | Varoluşçu Psikanalitik Psikoterapi | Ankara",
     template: "%s | Psikolog Furkan Manav",
@@ -46,7 +48,7 @@ export const metadata: Metadata = {
     title: "Psikolog Furkan Manav | Varoluşçu Psikanalitik Psikoterapi",
     description:
       "Varoluşçu-psikanalitik yaklaşımla psikoterapi, psikoloji yazıları, forum ve video içerikler. Ankara & Online.",
-    url: 'https://furkanmanav.com',
+    url: 'https://pskfurkanmanav.com',
     type: "website",
     locale: "tr_TR",
     siteName: "Psikolog Furkan Manav",
@@ -79,7 +81,7 @@ const jsonLd = {
   "@type": "Person",
   "name": "Furkan Manav",
   "jobTitle": "Psikolog",
-  "url": "https://furkanmanav.com",
+  "url": "https://pskfurkanmanav.com",
   "sameAs": [
     "https://www.instagram.com/furkanmanav", // Örnek sosyal medya linkleri
   ],
@@ -100,14 +102,28 @@ export default function RootLayout({
     <html lang="tr">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        <link rel="canonical" href="https://furkanmanav.com" />
+        <link rel="canonical" href="https://pskfurkanmanav.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-T1ZW5FQ031"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-T1ZW5FQ031');
+          `}
+        </Script>
         <AuthProvider>
+
           <Toaster
             position="top-right"
             toastOptions={{

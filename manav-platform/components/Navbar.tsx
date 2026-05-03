@@ -103,6 +103,7 @@ export default function Navbar() {
           </button>
         </div>
 
+        </nav>
       )}
 
       {/* Mobile menu (Moved outside nav to guarantee top-level stacking) */}
