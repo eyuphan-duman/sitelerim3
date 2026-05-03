@@ -396,12 +396,12 @@ export default function VideolarimPage() {
 
               {/* Comments List */}
               <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
-                {(comments[allReels[expandedReelIndex].id] || []).length === 0 ? (
+                {(comments[allReels[expandedReelIndex!].id] || []).length === 0 ? (
                     <div className="text-center text-white/40 mt-16 font-medium text-sm">
                        Bu videoya henüz yorum yapılmamış.<br/>Sessizliği ilk bozan sen ol!
                     </div>
                 ) : (
-                  (comments[allReels[expandedReelIndex].id] || []).map((c) => (
+                  (comments[allReels[expandedReelIndex!].id] || []).map((c) => (
                     <div key={c.id} className="flex gap-3">
                       <Link href={`/forum/profil/${encodeURIComponent(c.user)}`}>
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-orange-400 flex items-center justify-center font-bold text-white text-[12px] shrink-0 cursor-pointer hover:scale-110 transition-transform">
@@ -419,8 +419,8 @@ export default function VideolarimPage() {
                         
                         {/* Rating & Reply Actions */}
                         <div className="flex items-center gap-4 mt-2">
-                           <button onClick={() => rateComment(allReels[expandedReelIndex].id, c.id, 'up')} className="text-white/40 hover:text-green-400 flex items-center gap-1 text-[11px]"><ThumbsUp size={12}/> {c.likes > 0 && c.likes}</button>
-                           <button onClick={() => rateComment(allReels[expandedReelIndex].id, c.id, 'down')} className="text-white/40 hover:text-red-400 flex items-center gap-1 text-[11px]"><ThumbsDown size={12}/> {c.dislikes > 0 && c.dislikes}</button>
+                           <button onClick={() => rateComment(allReels[expandedReelIndex!].id, c.id, 'up')} className="text-white/40 hover:text-green-400 flex items-center gap-1 text-[11px]"><ThumbsUp size={12}/> {c.likes > 0 && c.likes}</button>
+                           <button onClick={() => rateComment(allReels[expandedReelIndex!].id, c.id, 'down')} className="text-white/40 hover:text-red-400 flex items-center gap-1 text-[11px]"><ThumbsDown size={12}/> {c.dislikes > 0 && c.dislikes}</button>
                            <button 
                              onClick={() => setReplyingTo({ reelId: allReels[expandedReelIndex].id, commentId: c.id })}
                              className="text-white/40 hover:text-white/80 text-[12px] font-medium transition-colors"
