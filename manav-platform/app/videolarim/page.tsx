@@ -8,31 +8,17 @@ import toast from 'react-hot-toast';
 import AuthModal from '@/components/AuthModal';
 import Link from 'next/link';
 
-const LOCAL_REELS = [
-  { id: '1', title: 'Rollo May', videoUrl: '/reels/ROLLOMAY.mp4' },
-  { id: '2', title: 'Hayatın Anlamı', videoUrl: '/reels/anlamıhayatın.mp4' },
-  { id: '3', title: 'Çimen Show', videoUrl: '/reels/cimenshow3.mp4' },
-  { id: '4', title: 'Çocukluk Travması (3)', videoUrl: '/reels/cocukluktravma3.mp4' },
-  { id: '5', title: 'Çocukluk Travması', videoUrl: '/reels/cocukluktravmasi.mp4' },
-  { id: '6', title: 'Duygusal Yeme', videoUrl: '/reels/duygusalyeme.mp4' },
-  { id: '7', title: 'Ebeveyn ve İlişkiler', videoUrl: '/reels/ebeveynveiliskiler3.mp4' },
-  { id: '8', title: 'Viktor Frankl Cevap', videoUrl: '/reels/franklcevp.mp4' },
-  { id: '9', title: 'Freud Diyor Ki', videoUrl: '/reels/freuddiyorkii.mp4' },
-  { id: '10', title: 'Furkan Derneği', videoUrl: '/reels/furkandernegi1.mp4' },
-  { id: '11', title: 'Hayatın Anlamı 2', videoUrl: '/reels/hayatınanlami.mp4' },
-  { id: '12', title: 'İlişki Döngüsü', videoUrl: '/reels/iliskidongusu2.mp4' },
-  { id: '13', title: 'İnsanın Anlam Arayışı', videoUrl: '/reels/insanınanlamarayisi1.mp4' },
-  { id: '14', title: 'Kierkegaard Diyor Ki', videoUrl: '/reels/kirkegordiyorki.mp4' },
-  { id: '15', title: 'Kötü Bir Şey Yaşamamak', videoUrl: '/reels/kotubirseyyasamamakicin2.mp4' },
-  { id: '16', title: 'Lacan Diyor Ki', videoUrl: '/reels/lacandiyorki2.mp4' },
-  { id: '17', title: 'Manav', videoUrl: '/reels/manav(3)(3).mp4' },
-  { id: '18', title: 'Aşırı Düşünmek', videoUrl: '/reels/overthinking4.mp4' },
-  { id: '19', title: 'Psikanaliz', videoUrl: '/reels/pskanlz.mp4' },
-  { id: '20', title: 'Saçma Rüya', videoUrl: '/reels/sacmaruya.mp4' },
-  { id: '21', title: 'Sınırda Bağlanma', videoUrl: '/reels/sinirdabaglanma.mp4' },
-  { id: '22', title: 'Terapi', videoUrl: '/reels/terapi.mp4' },
-  { id: '23', title: 'Viktor Frankl', videoUrl: '/reels/viktorfırankıl1.mp4' },
-  { id: '24', title: 'Yapay Zeka', videoUrl: '/reels/yabayzeka.mp4' },
+const YOUTUBE_SHORTS = [
+  { id: 'AutXH_X1_bQ', title: "YAPAY ZEKADAN TERAPİST OLUR MU?", youtubeId: 'AutXH_X1_bQ' },
+  { id: '0IOo2TBCFIo', title: "TRAVMASIZ ÇOCUKLUK MÜMKÜN MÜ?", youtubeId: '0IOo2TBCFIo' },
+  { id: '0ZGO5Z6kMWM', title: "MANİPULASYON", youtubeId: '0ZGO5Z6kMWM' },
+  { id: 'N7NxQbUArsM', title: "PASİF AGRESİF", youtubeId: 'N7NxQbUArsM' },
+  { id: '6iWdKTNOWJU', title: "AKTARIM", youtubeId: '6iWdKTNOWJU' },
+  { id: 'kEDKyzGEWt4', title: "İLİŞKİ DÖNGÜSÜ", youtubeId: 'kEDKyzGEWt4' },
+  { id: '-Z1pEXOcyt8', title: "AŞIRI İSTEMEK", youtubeId: '-Z1pEXOcyt8' },
+  { id: 'k4Vvc95RO-o', title: "İNSANI BASTIRDIKLARI YÖNETİR", youtubeId: 'k4Vvc95RO-o' },
+  { id: 'Y5GIkYguVv8', title: "NASIL MUTLU OLURUZ ?", youtubeId: 'Y5GIkYguVv8' },
+  { id: '0rFsbd7v3Do', title: "OVERTHİNKİNG", youtubeId: '0rFsbd7v3Do' }
 ];
 
 interface CommentType {
@@ -75,7 +61,7 @@ export default function VideolarimPage() {
     return () => unsub();
   }, []);
 
-  const allReels = [...firebaseVideos, ...LOCAL_REELS];
+  const allReels = [...firebaseVideos, ...YOUTUBE_SHORTS];
 
   useEffect(() => {
     if (expandedReelIndex !== null) {
@@ -104,7 +90,7 @@ export default function VideolarimPage() {
   const deleteVideoDoc = async (id: string, isLocal: boolean, e: React.MouseEvent) => {
     e.stopPropagation();
     if (isLocal) {
-      toast.error('Varsayılan (Lokal) videolar silinemez.');
+      toast.error('Varsayılan videolar silinemez.');
       return;
     }
     if (confirm('Bu videoyu silmek istediğinize emin misiniz?')) {
@@ -123,7 +109,7 @@ export default function VideolarimPage() {
         await navigator.share({
           title: title,
           text: title + ' - Psikolog Furkan Manav Videoları',
-          url: url || window.location.href,
+          url: url || (allReels[expandedReelIndex]?.youtubeId ? `https://youtube.com/shorts/${allReels[expandedReelIndex].youtubeId}` : window.location.href),
         });
       } catch (err) {
         console.log("Shared cancelled or failed", err);
@@ -253,7 +239,10 @@ export default function VideolarimPage() {
           
           {allReels.map((reel, index) => {
             const hasWatched = watchedVideos.includes(reel.id);
-            const isLocal = !!LOCAL_REELS.find(r => r.id === reel.id);
+            const isLocal = !!YOUTUBE_SHORTS.find(r => r.id === reel.id);
+            const thumbUrl = reel.youtubeId 
+              ? `https://img.youtube.com/vi/${reel.youtubeId}/hqdefault.jpg`
+              : `${reel.videoUrl}#t=0.5`;
 
             return (
               <div 
@@ -261,12 +250,20 @@ export default function VideolarimPage() {
                 onClick={() => setExpandedReelIndex(index)}
                 className="bg-black rounded-xl overflow-hidden shadow-sm relative group cursor-pointer aspect-[9/16] transition-transform duration-300 hover:scale-[1.02] hover:shadow-xl border border-gray-200"
               >
-                <video 
-                  src={`${reel.videoUrl}#t=0.5`} 
-                  preload="metadata" 
-                  muted 
-                  className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                />
+                {reel.youtubeId ? (
+                  <img 
+                    src={thumbUrl} 
+                    alt={reel.title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                  />
+                ) : (
+                  <video 
+                    src={thumbUrl} 
+                    preload="metadata" 
+                    muted 
+                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                  />
+                )}
 
                 <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80 pointer-events-none" />
 
@@ -319,14 +316,25 @@ export default function VideolarimPage() {
             
             {/* Video Pane */}
             <div className="flex-1 relative bg-black flex flex-col justify-center h-[50vh] md:h-full group">
-               <video 
-                  src={allReels[expandedReelIndex].videoUrl} 
-                  autoPlay 
-                  loop 
-                  controls
-                  playsInline
-                  className="w-auto h-full max-w-full mx-auto object-contain"
-                />
+               {allReels[expandedReelIndex].youtubeId ? (
+                 <iframe
+                   src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+                   title={allReels[expandedReelIndex].title}
+                   frameBorder="0"
+                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                   allowFullScreen
+                   className="w-full h-full aspect-[9/16] max-h-full mx-auto"
+                 ></iframe>
+               ) : (
+                 <video 
+                    src={allReels[expandedReelIndex].videoUrl} 
+                    autoPlay 
+                    loop 
+                    controls
+                    playsInline
+                    className="w-auto h-full max-w-full mx-auto object-contain"
+                  />
+               )}
                 
                 {/* Fixed Top Info */}
                 <div className="absolute top-4 left-4 pointer-events-none">
