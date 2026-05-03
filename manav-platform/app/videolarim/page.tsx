@@ -107,10 +107,11 @@ export default function VideolarimPage() {
   const handleShare = async (title: string, url: string) => {
     if (navigator.share) {
       try {
+        const reel = expandedReelIndex !== null ? allReels[expandedReelIndex] : null;
         await navigator.share({
           title: title,
           text: title + ' - Psikolog Furkan Manav Videoları',
-          url: url || (allReels[expandedReelIndex]?.youtubeId ? `https://youtube.com/shorts/${allReels[expandedReelIndex].youtubeId}` : window.location.href),
+          url: url || (reel?.youtubeId ? `https://youtube.com/shorts/${reel.youtubeId}` : window.location.href),
         });
       } catch (err) {
         console.log("Shared cancelled or failed", err);
@@ -340,7 +341,7 @@ export default function VideolarimPage() {
                 {/* Fixed Top Info */}
                 <div className="absolute top-4 left-4 pointer-events-none">
                    <h2 className="text-white text-xl md:text-2xl font-bold drop-shadow-md">
-                     {allReels[expandedReelIndex].title}
+                     {allReels[expandedReelIndex!].title}
                    </h2>
                 </div>
                 {/* Watch Badge */}
@@ -351,27 +352,27 @@ export default function VideolarimPage() {
                 {/* TikTok/Reels Style Floating Vertical Actions on the right edge of the video */}
                 <div className="absolute right-4 bottom-24 flex flex-col gap-5 z-20">
                     <button 
-                      onClick={() => toggleLikeReel(allReels[expandedReelIndex].id)}
+                      onClick={() => toggleLikeReel(allReels[expandedReelIndex!].id)}
                       className="flex flex-col items-center gap-1 group/btn"
                     >
                       <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center flex-col transition-all group-hover/btn:scale-105 group-active/btn:scale-95 shadow-xl">
-                        <Heart size={24} className={`transition-colors ${reactions[allReels[expandedReelIndex].id] ? 'text-red-500 fill-red-500' : 'text-white'}`} />
+                        <Heart size={24} className={`transition-colors ${reactions[allReels[expandedReelIndex!].id] ? 'text-red-500 fill-red-500' : 'text-white'}`} />
                       </div>
-                      <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">{reactions[allReels[expandedReelIndex].id] ? 1 : 0}</span>
+                      <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">{reactions[allReels[expandedReelIndex!].id] ? 1 : 0}</span>
                     </button>
                     
                     <button 
                        className="flex flex-col items-center gap-1 group/btn"
-                       onClick={() => toggleDislikeReel(allReels[expandedReelIndex].id)}
+                       onClick={() => toggleDislikeReel(allReels[expandedReelIndex!].id)}
                     >
                       <div className={`w-10 h-10 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center flex-col transition-all group-hover/btn:scale-105 active:scale-95 shadow-xl`}>
-                         <ThumbsDown size={20} className={`transition-colors ${dislikes[allReels[expandedReelIndex].id] ? 'text-red-500' : 'text-white'}`} />
+                         <ThumbsDown size={20} className={`transition-colors ${dislikes[allReels[expandedReelIndex!].id] ? 'text-red-500' : 'text-white'}`} />
                       </div>
-                      <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">{dislikes[allReels[expandedReelIndex].id] ? 1 : 0}</span>
+                      <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">{dislikes[allReels[expandedReelIndex!].id] ? 1 : 0}</span>
                     </button>
 
                     <button 
-                      onClick={() => handleShare(allReels[expandedReelIndex].title, allReels[expandedReelIndex].videoUrl)}
+                      onClick={() => handleShare(allReels[expandedReelIndex!].title, allReels[expandedReelIndex!].videoUrl)}
                       className="flex flex-col items-center gap-1 group/btn"
                     >
                       <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center flex-col transition-all group-hover/btn:scale-105 group-active/btn:scale-95 shadow-xl">
@@ -389,7 +390,7 @@ export default function VideolarimPage() {
               <div className="p-4 border-b border-white/5 flex items-center justify-between">
                  <div className="text-white text-md font-bold flex items-center gap-2">
                     <MessageCircle size={20}/>
-                    Yorumlar ({(comments[allReels[expandedReelIndex].id] || []).length})
+                    Yorumlar ({(comments[allReels[expandedReelIndex!].id] || []).length})
                  </div>
               </div>
 
@@ -455,7 +456,7 @@ export default function VideolarimPage() {
                                   <div className="text-white/90 text-[13px] leading-snug">{rep.text}</div>
                                   {(user?.uid === rep.userId || user?.email === 'pskfurkan.manav@gmail.com') && (
                                     <button 
-                                      onClick={() => deleteReply(allReels[expandedReelIndex].id, c.id, rep.id)}
+                                      onClick={() => deleteReply(allReels[expandedReelIndex!].id, c.id, rep.id)}
                                       className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 text-red-500 text-[10px] font-bold"
                                     >
                                       SİL
