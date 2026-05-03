@@ -65,7 +65,7 @@ export default function ForumClient() {
     if (user.isAnonymous) return setAuthOpen(true);
     setPosting(true);
     try {
-      await addDoc(collection(db, 'forum'), { body: form.body, category: form.cat, authorName: userProfile?.displayName || user.displayName || 'Kullanıcı', authorUsername: userProfile?.username || user.displayName?.toLowerCase().replace(/\s+/g, '') || 'kullanici', uid: user.uid, commentCount: 0, createdAt: serverTimestamp(), reactionsData: {} });
+      await addDoc(collection(db, 'forum'), { body: form.body, category: form.cat, authorName: userProfile?.displayName || user.displayName || 'Kullanıcı', authorUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici', uid: user.uid, commentCount: 0, createdAt: serverTimestamp(), reactionsData: {} });
       setForm({ body: '', cat: 'Psikanaliz' }); toast.success('Paylaşıldı!');
     } catch { toast.error('Hata oluştu.'); } finally { setPosting(false); }
   };

@@ -422,14 +422,14 @@ export default function VideolarimPage() {
                            <button onClick={() => rateComment(allReels[expandedReelIndex!].id, c.id, 'up')} className="text-white/40 hover:text-green-400 flex items-center gap-1 text-[11px]"><ThumbsUp size={12}/> {c.likes > 0 && c.likes}</button>
                            <button onClick={() => rateComment(allReels[expandedReelIndex!].id, c.id, 'down')} className="text-white/40 hover:text-red-400 flex items-center gap-1 text-[11px]"><ThumbsDown size={12}/> {c.dislikes > 0 && c.dislikes}</button>
                            <button 
-                             onClick={() => setReplyingTo({ reelId: allReels[expandedReelIndex].id, commentId: c.id })}
+                             onClick={() => setReplyingTo({ reelId: allReels[expandedReelIndex!].id, commentId: c.id })}
                              className="text-white/40 hover:text-white/80 text-[12px] font-medium transition-colors"
                            >
                              Yanıtla
                            </button>
                            {(user?.uid === c.userId || user?.email === 'pskfurkan.manav@gmail.com') && (
                              <button 
-                               onClick={() => deleteComment(allReels[expandedReelIndex].id, c.id)}
+                               onClick={() => deleteComment(allReels[expandedReelIndex!].id, c.id)}
                                className="text-red-500/70 hover:text-red-500 text-[11px] font-bold transition-colors ml-auto"
                              >
                                SİL
@@ -470,7 +470,7 @@ export default function VideolarimPage() {
 
                         {/* Reply Input block */}
                         {replyingTo?.commentId === c.id && (
-                          <form onSubmit={(e) => submitReply(allReels[expandedReelIndex].id, c.id, e)} className="mt-2 flex items-center gap-2">
+                          <form onSubmit={(e) => submitReply(allReels[expandedReelIndex!].id, c.id, e)} className="mt-2 flex items-center gap-2">
                              <input 
                                type="text" 
                                value={replyText} 
@@ -490,7 +490,7 @@ export default function VideolarimPage() {
 
               {/* Main Comment Input */}
               <div className="p-4 border-t border-white/5 bg-black/40">
-                <form onSubmit={(e) => submitComment(allReels[expandedReelIndex].id, e)} className="relative flex items-center">
+                <form onSubmit={(e) => submitComment(allReels[expandedReelIndex!].id, e)} className="relative flex items-center">
                   <input 
                     type="text" 
                     placeholder={user && !user.isAnonymous ? "Ne düşünüyorsun?" : "Yorum yapmak için giriş yap..."}

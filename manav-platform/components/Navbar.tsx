@@ -82,7 +82,7 @@ export default function Navbar() {
                     )}
                   </Link>
                 )}
-                <Link href={`/forum/profil/${encodeURIComponent(userProfile?.username || user.displayName?.toLowerCase().replace(/\s+/g,'') || '')}`} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }} className="hover:opacity-80 transition-opacity">
+                <Link href={`/forum/profil/${encodeURIComponent(userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g,'') || '')}`} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }} className="hover:opacity-80 transition-opacity">
                   <div className="avatar" style={{ width: 34, height: 34, fontSize: '0.8rem' }}>
                     {user.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
                   </div>
@@ -129,7 +129,7 @@ export default function Navbar() {
             <div style={{ paddingTop: 12 }}>
               {user ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <Link href={`/forum/profil/${encodeURIComponent(userProfile?.username || user.displayName?.toLowerCase().replace(/\s+/g,'') || '')}`} className="btn-ghost" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setOpen(false)}>
+                  <Link href={`/forum/profil/${encodeURIComponent(userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g,'') || '')}`} className="btn-ghost" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setOpen(false)}>
                     Profilim
                   </Link>
                   <button onClick={() => { logout(); setOpen(false); }} className="btn-ghost" style={{ width: '100%', justifyContent: 'center', color: '#fca5a5', borderColor: 'rgba(252,165,165,0.2)' }}>
