@@ -72,7 +72,10 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   verification: {
-    google: 'google-site-verification-kodunuz-buraya', // Buraya Google Search Console kodunu ekleyin
+    google: 'google-site-verification-kodunuz-buraya',
+    other: {
+      'google-adsense-account': 'ca-pub-7052967416613692',
+    },
   },
   manifest: '/manifest.json',
 };
