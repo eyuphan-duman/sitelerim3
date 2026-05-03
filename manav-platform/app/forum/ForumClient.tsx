@@ -1,4 +1,5 @@
 'use client';
+// ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - FORUM BETA ETİKETLERİ EKLENDİ.
 import React, { useState, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';

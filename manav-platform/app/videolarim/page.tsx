@@ -1,4 +1,5 @@
 'use client';
+// ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - YOUTUBE SHORTS ENTEGRASYONU AKTİF.
 import React, { useState, useRef, useEffect } from 'react';
 import { Film, Play, Heart, MessageCircle, Send, X, Share2, ThumbsUp, ThumbsDown, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
