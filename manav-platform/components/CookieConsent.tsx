@@ -11,31 +11,55 @@ export default function CookieConsent() {
     // Çerez onayını kontrol et
     const consent = localStorage.getItem('cookie-consent');
     if (!consent) {
-      setShowConsent(true);
+      const timer = setTimeout(() => setShowConsent(true), 1500); // Sayfa açıldıktan biraz sonra göster
+      return () => clearTimeout(timer);
     }
   }, []);
 
-  const acceptCookies = () => {
-    localStorage.setItem('cookie-consent', 'true');
+  const handleChoice = (accepted: boolean) => {
+    localStorage.setItem('cookie-consent', accepted ? 'true' : 'false');
     setShowConsent(false);
   };
 
   if (!mounted || !showConsent) return null;
 
   return (
-    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] w-[calc(100%-32px)] max-w-3xl fade-up">
-      <div className="bg-[#0a1628] border border-[rgba(201,169,110,0.4)] rounded-lg p-6 shadow-[0_30px_60px_rgba(0,0,0,0.6)] backdrop-blur-md flex flex-col md:flex-row items-center gap-6">
-        <div className="flex-1 text-[0.9rem] leading-relaxed text-[#fcf9f5] font-medium text-center md:text-left">
-          <span className="text-[#c9a96e] font-bold block mb-1 tracking-wider uppercase text-[0.7rem]">Çerez Politikası</span>
-          Deneyiminizi geliştirmek ve site trafiğini analiz etmek için çerezleri kullanıyoruz. 
-          Sitemizi kullanarak çerez kullanımını kabul etmiş olursunuz.
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] w-[calc(100%-40px)] max-w-4xl animate-in fade-in slide-in-from-bottom-10 duration-700">
+      <div 
+        style={{ 
+          background: 'rgba(10, 22, 40, 0.85)', 
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid rgba(201, 169, 110, 0.2)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05)'
+        }} 
+        className="rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-8"
+      >
+        <div className="flex-1 text-center md:text-left">
+          <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)' }} />
+            <span style={{ color: 'var(--gold)', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Gizlilik ve Çerezler</span>
+          </div>
+          <h3 style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>Size daha iyi bir deneyim sunmak istiyoruz</h3>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', lineHeight: 1.6, maxWidth: '600px' }}>
+            Deneyiminizi kişiselleştirmek ve site trafiğimizi analiz etmek için çerezleri kullanıyoruz. 
+            Ayarlarınızı dilediğiniz zaman değiştirebilirsiniz.
+          </p>
         </div>
-        <div className="flex gap-3 shrink-0 w-full md:w-auto">
+        
+        <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full md:w-auto">
           <button
-            onClick={acceptCookies}
-            className="w-full md:w-auto px-8 py-3 bg-[#c9a96e] hover:bg-[#e0c28a] text-[#0a1628] text-[0.75rem] font-bold uppercase tracking-wider rounded transition-all duration-300 shadow-lg"
+            onClick={() => handleChoice(false)}
+            className="px-6 py-3 border border-white/10 hover:border-white/30 text-white text-[0.75rem] font-bold uppercase tracking-wider rounded-lg transition-all duration-300"
           >
-            Anladım
+            Reddet
+          </button>
+          <button
+            onClick={() => handleChoice(true)}
+            className="btn-gold"
+            style={{ padding: '12px 32px', fontSize: '0.75rem' }}
+          >
+            Hepsini Kabul Et
           </button>
         </div>
       </div>
