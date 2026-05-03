@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import YazilarimClient from './YazilarimClient';
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function YazilarimPage() {
-  return <YazilarimClient />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-gray-500 font-serif italic">Yazılar yükleniyor...</div>}>
+      <YazilarimClient />
+    </Suspense>
+  );
 }

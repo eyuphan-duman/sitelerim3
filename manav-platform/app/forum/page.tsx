@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import ForumClient from './ForumClient';
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function ForumPage() {
-  return <ForumClient />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">Yükleniyor...</div>}>
+      <ForumClient />
+    </Suspense>
+  );
 }
