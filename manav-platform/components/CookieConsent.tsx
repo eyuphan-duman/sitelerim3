@@ -52,10 +52,23 @@ export default function CookieConsent() {
         <div className="text-left">
           <div className="flex items-center gap-2 mb-3">
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }} />
-            <span style={{ color: 'var(--gold)', fontSize: '0.65rem', md: '0.7rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase' }}>Gizlilik Ayarları</span>
+            <span 
+              style={{ color: 'var(--gold)', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase' }}
+              className="text-[0.65rem] md:text-[0.7rem]"
+            >
+              Gizlilik Ayarları
+            </span>
           </div>
-          <h3 style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: '1.2rem', md: '1.4rem', fontWeight: 700, marginBottom: 8, lineHeight: 1.3 }}>Çerez Kullanımı</h3>
-          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', md: '0.95rem', lineHeight: 1.6 }}>
+          <h3 
+            style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontWeight: 700, marginBottom: 8, lineHeight: 1.3 }}
+            className="text-[1.2rem] md:text-[1.4rem]"
+          >
+            Çerez Kullanımı
+          </h3>
+          <p 
+            style={{ color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}
+            className="text-[0.85rem] md:text-[0.95rem]"
+          >
             Size en iyi deneyimi sunmak için çerezleri kullanıyoruz. Kabul etmediğiniz takdirde sadece teknik çerezler kullanılacaktır.
           </p>
         </div>
