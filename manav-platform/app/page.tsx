@@ -303,33 +303,35 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {realPosts.length === 0 && <div className="text-gray-400 italic">Henüz yayınlanan bir makale bulunmuyor.</div>}
-            {realPosts.map(p => (
-              <a href={`/yazilarim`} key={p.id} className="post-card group flex flex-col overflow-hidden bg-white shadow-sm hover:shadow-2xl transition-all duration-300 aspect-square rounded-2xl border border-gray-100">
-                {/* Header Section */}
-                <div className="h-[45%] p-8 relative overflow-hidden flex flex-col justify-center" style={{ background: 'linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%)' }}>
-                  <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[rgba(201,169,110,0.08)] group-hover:scale-125 transition-transform duration-700"/>
-                  <div className="flex justify-between items-start z-10">
-                    <span className="tag-gold text-xs px-3 py-1 mb-3">{p.category}</span>
-
+            {realPosts.map(p => {
+              const previewText = p.excerpt || (p.content ? p.content.replace(/<[^>]*>?/gm, '').slice(0, 150) + '...' : '');
+              return (
+                <Link href={`/yazilarim?post=${p.id}`} key={p.id} className="post-card group flex flex-col overflow-hidden bg-white shadow-sm hover:shadow-2xl transition-all duration-300 rounded-2xl border border-gray-100" style={{ minHeight: 400 }}>
+                  {/* Header Section */}
+                  <div className="h-[45%] p-8 relative overflow-hidden flex flex-col justify-center" style={{ background: 'linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%)' }}>
+                    <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[rgba(201,169,110,0.08)] group-hover:scale-125 transition-transform duration-700"/>
+                    <div className="flex justify-between items-start z-10">
+                      <span className="tag-gold text-xs px-3 py-1 mb-3">{p.category}</span>
+                    </div>
+                    <h3 className="font-serif text-white text-xl md:text-2xl font-bold leading-tight line-clamp-2">
+                      {p.title}
+                    </h3>
                   </div>
-                  <h3 className="font-serif text-white text-xl md:text-2xl font-bold leading-tight line-clamp-2">
-                    {p.title}
-                  </h3>
-                </div>
-                {/* Body Section */}
-                <div className="flex-1 p-8 flex flex-col justify-between bg-white">
-                  <p className="crimson text-gray-500 text-[1.05rem] leading-relaxed line-clamp-4">
-                    {p.excerpt}
-                  </p>
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
-                    <span className="text-xs text-gray-400 font-medium">{format(new Date(p.date), 'd MMM yyyy', { locale: tr })}</span>
-                    <span className="text-[var(--gold-dim)] text-xs font-bold tracking-widest uppercase flex items-center gap-2 group-hover:gap-3 transition-all">
-                      OKU <ArrowRight size={12}/>
-                    </span>
+                  {/* Body Section */}
+                  <div className="flex-1 p-8 flex flex-col justify-between bg-white">
+                    <p className="crimson text-gray-500 text-[1.05rem] leading-relaxed line-clamp-3">
+                      {previewText}
+                    </p>
+                    <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
+                      <span className="text-xs text-gray-400 font-medium">{format(new Date(p.date), 'd MMM yyyy', { locale: tr })}</span>
+                      <span className="text-[var(--gold-dim)] text-xs font-bold tracking-widest uppercase flex items-center gap-2 group-hover:gap-3 transition-all">
+                        DEVAMINI OKU <ArrowRight size={12}/>
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </a>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>

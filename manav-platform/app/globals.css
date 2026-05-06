@@ -656,6 +656,60 @@ body {
 
   /* Add padding so content isn't hidden behind the bottom bar */
   .forum-grid-3col main {
-    padding-bottom: 80px !important;
-  }
 }
+
+/* ─── ARTICLE CONTENT (Rich Text) ─── */
+.article-content {
+  font-family: 'Crimson Text', serif;
+  line-height: 1.85;
+  color: #333;
+}
+.article-content p {
+  margin-bottom: 24px;
+}
+.article-content strong, .article-content b {
+  font-weight: 700;
+  color: var(--navy);
+}
+.article-content em, .article-content i {
+  font-style: italic;
+}
+.article-content h1, .article-content h2, .article-content h3 {
+  font-family: 'Playfair Display', serif;
+  color: var(--navy);
+  margin: 40px 0 20px;
+}
+.article-content h1 { font-size: 2.4rem; }
+.article-content h2 { font-size: 2rem; }
+.article-content h3 { font-size: 1.6rem; }
+.article-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 32px 0;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  display: block;
+}
+.article-content ul, .article-content ol {
+  margin-bottom: 24px;
+  padding-left: 24px;
+}
+.article-content li {
+  margin-bottom: 12px;
+}
+.article-content a {
+  color: var(--gold-dim);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+.article-content a:hover {
+  color: var(--gold);
+}
+.article-content blockquote {
+  border-left: 3px solid var(--gold);
+  padding-left: 24px;
+  font-style: italic;
+  margin: 32px 0;
+  color: var(--muted);
+}
+

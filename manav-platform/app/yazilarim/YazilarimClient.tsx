@@ -9,6 +9,8 @@ import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import RichTextEditor from '@/components/RichTextEditor';
+
 
 interface Comment { id: string; authorName: string; text: string; createdAt: Date; uid: string; }
 interface Post { id: string; title: string; category: string; excerpt: string; content: string; date: string; likes: number; commentCount: number; createdAt: Date; }
@@ -154,7 +156,15 @@ export default function YazilarimClient() {
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                   <textarea placeholder="Kısa Açıklama (Opsiyonel)" className="input-field" value={postForm.excerpt} onChange={e => setPostForm({ ...postForm, excerpt: e.target.value })} style={{ minHeight: 80, resize: 'none' }} />
-                  <textarea required placeholder="Metin İçeriği..." className="input-field" value={postForm.content} onChange={e => setPostForm({ ...postForm, content: e.target.value })} style={{ minHeight: 200, resize: 'none' }} />
+                  
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: '#666', marginBottom: 8, display: 'block' }}>Makale İçeriği</label>
+                    <RichTextEditor 
+                      value={postForm.content} 
+                      onChange={(content) => setPostForm({ ...postForm, content })} 
+                      placeholder="Makalenizi buraya yazın..."
+                    />
+                  </div>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <button type="submit" disabled={submitting} className="btn-dark-outline" style={{ borderRadius: 0, padding: '12px 32px', fontWeight: 700, textTransform: 'uppercase', background: '#111', color: '#fff' }}>
                       {submitting ? 'Kaydediliyor...' : 'Paylaş'}
@@ -187,8 +197,8 @@ export default function YazilarimClient() {
                   <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, color: '#111', lineHeight: 1.1, marginBottom: 20 }}>
                     {heroPost.title}
                   </h2>
-                  <p className="crimson" style={{ fontSize: '1.15rem', color: '#444', lineHeight: 1.7, marginBottom: 24, whiteSpace: 'pre-wrap' }}>
-                    {heroPost.excerpt}
+                  <p className="crimson" style={{ fontSize: '1.15rem', color: '#444', lineHeight: 1.7, marginBottom: 24 }}>
+                    {heroPost.excerpt || (heroPost.content ? heroPost.content.replace(/<[^>]*>?/gm, '').slice(0, 200) + '...' : '')}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <button className="btn-dark-outline" style={{ border: '1px solid #000', color: '#000', borderRadius: 0, padding: '8px 24px', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Makaleyi Oku</button>
@@ -211,7 +221,7 @@ export default function YazilarimClient() {
                       {post.title}
                     </h3>
                     <p className="crimson" style={{ fontSize: '1rem', color: '#555', lineHeight: 1.6, marginBottom: 16, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {post.excerpt}
+                      {post.excerpt || (post.content ? post.content.replace(/<[^>]*>?/gm, '').slice(0, 150) + '...' : '')}
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #eaeaea', paddingTop: 12, fontSize: '0.75rem', color: '#999' }}>
                       <span style={{ fontStyle: 'italic' }}>{format(new Date(post.date), 'd MMM yyyy', { locale: tr })}</span>
@@ -280,9 +290,11 @@ export default function YazilarimClient() {
               {/* The Article */}
               <div className="crimson" style={{ borderTop: '2px solid #111', paddingTop: 40, borderBottom: '1px solid #eaeaea', paddingBottom: 48, marginBottom: 48 }}>
                 <p style={{ fontSize: '1.3rem', color: '#222', lineHeight: 1.8, marginBottom: 32, fontStyle: 'italic', fontWeight: 600 }}>{active.excerpt}</p>
-                {active.content.split('\n\n').map((para, i) => (
-                  <p key={i} style={{ color: '#333', fontSize: '1.15rem', marginBottom: 28, lineHeight: 1.85, letterSpacing: '0.01em' }}>{para}</p>
-                ))}
+                <div 
+                  className="article-content"
+                  dangerouslySetInnerHTML={{ __html: active.content }} 
+                  style={{ color: '#333', fontSize: '1.15rem', lineHeight: 1.85, letterSpacing: '0.01em' }}
+                />
               </div>
 
               {/* Comments Section */}
