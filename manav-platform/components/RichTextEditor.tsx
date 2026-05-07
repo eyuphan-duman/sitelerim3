@@ -19,7 +19,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
       const { default: RQ, Quill } = await import('react-quill-new');
       
       // Extend Image blot to support width attribute
-      const Image = Quill.import('formats/image');
+      const Image = Quill.import('formats/image') as any;
       class ImageBlot extends Image {
         static create(value: any) {
           const node = super.create(typeof value === 'string' ? value : value.url);
