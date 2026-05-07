@@ -25,6 +25,22 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   }, []);
 
   const imageHandler = () => {
+    const choice = window.confirm("Görsel yükleme seçeneği:\n\nTAMAM: Bilgisayardan seçip yükle (Firebase)\nİPTAL: İnternet üzerinden link (URL) yapıştır");
+
+    if (!choice) {
+      const url = window.prompt("Görselin internet adresini (URL) buraya yapıştırın:");
+      if (url && url.trim()) {
+        const quill = quillRef.current?.getEditor();
+        if (quill) {
+          const range = quill.getSelection();
+          const index = range ? range.index : quill.getLength();
+          quill.insertEmbed(index, 'image', url.trim());
+          quill.setSelection(index + 1);
+        }
+      }
+      return;
+    }
+
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
     input.setAttribute('accept', 'image/*');
