@@ -34,29 +34,44 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
       const file = input.files ? input.files[0] : null;
       if (!file) return;
 
-      console.log('Image upload started:', file.name);
-      const toastId = toast.loading('Görsel yükleniyor...');
+      console.log('Image upload process started for:', file.name);
+      const toastId = toast.loading('Görsel hazırlanıyor...');
+      
       try {
-        const storageRef = ref(storage, `editor-images/${Date.now()}-${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(snapshot.ref);
-        console.log('Image uploaded to Firebase:', url);
+        const { uploadBytesResumable, getDownloadURL, ref: storageRefFunc } = await import('firebase/storage');
+        const fileRef = storageRefFunc(storage, `editor-images/${Date.now()}-${file.name}`);
+        
+        const uploadTask = uploadBytesResumable(fileRef, file);
 
-        // Get the actual quill instance from the ref
-        const quill = quillRef.current?.getEditor();
-        if (quill) {
-          const range = quill.getSelection();
-          const index = range ? range.index : 0;
-          quill.insertEmbed(index, 'image', url);
-          quill.setSelection(index + 1);
-          toast.success('Görsel eklendi', { id: toastId });
-        } else {
-          console.error('Quill instance not found in ref');
-          toast.error('Editör bağlantısı kurulamadı. Lütfen sayfayı yenileyin.', { id: toastId });
-        }
+        uploadTask.on('state_changed', 
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            toast.loading(`Görsel yükleniyor: %${Math.round(progress)}`, { id: toastId });
+          }, 
+          (error) => {
+            console.error('Upload task error:', error);
+            toast.error(`Yükleme hatası: ${error.message}`, { id: toastId });
+          }, 
+          async () => {
+            const url = await getDownloadURL(uploadTask.snapshot.ref);
+            console.log('Upload complete. URL:', url);
+
+            const quill = quillRef.current?.getEditor();
+            if (quill) {
+              const range = quill.getSelection();
+              const index = range ? range.index : quill.getLength();
+              quill.insertEmbed(index, 'image', url);
+              quill.setSelection(index + 1);
+              toast.success('Görsel başarıyla eklendi', { id: toastId });
+            } else {
+              console.error('Could not find Quill editor instance');
+              toast.error('Editör bağlantı hatası. Görsel yüklendi ama eklenemedi.', { id: toastId });
+            }
+          }
+        );
       } catch (error: any) {
-        console.error('Image upload failed:', error);
-        toast.error('Görsel yüklenemedi: ' + (error.message || 'Hata oluştu'), { id: toastId });
+        console.error('Setup error:', error);
+        toast.error(`Hata: ${error.message || 'Başlatılamadı'}`, { id: toastId });
       }
     };
   };

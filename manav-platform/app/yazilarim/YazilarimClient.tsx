@@ -122,6 +122,10 @@ export default function YazilarimClient() {
 
   const handleSharePost = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!postForm.title.trim()) {
+      toast.error('Lütfen bir başlık giriniz.');
+      return;
+    }
     setSubmitting(true);
     try {
       if (editPostId) {
@@ -175,7 +179,7 @@ export default function YazilarimClient() {
               <div style={{ background: '#fff', border: '1px solid #ddd', padding: 32 }}>
                 <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', marginBottom: 24 }}>{editPostId ? 'Yazıyı Düzenle' : 'Yeni Yazı Paylaş'}</h3>
                 <form onSubmit={handleSharePost} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <input required placeholder="Başlık" className="input-field" value={postForm.title} onChange={e => setPostForm({ ...postForm, title: e.target.value })} />
+                  <input placeholder="Başlık" className="input-field" value={postForm.title} onChange={e => setPostForm({ ...postForm, title: e.target.value })} />
                   <select className="input-field" value={postForm.category} onChange={e => setPostForm({ ...postForm, category: e.target.value })}>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -191,7 +195,7 @@ export default function YazilarimClient() {
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <button type="submit" disabled={submitting} className="btn-dark-outline" style={{ borderRadius: 0, padding: '12px 32px', fontWeight: 700, textTransform: 'uppercase', background: '#111', color: '#fff' }}>
-                      {submitting ? 'Kaydediliyor...' : 'Paylaş'}
+                      {submitting ? 'Kaydediliyor...' : (editPostId ? 'Güncelle' : 'Paylaş')}
                     </button>
                     <button type="button" onClick={() => setShowPostForm(false)} className="btn-dark-outline" style={{ borderRadius: 0, padding: '12px 32px', fontWeight: 700, textTransform: 'uppercase' }}>
                       İptal
