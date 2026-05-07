@@ -10,6 +10,26 @@ import { tr } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 
+const stripHtml = (html: string) => {
+  return html
+    .replace(/<[^>]*>?/gm, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const truncateText = (text: string, limit: number) => {
+  if (text.length <= limit) return text;
+  const sub = text.slice(0, limit);
+  const lastSpace = sub.lastIndexOf(' ');
+  if (lastSpace === -1) return sub + '...';
+  return sub.slice(0, lastSpace) + '...';
+};
+
 export default function HomePage() {
   const { user } = useAuth();
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
@@ -307,13 +327,6 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {realPosts.length === 0 && <div className="text-gray-400 italic">Henüz yayınlanan bir makale bulunmuyor.</div>}
             {realPosts.map(p => {
-              const truncateText = (text: string, limit: number) => {
-                if (text.length <= limit) return text;
-                const sub = text.slice(0, limit);
-                const lastSpace = sub.lastIndexOf(' ');
-                if (lastSpace === -1) return sub + '...';
-                return sub.slice(0, lastSpace) + '...';
-              };
               const previewText = p.excerpt || (p.content ? truncateText(stripHtml(p.content), 150) : '');
               return (
                 <Link href={`/yazilarim?post=${p.id}`} key={p.id} className="post-card group flex flex-col overflow-hidden bg-white shadow-sm hover:shadow-2xl transition-all duration-300 rounded-2xl border border-gray-100" style={{ minHeight: 400 }}>
