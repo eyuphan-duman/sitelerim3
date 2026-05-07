@@ -65,7 +65,7 @@ export default function HomePage() {
         
         // Static content search
         const staticPages = [
-          { title: 'Ben Kimim?', excerpt: 'Varoluşçu-Psikanalitik yönelimli bir psikolog olarak, kişinin kendi iç dünyasını keşfetmesine alan açmayı hedefliyorum.', type: 'page', href: '/ben-kimim' },
+          { title: 'Hakkımda', excerpt: 'Varoluşçu-Psikanalitik yönelimli bir psikolog olarak, kişinin kendi iç dünyasını keşfetmesine alan açmayı hedefliyorum.', type: 'page', href: '/ben-kimim' },
           { title: 'İletişim & Randevu', excerpt: 'Terapötik sürece başlamak veya detaylı bilgi almak için iletişime geçebilirsiniz. Polatlı / Ankara.', type: 'page', href: '/iletisim' },
           { title: 'Videolarım', excerpt: 'Psikoloji, psikanaliz ve varoluşçuluk üzerine hazırladığım video içerikleri.', type: 'page', href: '/videolarim' }
         ];
@@ -424,7 +424,7 @@ export default function HomePage() {
               <div style={{ padding: '24px 20px' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {[{ label: 'Yazılarım', href: '/yazilarim', icon: '📝' }, { label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Ben Kimim', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
+                  {[{ label: 'Yazılarım', href: '/yazilarim', icon: '📝' }, { label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Hakkımda', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
                     <Link key={l.href} href={l.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, textDecoration: 'none', color: '#334155', fontSize: '0.92rem', fontWeight: 500, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                       <span style={{ fontSize: '1.1rem' }}>{l.icon}</span> {l.label}
                     </Link>

@@ -285,13 +285,6 @@ export default function YazilarimClient() {
             {/* SIDEBAR (Right Col) */}
             <aside style={{ borderLeft: '1px solid #ddd', paddingLeft: 32, display: 'flex', flexDirection: 'column', gap: 48 }}>
               <div>
-                <h4 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: 800, color: '#111', borderBottom: '2px solid #000', paddingBottom: 12, marginBottom: 24, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Günün Sözü</h4>
-                <p className="crimson" style={{ fontSize: '1.2rem', fontStyle: 'italic', color: '#444', lineHeight: 1.6, position: 'relative', paddingLeft: 16, borderLeft: '3px solid var(--gold)' }}>
-                  "İnsan, kendini inşa etmek zorunda olan yegane varlıktra."
-                </p>
-              </div>
-
-              <div>
                 <h4 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: 800, color: '#111', borderBottom: '2px solid #000', paddingBottom: 12, marginBottom: 24, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Editörün Seçimi</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                    {posts.slice(0,3).map((p,i) => (

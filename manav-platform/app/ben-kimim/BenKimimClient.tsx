@@ -75,7 +75,7 @@ export default function BenKimimClient() {
               marginBottom: 24,
             }}
           >
-            Ben Kimim?
+            Hakkımda
           </h1>
           <div className="gold-line" style={{ marginBottom: 24 }} />
           <p

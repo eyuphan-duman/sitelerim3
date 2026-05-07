@@ -10,7 +10,7 @@ import { db } from '@/lib/firebase';
 
 const links = [
   { href: '/', label: 'Anasayfa' },
-  { href: '/ben-kimim', label: 'Ben Kimim' },
+  { href: '/ben-kimim', label: 'Hakkımda' },
   { href: '/yazilarim', label: 'Yazılarım' },
   { href: '/videolarim', label: 'Videolarım' },
   { href: '/forum', label: 'Forum', badge: 'BETA' },
