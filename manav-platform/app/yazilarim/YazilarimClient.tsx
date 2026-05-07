@@ -424,7 +424,9 @@ export default function YazilarimClient() {
                   overflow-wrap: break-word;
                   word-wrap: break-word;
                   word-break: normal;
-                  hyphens: none;
+                  hyphens: auto;
+                  -webkit-hyphens: auto;
+                  -ms-hyphens: auto;
                 }
                 @media (max-width: 600px) {
                   .modal-body-content {
