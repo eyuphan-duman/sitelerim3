@@ -127,13 +127,18 @@ export default function YazilarimClient() {
   };
 
   const editPost = (post: Post, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setEditPostId(post.id);
     setPostForm({ title: post.title, category: post.category, excerpt: post.excerpt, content: post.content });
     setShowPostForm(true);
     setActive(null);
     router.replace('/yazilarim', { scroll: false });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
   const handleSharePost = async (e: React.FormEvent) => {
@@ -259,9 +264,19 @@ export default function YazilarimClient() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <button className="btn-dark-outline" style={{ border: '1px solid #000', color: '#000', borderRadius: 0, padding: '8px 24px', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Makaleyi Oku</button>
                     {ADMIN_EMAILS.includes(user?.email || '') && (
-                      <div style={{ display: 'flex', gap: 12 }}>
-                        <button onClick={(e) => editPost(heroPost, e)} style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--gold-dim)', textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer' }}>Düzenle</button>
-                        <button onClick={(e) => handleDeletePost(heroPost.id, e)} style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ff4d4f', textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer' }}>Sil</button>
+                      <div style={{ display: 'flex', gap: 8, position: 'relative', zIndex: 10 }}>
+                        <button 
+                          onClick={(e) => editPost(heroPost, e)} 
+                          style={{ fontSize: '0.75rem', fontWeight: 700, color: 'white', textTransform: 'uppercase', background: 'var(--gold-dim)', border: 'none', cursor: 'pointer', padding: '6px 12px', borderRadius: 4 }}
+                        >
+                          Düzenle
+                        </button>
+                        <button 
+                          onClick={(e) => handleDeletePost(heroPost.id, e)} 
+                          style={{ fontSize: '0.75rem', fontWeight: 700, color: 'white', textTransform: 'uppercase', background: '#ff4d4f', border: 'none', cursor: 'pointer', padding: '6px 12px', borderRadius: 4 }}
+                        >
+                          Sil
+                        </button>
                       </div>
                     )}
                     <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.8rem' }}>
@@ -279,9 +294,19 @@ export default function YazilarimClient() {
                     <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#777', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{post.category}</span>
                       {ADMIN_EMAILS.includes(user?.email || '') && (
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <button onClick={(e) => editPost(post, e)} style={{ color: 'var(--gold-dim)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>DÜZENLE</button>
-                          <button onClick={(e) => handleDeletePost(post.id, e)} style={{ color: '#ff4d4f', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>SİL</button>
+                        <div style={{ display: 'flex', gap: 6, position: 'relative', zIndex: 10 }}>
+                          <button 
+                            onClick={(e) => editPost(post, e)} 
+                            style={{ color: 'white', fontWeight: 700, background: 'var(--gold-dim)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 3, fontSize: '0.65rem' }}
+                          >
+                            DÜZENLE
+                          </button>
+                          <button 
+                            onClick={(e) => handleDeletePost(post.id, e)} 
+                            style={{ color: 'white', fontWeight: 700, background: '#ff4d4f', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 3, fontSize: '0.65rem' }}
+                          >
+                            SİL
+                          </button>
                         </div>
                       )}
                     </div>
@@ -326,23 +351,43 @@ export default function YazilarimClient() {
         <div className="modal-backdrop" onClick={closePost}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             {/* Modal Header/Toolbar */}
-            <div style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', zIndex: 100 }}>
-              <button onClick={closePost} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f5f5f7', border: 'none', borderRadius: '40px', padding: '8px 16px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, color: '#111' }}>
-                <X size={16}/> KAPAT
+            <div style={{ 
+              position: 'sticky', 
+              top: 0, 
+              background: 'white', 
+              borderBottom: '1px solid #f0f0f0', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '16px 24px', 
+              paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))',
+              zIndex: 1000 
+            }}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); closePost(); }} 
+                style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f5f5f7', border: 'none', borderRadius: '40px', padding: '10px 20px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: '#111' }}
+              >
+                <X size={18}/> KAPAT
               </button>
               
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                 {ADMIN_EMAILS.includes(user?.email || '') && (
-                  <>
-                    <button onClick={() => editPost(active!)} style={{ background: 'var(--gold-dim)', color: '#fff', border: 'none', borderRadius: '40px', padding: '8px 16px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); editPost(active!); }} 
+                      style={{ background: 'var(--gold-dim)', color: '#fff', border: 'none', borderRadius: '40px', padding: '10px 20px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
+                    >
                       DÜZENLE
                     </button>
-                    <button onClick={() => handleDeletePost(active!.id)} style={{ background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: '40px', padding: '8px 16px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleDeletePost(active!.id); }} 
+                      style={{ background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: '40px', padding: '10px 20px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
+                    >
                       SİL
                     </button>
-                  </>
+                  </div>
                 )}
-                <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.75rem', fontWeight: 600 }}>
+                <div style={{ display: 'none', gap: 12, color: '#888', fontSize: '0.75rem', fontWeight: 600 }}>
                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Heart size={14}/> {active.likes}</span>
                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={14}/> {active.commentCount}</span>
                 </div>

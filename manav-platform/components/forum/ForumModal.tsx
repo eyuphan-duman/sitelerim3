@@ -59,7 +59,10 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
           display: 'flex', alignItems: 'center', gap: 16,
           background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)'
         }}>
-          <button onClick={onClose} style={{ background: '#f8fafc', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onClose(); }} 
+            style={{ background: '#f8fafc', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
             <X size={20} color="#475569" />
           </button>
           <h2 style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>Gönderi Detayı</h2>
