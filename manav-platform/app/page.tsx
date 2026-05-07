@@ -304,7 +304,18 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {realPosts.length === 0 && <div className="text-gray-400 italic">Henüz yayınlanan bir makale bulunmuyor.</div>}
             {realPosts.map(p => {
-              const previewText = p.excerpt || (p.content ? p.content.replace(/<[^>]*>?/gm, '').slice(0, 150) + '...' : '');
+              const stripHtml = (html: string) => {
+                return html
+                  .replace(/<[^>]*>?/gm, ' ') // Replace tags with space
+                  .replace(/&nbsp;/g, ' ')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/\s+/g, ' ') // Collapse multiple spaces
+                  .trim();
+              };
+              const previewText = p.excerpt || (p.content ? stripHtml(p.content).slice(0, 150) + '...' : '');
               return (
                 <Link href={`/yazilarim?post=${p.id}`} key={p.id} className="post-card group flex flex-col overflow-hidden bg-white shadow-sm hover:shadow-2xl transition-all duration-300 rounded-2xl border border-gray-100" style={{ minHeight: 400 }}>
                   {/* Header Section */}

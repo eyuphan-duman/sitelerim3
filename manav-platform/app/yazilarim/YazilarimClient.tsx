@@ -142,6 +142,18 @@ export default function YazilarimClient() {
     finally { setSubmitting(false); }
   };
 
+  const stripHtml = (html: string) => {
+    return html
+      .replace(/<[^>]*>?/gm, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   const heroPost = filtered[0];
   const otherPosts = filtered.slice(1);
 
@@ -226,7 +238,7 @@ export default function YazilarimClient() {
                     {heroPost.title}
                   </h2>
                   <p className="crimson" style={{ fontSize: '1.15rem', color: '#444', lineHeight: 1.7, marginBottom: 24 }}>
-                    {heroPost.excerpt || (heroPost.content ? heroPost.content.replace(/<[^>]*>?/gm, '').slice(0, 200) + '...' : '')}
+                    {heroPost.excerpt || (heroPost.content ? stripHtml(heroPost.content).slice(0, 200) + '...' : '')}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <button className="btn-dark-outline" style={{ border: '1px solid #000', color: '#000', borderRadius: 0, padding: '8px 24px', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Makaleyi Oku</button>
@@ -255,7 +267,7 @@ export default function YazilarimClient() {
                       {post.title}
                     </h3>
                     <p className="crimson" style={{ fontSize: '1rem', color: '#555', lineHeight: 1.6, marginBottom: 16, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {post.excerpt || (post.content ? post.content.replace(/<[^>]*>?/gm, '').slice(0, 150) + '...' : '')}
+                      {post.excerpt || (post.content ? stripHtml(post.content).slice(0, 150) + '...' : '')}
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #eaeaea', paddingTop: 12, fontSize: '0.75rem', color: '#999' }}>
                       <span style={{ fontStyle: 'italic' }}>{format(new Date(post.date), 'd MMM yyyy', { locale: tr })}</span>

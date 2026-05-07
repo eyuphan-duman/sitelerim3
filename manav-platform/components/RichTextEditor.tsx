@@ -80,6 +80,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     toolbar: {
       container: [
         [{ 'header': [1, 2, 3, false] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'color': [] }, { 'background': [] }],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
@@ -93,7 +94,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   }), [QuillEditor]); // Re-calculate modules when QuillEditor is loaded
 
   const formats = [
-    'header',
+    'header', 'size',
     'bold', 'italic', 'underline', 'strike',
     'color', 'background',
     'list', 'bullet',
