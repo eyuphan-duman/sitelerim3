@@ -175,6 +175,14 @@ export default function YazilarimClient() {
       .trim();
   };
 
+  const truncateText = (text: string, limit: number) => {
+    if (text.length <= limit) return text;
+    const sub = text.slice(0, limit);
+    const lastSpace = sub.lastIndexOf(' ');
+    if (lastSpace === -1) return sub + '...';
+    return sub.slice(0, lastSpace) + '...';
+  };
+
   const heroPost = filtered[0];
   const otherPosts = filtered.slice(1);
 
@@ -186,7 +194,7 @@ export default function YazilarimClient() {
           <Link href="/forum/profil/furkanmanav" style={{ textDecoration: 'none' }}>
             <div style={{ textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.7rem', fontWeight: 700, color: 'var(--muted)', marginBottom: 20, cursor: 'pointer' }} className="hover:text-black transition-colors">Psikolog Furkan Manav</div>
           </Link>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', fontWeight: 900, color: '#111', lineHeight: 1, letterSpacing: '-0.02em', borderBottom: '1px solid #eaeaea', paddingBottom: 24, marginBottom: 16 }}>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem, 8vw, 4.5rem)', fontWeight: 900, color: '#111', lineHeight: 1, letterSpacing: '-0.02em', borderBottom: '1px solid #eaeaea', paddingBottom: 24, marginBottom: 16, overflowWrap: 'break-word', wordBreak: 'normal' }}>
             YAZILARIM
           </h1>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
@@ -268,8 +276,8 @@ export default function YazilarimClient() {
                   <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, color: '#111', lineHeight: 1.1, marginBottom: 20 }}>
                     {heroPost.title}
                   </h2>
-                  <p className="crimson" style={{ fontSize: '1.15rem', color: '#444', lineHeight: 1.7, marginBottom: 24 }}>
-                    {heroPost.excerpt || (heroPost.content ? stripHtml(heroPost.content).slice(0, 200) + '...' : '')}
+                  <p className="crimson" style={{ fontSize: '1.15rem', color: '#444', lineHeight: 1.7, marginBottom: 24, overflowWrap: 'break-word', wordBreak: 'normal' }}>
+                    {heroPost.excerpt || (heroPost.content ? truncateText(stripHtml(heroPost.content), 200) : '')}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <button className="btn-dark-outline" style={{ border: '1px solid #000', color: '#000', borderRadius: 0, padding: '8px 24px', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Makaleyi Oku</button>
@@ -323,8 +331,8 @@ export default function YazilarimClient() {
                     <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: '#111', lineHeight: 1.25, marginBottom: 12 }}>
                       {post.title}
                     </h3>
-                    <p className="crimson" style={{ fontSize: '1rem', color: '#555', lineHeight: 1.6, marginBottom: 16, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {post.excerpt || (post.content ? stripHtml(post.content).slice(0, 150) + '...' : '')}
+                    <p className="crimson" style={{ fontSize: '1rem', color: '#555', lineHeight: 1.6, marginBottom: 16, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'break-word', wordBreak: 'normal' }}>
+                      {post.excerpt || (post.content ? truncateText(stripHtml(post.content), 150) : '')}
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #eaeaea', paddingTop: 12, fontSize: '0.75rem', color: '#999' }}>
                       <span style={{ fontStyle: 'italic' }}>{format(new Date(post.date), 'd MMM yyyy', { locale: tr })}</span>
@@ -410,6 +418,14 @@ export default function YazilarimClient() {
                 .modal-body-content {
                   padding: 40px 24px;
                 }
+                .modal-body-content h1, 
+                .modal-body-content h2, 
+                .article-content {
+                  overflow-wrap: break-word;
+                  word-wrap: break-word;
+                  word-break: normal;
+                  hyphens: none;
+                }
                 @media (max-width: 600px) {
                   .modal-body-content {
                     padding: 24px 16px;
@@ -422,7 +438,7 @@ export default function YazilarimClient() {
                   <span style={{ fontSize: '0.8rem', color: '#999' }}>{format(new Date(active.date), 'dd MMMM yyyy', { locale: tr })}</span>
                 </div>
 
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem, 5vw, 3rem)', fontWeight: 900, color: '#111', lineHeight: 1.2, marginBottom: 32 }}>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.5rem, 5vw, 3rem)', fontWeight: 900, color: '#111', lineHeight: 1.2, marginBottom: 32, overflowWrap: 'break-word', wordBreak: 'normal' }}>
                   {active.title}
                 </h2>
 

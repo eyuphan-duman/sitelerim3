@@ -78,8 +78,11 @@ export default function HomePage() {
 
         postsSnap.docs.forEach(d => {
           const data = d.data();
-          if ((data.title||'').toLowerCase().includes(q) || (data.excerpt||'').toLowerCase().includes(q) || (data.content||'').toLowerCase().includes(q))
-            results.push({ id: d.id, type: 'post', title: data.title, excerpt: data.excerpt?.slice(0,100) || data.content?.slice(0,100), href: '/yazilarim?post=' + d.id });
+          if ((data.title||'').toLowerCase().includes(q) || (data.excerpt||'').toLowerCase().includes(q) || (data.content||'').toLowerCase().includes(q)) {
+            const raw = data.excerpt || stripHtml(data.content || '');
+            const truncated = raw.length > 100 ? raw.slice(0, 100).slice(0, raw.slice(0, 100).lastIndexOf(' ')) + '...' : raw;
+            results.push({ id: d.id, type: 'post', title: data.title, excerpt: truncated, href: '/yazilarim?post=' + d.id });
+          }
         });
         forumSnap.docs.forEach(d => {
           const data = d.data();
@@ -304,18 +307,14 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {realPosts.length === 0 && <div className="text-gray-400 italic">Henüz yayınlanan bir makale bulunmuyor.</div>}
             {realPosts.map(p => {
-              const stripHtml = (html: string) => {
-                return html
-                  .replace(/<[^>]*>?/gm, ' ') // Replace tags with space
-                  .replace(/&nbsp;/g, ' ')
-                  .replace(/&amp;/g, '&')
-                  .replace(/&quot;/g, '"')
-                  .replace(/&lt;/g, '<')
-                  .replace(/&gt;/g, '>')
-                  .replace(/\s+/g, ' ') // Collapse multiple spaces
-                  .trim();
+              const truncateText = (text: string, limit: number) => {
+                if (text.length <= limit) return text;
+                const sub = text.slice(0, limit);
+                const lastSpace = sub.lastIndexOf(' ');
+                if (lastSpace === -1) return sub + '...';
+                return sub.slice(0, lastSpace) + '...';
               };
-              const previewText = p.excerpt || (p.content ? stripHtml(p.content).slice(0, 150) + '...' : '');
+              const previewText = p.excerpt || (p.content ? truncateText(stripHtml(p.content), 150) : '');
               return (
                 <Link href={`/yazilarim?post=${p.id}`} key={p.id} className="post-card group flex flex-col overflow-hidden bg-white shadow-sm hover:shadow-2xl transition-all duration-300 rounded-2xl border border-gray-100" style={{ minHeight: 400 }}>
                   {/* Header Section */}
