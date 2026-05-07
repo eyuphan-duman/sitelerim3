@@ -18,16 +18,28 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     const loadQuill = async () => {
       const { default: RQ, Quill } = await import('react-quill-new');
       
-      // Extend Image blot to support width attribute
+      // Extend Image blot to support width attribute and formatting
       const Image = Quill.import('formats/image') as any;
       class ImageBlot extends Image {
         static create(value: any) {
           const node = super.create(typeof value === 'string' ? value : value.url);
-          if (value.width) {
-            node.setAttribute('width', value.width);
-            node.style.width = value.width;
+          const width = typeof value === 'object' ? value.width : null;
+          if (width) {
+            node.setAttribute('width', width);
+            node.style.width = width;
           }
           return node;
+        }
+        static formats(node: any) {
+          return node.getAttribute('width');
+        }
+        format(name: string, value: any) {
+          if (name === 'width') {
+            this.domNode.setAttribute('width', value);
+            this.domNode.style.width = value;
+          } else {
+            super.format(name, value);
+          }
         }
         static value(node: any) {
           return {
@@ -36,6 +48,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
           };
         }
       }
+      ImageBlot.blotName = 'image';
+      ImageBlot.tagName = 'img';
       Quill.register(ImageBlot, true);
       
       setQuillEditor(() => RQ);
@@ -43,23 +57,42 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     loadQuill();
   }, []);
 
+  const resizeSelectedImage = (delta: number) => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+
+    const range = quill.getSelection();
+    if (!range) return toast.error('Önce bir görsele tıklayın');
+
+    const [leaf] = quill.getLeaf(range.index);
+    if (leaf && leaf.domNode.tagName === 'IMG') {
+      const img = leaf.domNode as HTMLImageElement;
+      let currentWidthAttr = img.getAttribute('width') || '100%';
+      let currentWidth = parseInt(currentWidthAttr);
+      
+      let newWidth = currentWidth + delta;
+      if (newWidth < 10) newWidth = 10;
+      if (newWidth > 100) newWidth = 100;
+      
+      const widthStr = `${newWidth}%`;
+      
+      // Apply format to the index of the image
+      const index = quill.getIndex(leaf);
+      quill.formatText(index, 1, 'width', widthStr);
+    } else {
+      toast.error('Önce bir görsele tıklayıp imleci yanına getirin');
+    }
+  };
+
   const imageHandler = () => {
     const url = window.prompt("Görselin internet adresini (URL) buraya yapıştırın:");
-    
     if (url && url.trim()) {
-      const width = window.prompt("Görsel genişliğini ayarlayın (Örn: 50%, 300px, 100%):\n(Boş bırakırsanız orijinal boyutta kalır)", "100%");
-      
       const quill = quillRef.current?.getEditor();
       if (quill) {
         const range = quill.getSelection();
         const index = range ? range.index : quill.getLength();
-        // Insert with custom blot that accepts width
-        quill.insertEmbed(index, 'image', { 
-          url: url.trim(), 
-          width: width || '100%' 
-        });
+        quill.insertEmbed(index, 'image', { url: url.trim(), width: '100%' });
         quill.setSelection(index + 1);
-        toast.success('Görsel eklendi');
       }
     }
   };
@@ -73,10 +106,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         [{ 'color': [] }, { 'background': [] }],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
         ['link', 'image'],
+        ['image-grow', 'image-shrink'],
         ['clean']
       ],
       handlers: {
-        image: imageHandler
+        image: imageHandler,
+        'image-grow': () => resizeSelectedImage(5),
+        'image-shrink': () => resizeSelectedImage(-5)
       }
     }
   }), [QuillEditor]);
@@ -86,7 +122,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     'bold', 'italic', 'underline', 'strike',
     'color', 'background',
     'list', 'bullet',
-    'link', 'image'
+    'link', 'image', 'width'
   ];
 
   if (!QuillEditor) {
@@ -108,6 +144,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         .rich-text-editor {
           margin-bottom: 1rem;
         }
+        .ql-image-grow::before { content: '🖼️+'; font-size: 11px; font-weight: bold; }
+        .ql-image-shrink::before { content: '🖼️-'; font-size: 11px; font-weight: bold; }
+        
         .rich-text-editor .ql-editor {
           min-height: 400px;
           font-size: 1.1rem;
@@ -132,6 +171,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
           border-radius: 12px;
           margin: 20px 0;
           box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+          cursor: pointer;
+        }
+        .rich-text-editor .ql-editor img:hover {
+          outline: 2px solid var(--gold);
         }
       `}</style>
     </div>
