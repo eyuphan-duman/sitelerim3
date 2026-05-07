@@ -153,6 +153,10 @@ body {
 .crimson {
   font-family: 'Crimson Text', serif;
   line-height: 1.75;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: normal;
+  text-wrap: pretty;
 }
 
 /* ─── GOLD LINE ─── */
@@ -662,8 +666,15 @@ body {
 /* ─── ARTICLE CONTENT (Rich Text) ─── */
 .article-content {
   font-family: 'Crimson Text', serif;
-  line-height: 1.85;
-  color: #333;
+  font-size: 1.2rem;
+  line-height: 1.8;
+  color: #222;
+  word-break: normal;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: none;
+  text-align: left;
+  text-wrap: pretty;
 }
 .article-content p {
   margin-bottom: 24px;
@@ -760,16 +771,7 @@ body {
   }
 }
 
-.article-content {
-  font-family: 'Crimson Text', serif;
-  font-size: 1.2rem;
-  line-height: 1.7;
-  color: #222;
-  word-break: normal;
-  overflow-wrap: break-word;
-  hyphens: none;
-  text-align: left;
-}
+/* (Consolidated above) */
 
 .article-content img {
   max-width: 100% !important;

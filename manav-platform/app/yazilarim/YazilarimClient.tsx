@@ -201,7 +201,17 @@ export default function YazilarimClient() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 24px 80px' }}>
+      <div className="yazilarim-main-container" style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <style>{`
+          .yazilarim-main-container {
+            padding: 64px 24px 80px;
+          }
+          @media (max-width: 768px) {
+            .yazilarim-main-container {
+              padding: 40px 16px 60px;
+            }
+          }
+        `}</style>
         {ADMIN_EMAILS.includes(user?.email || '') && (
           <div style={{ marginBottom: 40 }}>
             {!showPostForm ? (
@@ -395,7 +405,17 @@ export default function YazilarimClient() {
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: '40px 24px 80px' }}>
+            <div className="modal-body-content" style={{ paddingBottom: 80 }}>
+              <style>{`
+                .modal-body-content {
+                  padding: 40px 24px;
+                }
+                @media (max-width: 600px) {
+                  .modal-body-content {
+                    padding: 24px 16px;
+                  }
+                }
+              `}</style>
               <div style={{ maxWidth: '680px', margin: '0 auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                   <span className="tag-gold" style={{ fontSize: '0.7rem' }}>{active.category}</span>

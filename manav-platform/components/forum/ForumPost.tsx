@@ -82,8 +82,8 @@ export default function ForumPost({ post, currentUserUid, currentUserEmail, admi
             )}
           </div>
           <div onClick={() => onOpen(post)} style={{ cursor: 'pointer' }}>
-            {post.title && <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: 6, lineHeight: 1.3 }}>{post.title}</h3>}
-            <p style={{ fontSize: '0.97rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 14 }}>{post.body}</p>
+            {post.title && <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: 6, lineHeight: 1.3, overflowWrap: 'break-word', wordBreak: 'normal' }}>{post.title}</h3>}
+            <p style={{ fontSize: '0.97rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 14, overflowWrap: 'break-word', wordBreak: 'normal' }}>{post.body}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             {EMOJIS.map(({ key, emoji, color }) => {
