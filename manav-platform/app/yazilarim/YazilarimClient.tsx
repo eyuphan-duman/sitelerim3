@@ -308,8 +308,8 @@ export default function YazilarimClient() {
 
       {/* Post Modal */}
       {active && (
-        <div className="modal-backdrop" onClick={closePost} style={{ background: 'rgba(255,255,255,0.95)', alignItems: 'stretch', padding: 0 }}>
-          <div style={{ background: '#fff', width: '100%', maxWidth: 800, margin: '0 auto', boxShadow: '0 0 40px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #ddd', borderRight: '1px solid #ddd' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-backdrop" onClick={closePost}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             {/* Toolbar */}
             <div style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #eaeaea', display: 'flex', justifyContent: 'space-between', padding: '16px 24px', zIndex: 10 }}>
               <div style={{ display: 'flex', gap: 16 }}>
