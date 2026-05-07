@@ -77,6 +77,10 @@ export default function YazilarimClient() {
       setComments([]);
       return;
     }
+    // Scroll to top of modal when opening a new post
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.scrollTop = 0;
+
     const q = query(collection(db, 'posts', active.id, 'comments'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, snap => {
       setComments(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Comment[]);
@@ -310,92 +314,73 @@ export default function YazilarimClient() {
       {active && (
         <div className="modal-backdrop" onClick={closePost}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            {/* Toolbar */}
-            <div style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #eaeaea', display: 'flex', justifyContent: 'space-between', padding: '16px 24px', zIndex: 10 }}>
-              <div style={{ display: 'flex', gap: 16 }}>
-                <button onClick={closePost} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: '#111', textTransform: 'uppercase' }}>
-                  <X size={16}/> Kapat
-                </button>
+            {/* Modal Header/Toolbar */}
+            <div style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', zIndex: 100 }}>
+              <button onClick={closePost} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f5f5f7', border: 'none', borderRadius: '40px', padding: '8px 16px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, color: '#111' }}>
+                <X size={16}/> KAPAT
+              </button>
+              
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                 {ADMIN_EMAILS.includes(user?.email || '') && (
-                  <button onClick={() => editPost(active!)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: 'var(--gold-dim)', textTransform: 'uppercase' }}>
-                    Düzenle
+                  <button onClick={() => editPost(active!)} style={{ background: 'var(--gold-dim)', color: '#fff', border: 'none', borderRadius: '40px', padding: '8px 16px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
+                    DÜZENLE
                   </button>
                 )}
-              </div>
-              <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.8rem' }}>
-                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Heart size={14}/> {active.likes}</span>
-                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={14}/> {active.commentCount}</span>
+                <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.75rem', fontWeight: 600 }}>
+                   <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Heart size={14}/> {active.likes}</span>
+                   <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={14}/> {active.commentCount}</span>
+                </div>
               </div>
             </div>
 
-            {/* Post Content */}
-            <div style={{ padding: 'clamp(24px, 5vw, 48px) clamp(16px, 6vw, 64px)', overflowY: 'auto', flex: 1 }}>
-              <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--gold-dim)', display: 'block', marginBottom: 16 }}>{active.category}</span>
-                <h1 style={{ fontFamily: 'Playfair Display, serif', color: '#111', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, lineHeight: 1.1, marginBottom: 24, letterSpacing: '-0.02em' }}>
-                  {active.title}
-                </h1>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#666', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                  <Clock size={14}/> {format(new Date(active.date), 'dd MMMM yyyy', { locale: tr })}
+            {/* Modal Body */}
+            <div style={{ padding: '40px 24px 80px' }}>
+              <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <span className="tag-gold" style={{ fontSize: '0.7rem' }}>{active.category}</span>
+                  <span style={{ fontSize: '0.8rem', color: '#999' }}>{format(new Date(active.date), 'dd MMMM yyyy', { locale: tr })}</span>
                 </div>
-              </div>
 
-              {/* The Article */}
-              <div className="crimson" style={{ borderTop: '2px solid #111', paddingTop: 40, borderBottom: '1px solid #eaeaea', paddingBottom: 48, marginBottom: 48 }}>
-                <p style={{ fontSize: '1.3rem', color: '#222', lineHeight: 1.8, marginBottom: 32, fontStyle: 'italic', fontWeight: 600 }}>{active.excerpt}</p>
-                <div 
-                  className="article-content"
-                  dangerouslySetInnerHTML={{ __html: active.content }} 
-                  style={{ color: '#333', fontSize: '1.15rem', lineHeight: 1.85, letterSpacing: '0.01em' }}
-                />
-              </div>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem, 5vw, 3rem)', fontWeight: 900, color: '#111', lineHeight: 1.2, marginBottom: 32 }}>
+                  {active.title}
+                </h2>
 
-              {/* Comments Section */}
-              <div>
-                <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 800, color: '#111', marginBottom: 32, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Yorumlar ({comments.length})
-                </h3>
-
-                {user ? (
-                  <div style={{ display: 'flex', gap: 16, marginBottom: 48 }}>
-                    <div className="avatar" style={{ width: 44, height: 44, background: '#111', color: '#fff', fontSize: '1rem' }}>{user.displayName?.[0]?.toUpperCase() || 'U'}</div>
-                    <div style={{ flex: 1 }}>
-                      <textarea className="input-field" placeholder="Düşüncelerinizi paylaşın..." value={text} onChange={e => setText(e.target.value)} style={{ background: '#f9f9f9', border: '1px solid #ddd', borderRadius: 0, minHeight: 100, marginBottom: 12, padding: 12, width: '100%', resize: 'none' }} />
-                      <button onClick={submit} disabled={submitting || !text.trim() || user.isAnonymous} className="btn-dark-outline" style={{ borderRadius: 0, padding: '10px 24px', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 700 }}>
-                        <Send size={14}/> {user.isAnonymous ? 'ÜYE OLUN' : 'Yorum Yap'}
+                <div className="article-content" dangerouslySetInnerHTML={{ __html: active.content }} />
+                
+                {/* Comments Section */}
+                <div style={{ marginTop: 80, paddingTop: 40, borderTop: '1px solid #f0f0f0' }}>
+                  <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 800, marginBottom: 32 }}>Yorumlar ({comments.length})</h3>
+                  
+                  {/* Comment Form */}
+                  {user ? (
+                    <div style={{ marginBottom: 40, background: '#f9f9fb', padding: 24, borderRadius: 12 }}>
+                      <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Düşüncelerinizi paylaşın..." style={{ width: '100%', minHeight: 100, padding: 16, border: '1px solid #ddd', borderRadius: 8, fontSize: '0.95rem', marginBottom: 12, resize: 'none' }} />
+                      <button onClick={submit} disabled={submitting || !text.trim()} className="btn-dark" style={{ width: '100%', padding: '12px', borderRadius: 8, fontWeight: 700, background: '#111', color: '#fff', border: 'none', cursor: 'pointer' }}>
+                        {submitting ? 'Gönderiliyor...' : 'Yorum Yap'}
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  <div style={{ background: '#f5f5f5', padding: '24px', textAlign: 'center', marginBottom: 48, border: '1px solid #eee' }}>
-                    <p style={{ fontSize: '0.95rem', color: '#555', marginBottom: 12 }}>Okuduğunuz makale hakkında fikirlerinizi belirtmek için giriş yapın.</p>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-                  {comments.map(c => (
-                    <div key={c.id} style={{ display: 'flex', gap: 16, position: 'relative', paddingBottom: 24, borderBottom: '1px dashed #eaeaea' }}>
-                      <Link href={`/forum/profil/${encodeURIComponent(c.authorName)}`}>
-                        <div className="avatar" style={{ width: 40, height: 40, background: '#eee', color: '#555', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', transition: 'transform 0.2s' }}>{c.authorName[0]?.toUpperCase()}</div>
-                      </Link>
-                      <div style={{ flex: 1 }}>
-                        <Link href={`/forum/profil/${encodeURIComponent(c.authorName)}`} style={{ fontWeight: 800, fontSize: '0.95rem', color: '#111', display: 'block', marginBottom: 4, textDecoration: 'none' }} className="hover:underline">
-                          {c.authorName}
-                        </Link>
-                        <span style={{ fontSize: '0.75rem', color: '#999', fontStyle: 'italic', display: 'block', marginBottom: 12 }}>{c.createdAt.toLocaleDateString('tr-TR')}</span>
-                        <p style={{ fontSize: '1.05rem', color: '#444', lineHeight: 1.6 }}>{c.text}</p>
-                        
-                        {(ADMIN_EMAILS.includes(user?.email || '') || user?.uid === c.uid) && (
-                          <button
-                            onClick={() => deleteComment(c.id)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.8rem', marginTop: 8, padding: '4px 8px', borderRadius: 4 }}
-                          >
-                            <Trash2 size={13} /> Yorumu Sil
-                          </button>
-                        )}
-                      </div>
+                  ) : (
+                    <div style={{ padding: 24, background: '#f5f5f7', borderRadius: 12, textAlign: 'center', marginBottom: 40 }}>
+                      <p style={{ fontSize: '0.9rem', color: '#666' }}>Yorum yapmak için giriş yapmalısınız.</p>
                     </div>
-                  ))}
+                  )}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+                    {loadingC ? <p>Yorumlar yükleniyor...</p> : comments.map(c => (
+                      <div key={c.id} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 24 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <div>
+                            <span style={{ fontWeight: 700, fontSize: '0.95rem', display: 'block' }}>{c.authorName}</span>
+                            <span style={{ fontSize: '0.75rem', color: '#999' }}>{format(c.createdAt, 'd MMM yyyy HH:mm', { locale: tr })}</span>
+                          </div>
+                          {(ADMIN_EMAILS.includes(user?.email || '') || user?.uid === c.uid) && (
+                            <button onClick={() => deleteComment(c.id)} style={{ background: 'none', border: 'none', color: '#ff4d4f', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>SİL</button>
+                          )}
+                        </div>
+                        <p style={{ fontSize: '1rem', color: '#444', lineHeight: 1.6 }}>{c.text}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
