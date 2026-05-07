@@ -16,7 +16,28 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   // Load Quill only on the client side
   useEffect(() => {
     const loadQuill = async () => {
-      const { default: RQ } = await import('react-quill-new');
+      const { default: RQ, Quill } = await import('react-quill-new');
+      
+      // Extend Image blot to support width attribute
+      const Image = Quill.import('formats/image');
+      class ImageBlot extends Image {
+        static create(value: any) {
+          const node = super.create(typeof value === 'string' ? value : value.url);
+          if (value.width) {
+            node.setAttribute('width', value.width);
+            node.style.width = value.width;
+          }
+          return node;
+        }
+        static value(node: any) {
+          return {
+            url: node.getAttribute('src'),
+            width: node.getAttribute('width')
+          };
+        }
+      }
+      Quill.register(ImageBlot, true);
+      
       setQuillEditor(() => RQ);
     };
     loadQuill();
@@ -26,13 +47,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     const url = window.prompt("Görselin internet adresini (URL) buraya yapıştırın:");
     
     if (url && url.trim()) {
+      const width = window.prompt("Görsel genişliğini ayarlayın (Örn: 50%, 300px, 100%):\n(Boş bırakırsanız orijinal boyutta kalır)", "100%");
+      
       const quill = quillRef.current?.getEditor();
       if (quill) {
         const range = quill.getSelection();
         const index = range ? range.index : quill.getLength();
-        // Insert as an image tag
-        quill.insertEmbed(index, 'image', url.trim());
-        // Move cursor after the image
+        // Insert with custom blot that accepts width
+        quill.insertEmbed(index, 'image', { 
+          url: url.trim(), 
+          width: width || '100%' 
+        });
         quill.setSelection(index + 1);
         toast.success('Görsel eklendi');
       }
