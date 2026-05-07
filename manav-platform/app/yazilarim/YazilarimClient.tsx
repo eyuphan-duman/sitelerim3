@@ -114,6 +114,18 @@ export default function YazilarimClient() {
     }
   };
 
+  const handleDeletePost = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm('Bu yazıyı kalıcı olarak silmek istediğinize emin misiniz?')) return;
+    try {
+      await deleteDoc(doc(db, 'posts', id));
+      toast.success('Yazı silindi.');
+      if (active?.id === id) setActive(null);
+    } catch (err: any) {
+      toast.error('Silme hatası: ' + err.message);
+    }
+  };
+
   const editPost = (post: Post, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setEditPostId(post.id);
@@ -247,7 +259,10 @@ export default function YazilarimClient() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <button className="btn-dark-outline" style={{ border: '1px solid #000', color: '#000', borderRadius: 0, padding: '8px 24px', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Makaleyi Oku</button>
                     {ADMIN_EMAILS.includes(user?.email || '') && (
-                      <button onClick={(e) => editPost(heroPost, e)} style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--gold-dim)', textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer' }}>Düzenle</button>
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <button onClick={(e) => editPost(heroPost, e)} style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--gold-dim)', textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer' }}>Düzenle</button>
+                        <button onClick={(e) => handleDeletePost(heroPost.id, e)} style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ff4d4f', textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer' }}>Sil</button>
+                      </div>
                     )}
                     <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.8rem' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Heart size={14}/> {heroPost.likes}</span>
@@ -264,7 +279,10 @@ export default function YazilarimClient() {
                     <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#777', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{post.category}</span>
                       {ADMIN_EMAILS.includes(user?.email || '') && (
-                        <button onClick={(e) => editPost(post, e)} style={{ color: 'var(--gold-dim)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>DÜZENLE</button>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <button onClick={(e) => editPost(post, e)} style={{ color: 'var(--gold-dim)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>DÜZENLE</button>
+                          <button onClick={(e) => handleDeletePost(post.id, e)} style={{ color: '#ff4d4f', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>SİL</button>
+                        </div>
                       )}
                     </div>
                     <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: '#111', lineHeight: 1.25, marginBottom: 12 }}>
@@ -315,9 +333,14 @@ export default function YazilarimClient() {
               
               <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                 {ADMIN_EMAILS.includes(user?.email || '') && (
-                  <button onClick={() => editPost(active!)} style={{ background: 'var(--gold-dim)', color: '#fff', border: 'none', borderRadius: '40px', padding: '8px 16px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
-                    DÜZENLE
-                  </button>
+                  <>
+                    <button onClick={() => editPost(active!)} style={{ background: 'var(--gold-dim)', color: '#fff', border: 'none', borderRadius: '40px', padding: '8px 16px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
+                      DÜZENLE
+                    </button>
+                    <button onClick={() => handleDeletePost(active!.id)} style={{ background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: '40px', padding: '8px 16px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
+                      SİL
+                    </button>
+                  </>
                 )}
                 <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.75rem', fontWeight: 600 }}>
                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Heart size={14}/> {active.likes}</span>
