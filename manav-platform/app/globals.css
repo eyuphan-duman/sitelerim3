@@ -654,8 +654,9 @@ body {
     display: flex !important;
   }
 
-  /* Add padding so content isn't hidden behind the bottom bar */
   .forum-grid-3col main {
+    padding-bottom: 80px !important;
+  }
 }
 
 /* ─── ARTICLE CONTENT (Rich Text) ─── */

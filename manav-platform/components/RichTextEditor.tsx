@@ -6,11 +6,18 @@ import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
 
-// Dynamic import for Quill to avoid SSR issues
-const ReactQuill = dynamic(async () => {
-  const { default: RQ } = await import('react-quill-new');
-  return ({ forwardedRef, ...props }: any) => <RQ ref={forwardedRef} {...props} />;
-}, { ssr: false });
+// We wrap the entire editor component in dynamic to avoid SSR issues
+const ReactQuill = dynamic(
+  async () => {
+    const { default: RQ } = await import('react-quill-new');
+    // @ts-ignore
+    return ({ forwardedRef, ...props }) => <RQ ref={forwardedRef} {...props} />;
+  },
+  { 
+    ssr: false,
+    loading: () => <div style={{ height: 300, background: '#f8f9fa', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Editör yükleniyor...</div>
+  }
+);
 
 interface RichTextEditorProps {
   value: string;
@@ -85,7 +92,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         formats={formats}
         placeholder={placeholder}
       />
-      <style jsx global>{`
+      <style>{`
         .rich-text-editor {
           margin-bottom: 1rem;
         }
