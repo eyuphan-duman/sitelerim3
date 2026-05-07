@@ -49,6 +49,7 @@ export default function YazilarimClient() {
   };
 
   const closePost = () => {
+    setActive(null);
     router.replace('/yazilarim', { scroll: false });
   };
 
@@ -114,7 +115,8 @@ export default function YazilarimClient() {
     setEditPostId(post.id);
     setPostForm({ title: post.title, category: post.category, excerpt: post.excerpt, content: post.content });
     setShowPostForm(true);
-    if (active) setActive(null); // Close modal if editing from modal
+    setActive(null);
+    router.replace('/yazilarim', { scroll: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
