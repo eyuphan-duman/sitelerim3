@@ -1,23 +1,9 @@
 'use client';
-import React, { useMemo, useRef } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import 'react-quill-new/dist/quill.snow.css';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
-
-// We wrap the entire editor component in dynamic to avoid SSR issues
-const ReactQuill = dynamic(
-  async () => {
-    const { default: RQ } = await import('react-quill-new');
-    // @ts-ignore
-    return ({ forwardedRef, ...props }) => <RQ ref={forwardedRef} {...props} />;
-  },
-  { 
-    ssr: false,
-    loading: () => <div style={{ height: 300, background: '#f8f9fa', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Editör yükleniyor...</div>
-  }
-);
 
 interface RichTextEditorProps {
   value: string;
@@ -26,7 +12,17 @@ interface RichTextEditorProps {
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeholder }) => {
+  const [QuillEditor, setQuillEditor] = useState<any>(null);
   const quillRef = useRef<any>(null);
+
+  // Load Quill only on the client side
+  useEffect(() => {
+    const loadQuill = async () => {
+      const { default: RQ } = await import('react-quill-new');
+      setQuillEditor(() => RQ);
+    };
+    loadQuill();
+  }, []);
 
   const imageHandler = () => {
     const input = document.createElement('input');
@@ -44,6 +40,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         const snapshot = await uploadBytes(storageRef, file);
         const url = await getDownloadURL(snapshot.ref);
 
+        // Get the actual quill instance from the ref
         const quill = quillRef.current?.getEditor();
         if (quill) {
           const range = quill.getSelection();
@@ -71,7 +68,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         image: imageHandler
       }
     }
-  }), []);
+  }), [QuillEditor]); // Re-calculate modules when QuillEditor is loaded
 
   const formats = [
     'header',
@@ -81,10 +78,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     'link', 'image'
   ];
 
+  if (!QuillEditor) {
+    return <div style={{ height: 300, background: '#f8f9fa', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Editör yükleniyor...</div>;
+  }
+
   return (
     <div className="rich-text-editor">
-      <ReactQuill
-        forwardedRef={quillRef}
+      <QuillEditor
+        ref={quillRef}
         theme="snow"
         value={value}
         onChange={onChange}
