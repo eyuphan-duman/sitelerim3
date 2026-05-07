@@ -34,22 +34,29 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
       const file = input.files ? input.files[0] : null;
       if (!file) return;
 
+      console.log('Image upload started:', file.name);
       const toastId = toast.loading('Görsel yükleniyor...');
       try {
         const storageRef = ref(storage, `editor-images/${Date.now()}-${file.name}`);
         const snapshot = await uploadBytes(storageRef, file);
         const url = await getDownloadURL(snapshot.ref);
+        console.log('Image uploaded to Firebase:', url);
 
         // Get the actual quill instance from the ref
         const quill = quillRef.current?.getEditor();
         if (quill) {
           const range = quill.getSelection();
-          quill.insertEmbed(range ? range.index : 0, 'image', url);
+          const index = range ? range.index : 0;
+          quill.insertEmbed(index, 'image', url);
+          quill.setSelection(index + 1);
           toast.success('Görsel eklendi', { id: toastId });
+        } else {
+          console.error('Quill instance not found in ref');
+          toast.error('Editör bağlantısı kurulamadı. Lütfen sayfayı yenileyin.', { id: toastId });
         }
-      } catch (error) {
-        console.error('Image upload error:', error);
-        toast.error('Görsel yüklenemedi', { id: toastId });
+      } catch (error: any) {
+        console.error('Image upload failed:', error);
+        toast.error('Görsel yüklenemedi: ' + (error.message || 'Hata oluştu'), { id: toastId });
       }
     };
   };

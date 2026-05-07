@@ -44,32 +44,45 @@ export default function YazilarimClient() {
 
   const filtered = filter === 'Tümü' ? posts : posts.filter(p => p.category === filter);
 
-  const openPost = async (post: Post) => {
-    setActive(post); setText(''); setLoadingC(true);
-    // Update URL quietly to support sharing the open post link
+  const openPost = (post: Post) => {
     router.replace(`/yazilarim?post=${post.id}`, { scroll: false });
-    onSnapshot(query(collection(db, 'posts', post.id, 'comments'), orderBy('createdAt', 'desc')), snap => {
+  };
+
+  const closePost = () => {
+    router.replace('/yazilarim', { scroll: false });
+  };
+
+  // Sync active post with URL
+  useEffect(() => {
+    if (posts.length === 0) return;
+    const postId = searchParams.get('post');
+    if (postId) {
+      if (!active || active.id !== postId) {
+        const found = posts.find(p => p.id === postId);
+        if (found) {
+          setActive(found);
+          setText('');
+          setLoadingC(true);
+        }
+      }
+    } else {
+      setActive(null);
+    }
+  }, [posts, searchParams, active?.id]);
+
+  // Fetch comments when active post changes
+  useEffect(() => {
+    if (!active) {
+      setComments([]);
+      return;
+    }
+    const q = query(collection(db, 'posts', active.id, 'comments'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, snap => {
       setComments(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Comment[]);
       setLoadingC(false);
     });
-  };
-
-  useEffect(() => {
-    if (posts.length > 0) {
-      const postId = searchParams.get('post');
-      if (postId && !active) {
-        const found = posts.find(p => p.id === postId);
-        if (found) {
-          openPost(found);
-        }
-      }
-    }
-  }, [posts, searchParams, active]);
-
-  const closePost = () => {
-    setActive(null);
-    router.replace('/yazilarim', { scroll: false });
-  };
+    return () => unsub();
+  }, [active?.id]);
 
   const submit = async () => {
     if (!text.trim() || !active || !user) return;
@@ -94,6 +107,15 @@ export default function YazilarimClient() {
         toast.error('Silme hatası: ' + (err.code || err.message));
       }
     }
+  };
+
+  const editPost = (post: Post, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditPostId(post.id);
+    setPostForm({ title: post.title, category: post.category, excerpt: post.excerpt, content: post.content });
+    setShowPostForm(true);
+    if (active) setActive(null); // Close modal if editing from modal
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSharePost = async (e: React.FormEvent) => {
@@ -202,6 +224,9 @@ export default function YazilarimClient() {
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <button className="btn-dark-outline" style={{ border: '1px solid #000', color: '#000', borderRadius: 0, padding: '8px 24px', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Makaleyi Oku</button>
+                    {ADMIN_EMAILS.includes(user?.email || '') && (
+                      <button onClick={(e) => editPost(heroPost, e)} style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--gold-dim)', textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer' }}>Düzenle</button>
+                    )}
                     <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.8rem' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Heart size={14}/> {heroPost.likes}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MessageCircle size={14}/> {heroPost.commentCount}</span>
@@ -214,8 +239,11 @@ export default function YazilarimClient() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '40px 32px' }}>
                 {otherPosts.map(post => (
                   <article key={post.id} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }} onClick={() => openPost(post)}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#777', marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#777', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{post.category}</span>
+                      {ADMIN_EMAILS.includes(user?.email || '') && (
+                        <button onClick={(e) => editPost(post, e)} style={{ color: 'var(--gold-dim)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>DÜZENLE</button>
+                      )}
                     </div>
                     <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: '#111', lineHeight: 1.25, marginBottom: 12 }}>
                       {post.title}
@@ -266,9 +294,16 @@ export default function YazilarimClient() {
           <div style={{ background: '#fff', width: '100%', maxWidth: 800, margin: '0 auto', boxShadow: '0 0 40px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #ddd', borderRight: '1px solid #ddd' }} onClick={e => e.stopPropagation()}>
             {/* Toolbar */}
             <div style={{ position: 'sticky', top: 0, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderBottom: '1px solid #eaeaea', display: 'flex', justifyContent: 'space-between', padding: '16px 24px', zIndex: 10 }}>
-              <button onClick={closePost} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: '#111', textTransform: 'uppercase' }}>
-                <X size={16}/> Kapat
-              </button>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <button onClick={closePost} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: '#111', textTransform: 'uppercase' }}>
+                  <X size={16}/> Kapat
+                </button>
+                {ADMIN_EMAILS.includes(user?.email || '') && (
+                  <button onClick={() => editPost(active!)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: 'var(--gold-dim)', textTransform: 'uppercase' }}>
+                    Düzenle
+                  </button>
+                )}
+              </div>
               <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.8rem' }}>
                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Heart size={14}/> {active.likes}</span>
                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={14}/> {active.commentCount}</span>
