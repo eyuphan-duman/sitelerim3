@@ -1,8 +1,6 @@
 'use client';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import 'react-quill-new/dist/quill.snow.css';
-import { storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
 
 interface RichTextEditorProps {
@@ -25,71 +23,20 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   }, []);
 
   const imageHandler = () => {
-    const choice = window.confirm("Görsel yükleme seçeneği:\n\nTAMAM: Bilgisayardan seçip yükle (Firebase)\nİPTAL: İnternet üzerinden link (URL) yapıştır");
-
-    if (!choice) {
-      const url = window.prompt("Görselin internet adresini (URL) buraya yapıştırın:");
-      if (url && url.trim()) {
-        const quill = quillRef.current?.getEditor();
-        if (quill) {
-          const range = quill.getSelection();
-          const index = range ? range.index : quill.getLength();
-          quill.insertEmbed(index, 'image', url.trim());
-          quill.setSelection(index + 1);
-        }
+    const url = window.prompt("Görselin internet adresini (URL) buraya yapıştırın:");
+    
+    if (url && url.trim()) {
+      const quill = quillRef.current?.getEditor();
+      if (quill) {
+        const range = quill.getSelection();
+        const index = range ? range.index : quill.getLength();
+        // Insert as an image tag
+        quill.insertEmbed(index, 'image', url.trim());
+        // Move cursor after the image
+        quill.setSelection(index + 1);
+        toast.success('Görsel eklendi');
       }
-      return;
     }
-
-    const input = document.createElement('input');
-    input.setAttribute('type', 'file');
-    input.setAttribute('accept', 'image/*');
-    input.click();
-
-    input.onchange = async () => {
-      const file = input.files ? input.files[0] : null;
-      if (!file) return;
-
-      console.log('Image upload process started for:', file.name);
-      const toastId = toast.loading('Görsel hazırlanıyor...');
-      
-      try {
-        const { uploadBytesResumable, getDownloadURL, ref: storageRefFunc } = await import('firebase/storage');
-        const fileRef = storageRefFunc(storage, `editor-images/${Date.now()}-${file.name}`);
-        
-        const uploadTask = uploadBytesResumable(fileRef, file);
-
-        uploadTask.on('state_changed', 
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            toast.loading(`Görsel yükleniyor: %${Math.round(progress)}`, { id: toastId });
-          }, 
-          (error) => {
-            console.error('Upload task error:', error);
-            toast.error(`Yükleme hatası: ${error.message}`, { id: toastId });
-          }, 
-          async () => {
-            const url = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log('Upload complete. URL:', url);
-
-            const quill = quillRef.current?.getEditor();
-            if (quill) {
-              const range = quill.getSelection();
-              const index = range ? range.index : quill.getLength();
-              quill.insertEmbed(index, 'image', url);
-              quill.setSelection(index + 1);
-              toast.success('Görsel başarıyla eklendi', { id: toastId });
-            } else {
-              console.error('Could not find Quill editor instance');
-              toast.error('Editör bağlantı hatası. Görsel yüklendi ama eklenemedi.', { id: toastId });
-            }
-          }
-        );
-      } catch (error: any) {
-        console.error('Setup error:', error);
-        toast.error(`Hata: ${error.message || 'Başlatılamadı'}`, { id: toastId });
-      }
-    };
   };
 
   const modules = useMemo(() => ({
@@ -107,7 +54,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         image: imageHandler
       }
     }
-  }), [QuillEditor]); // Re-calculate modules when QuillEditor is loaded
+  }), [QuillEditor]);
 
   const formats = [
     'header', 'size',
@@ -137,7 +84,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
           margin-bottom: 1rem;
         }
         .rich-text-editor .ql-editor {
-          min-height: 300px;
+          min-height: 400px;
           font-size: 1.1rem;
           line-height: 1.8;
           color: #333;
@@ -157,8 +104,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         .rich-text-editor .ql-editor img {
           max-width: 100%;
           height: auto;
-          border-radius: 8px;
-          margin: 10px 0;
+          border-radius: 12px;
+          margin: 20px 0;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
       `}</style>
     </div>
