@@ -430,7 +430,7 @@ export default function YazilarimClient() {
                 }
                 @media (max-width: 600px) {
                   .modal-body-content {
-                    padding: 24px 16px;
+                    padding: 24px 12px;
                   }
                 }
               `}</style>
@@ -440,7 +440,7 @@ export default function YazilarimClient() {
                   <span style={{ fontSize: '0.8rem', color: '#999' }}>{format(new Date(active.date), 'dd MMMM yyyy', { locale: tr })}</span>
                 </div>
 
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.5rem, 5vw, 3rem)', fontWeight: 900, color: '#111', lineHeight: 1.2, marginBottom: 32, overflowWrap: 'break-word', wordBreak: 'normal' }}>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.3rem, 5vw, 3rem)', fontWeight: 900, color: '#111', lineHeight: 1.2, marginBottom: 32, overflowWrap: 'break-word', wordBreak: 'normal', hyphens: 'auto', WebkitHyphens: 'auto' }}>
                   {active.title}
                 </h2>
 

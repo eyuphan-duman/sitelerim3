@@ -224,7 +224,7 @@ export default function HomePage() {
             </h1>
 
             {/* Sub */}
-            <p className="crimson fade-up fade-up-3" style={{ color: 'rgba(255,255,255,0.72)', fontSize: '1.22rem', maxWidth: 540, marginBottom: 44, lineHeight: 1.7, overflowWrap: 'break-word', wordBreak: 'normal', hyphens: 'auto', WebkitHyphens: 'auto' }}>
+            <p className="crimson fade-up fade-up-3" style={{ color: 'rgba(255,255,255,0.72)', fontSize: 'clamp(1rem, 4vw, 1.22rem)', maxWidth: 540, marginBottom: 44, lineHeight: 1.7, overflowWrap: 'break-word', wordBreak: 'normal', hyphens: 'auto', WebkitHyphens: 'auto' }}>
               Varoluşçu-psikanalitik yaklaşımla ilgili derinlemesine incelemeler, forum tartışmaları ve yazılar.
               Bilinçdışının katmanlarını keşfederek özgün bir anlam inşa edin.
             </p>
