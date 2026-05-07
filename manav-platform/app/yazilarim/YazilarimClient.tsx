@@ -194,7 +194,7 @@ export default function YazilarimClient() {
           <Link href="/forum/profil/furkanmanav" style={{ textDecoration: 'none' }}>
             <div style={{ textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.7rem', fontWeight: 700, color: 'var(--muted)', marginBottom: 20, cursor: 'pointer' }} className="hover:text-black transition-colors">Psikolog Furkan Manav</div>
           </Link>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem, 8vw, 4.5rem)', fontWeight: 900, color: '#111', lineHeight: 1, letterSpacing: '-0.02em', borderBottom: '1px solid #eaeaea', paddingBottom: 24, marginBottom: 16, overflowWrap: 'break-word', wordBreak: 'normal' }}>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem, 8vw, 4.5rem)', fontWeight: 900, color: '#111', lineHeight: 1, letterSpacing: '-0.02em', borderBottom: '1px solid #eaeaea', paddingBottom: 24, marginBottom: 16, overflowWrap: 'normal', wordBreak: 'normal' }}>
             YAZILARIM
           </h1>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
@@ -276,7 +276,7 @@ export default function YazilarimClient() {
                   <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, color: '#111', lineHeight: 1.1, marginBottom: 20 }}>
                     {heroPost.title}
                   </h2>
-                  <p className="crimson" style={{ fontSize: '1.15rem', color: '#444', lineHeight: 1.7, marginBottom: 24, overflowWrap: 'break-word', wordBreak: 'normal' }}>
+                  <p className="crimson" style={{ fontSize: '1.15rem', color: '#444', lineHeight: 1.7, marginBottom: 24, overflowWrap: 'normal', wordBreak: 'normal' }}>
                     {heroPost.excerpt || (heroPost.content ? truncateText(stripHtml(heroPost.content), 200) : '')}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -331,7 +331,7 @@ export default function YazilarimClient() {
                     <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: '#111', lineHeight: 1.25, marginBottom: 12 }}>
                       {post.title}
                     </h3>
-                    <p className="crimson" style={{ fontSize: '1rem', color: '#555', lineHeight: 1.6, marginBottom: 16, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'break-word', wordBreak: 'normal' }}>
+                    <p className="crimson" style={{ fontSize: '1rem', color: '#555', lineHeight: 1.6, marginBottom: 16, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'normal', wordBreak: 'normal' }}>
                       {post.excerpt || (post.content ? truncateText(stripHtml(post.content), 150) : '')}
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #eaeaea', paddingTop: 12, fontSize: '0.75rem', color: '#999' }}>
@@ -421,8 +421,8 @@ export default function YazilarimClient() {
                 .modal-body-content h1, 
                 .modal-body-content h2, 
                 .article-content {
-                  overflow-wrap: break-word;
-                  word-wrap: break-word;
+                  overflow-wrap: normal;
+                  word-wrap: normal;
                   word-break: normal;
                   hyphens: none;
                 }
@@ -438,7 +438,7 @@ export default function YazilarimClient() {
                   <span style={{ fontSize: '0.8rem', color: '#999' }}>{format(new Date(active.date), 'dd MMMM yyyy', { locale: tr })}</span>
                 </div>
 
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.5rem, 5vw, 3rem)', fontWeight: 900, color: '#111', lineHeight: 1.2, marginBottom: 32, overflowWrap: 'break-word', wordBreak: 'normal' }}>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.5rem, 5vw, 3rem)', fontWeight: 900, color: '#111', lineHeight: 1.2, marginBottom: 32, overflowWrap: 'normal', wordBreak: 'normal' }}>
                   {active.title}
                 </h2>
 

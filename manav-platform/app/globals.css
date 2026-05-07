@@ -670,11 +670,11 @@ body {
   line-height: 1.8;
   color: #222;
   word-break: normal;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
+  overflow-wrap: normal;
+  word-wrap: normal;
   hyphens: none;
   text-align: left;
-  text-wrap: pretty;
+  text-wrap: wrap;
 }
 .article-content p {
   margin-bottom: 24px;
