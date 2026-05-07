@@ -762,11 +762,13 @@ body {
 
 .article-content {
   font-family: 'Crimson Text', serif;
-  font-size: 1.25rem;
-  line-height: 1.8;
+  font-size: 1.2rem;
+  line-height: 1.7;
   color: #222;
-  word-wrap: break-word;
+  word-break: normal;
   overflow-wrap: break-word;
+  hyphens: none;
+  text-align: left;
 }
 
 .article-content img {
