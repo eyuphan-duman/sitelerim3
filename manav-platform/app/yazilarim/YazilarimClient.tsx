@@ -195,41 +195,46 @@ export default function YazilarimClient() {
         .yz-cats::-webkit-scrollbar { display: none; }
         .yz-cat-btn { background: none; border: none; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; padding: 8px 12px; white-space: nowrap; color: #777; border-bottom: 3px solid transparent; transition: all 0.2s; flex-shrink: 0; }
         .yz-cat-btn.active { color: #111; border-bottom-color: #111; font-weight: 800; }
-        .yz-main { max-width: 1100px; margin: 0 auto; padding: 48px 20px 80px; }
-        .yz-grid { display: grid; grid-template-columns: 1fr 300px; gap: 48px; }
-        .yz-hero { border-bottom: 1px solid #ddd; padding-bottom: 40px; margin-bottom: 48px; cursor: pointer; }
-        .yz-hero-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: #b8956a; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
-        .yz-hero-title { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; color: #111; line-height: 1.15; margin-bottom: 16px; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
-        .yz-hero-excerpt { font-family: 'Crimson Text', serif; font-size: 1.15rem; color: #444; line-height: 1.7; margin-bottom: 20px; overflow-wrap: break-word; hyphens: auto; }
+        .yz-main { max-width: 1300px; margin: 0 auto; padding: 56px 20px 100px; }
+        .yz-grid { display: grid; grid-template-columns: 1fr 340px; gap: 60px; }
+        .yz-hero { background: #fff; border: 1px solid #eaeaea; border-radius: 16px; padding: 48px; margin-bottom: 56px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .yz-hero:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); border-color: #d4c4b7; }
+        .yz-hero-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: #b8956a; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .yz-hero-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 800; color: #111; line-height: 1.15; margin-bottom: 20px; overflow-wrap: break-word; word-break: normal; }
+        .yz-hero-excerpt { font-family: 'Crimson Text', serif; font-size: 1.25rem; color: #444; line-height: 1.7; margin-bottom: 28px; overflow-wrap: break-word; word-break: normal; }
         .yz-hero-meta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-        .yz-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; }
-        .yz-card { cursor: pointer; border-bottom: 1px solid #e5e5e5; padding-bottom: 24px; display: flex; flex-direction: column; }
-        .yz-card-cat { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #b8956a; margin-bottom: 10px; }
-        .yz-card-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; color: #111; line-height: 1.3; margin-bottom: 10px; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
-        .yz-card-excerpt { font-family: 'Crimson Text', serif; font-size: 0.97rem; color: #555; line-height: 1.55; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-        .yz-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; margin-top: 12px; font-size: 0.72rem; color: #999; border-top: 1px solid #f0f0f0; }
-        .yz-sidebar { border-left: 1px solid #ddd; padding-left: 32px; }
-        .yz-sidebar-title { font-family: 'Playfair Display', serif; font-size: 0.9rem; font-weight: 900; color: #111; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 20px; }
-        .yz-sidebar-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
-        .yz-sidebar-num { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 900; color: #e0e0e0; line-height: 1; flex-shrink: 0; width: 32px; }
-        .yz-sidebar-item-title { font-size: 0.82rem; font-weight: 700; color: #111; line-height: 1.4; overflow-wrap: break-word; }
-        .yz-sidebar-item-cat { font-size: 0.65rem; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
-        .yz-read-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #111; background: none; border: 1.5px solid #111; padding: 8px 18px; cursor: pointer; transition: all 0.2s; }
+        .yz-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; }
+        .yz-card { cursor: pointer; background: #fff; border: 1px solid #eaeaea; border-radius: 12px; padding: 32px; display: flex; flex-direction: column; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .yz-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-color: #d4c4b7; }
+        .yz-card-cat { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #b8956a; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .yz-card-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 800; color: #111; line-height: 1.35; margin-bottom: 12px; overflow-wrap: break-word; word-break: normal; }
+        .yz-card-excerpt { font-family: 'Crimson Text', serif; font-size: 1.05rem; color: #555; line-height: 1.6; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 20px; word-break: normal; }
+        .yz-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; font-size: 0.75rem; color: #999; border-top: 1px solid #f0f0f0; }
+        .yz-sidebar { position: sticky; top: 120px; height: max-content; }
+        .yz-sidebar-inner { background: #fff; border: 1px solid #eaeaea; border-radius: 16px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+        .yz-sidebar-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 900; color: #111; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 24px; }
+        .yz-sidebar-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s; border-radius: 8px; margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+        .yz-sidebar-item:hover { background: #fafafa; }
+        .yz-sidebar-num { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: #e5e5e5; line-height: 1; flex-shrink: 0; width: 36px; }
+        .yz-sidebar-item-title { font-size: 0.85rem; font-weight: 700; color: #111; line-height: 1.4; overflow-wrap: break-word; word-break: normal; }
+        .yz-sidebar-item-cat { font-size: 0.65rem; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 6px; }
+        .yz-read-btn { display: inline-flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #111; background: none; border: 1.5px solid #111; padding: 10px 24px; cursor: pointer; transition: all 0.2s; border-radius: 50px; }
         .yz-read-btn:hover { background: #111; color: #fff; }
+        @media (max-width: 1024px) {
+          .yz-grid { grid-template-columns: 1fr; gap: 40px; }
+          .yz-sidebar { position: static; }
+        }
         @media (max-width: 768px) {
-          .yz-header { padding: 48px 0 0; }
-          .yz-main { padding: 28px 16px 60px; }
-          .yz-grid { grid-template-columns: 1fr; gap: 0; }
-          .yz-hero-title { font-size: clamp(1.5rem, 6vw, 2.2rem); }
-          .yz-hero-excerpt { font-size: 1.05rem; }
-          .yz-cards { grid-template-columns: 1fr; gap: 0; }
-          .yz-card { padding: 20px 0; }
-          .yz-card:first-child { border-top: 1px solid #e5e5e5; }
-          .yz-sidebar { border-left: none; padding-left: 0; border-top: 3px solid #111; padding-top: 32px; margin-top: 40px; }
+          .yz-header { padding: 40px 0 0; }
+          .yz-main { padding: 32px 16px 60px; }
+          .yz-hero { padding: 24px; border-radius: 12px; margin-bottom: 32px; }
+          .yz-hero-title { font-size: clamp(1.6rem, 6vw, 2.2rem); }
+          .yz-hero-excerpt { font-size: 1.1rem; }
+          .yz-cards { grid-template-columns: 1fr; gap: 24px; }
+          .yz-card { padding: 24px; border-radius: 12px; }
+          .yz-sidebar-inner { padding: 24px; }
         }
         @media (max-width: 480px) {
-          .yz-hero-title { font-size: 1.5rem; }
-          .yz-card-title { font-size: 1.05rem; }
           .yz-cats { gap: 0; }
           .yz-cat-btn { padding: 8px 10px; font-size: 0.65rem; }
         }
@@ -357,23 +362,25 @@ export default function YazilarimClient() {
 
             {/* Sağ Kenar Çubuğu */}
             <aside className="yz-sidebar">
-              <div className="yz-sidebar-title">Editörün Seçimi</div>
-              {posts.slice(0, 5).map((p, i) => (
-                <div key={p.id} className="yz-sidebar-item" onClick={() => openPost(p)}>
-                  <div className="yz-sidebar-num">{String(i + 1).padStart(2, '0')}</div>
-                  <div>
-                    <div className="yz-sidebar-item-title">{p.title}</div>
-                    <div className="yz-sidebar-item-cat">{p.category} · {format(new Date(p.date), 'd MMM', { locale: tr })}</div>
+              <div className="yz-sidebar-inner">
+                <div className="yz-sidebar-title">Editörün Seçimi</div>
+                {posts.slice(0, 5).map((p, i) => (
+                  <div key={p.id} className="yz-sidebar-item" onClick={() => openPost(p)}>
+                    <div className="yz-sidebar-num">{String(i + 1).padStart(2, '0')}</div>
+                    <div>
+                      <div className="yz-sidebar-item-title">{p.title}</div>
+                      <div className="yz-sidebar-item-cat">{p.category} · {format(new Date(p.date), 'd MMM', { locale: tr })}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              <div style={{ marginTop: 40 }}>
-                <div className="yz-sidebar-title">Yazar Hakkında</div>
-                <div style={{ fontSize: '0.88rem', color: '#555', lineHeight: 1.7, marginBottom: 16 }}>
-                  Psikolog Furkan Manav — Varoluşçu-Psikanalitik yönelimli bireysel psikolojik danışmanlık.
+                <div style={{ marginTop: 40 }}>
+                  <div className="yz-sidebar-title">Yazar Hakkında</div>
+                  <div style={{ fontSize: '0.88rem', color: '#555', lineHeight: 1.7, marginBottom: 16 }}>
+                    Psikolog Furkan Manav — Varoluşçu-Psikanalitik yönelimli bireysel psikolojik danışmanlık.
+                  </div>
+                  <Link href="/ben-kimim" style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#111', textDecoration: 'none', borderBottom: '1.5px solid #111', paddingBottom: 2 }}>Daha Fazla Bilgi →</Link>
                 </div>
-                <Link href="/ben-kimim" style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#111', textDecoration: 'none', borderBottom: '1.5px solid #111', paddingBottom: 2 }}>Daha Fazla Bilgi →</Link>
               </div>
             </aside>
           </div>
