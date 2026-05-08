@@ -152,62 +152,70 @@ export default function HomePage() {
         <div className="hero-grain" />
 
         {/* Hero Float Badges (Desktop Only) */}
-        <div className="absolute top-[12%] right-[8%] hidden xl:flex flex-col gap-5 z-10">
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 transition-transform duration-300 w-64">
-            <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 shadow-inner border border-white/30">
-              <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=200&auto=format&fit=crop" alt="Varoluşçu" className="w-full h-full object-cover" />
+        <div className="absolute top-[10%] right-[6%] hidden xl:flex flex-col gap-4 z-10">
+          {/* Badge 1 — Varoluşçu Psikoterapi */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+              <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=200&auto=format&fit=crop" alt="Varoluşçu Psikoterapi" className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="text-[0.65rem] text-white/70 uppercase tracking-widest font-bold mb-1">Anlam Arayışı</div>
-              <div className="font-serif text-lg font-bold leading-tight">Varoluşçu<br/>Psikoterapi</div>
+              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Anlam Arayışı</div>
+              <div className="font-serif text-base font-bold leading-tight">Varoluşçu<br/>Psikoterapi</div>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-12 transform hover:scale-105 transition-transform duration-300 w-64">
-            <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 shadow-inner border border-white/30">
-              <img src="https://images.unsplash.com/photo-1544027993-37dbfe43562a?q=80&w=200&auto=format&fit=crop" alt="Psikanalitik" className="w-full h-full object-cover" />
+          {/* Badge 2 — Psikanalitik */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-10 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+              <img src="https://images.unsplash.com/photo-1580130601254-05fa235abeab?q=80&w=200&auto=format&fit=crop" alt="Psikanalitik" className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="text-[0.65rem] text-white/70 uppercase tracking-widest font-bold mb-1">Bilinçdışı</div>
-              <div className="font-serif text-lg font-bold leading-tight">Psikanalitik<br/>Çalışmalar</div>
+              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bilinçdışı</div>
+              <div className="font-serif text-base font-bold leading-tight">Psikanalitik<br/>Çalışmalar</div>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 transition-transform duration-300 w-64">
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-inner border border-white/30">
-              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" alt="Rüya Analizi" className="w-full h-full object-cover" />
+          {/* Badge 3 — Rüya Analizi */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+              <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=200&auto=format&fit=crop" alt="Rüya Analizi" className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="text-[0.65rem] text-white/70 uppercase tracking-widest font-bold mb-1">Rüya Analizi</div>
+              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Rüya Analizi</div>
               <div className="font-serif text-base font-bold leading-tight">Bilinçdışı<br/>Semboller</div>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-8 transform hover:scale-105 transition-transform duration-300 w-64">
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-inner border border-white/30">
-              <img src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=200&auto=format&fit=crop" alt="Bağlanma" className="w-full h-full object-cover" />
+          {/* Badge 4 — Bağlanma */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-6 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+              <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=200&auto=format&fit=crop" alt="Bağlanma Kuramı" className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="text-[0.65rem] text-white/70 uppercase tracking-widest font-bold mb-1">Bağlanma Kuramı</div>
+              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bağlanma Kuramı</div>
               <div className="font-serif text-base font-bold leading-tight">İlişki<br/>Dinamikleri</div>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 transition-transform duration-300 w-64">
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-inner border border-white/30">
-              <img src="https://images.unsplash.com/photo-1493836512294-502baa1986e2?q=80&w=200&auto=format&fit=crop" alt="Travma" className="w-full h-full object-cover" />
+          {/* Badge 5 — Travma */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+              <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=200&auto=format&fit=crop" alt="Travma" className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="text-[0.65rem] text-white/70 uppercase tracking-widest font-bold mb-1">Travma Psikolojisi</div>
+              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Travma Psikolojisi</div>
               <div className="font-serif text-base font-bold leading-tight">İyileşme<br/>Süreci</div>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-10 transform hover:scale-105 transition-transform duration-300 w-64">
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow-inner border border-white/30">
-              <img src="https://images.unsplash.com/photo-1509909756405-be0199881695?q=80&w=200&auto=format&fit=crop" alt="Kendilik" className="w-full h-full object-cover" />
+          {/* Badge 6 — Kendilik */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-8 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+              <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=200&auto=format&fit=crop" alt="Kendilik" className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="text-[0.65rem] text-white/70 uppercase tracking-widest font-bold mb-1">Kendilik Psikolojisi</div>
+              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Kendilik Psikolojisi</div>
               <div className="font-serif text-base font-bold leading-tight">Narsisizm<br/>Araştırmaları</div>
             </div>
           </div>
         </div>
+
+
 
         <div className="container-main" style={{ position: 'relative', zIndex: 2, width: '100%' }}>
           <div style={{ maxWidth: 680 }}>
