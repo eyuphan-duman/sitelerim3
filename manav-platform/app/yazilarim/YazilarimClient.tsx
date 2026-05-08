@@ -391,24 +391,32 @@ export default function YazilarimClient() {
       {active && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#fff', overflowY: 'auto' }}>
           <style>{`
-            .art-topbar { position: sticky; top: 0; background: rgba(255,255,255,0.97); backdrop-filter: blur(10px); border-bottom: 1px solid #efefef; display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; padding-top: calc(14px + env(safe-area-inset-top,0px)); z-index: 100; }
-            .art-topbar-brand { font-family: 'Playfair Display',serif; font-size: 1rem; font-weight: 900; color: #111; letter-spacing: -0.02em; }
-            .art-close { display: flex; align-items: center; gap: 7px; background: #f4f4f4; border: none; border-radius: 50px; padding: 9px 18px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #333; }
-            .art-reader { max-width: 700px; margin: 0 auto; padding: 56px 24px 100px; }
-            .art-cat-badge { display: inline-block; font-size: 0.62rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.18em; color: #b8956a; border: 1.5px solid #b8956a; padding: 3px 10px; margin-bottom: 20px; }
-            .art-title { font-family: 'Playfair Display',serif; font-size: clamp(1.65rem,5vw,3rem); font-weight: 900; color: #111; line-height: 1.15; margin-bottom: 24px; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
-            .art-meta { display: flex; align-items: center; gap: 14px; margin-bottom: 36px; padding-bottom: 32px; border-bottom: 2px solid #111; flex-wrap: wrap; }
-            .art-body { font-family: 'Crimson Text',serif; font-size: 1.2rem; line-height: 1.9; color: #1a1a1a; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; -moz-hyphens: auto; }
-            .art-body p { margin-bottom: 1.5em; }
-            .art-body h1,.art-body h2,.art-body h3 { font-family: 'Playfair Display',serif; color: #111; margin: 48px 0 20px; overflow-wrap: break-word; hyphens: auto; }
-            .art-body img { max-width: 100%; height: auto; border-radius: 8px; margin: 40px 0; display: block; }
-            .art-body blockquote { border-left: 3px solid #b8956a; padding-left: 20px; margin: 32px 0; font-style: italic; color: #555; }
-            .art-comments { margin-top: 72px; padding-top: 40px; border-top: 2px solid #111; }
-            @media (max-width: 600px) {
+            .art-topbar { position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; padding-top: calc(12px + env(safe-area-inset-top,0px)); z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+            .art-topbar-brand { font-family: 'Playfair Display',serif; font-size: 1.1rem; font-weight: 900; color: #111; letter-spacing: -0.01em; }
+            .art-close { display: flex; align-items: center; gap: 6px; background: transparent; border: 1px solid #ddd; border-radius: 50px; padding: 8px 16px; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: #333; transition: all 0.2s; }
+            .art-close:hover { background: #f4f4f4; border-color: #ccc; }
+            .art-reader { max-width: 860px; margin: 0 auto; padding: 64px 24px 120px; }
+            .art-cat-badge { display: inline-block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #b8956a; border: 1px solid #b8956a; padding: 4px 12px; margin-bottom: 24px; border-radius: 4px; }
+            .art-title { font-family: 'Playfair Display',serif; font-size: clamp(2rem, 6vw, 3.8rem); font-weight: 900; color: #111; line-height: 1.12; margin-bottom: 32px; word-break: normal; overflow-wrap: break-word; letter-spacing: -0.01em; }
+            .art-meta { display: flex; align-items: center; gap: 16px; margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid #eaeaea; flex-wrap: wrap; }
+            .art-body { font-family: 'Crimson Text',serif; font-size: 1.35rem; line-height: 1.95; color: #222; word-break: normal; overflow-wrap: break-word; }
+            .art-body p { margin-bottom: 1.6em; }
+            .art-body h1,.art-body h2,.art-body h3 { font-family: 'Playfair Display',serif; color: #111; margin: 56px 0 24px; line-height: 1.3; word-break: normal; overflow-wrap: break-word; }
+            .art-body h1 { font-size: 2.2rem; }
+            .art-body h2 { font-size: 1.8rem; }
+            .art-body h3 { font-size: 1.5rem; }
+            .art-body img { width: 100%; height: auto; border-radius: 12px; margin: 48px 0; display: block; box-shadow: 0 8px 30px rgba(0,0,0,0.05); }
+            .art-body blockquote { border-left: 4px solid #b8956a; padding-left: 24px; margin: 40px 0; font-style: italic; color: #444; font-size: 1.5rem; line-height: 1.7; background: rgba(184, 149, 106, 0.05); padding-top: 16px; padding-bottom: 16px; border-radius: 0 8px 8px 0; }
+            .art-body ul, .art-body ol { margin-bottom: 1.6em; padding-left: 24px; }
+            .art-body li { margin-bottom: 0.8em; }
+            .art-comments { margin-top: 80px; padding-top: 48px; border-top: 1px solid #eaeaea; }
+            @media (max-width: 768px) {
               .art-topbar { padding: 12px 16px; }
               .art-reader { padding: 32px 16px 80px; }
-              .art-title { font-size: 1.45rem; }
-              .art-body { font-size: 1.05rem; line-height: 1.75; }
+              .art-title { font-size: 2rem; margin-bottom: 24px; }
+              .art-body { font-size: 1.15rem; line-height: 1.8; }
+              .art-body blockquote { font-size: 1.25rem; padding: 16px; margin: 32px 0; }
+              .art-body img { margin: 32px 0; border-radius: 8px; }
             }
           `}</style>
           <div className="art-topbar">
