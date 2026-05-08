@@ -443,9 +443,9 @@ export default function YazilarimClient() {
             /* ── ARTICLE CONTAINER ── */
             .ed-container {
               width: 100%;
-              max-width: 780px;
+              max-width: 900px;
               margin: 0 auto;
-              padding: 56px 32px 100px;
+              padding: 64px 48px 100px;
             }
 
             /* ── ARTICLE HEADER ── */
@@ -458,15 +458,17 @@ export default function YazilarimClient() {
             }
             .ed-title {
               font-family: 'Playfair Display', serif;
-              font-size: 2.75rem;
+              font-size: 3rem;
               font-weight: 900;
               color: #1a1a1a;
-              line-height: 1.18;
+              line-height: 1.15;
               letter-spacing: -0.015em;
               margin: 0 0 28px 0;
               word-break: normal;
               overflow-wrap: break-word;
               white-space: normal;
+              -webkit-hyphens: auto;
+              hyphens: auto;
             }
             .ed-meta {
               display: flex; align-items: center; gap: 12px;
@@ -498,12 +500,14 @@ export default function YazilarimClient() {
             /* ── ARTICLE BODY — TYPOGRAPHY SYSTEM ── */
             .ed-body {
               font-family: 'Crimson Text', 'Georgia', serif;
-              font-size: 1.25rem;
-              line-height: 1.85;
+              font-size: 1.3rem;
+              line-height: 1.9;
               color: #292929;
               word-break: normal;
               overflow-wrap: break-word;
               white-space: normal;
+              -webkit-hyphens: auto;
+              hyphens: auto;
             }
             .ed-body p {
               margin: 0 0 1.5em 0;
@@ -519,6 +523,8 @@ export default function YazilarimClient() {
               overflow-wrap: break-word;
               white-space: normal;
               line-height: 1.3;
+              -webkit-hyphens: auto;
+              hyphens: auto;
             }
             .ed-body h1 { font-size: 2rem; margin: 2.5em 0 0.8em; font-weight: 800; }
             .ed-body h2 { font-size: 1.65rem; margin: 2.2em 0 0.7em; font-weight: 800; }
@@ -676,8 +682,8 @@ export default function YazilarimClient() {
               .ed-nav { height: 48px; }
               .ed-nav-brand { font-size: 0.82rem; }
               .ed-nav-btn { padding: 6px 10px; font-size: 0.7rem; }
-              .ed-container { padding: 28px 16px 64px; }
-              .ed-title { font-size: 1.75rem; line-height: 1.22; margin-bottom: 18px; }
+              .ed-container { padding: 32px 24px 64px; }
+              .ed-title { font-size: 1.85rem; line-height: 1.22; margin-bottom: 20px; }
               .ed-meta { gap: 8px; padding-bottom: 20px; margin-bottom: 28px; }
               .ed-body { font-size: 1.08rem; line-height: 1.75; }
               .ed-body h1 { font-size: 1.5rem; }
@@ -706,7 +712,7 @@ export default function YazilarimClient() {
           </nav>
 
           {/* ── Article Container ── */}
-          <article className="ed-container">
+          <article className="ed-container" lang="tr">
             {/* Category */}
             <span className="ed-cat">{active.category}</span>
 
