@@ -187,41 +187,76 @@ export default function YazilarimClient() {
   const otherPosts = filtered.slice(1);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFAFA' }}>
-      {/* Newspaper Header */}
-      <div style={{ background: 'white', padding: '60px 0 20px', borderBottom: '2px solid #000' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
+    <div style={{ minHeight: '100vh', background: '#f7f7f5' }}>
+      <style>{`
+        .yz-header { background: #fff; padding: 56px 0 0; border-bottom: 3px solid #111; }
+        .yz-header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; text-align: center; }
+        .yz-cats { display: flex; gap: 4px; justify-content: center; flex-wrap: nowrap; overflow-x: auto; padding: 12px 16px 0; scrollbar-width: none; -ms-overflow-style: none; }
+        .yz-cats::-webkit-scrollbar { display: none; }
+        .yz-cat-btn { background: none; border: none; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; padding: 8px 12px; white-space: nowrap; color: #777; border-bottom: 3px solid transparent; transition: all 0.2s; flex-shrink: 0; }
+        .yz-cat-btn.active { color: #111; border-bottom-color: #111; font-weight: 800; }
+        .yz-main { max-width: 1100px; margin: 0 auto; padding: 48px 20px 80px; }
+        .yz-grid { display: grid; grid-template-columns: 1fr 300px; gap: 48px; }
+        .yz-hero { border-bottom: 1px solid #ddd; padding-bottom: 40px; margin-bottom: 48px; cursor: pointer; }
+        .yz-hero-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: #b8956a; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .yz-hero-title { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; color: #111; line-height: 1.15; margin-bottom: 16px; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
+        .yz-hero-excerpt { font-family: 'Crimson Text', serif; font-size: 1.15rem; color: #444; line-height: 1.7; margin-bottom: 20px; overflow-wrap: break-word; hyphens: auto; }
+        .yz-hero-meta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .yz-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; }
+        .yz-card { cursor: pointer; border-bottom: 1px solid #e5e5e5; padding-bottom: 24px; display: flex; flex-direction: column; }
+        .yz-card-cat { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #b8956a; margin-bottom: 10px; }
+        .yz-card-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; color: #111; line-height: 1.3; margin-bottom: 10px; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
+        .yz-card-excerpt { font-family: 'Crimson Text', serif; font-size: 0.97rem; color: #555; line-height: 1.55; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .yz-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; margin-top: 12px; font-size: 0.72rem; color: #999; border-top: 1px solid #f0f0f0; }
+        .yz-sidebar { border-left: 1px solid #ddd; padding-left: 32px; }
+        .yz-sidebar-title { font-family: 'Playfair Display', serif; font-size: 0.9rem; font-weight: 900; color: #111; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 20px; }
+        .yz-sidebar-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+        .yz-sidebar-num { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 900; color: #e0e0e0; line-height: 1; flex-shrink: 0; width: 32px; }
+        .yz-sidebar-item-title { font-size: 0.82rem; font-weight: 700; color: #111; line-height: 1.4; overflow-wrap: break-word; }
+        .yz-sidebar-item-cat { font-size: 0.65rem; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+        .yz-read-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #111; background: none; border: 1.5px solid #111; padding: 8px 18px; cursor: pointer; transition: all 0.2s; }
+        .yz-read-btn:hover { background: #111; color: #fff; }
+        @media (max-width: 768px) {
+          .yz-header { padding: 48px 0 0; }
+          .yz-main { padding: 28px 16px 60px; }
+          .yz-grid { grid-template-columns: 1fr; gap: 0; }
+          .yz-hero-title { font-size: clamp(1.5rem, 6vw, 2.2rem); }
+          .yz-hero-excerpt { font-size: 1.05rem; }
+          .yz-cards { grid-template-columns: 1fr; gap: 0; }
+          .yz-card { padding: 20px 0; }
+          .yz-card:first-child { border-top: 1px solid #e5e5e5; }
+          .yz-sidebar { border-left: none; padding-left: 0; border-top: 3px solid #111; padding-top: 32px; margin-top: 40px; }
+        }
+        @media (max-width: 480px) {
+          .yz-hero-title { font-size: 1.5rem; }
+          .yz-card-title { font-size: 1.05rem; }
+          .yz-cats { gap: 0; }
+          .yz-cat-btn { padding: 8px 10px; font-size: 0.65rem; }
+        }
+      `}</style>
+
+      {/* Header */}
+      <div className="yz-header">
+        <div className="yz-header-inner">
           <Link href="/forum/profil/furkanmanav" style={{ textDecoration: 'none' }}>
-            <div style={{ textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.7rem', fontWeight: 700, color: 'var(--muted)', marginBottom: 20, cursor: 'pointer' }} className="hover:text-black transition-colors">Psikolog Furkan Manav</div>
+            <div style={{ textTransform: 'uppercase', letterSpacing: '0.25em', fontSize: '0.62rem', fontWeight: 700, color: '#999', marginBottom: 16 }}>Psikolog Furkan Manav</div>
           </Link>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem, 8vw, 4.5rem)', fontWeight: 900, color: '#111', lineHeight: 1, letterSpacing: '-0.02em', borderBottom: '1px solid #eaeaea', paddingBottom: 24, marginBottom: 16, overflowWrap: 'break-word', wordBreak: 'normal' }}>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 9vw, 4.5rem)', fontWeight: 900, color: '#111', lineHeight: 0.95, letterSpacing: '-0.02em', marginBottom: 20 }}>
             YAZILARIM
           </h1>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
-            {CATEGORIES.map(c => (
-              <button key={c} onClick={() => setFilter(c)} style={{
-                background: 'none', border: 'none', fontSize: '0.8rem', fontWeight: filter === c ? 700 : 500, letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer', transition: 'color 0.2s', padding: '4px 8px', color: filter === c ? '#000' : '#888', borderBottom: filter === c ? '2px solid #000' : '2px solid transparent'
-              }}>
-                {c}
-              </button>
-            ))}
-          </div>
+        </div>
+        <div className="yz-cats">
+          {CATEGORIES.map(c => (
+            <button key={c} className={`yz-cat-btn${filter === c ? ' active' : ''}`} onClick={() => setFilter(c)}>
+              {c}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="yazilarim-main-container" style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <style>{`
-          .yazilarim-main-container {
-            padding: 64px 24px 80px;
-          }
-          @media (max-width: 768px) {
-            .yazilarim-main-container {
-              padding: 40px 16px 60px;
-            }
-          }
-        `}</style>
+      <div className="yz-main">
         {ADMIN_EMAILS.includes(user?.email || '') && (
-          <div style={{ marginBottom: 40 }}>
+          <div style={{ marginBottom: 40, borderBottom: '1px solid #eee', paddingBottom: 32 }}>
             {!showPostForm ? (
               <button onClick={() => { setShowPostForm(true); setEditPostId(null); setPostForm({ title: '', category: 'Tümü', excerpt: '', content: '' }); }} className="btn-dark-outline" style={{ borderRadius: 0, padding: '12px 24px', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.8rem' }}>
                 Yazı Paylaş
@@ -259,105 +294,86 @@ export default function YazilarimClient() {
         )}
 
         {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '64px 0', color: '#888', fontStyle: 'italic', fontFamily: 'Playfair Display, serif', fontSize: '1.2rem' }}>
+          <div style={{ textAlign: 'center', padding: '64px 0', color: '#999', fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontStyle: 'italic' }}>
             Bu kategoride yayınlanmış eser bulunmamaktadır.
           </div>
         ) : (
-          <div className="yazilarim-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 300px', gap: 48 }}>
-            
-            {/* LATEST / HERO POST (Left Col) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 64 }}>
+          <div className="yz-grid">
+            {/* Sol Ana İçerik */}
+            <div>
               {heroPost && (
-                <article style={{ borderBottom: '1px solid #ddd', paddingBottom: 40, cursor: 'pointer' }} onClick={() => openPost(heroPost)}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold-dim)' }}>Manşet • {heroPost.category}</span>
-                    <span style={{ fontSize: '0.75rem', color: '#999', fontStyle: 'italic' }}>{format(new Date(heroPost.date), 'dd MMMM yyyy', { locale: tr })}</span>
+                <article className="yz-hero" onClick={() => openPost(heroPost)}>
+                  <div className="yz-hero-label">
+                    <span>📰 Manşet</span>
+                    <span style={{ width: 40, height: 1, background: '#b8956a', display: 'inline-block' }} />
+                    <span>{heroPost.category}</span>
+                    <span style={{ marginLeft: 'auto', fontStyle: 'italic', color: '#aaa', fontFamily: 'Crimson Text, serif', fontSize: '0.75rem', fontWeight: 400 }}>{format(new Date(heroPost.date), 'dd MMMM yyyy', { locale: tr })}</span>
                   </div>
-                  <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, color: '#111', lineHeight: 1.1, marginBottom: 20 }}>
-                    {heroPost.title}
-                  </h2>
-                  <p className="crimson" style={{ fontSize: '1.15rem', color: '#444', lineHeight: 1.7, marginBottom: 24, overflowWrap: 'break-word', wordBreak: 'normal' }}>
-                    {heroPost.excerpt || (heroPost.content ? truncateText(stripHtml(heroPost.content), 200) : '')}
+                  <h2 className="yz-hero-title">{heroPost.title}</h2>
+                  <p className="yz-hero-excerpt">
+                    {heroPost.excerpt || (heroPost.content ? truncateText(stripHtml(heroPost.content), 220) : '')}
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <button className="btn-dark-outline" style={{ border: '1px solid #000', color: '#000', borderRadius: 0, padding: '8px 24px', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Makaleyi Oku</button>
+                  <div className="yz-hero-meta">
+                    <button className="yz-read-btn" onClick={() => openPost(heroPost)}>Makaleyi Oku <ArrowRight size={12}/></button>
                     {ADMIN_EMAILS.includes(user?.email || '') && (
-                      <div style={{ display: 'flex', gap: 8, position: 'relative', zIndex: 10 }}>
-                        <button 
-                          onClick={(e) => editPost(heroPost, e)} 
-                          style={{ fontSize: '0.75rem', fontWeight: 700, color: 'white', textTransform: 'uppercase', background: 'var(--gold-dim)', border: 'none', cursor: 'pointer', padding: '6px 12px', borderRadius: 4 }}
-                        >
-                          Düzenle
-                        </button>
-                        <button 
-                          onClick={(e) => handleDeletePost(heroPost.id, e)} 
-                          style={{ fontSize: '0.75rem', fontWeight: 700, color: 'white', textTransform: 'uppercase', background: '#ff4d4f', border: 'none', cursor: 'pointer', padding: '6px 12px', borderRadius: 4 }}
-                        >
-                          Sil
-                        </button>
-                      </div>
+                      <>
+                        <button onClick={(e) => editPost(heroPost, e)} style={{ fontSize: '0.7rem', fontWeight: 700, color: 'white', background: '#b8956a', border: 'none', cursor: 'pointer', padding: '6px 12px', borderRadius: 4 }}>Düzenle</button>
+                        <button onClick={(e) => handleDeletePost(heroPost.id, e)} style={{ fontSize: '0.7rem', fontWeight: 700, color: 'white', background: '#ef4444', border: 'none', cursor: 'pointer', padding: '6px 12px', borderRadius: 4 }}>Sil</button>
+                      </>
                     )}
-                    <div style={{ display: 'flex', gap: 12, color: '#888', fontSize: '0.8rem' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Heart size={14}/> {heroPost.likes}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MessageCircle size={14}/> {heroPost.commentCount}</span>
-                    </div>
+                    <span style={{ marginLeft: 'auto', display: 'flex', gap: 12, color: '#bbb', fontSize: '0.78rem' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Heart size={13}/>{heroPost.likes}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={13}/>{heroPost.commentCount}</span>
+                    </span>
                   </div>
                 </article>
               )}
 
-              {/* Grid of older posts */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '40px 32px' }}>
+              {/* Kart Listesi */}
+              <div className="yz-cards">
                 {otherPosts.map(post => (
-                  <article key={post.id} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }} onClick={() => openPost(post)}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#777', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>{post.category}</span>
+                  <article key={post.id} className="yz-card" onClick={() => openPost(post)}>
+                    <div className="yz-card-cat">
+                      {post.category}
                       {ADMIN_EMAILS.includes(user?.email || '') && (
-                        <div style={{ display: 'flex', gap: 6, position: 'relative', zIndex: 10 }}>
-                          <button 
-                            onClick={(e) => editPost(post, e)} 
-                            style={{ color: 'white', fontWeight: 700, background: 'var(--gold-dim)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 3, fontSize: '0.65rem' }}
-                          >
-                            DÜZENLE
-                          </button>
-                          <button 
-                            onClick={(e) => handleDeletePost(post.id, e)} 
-                            style={{ color: 'white', fontWeight: 700, background: '#ff4d4f', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 3, fontSize: '0.65rem' }}
-                          >
-                            SİL
-                          </button>
-                        </div>
+                        <span style={{ marginLeft: 8 }}>
+                          <button onClick={(e) => editPost(post, e)} style={{ fontSize: '0.6rem', fontWeight: 700, color: 'white', background: '#b8956a', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: 3 }}>D</button>{' '}
+                          <button onClick={(e) => handleDeletePost(post.id, e)} style={{ fontSize: '0.6rem', fontWeight: 700, color: 'white', background: '#ef4444', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: 3 }}>S</button>
+                        </span>
                       )}
                     </div>
-                    <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: '#111', lineHeight: 1.25, marginBottom: 12 }}>
-                      {post.title}
-                    </h3>
-                    <p className="crimson" style={{ fontSize: '1rem', color: '#555', lineHeight: 1.6, marginBottom: 16, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'break-word', wordBreak: 'normal' }}>
-                      {post.excerpt || (post.content ? truncateText(stripHtml(post.content), 150) : '')}
+                    <h3 className="yz-card-title">{post.title}</h3>
+                    <p className="yz-card-excerpt">
+                      {post.excerpt || (post.content ? truncateText(stripHtml(post.content), 130) : '')}
                     </p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #eaeaea', paddingTop: 12, fontSize: '0.75rem', color: '#999' }}>
+                    <div className="yz-card-footer">
                       <span style={{ fontStyle: 'italic' }}>{format(new Date(post.date), 'd MMM yyyy', { locale: tr })}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700, color: '#444' }}>Oku <ArrowRight size={10}/></span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontWeight: 700, color: '#555' }}>Oku <ArrowRight size={10}/></span>
                     </div>
                   </article>
                 ))}
               </div>
             </div>
 
-            {/* SIDEBAR (Right Col) */}
-            <aside style={{ borderLeft: '1px solid #ddd', paddingLeft: 32, display: 'flex', flexDirection: 'column', gap: 48 }}>
-              <div>
-                <h4 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: 800, color: '#111', borderBottom: '2px solid #000', paddingBottom: 12, marginBottom: 24, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Editörün Seçimi</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                   {posts.slice(0,3).map((p,i) => (
-                     <div key={p.id} style={{ display: 'flex', gap: 16, cursor: 'pointer' }} onClick={() => openPost(p)}>
-                       <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: 900, color: '#ddd', lineHeight: 1 }}>{i+1}</div>
-                       <div>
-                         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111', lineHeight: 1.4 }}>{p.title}</div>
-                         <div style={{ fontSize: '0.7rem', color: '#888', marginTop: 4, textTransform: 'uppercase' }}>{p.category}</div>
-                       </div>
-                     </div>
-                   ))}
+            {/* Sağ Kenar Çubuğu */}
+            <aside className="yz-sidebar">
+              <div className="yz-sidebar-title">Editörün Seçimi</div>
+              {posts.slice(0, 5).map((p, i) => (
+                <div key={p.id} className="yz-sidebar-item" onClick={() => openPost(p)}>
+                  <div className="yz-sidebar-num">{String(i + 1).padStart(2, '0')}</div>
+                  <div>
+                    <div className="yz-sidebar-item-title">{p.title}</div>
+                    <div className="yz-sidebar-item-cat">{p.category} · {format(new Date(p.date), 'd MMM', { locale: tr })}</div>
+                  </div>
                 </div>
+              ))}
+
+              <div style={{ marginTop: 40 }}>
+                <div className="yz-sidebar-title">Yazar Hakkında</div>
+                <div style={{ fontSize: '0.88rem', color: '#555', lineHeight: 1.7, marginBottom: 16 }}>
+                  Psikolog Furkan Manav — Varoluşçu-Psikanalitik yönelimli bireysel psikolojik danışmanlık.
+                </div>
+                <Link href="/ben-kimim" style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#111', textDecoration: 'none', borderBottom: '1.5px solid #111', paddingBottom: 2 }}>Daha Fazla Bilgi →</Link>
               </div>
             </aside>
           </div>
