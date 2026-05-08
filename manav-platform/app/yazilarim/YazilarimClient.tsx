@@ -77,9 +77,8 @@ export default function YazilarimClient() {
       setComments([]);
       return;
     }
-    // Scroll to top of modal when opening a new post
-    const backdrop = document.querySelector('.modal-backdrop');
-    if (backdrop) backdrop.scrollTop = 0;
+    // Makale açıldığında sayfanın en başına kaydır (SPA deneyimi)
+    window.scrollTo({ top: 0, behavior: 'auto' });
 
     const q = query(collection(db, 'posts', active.id, 'comments'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, snap => {
@@ -240,8 +239,10 @@ export default function YazilarimClient() {
         }
       `}</style>
 
-      {/* Header */}
-      <div className="yz-header">
+      {!active ? (
+        <>
+          {/* Header */}
+          <div className="yz-header">
         <div className="yz-header-inner">
           <Link href="/forum/profil/furkanmanav" style={{ textDecoration: 'none' }}>
             <div style={{ textTransform: 'uppercase', letterSpacing: '0.25em', fontSize: '0.62rem', fontWeight: 700, color: '#999', marginBottom: 16 }}>Psikolog Furkan Manav</div>
@@ -385,23 +386,22 @@ export default function YazilarimClient() {
             </aside>
           </div>
         )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════
-           ARTICLE READER — Sıfırdan İnşa Edilmiş Editorial Deneyimi
-           Medium / Substack / Akademik Dergi Hissiyatı
-           ═══════════════════════════════════════════════════════════════ */}
-      {active && (
-        <div className="ed-overlay">
+          </div>
+        </>
+      ) : (
+        /* ═══════════════════════════════════════════════════════════════
+             ARTICLE READER — Sıfırdan İnşa Edilmiş Editorial Deneyimi
+             Medium / Substack / Akademik Dergi Hissiyatı
+             ═══════════════════════════════════════════════════════════════ */
+        <div className="ed-wrapper">
           <style>{`
             /* ── RESET & BASE ── */
-            .ed-overlay {
-              position: fixed; inset: 0; z-index: 9999;
+            .ed-wrapper {
+              min-height: 100vh;
               background: #fcfcfa;
-              overflow-y: auto; overflow-x: hidden;
-              -webkit-overflow-scrolling: touch;
+              padding-bottom: 60px;
             }
-            .ed-overlay * { box-sizing: border-box; }
+            .ed-wrapper * { box-sizing: border-box; }
 
             /* ── NAVIGATION BAR ── */
             .ed-nav {
