@@ -31,6 +31,7 @@ export default function YazilarimClient() {
   const [showPostForm, setShowPostForm] = useState(false);
   const [editPostId, setEditPostId] = useState<string | null>(null);
   const [postForm, setPostForm] = useState({ title: '', category: 'Tümü', excerpt: '', content: '' });
+  const [fontScale, setFontScale] = useState(1);
 
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
@@ -458,17 +459,18 @@ export default function YazilarimClient() {
             }
             .ed-title {
               font-family: 'Playfair Display', serif;
-              font-size: 3rem;
+              font-size: calc(3rem * var(--font-scale, 1));
               font-weight: 900;
               color: #1a1a1a;
               line-height: 1.15;
               letter-spacing: -0.015em;
               margin: 0 0 28px 0;
               word-break: normal;
-              overflow-wrap: break-word;
+              overflow-wrap: normal;
               white-space: normal;
-              -webkit-hyphens: auto;
-              hyphens: auto;
+              -webkit-hyphens: none;
+              hyphens: none;
+              transition: font-size 0.2s ease;
             }
             .ed-meta {
               display: flex; align-items: center; gap: 12px;
@@ -500,19 +502,20 @@ export default function YazilarimClient() {
             /* ── ARTICLE BODY — TYPOGRAPHY SYSTEM ── */
             .ed-body {
               font-family: 'Crimson Text', 'Georgia', serif;
-              font-size: 1.3rem;
+              font-size: calc(1.3rem * var(--font-scale, 1));
               line-height: 1.9;
               color: #292929;
               word-break: normal;
-              overflow-wrap: break-word;
+              overflow-wrap: normal;
               white-space: normal;
-              -webkit-hyphens: auto;
-              hyphens: auto;
+              -webkit-hyphens: none;
+              hyphens: none;
+              transition: font-size 0.2s ease;
             }
             .ed-body p {
               margin: 0 0 1.5em 0;
               word-break: normal;
-              overflow-wrap: break-word;
+              overflow-wrap: normal;
             }
 
             /* Headings */
@@ -520,11 +523,11 @@ export default function YazilarimClient() {
               font-family: 'Playfair Display', serif;
               color: #1a1a1a;
               word-break: normal;
-              overflow-wrap: break-word;
+              overflow-wrap: normal;
               white-space: normal;
               line-height: 1.3;
-              -webkit-hyphens: auto;
-              hyphens: auto;
+              -webkit-hyphens: none;
+              hyphens: none;
             }
             .ed-body h1 { font-size: 2rem; margin: 2.5em 0 0.8em; font-weight: 800; }
             .ed-body h2 { font-size: 1.65rem; margin: 2.2em 0 0.7em; font-weight: 800; }
@@ -683,9 +686,9 @@ export default function YazilarimClient() {
               .ed-nav-brand { font-size: 0.82rem; }
               .ed-nav-btn { padding: 6px 10px; font-size: 0.7rem; }
               .ed-container { padding: 32px 24px 64px; }
-              .ed-title { font-size: 1.85rem; line-height: 1.22; margin-bottom: 20px; }
+              .ed-title { font-size: calc(1.85rem * var(--font-scale, 1)); line-height: 1.22; margin-bottom: 20px; }
               .ed-meta { gap: 8px; padding-bottom: 20px; margin-bottom: 28px; }
-              .ed-body { font-size: 1.08rem; line-height: 1.75; }
+              .ed-body { font-size: calc(1.08rem * var(--font-scale, 1)); line-height: 1.75; }
               .ed-body h1 { font-size: 1.5rem; }
               .ed-body h2 { font-size: 1.3rem; }
               .ed-body h3 { font-size: 1.12rem; }
@@ -699,6 +702,14 @@ export default function YazilarimClient() {
           <nav className="ed-nav">
             <span className="ed-nav-brand">Yazılarım</span>
             <div className="ed-nav-actions">
+              <button 
+                className="ed-nav-btn" 
+                style={{ background: '#f0f0ee', color: '#111', border: '1px solid #ddd' }}
+                onClick={() => setFontScale(prev => prev === 1 ? 1.15 : prev === 1.15 ? 1.3 : 1)}
+                title="Yazı Boyutunu Değiştir"
+              >
+                Aa
+              </button>
               {ADMIN_EMAILS.includes(user?.email || '') && (
                 <>
                   <button className="ed-nav-btn ed-nav-btn--edit" onClick={() => editPost(active!)}>Düzenle</button>
@@ -712,7 +723,7 @@ export default function YazilarimClient() {
           </nav>
 
           {/* ── Article Container ── */}
-          <article className="ed-container" lang="tr">
+          <article className="ed-container" lang="tr" style={{ '--font-scale': fontScale } as React.CSSProperties}>
             {/* Category */}
             <span className="ed-cat">{active.category}</span>
 
