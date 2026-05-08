@@ -240,8 +240,7 @@ export default function YazilarimClient() {
         }
       `}</style>
 
-      {!active ? (
-        <>
+
           {/* Header */}
           <div className="yz-header">
         <div className="yz-header-inner">
@@ -388,18 +387,26 @@ export default function YazilarimClient() {
           </div>
         )}
           </div>
-        </>
-      ) : (
-        /* ═══════════════════════════════════════════════════════════════
-             ARTICLE READER — Sıfırdan İnşa Edilmiş Editorial Deneyimi
-             Medium / Substack / Akademik Dergi Hissiyatı
-             ═══════════════════════════════════════════════════════════════ */
-        <div className="ed-wrapper">
-          <style>{`
+      {active && (
+        <div className="ed-backdrop" onClick={closePost}>
+          <div className="ed-wrapper" onClick={e => e.stopPropagation()}>
+            <style>{`
             /* ── RESET & BASE ── */
+            .ed-backdrop {
+              position: fixed; inset: 0; z-index: 9999;
+              background: rgba(0,0,0,0.65);
+              backdrop-filter: blur(4px);
+              display: flex; justify-content: center; align-items: center;
+              padding: 40px;
+            }
             .ed-wrapper {
-              min-height: 100vh;
               background: #fcfcfa;
+              width: 100%; max-width: 1000px;
+              height: 100%; max-height: 90vh;
+              border-radius: 16px;
+              overflow-y: auto;
+              position: relative;
+              box-shadow: 0 20px 60px rgba(0,0,0,0.2);
               padding-bottom: 60px;
             }
             .ed-wrapper * { box-sizing: border-box; }
@@ -459,7 +466,7 @@ export default function YazilarimClient() {
             }
             .ed-title {
               font-family: 'Playfair Display', serif;
-              font-size: calc(3rem * var(--font-scale, 1));
+              font-size: 3rem;
               font-weight: 900;
               color: #1a1a1a;
               line-height: 1.15;
@@ -470,7 +477,6 @@ export default function YazilarimClient() {
               white-space: normal;
               -webkit-hyphens: auto;
               hyphens: auto;
-              transition: font-size 0.2s ease;
             }
             .ed-meta {
               display: flex; align-items: center; gap: 12px;
@@ -502,7 +508,7 @@ export default function YazilarimClient() {
             /* ── ARTICLE BODY — TYPOGRAPHY SYSTEM ── */
             .ed-body {
               font-family: 'Crimson Text', 'Georgia', serif;
-              font-size: calc(1.3rem * var(--font-scale, 1));
+              font-size: 1.3rem;
               line-height: 1.9;
               color: #292929;
               word-break: normal;
@@ -510,7 +516,6 @@ export default function YazilarimClient() {
               white-space: normal;
               -webkit-hyphens: auto;
               hyphens: auto;
-              transition: font-size 0.2s ease;
             }
             .ed-body p {
               margin: 0 0 1.5em 0;
@@ -668,6 +673,11 @@ export default function YazilarimClient() {
                RESPONSIVE BREAKPOINTS — MOBILE FIRST
                ══════════════════════════════════════ */
 
+            /* Hide font toggle on Desktop */
+            @media (min-width: 769px) {
+              .ed-nav-btn--font { display: none !important; }
+            }
+
             /* Tablet — 768px */
             @media (max-width: 768px) {
               .ed-container { padding: 40px 24px 80px; }
@@ -682,6 +692,8 @@ export default function YazilarimClient() {
 
             /* Mobile — 480px */
             @media (max-width: 480px) {
+              .ed-backdrop { padding: 0; background: #fcfcfa; }
+              .ed-wrapper { max-height: 100vh; border-radius: 0; padding-bottom: 40px; }
               .ed-nav { height: 48px; }
               .ed-nav-brand { font-size: 0.82rem; }
               .ed-nav-btn { padding: 6px 10px; font-size: 0.7rem; }
@@ -703,7 +715,7 @@ export default function YazilarimClient() {
             <span className="ed-nav-brand">Yazılarım</span>
             <div className="ed-nav-actions">
               <button 
-                className="ed-nav-btn" 
+                className="ed-nav-btn ed-nav-btn--font" 
                 style={{ background: '#f0f0ee', color: '#111', border: '1px solid #ddd' }}
                 onClick={() => setFontScale(prev => prev === 1 ? 1.15 : prev === 1.15 ? 1.3 : 1)}
                 title="Yazı Boyutunu Değiştir"
@@ -790,6 +802,7 @@ export default function YazilarimClient() {
               </div>
             </section>
           </article>
+          </div>
         </div>
       )}
     </div>
