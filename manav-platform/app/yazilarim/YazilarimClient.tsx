@@ -380,14 +380,95 @@ export default function YazilarimClient() {
         )}
       </div>
 
-      {/* Post Modal */}
+      {/* Post Modal — Tam Ekran Okuma */}
       {active && (
-        <div className="modal-backdrop" onClick={closePost}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            {/* Modal Header/Toolbar */}
-            <div style={{ 
-              position: 'sticky', 
-              top: 0, 
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#fff', overflowY: 'auto' }}>
+          <style>{`
+            .art-topbar { position: sticky; top: 0; background: rgba(255,255,255,0.97); backdrop-filter: blur(10px); border-bottom: 1px solid #efefef; display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; padding-top: calc(14px + env(safe-area-inset-top,0px)); z-index: 100; }
+            .art-topbar-brand { font-family: 'Playfair Display',serif; font-size: 1rem; font-weight: 900; color: #111; letter-spacing: -0.02em; }
+            .art-close { display: flex; align-items: center; gap: 7px; background: #f4f4f4; border: none; border-radius: 50px; padding: 9px 18px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #333; }
+            .art-reader { max-width: 700px; margin: 0 auto; padding: 56px 24px 100px; }
+            .art-cat-badge { display: inline-block; font-size: 0.62rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.18em; color: #b8956a; border: 1.5px solid #b8956a; padding: 3px 10px; margin-bottom: 20px; }
+            .art-title { font-family: 'Playfair Display',serif; font-size: clamp(1.65rem,5vw,3rem); font-weight: 900; color: #111; line-height: 1.15; margin-bottom: 24px; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
+            .art-meta { display: flex; align-items: center; gap: 14px; margin-bottom: 36px; padding-bottom: 32px; border-bottom: 2px solid #111; flex-wrap: wrap; }
+            .art-body { font-family: 'Crimson Text',serif; font-size: 1.2rem; line-height: 1.9; color: #1a1a1a; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; -moz-hyphens: auto; }
+            .art-body p { margin-bottom: 1.5em; }
+            .art-body h1,.art-body h2,.art-body h3 { font-family: 'Playfair Display',serif; color: #111; margin: 48px 0 20px; overflow-wrap: break-word; hyphens: auto; }
+            .art-body img { max-width: 100%; height: auto; border-radius: 8px; margin: 40px 0; display: block; }
+            .art-body blockquote { border-left: 3px solid #b8956a; padding-left: 20px; margin: 32px 0; font-style: italic; color: #555; }
+            .art-comments { margin-top: 72px; padding-top: 40px; border-top: 2px solid #111; }
+            @media (max-width: 600px) {
+              .art-topbar { padding: 12px 16px; }
+              .art-reader { padding: 32px 16px 80px; }
+              .art-title { font-size: 1.45rem; }
+              .art-body { font-size: 1.05rem; line-height: 1.75; }
+            }
+          `}</style>
+          <div className="art-topbar">
+            <div className="art-topbar-brand">YAZILARIM</div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              {ADMIN_EMAILS.includes(user?.email || '') && (
+                <>
+                  <button onClick={() => editPost(active!)} style={{ background: '#b8956a', color: '#fff', border: 'none', borderRadius: 50, padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>DÜZENLE</button>
+                  <button onClick={() => handleDeletePost(active!.id)} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 50, padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>SİL</button>
+                </>
+              )}
+              <button className="art-close" onClick={closePost}><X size={15}/> Kapat</button>
+            </div>
+          </div>
+          <div className="art-reader">
+            <span className="art-cat-badge">{active.category}</span>
+            <h1 className="art-title">{active.title}</h1>
+            <div className="art-meta">
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#333' }}>Psikolog Furkan Manav</span>
+              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#ccc', display: 'inline-block' }} />
+              <span style={{ fontSize: '0.78rem', color: '#aaa', fontStyle: 'italic' }}>{format(new Date(active.date), 'dd MMMM yyyy', { locale: tr })}</span>
+              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#ccc', display: 'inline-block' }} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.78rem', color: '#aaa' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Heart size={13}/>{active.likes}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={13}/>{active.commentCount}</span>
+              </span>
+            </div>
+            <div className="art-body article-content" dangerouslySetInnerHTML={{ __html: active.content }} />
+            <div className="art-comments">
+              <h3 style={{ fontFamily: 'Playfair Display,serif', fontSize: '1.4rem', fontWeight: 800, marginBottom: 28, color: '#111' }}>Yorumlar ({comments.length})</h3>
+              {user ? (
+                <div style={{ marginBottom: 36, background: '#f8f8f8', padding: 20, borderRadius: 12, border: '1px solid #eee' }}>
+                  <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Düşüncelerinizi paylaşın..." style={{ width: '100%', minHeight: 90, padding: 14, border: '1px solid #e0e0e0', borderRadius: 8, fontSize: '0.95rem', marginBottom: 10, resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                  <button onClick={submit} disabled={submitting || !text.trim()} style={{ width: '100%', padding: '12px', borderRadius: 8, fontWeight: 700, background: '#111', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.9rem', opacity: submitting ? 0.7 : 1 }}>
+                    {submitting ? 'Gönderiliyor...' : 'Yorum Yap'}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ padding: 20, background: '#f8f8f8', borderRadius: 12, textAlign: 'center', marginBottom: 32, border: '1px solid #eee' }}>
+                  <p style={{ fontSize: '0.9rem', color: '#777', margin: 0 }}>Yorum yapmak için giriş yapmalısınız.</p>
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {loadingC ? <p style={{ color: '#bbb' }}>Yükleniyor...</p> : comments.map(c => (
+                  <div key={c.id} style={{ paddingBottom: 24, borderBottom: '1px solid #f0f0f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <div>
+                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111', display: 'block' }}>{c.authorName}</span>
+                        <span style={{ fontSize: '0.72rem', color: '#bbb' }}>{format(c.createdAt, 'd MMM yyyy HH:mm', { locale: tr })}</span>
+                      </div>
+                      {(ADMIN_EMAILS.includes(user?.email || '') || user?.uid === c.uid) && (
+                        <button onClick={() => deleteComment(c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700 }}>SİL</button>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '1rem', color: '#333', lineHeight: 1.65, margin: 0 }}>{c.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
               background: 'white', 
               borderBottom: '1px solid #f0f0f0', 
               display: 'flex', 
