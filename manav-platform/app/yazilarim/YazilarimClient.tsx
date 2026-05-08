@@ -466,10 +466,10 @@ export default function YazilarimClient() {
               letter-spacing: -0.015em;
               margin: 0 0 28px 0;
               word-break: normal;
-              overflow-wrap: normal;
+              overflow-wrap: break-word;
               white-space: normal;
-              -webkit-hyphens: none;
-              hyphens: none;
+              -webkit-hyphens: auto;
+              hyphens: auto;
               transition: font-size 0.2s ease;
             }
             .ed-meta {
@@ -506,16 +506,16 @@ export default function YazilarimClient() {
               line-height: 1.9;
               color: #292929;
               word-break: normal;
-              overflow-wrap: normal;
+              overflow-wrap: break-word;
               white-space: normal;
-              -webkit-hyphens: none;
-              hyphens: none;
+              -webkit-hyphens: auto;
+              hyphens: auto;
               transition: font-size 0.2s ease;
             }
             .ed-body p {
               margin: 0 0 1.5em 0;
               word-break: normal;
-              overflow-wrap: normal;
+              overflow-wrap: break-word;
             }
 
             /* Headings */
@@ -523,11 +523,11 @@ export default function YazilarimClient() {
               font-family: 'Playfair Display', serif;
               color: #1a1a1a;
               word-break: normal;
-              overflow-wrap: normal;
+              overflow-wrap: break-word;
               white-space: normal;
               line-height: 1.3;
-              -webkit-hyphens: none;
-              hyphens: none;
+              -webkit-hyphens: auto;
+              hyphens: auto;
             }
             .ed-body h1 { font-size: 2rem; margin: 2.5em 0 0.8em; font-weight: 800; }
             .ed-body h2 { font-size: 1.65rem; margin: 2.2em 0 0.7em; font-weight: 800; }
