@@ -196,11 +196,11 @@ export default function YazilarimClient() {
         .yz-cat-btn.active { color: #111; border-bottom-color: #111; font-weight: 800; }
         .yz-main { max-width: 1300px; margin: 0 auto; padding: 56px 20px 100px; }
         .yz-grid { display: grid; grid-template-columns: 1fr 340px; gap: 60px; }
-        .yz-hero { background: #fff; border: 1px solid #eaeaea; border-radius: 16px; padding: 48px; margin-bottom: 56px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        .yz-hero:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); border-color: #d4c4b7; }
+        .yz-hero { background: #fff; border: 1px solid #eaeaea; border-radius: 12px; padding: 32px; margin-bottom: 40px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .yz-hero:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-color: #d4c4b7; }
         .yz-hero-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: #b8956a; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
-        .yz-hero-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 800; color: #111; line-height: 1.15; margin-bottom: 20px; overflow-wrap: break-word; word-break: normal; }
-        .yz-hero-excerpt { font-family: 'Crimson Text', serif; font-size: 1.25rem; color: #444; line-height: 1.7; margin-bottom: 28px; overflow-wrap: break-word; word-break: normal; }
+        .yz-hero-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 800; color: #111; line-height: 1.2; margin-bottom: 16px; overflow-wrap: break-word; word-break: normal; }
+        .yz-hero-excerpt { font-family: 'Crimson Text', serif; font-size: 1.1rem; color: #555; line-height: 1.6; margin-bottom: 24px; overflow-wrap: break-word; word-break: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         .yz-hero-meta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .yz-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; }
         .yz-card { cursor: pointer; background: #fff; border: 1px solid #eaeaea; border-radius: 12px; padding: 32px; display: flex; flex-direction: column; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
@@ -227,8 +227,8 @@ export default function YazilarimClient() {
           .yz-header { padding: 40px 0 0; }
           .yz-main { padding: 32px 16px 60px; }
           .yz-hero { padding: 24px; border-radius: 12px; margin-bottom: 32px; }
-          .yz-hero-title { font-size: clamp(1.6rem, 6vw, 2.2rem); }
-          .yz-hero-excerpt { font-size: 1.1rem; }
+          .yz-hero-title { font-size: 1.6rem; }
+          .yz-hero-excerpt { font-size: 1.05rem; }
           .yz-cards { grid-template-columns: 1fr; gap: 24px; }
           .yz-card { padding: 24px; border-radius: 12px; }
           .yz-sidebar-inner { padding: 24px; }
