@@ -387,96 +387,392 @@ export default function YazilarimClient() {
         )}
       </div>
 
-      {/* Post Modal — Tam Ekran Okuma */}
+      {/* ═══════════════════════════════════════════════════════════════
+           ARTICLE READER — Sıfırdan İnşa Edilmiş Editorial Deneyimi
+           Medium / Substack / Akademik Dergi Hissiyatı
+           ═══════════════════════════════════════════════════════════════ */}
       {active && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#fff', overflowY: 'auto' }}>
+        <div className="ed-overlay">
           <style>{`
-            .art-topbar { position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; padding-top: calc(12px + env(safe-area-inset-top,0px)); z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
-            .art-topbar-brand { font-family: 'Playfair Display',serif; font-size: 1.1rem; font-weight: 900; color: #111; letter-spacing: -0.01em; }
-            .art-close { display: flex; align-items: center; gap: 6px; background: transparent; border: 1px solid #ddd; border-radius: 50px; padding: 8px 16px; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: #333; transition: all 0.2s; }
-            .art-close:hover { background: #f4f4f4; border-color: #ccc; }
-            .art-reader { max-width: 860px; margin: 0 auto; padding: 64px 24px 120px; }
-            .art-cat-badge { display: inline-block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #b8956a; border: 1px solid #b8956a; padding: 4px 12px; margin-bottom: 24px; border-radius: 4px; }
-            .art-title { font-family: 'Playfair Display',serif; font-size: clamp(2rem, 6vw, 3.8rem); font-weight: 900; color: #111; line-height: 1.12; margin-bottom: 32px; word-break: normal; overflow-wrap: break-word; letter-spacing: -0.01em; }
-            .art-meta { display: flex; align-items: center; gap: 16px; margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid #eaeaea; flex-wrap: wrap; }
-            .art-body { font-family: 'Crimson Text',serif; font-size: 1.35rem; line-height: 1.95; color: #222; word-break: normal; overflow-wrap: break-word; }
-            .art-body p { margin-bottom: 1.6em; }
-            .art-body h1,.art-body h2,.art-body h3 { font-family: 'Playfair Display',serif; color: #111; margin: 56px 0 24px; line-height: 1.3; word-break: normal; overflow-wrap: break-word; }
-            .art-body h1 { font-size: 2.2rem; }
-            .art-body h2 { font-size: 1.8rem; }
-            .art-body h3 { font-size: 1.5rem; }
-            .art-body img { width: 100%; height: auto; border-radius: 12px; margin: 48px 0; display: block; box-shadow: 0 8px 30px rgba(0,0,0,0.05); }
-            .art-body blockquote { border-left: 4px solid #b8956a; padding-left: 24px; margin: 40px 0; font-style: italic; color: #444; font-size: 1.5rem; line-height: 1.7; background: rgba(184, 149, 106, 0.05); padding-top: 16px; padding-bottom: 16px; border-radius: 0 8px 8px 0; }
-            .art-body ul, .art-body ol { margin-bottom: 1.6em; padding-left: 24px; }
-            .art-body li { margin-bottom: 0.8em; }
-            .art-comments { margin-top: 80px; padding-top: 48px; border-top: 1px solid #eaeaea; }
+            /* ── RESET & BASE ── */
+            .ed-overlay {
+              position: fixed; inset: 0; z-index: 9999;
+              background: #fcfcfa;
+              overflow-y: auto; overflow-x: hidden;
+              -webkit-overflow-scrolling: touch;
+            }
+            .ed-overlay * { box-sizing: border-box; }
+
+            /* ── NAVIGATION BAR ── */
+            .ed-nav {
+              position: sticky; top: 0; z-index: 200;
+              display: flex; align-items: center; justify-content: space-between;
+              padding: 0 clamp(16px, 4vw, 48px);
+              height: 56px;
+              background: rgba(252,252,250,0.92);
+              backdrop-filter: saturate(180%) blur(16px);
+              -webkit-backdrop-filter: saturate(180%) blur(16px);
+              border-bottom: 1px solid rgba(0,0,0,0.06);
+              padding-top: env(safe-area-inset-top, 0px);
+            }
+            .ed-nav-brand {
+              font-family: 'Playfair Display', serif;
+              font-size: 0.95rem; font-weight: 800;
+              color: #1a1a1a; letter-spacing: 0.04em;
+              text-transform: uppercase;
+            }
+            .ed-nav-actions { display: flex; align-items: center; gap: 8px; }
+            .ed-nav-btn {
+              display: inline-flex; align-items: center; gap: 5px;
+              padding: 7px 14px; border-radius: 6px;
+              font-size: 0.75rem; font-weight: 700;
+              cursor: pointer; border: none;
+              transition: background 0.15s, opacity 0.15s;
+            }
+            .ed-nav-btn:active { opacity: 0.7; }
+            .ed-nav-btn--close {
+              background: transparent; color: #555;
+              border: 1px solid #d5d5d5;
+            }
+            .ed-nav-btn--close:hover { background: #f0f0ee; }
+            .ed-nav-btn--edit { background: #b8956a; color: #fff; }
+            .ed-nav-btn--edit:hover { background: #a6845c; }
+            .ed-nav-btn--del { background: #dc3545; color: #fff; }
+            .ed-nav-btn--del:hover { background: #c82333; }
+
+            /* ── ARTICLE CONTAINER ── */
+            .ed-container {
+              width: 100%;
+              max-width: 780px;
+              margin: 0 auto;
+              padding: 56px 32px 100px;
+            }
+
+            /* ── ARTICLE HEADER ── */
+            .ed-cat {
+              display: inline-block;
+              font-size: 0.7rem; font-weight: 700;
+              text-transform: uppercase; letter-spacing: 0.12em;
+              color: #b8956a;
+              margin-bottom: 20px;
+            }
+            .ed-title {
+              font-family: 'Playfair Display', serif;
+              font-size: 2.75rem;
+              font-weight: 900;
+              color: #1a1a1a;
+              line-height: 1.18;
+              letter-spacing: -0.015em;
+              margin: 0 0 28px 0;
+              word-break: normal;
+              overflow-wrap: break-word;
+              white-space: normal;
+            }
+            .ed-meta {
+              display: flex; align-items: center; gap: 12px;
+              flex-wrap: wrap;
+              padding-bottom: 28px;
+              margin-bottom: 40px;
+              border-bottom: 1px solid #e8e8e4;
+            }
+            .ed-meta-author {
+              font-family: 'Inter', system-ui, sans-serif;
+              font-size: 0.85rem; font-weight: 600; color: #333;
+            }
+            .ed-meta-dot {
+              width: 3px; height: 3px;
+              border-radius: 50%; background: #ccc;
+              display: inline-block; flex-shrink: 0;
+            }
+            .ed-meta-date {
+              font-family: 'Inter', system-ui, sans-serif;
+              font-size: 0.82rem; color: #999;
+            }
+            .ed-meta-stats {
+              display: flex; align-items: center; gap: 12px;
+              font-size: 0.8rem; color: #aaa;
+              margin-left: auto;
+            }
+            .ed-meta-stat { display: flex; align-items: center; gap: 4px; }
+
+            /* ── ARTICLE BODY — TYPOGRAPHY SYSTEM ── */
+            .ed-body {
+              font-family: 'Crimson Text', 'Georgia', serif;
+              font-size: 1.25rem;
+              line-height: 1.85;
+              color: #292929;
+              word-break: normal;
+              overflow-wrap: break-word;
+              white-space: normal;
+            }
+            .ed-body p {
+              margin: 0 0 1.5em 0;
+              word-break: normal;
+              overflow-wrap: break-word;
+            }
+
+            /* Headings */
+            .ed-body h1, .ed-body h2, .ed-body h3, .ed-body h4 {
+              font-family: 'Playfair Display', serif;
+              color: #1a1a1a;
+              word-break: normal;
+              overflow-wrap: break-word;
+              white-space: normal;
+              line-height: 1.3;
+            }
+            .ed-body h1 { font-size: 2rem; margin: 2.5em 0 0.8em; font-weight: 800; }
+            .ed-body h2 { font-size: 1.65rem; margin: 2.2em 0 0.7em; font-weight: 800; }
+            .ed-body h3 { font-size: 1.35rem; margin: 2em 0 0.6em; font-weight: 700; }
+            .ed-body h4 { font-size: 1.15rem; margin: 1.8em 0 0.5em; font-weight: 700; }
+
+            /* Strong & Emphasis */
+            .ed-body strong, .ed-body b { font-weight: 700; color: #1a1a1a; }
+            .ed-body em, .ed-body i { font-style: italic; }
+
+            /* Blockquote */
+            .ed-body blockquote {
+              margin: 2em 0;
+              padding: 20px 0 20px 28px;
+              border-left: 3px solid #b8956a;
+              font-size: 1.3rem;
+              line-height: 1.75;
+              font-style: italic;
+              color: #444;
+            }
+
+            /* Lists */
+            .ed-body ul, .ed-body ol {
+              margin: 0 0 1.5em 0;
+              padding-left: 1.5em;
+            }
+            .ed-body li {
+              margin-bottom: 0.6em;
+              line-height: 1.75;
+            }
+
+            /* Images */
+            .ed-body img {
+              display: block;
+              width: 100%; max-width: 100%;
+              height: auto;
+              margin: 2.5em 0;
+              border-radius: 8px;
+            }
+
+            /* Links */
+            .ed-body a {
+              color: #b8956a;
+              text-decoration: underline;
+              text-decoration-thickness: 1px;
+              text-underline-offset: 2px;
+              transition: color 0.15s;
+            }
+            .ed-body a:hover { color: #96754e; }
+
+            /* Horizontal rule */
+            .ed-body hr {
+              border: none;
+              height: 1px;
+              background: #e8e8e4;
+              margin: 3em 0;
+            }
+
+            /* ── COMMENTS SECTION ── */
+            .ed-comments {
+              margin-top: 64px;
+              padding-top: 40px;
+              border-top: 1px solid #e8e8e4;
+            }
+            .ed-comments-heading {
+              font-family: 'Playfair Display', serif;
+              font-size: 1.3rem; font-weight: 800;
+              color: #1a1a1a;
+              margin-bottom: 28px;
+            }
+            .ed-comment-form {
+              margin-bottom: 32px;
+              padding: 20px;
+              background: #f7f7f4;
+              border-radius: 10px;
+              border: 1px solid #eee;
+            }
+            .ed-comment-textarea {
+              display: block; width: 100%;
+              min-height: 80px; padding: 12px;
+              border: 1px solid #ddd; border-radius: 8px;
+              font-family: 'Inter', system-ui, sans-serif;
+              font-size: 0.92rem; line-height: 1.5;
+              resize: vertical; margin-bottom: 10px;
+              box-sizing: border-box;
+              background: #fff;
+              color: #333;
+            }
+            .ed-comment-textarea:focus { outline: none; border-color: #b8956a; }
+            .ed-comment-submit {
+              display: block; width: 100%;
+              padding: 11px; border: none; border-radius: 8px;
+              background: #1a1a1a; color: #fff;
+              font-family: 'Inter', system-ui, sans-serif;
+              font-size: 0.88rem; font-weight: 700;
+              cursor: pointer; transition: background 0.15s;
+            }
+            .ed-comment-submit:hover { background: #333; }
+            .ed-comment-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+            .ed-comment-login {
+              text-align: center; padding: 18px;
+              background: #f7f7f4; border-radius: 10px;
+              margin-bottom: 28px; border: 1px solid #eee;
+              font-size: 0.88rem; color: #888;
+            }
+            .ed-comment-item {
+              padding: 20px 0;
+              border-bottom: 1px solid #f0f0ec;
+            }
+            .ed-comment-item:last-child { border-bottom: none; }
+            .ed-comment-head {
+              display: flex; justify-content: space-between;
+              align-items: flex-start; margin-bottom: 8px;
+            }
+            .ed-comment-author {
+              font-family: 'Inter', system-ui, sans-serif;
+              font-size: 0.88rem; font-weight: 700; color: #1a1a1a;
+              display: block;
+            }
+            .ed-comment-date {
+              font-family: 'Inter', system-ui, sans-serif;
+              font-size: 0.72rem; color: #bbb;
+            }
+            .ed-comment-del {
+              background: none; border: none;
+              color: #dc3545; cursor: pointer;
+              font-size: 0.72rem; font-weight: 700;
+              font-family: 'Inter', system-ui, sans-serif;
+            }
+            .ed-comment-text {
+              font-family: 'Crimson Text', serif;
+              font-size: 1.05rem; line-height: 1.65;
+              color: #333; margin: 0;
+              word-break: normal; overflow-wrap: break-word;
+            }
+
+            /* ══════════════════════════════════════
+               RESPONSIVE BREAKPOINTS — MOBILE FIRST
+               ══════════════════════════════════════ */
+
+            /* Tablet — 768px */
             @media (max-width: 768px) {
-              .art-topbar { padding: 12px 16px; }
-              .art-reader { padding: 32px 16px 80px; }
-              .art-title { font-size: 2rem; margin-bottom: 24px; }
-              .art-body { font-size: 1.15rem; line-height: 1.8; }
-              .art-body blockquote { font-size: 1.25rem; padding: 16px; margin: 32px 0; }
-              .art-body img { margin: 32px 0; border-radius: 8px; }
+              .ed-container { padding: 40px 24px 80px; }
+              .ed-title { font-size: 2.1rem; margin-bottom: 22px; }
+              .ed-body { font-size: 1.15rem; line-height: 1.8; }
+              .ed-body h1 { font-size: 1.7rem; }
+              .ed-body h2 { font-size: 1.45rem; }
+              .ed-body h3 { font-size: 1.2rem; }
+              .ed-body blockquote { font-size: 1.15rem; padding-left: 20px; }
+              .ed-meta-stats { margin-left: 0; width: 100%; margin-top: 4px; }
+            }
+
+            /* Mobile — 480px */
+            @media (max-width: 480px) {
+              .ed-nav { height: 48px; }
+              .ed-nav-brand { font-size: 0.82rem; }
+              .ed-nav-btn { padding: 6px 10px; font-size: 0.7rem; }
+              .ed-container { padding: 28px 16px 64px; }
+              .ed-title { font-size: 1.75rem; line-height: 1.22; margin-bottom: 18px; }
+              .ed-meta { gap: 8px; padding-bottom: 20px; margin-bottom: 28px; }
+              .ed-body { font-size: 1.08rem; line-height: 1.75; }
+              .ed-body h1 { font-size: 1.5rem; }
+              .ed-body h2 { font-size: 1.3rem; }
+              .ed-body h3 { font-size: 1.12rem; }
+              .ed-body blockquote { padding-left: 16px; font-size: 1.05rem; margin: 1.5em 0; }
+              .ed-body img { margin: 1.5em 0; border-radius: 6px; }
+              .ed-comments { margin-top: 48px; padding-top: 28px; }
             }
           `}</style>
-          <div className="art-topbar">
-            <div className="art-topbar-brand">YAZILARIM</div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+
+          {/* ── Top Navigation ── */}
+          <nav className="ed-nav">
+            <span className="ed-nav-brand">Yazılarım</span>
+            <div className="ed-nav-actions">
               {ADMIN_EMAILS.includes(user?.email || '') && (
                 <>
-                  <button onClick={() => editPost(active!)} style={{ background: '#b8956a', color: '#fff', border: 'none', borderRadius: 50, padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>DÜZENLE</button>
-                  <button onClick={() => handleDeletePost(active!.id)} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 50, padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>SİL</button>
+                  <button className="ed-nav-btn ed-nav-btn--edit" onClick={() => editPost(active!)}>Düzenle</button>
+                  <button className="ed-nav-btn ed-nav-btn--del" onClick={() => handleDeletePost(active!.id)}>Sil</button>
                 </>
               )}
-              <button className="art-close" onClick={closePost}><X size={15}/> Kapat</button>
+              <button className="ed-nav-btn ed-nav-btn--close" onClick={closePost}>
+                <X size={14} /> Kapat
+              </button>
             </div>
-          </div>
-          <div className="art-reader">
-            <span className="art-cat-badge">{active.category}</span>
-            <h1 className="art-title">{active.title}</h1>
-            <div className="art-meta">
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#333' }}>Psikolog Furkan Manav</span>
-              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#ccc', display: 'inline-block' }} />
-              <span style={{ fontSize: '0.78rem', color: '#aaa', fontStyle: 'italic' }}>{format(new Date(active.date), 'dd MMMM yyyy', { locale: tr })}</span>
-              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#ccc', display: 'inline-block' }} />
-              <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.78rem', color: '#aaa' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Heart size={13}/>{active.likes}</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={13}/>{active.commentCount}</span>
-              </span>
+          </nav>
+
+          {/* ── Article Container ── */}
+          <article className="ed-container">
+            {/* Category */}
+            <span className="ed-cat">{active.category}</span>
+
+            {/* Title */}
+            <h1 className="ed-title">{active.title}</h1>
+
+            {/* Meta */}
+            <div className="ed-meta">
+              <span className="ed-meta-author">Psikolog Furkan Manav</span>
+              <span className="ed-meta-dot" />
+              <span className="ed-meta-date">{format(new Date(active.date), 'dd MMMM yyyy', { locale: tr })}</span>
+              <div className="ed-meta-stats">
+                <span className="ed-meta-stat"><Heart size={14} /> {active.likes}</span>
+                <span className="ed-meta-stat"><MessageCircle size={14} /> {active.commentCount}</span>
+              </div>
             </div>
-            <div className="art-body article-content" dangerouslySetInnerHTML={{ __html: active.content }} />
-            <div className="art-comments">
-              <h3 style={{ fontFamily: 'Playfair Display,serif', fontSize: '1.4rem', fontWeight: 800, marginBottom: 28, color: '#111' }}>Yorumlar ({comments.length})</h3>
+
+            {/* Article Body */}
+            <div className="ed-body" dangerouslySetInnerHTML={{ __html: active.content }} />
+
+            {/* Comments */}
+            <section className="ed-comments">
+              <h3 className="ed-comments-heading">Yorumlar ({comments.length})</h3>
+
               {user ? (
-                <div style={{ marginBottom: 36, background: '#f8f8f8', padding: 20, borderRadius: 12, border: '1px solid #eee' }}>
-                  <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Düşüncelerinizi paylaşın..." style={{ width: '100%', minHeight: 90, padding: 14, border: '1px solid #e0e0e0', borderRadius: 8, fontSize: '0.95rem', marginBottom: 10, resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-                  <button onClick={submit} disabled={submitting || !text.trim()} style={{ width: '100%', padding: '12px', borderRadius: 8, fontWeight: 700, background: '#111', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.9rem', opacity: submitting ? 0.7 : 1 }}>
+                <div className="ed-comment-form">
+                  <textarea
+                    className="ed-comment-textarea"
+                    value={text}
+                    onChange={e => setText(e.target.value)}
+                    placeholder="Düşüncelerinizi paylaşın..."
+                  />
+                  <button
+                    className="ed-comment-submit"
+                    onClick={submit}
+                    disabled={submitting || !text.trim()}
+                  >
                     {submitting ? 'Gönderiliyor...' : 'Yorum Yap'}
                   </button>
                 </div>
               ) : (
-                <div style={{ padding: 20, background: '#f8f8f8', borderRadius: 12, textAlign: 'center', marginBottom: 32, border: '1px solid #eee' }}>
-                  <p style={{ fontSize: '0.9rem', color: '#777', margin: 0 }}>Yorum yapmak için giriş yapmalısınız.</p>
+                <div className="ed-comment-login">
+                  Yorum yapmak için giriş yapmalısınız.
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                {loadingC ? <p style={{ color: '#bbb' }}>Yükleniyor...</p> : comments.map(c => (
-                  <div key={c.id} style={{ paddingBottom: 24, borderBottom: '1px solid #f0f0f0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+
+              <div>
+                {loadingC ? (
+                  <p style={{ color: '#bbb', fontStyle: 'italic' }}>Yorumlar yükleniyor...</p>
+                ) : comments.map(c => (
+                  <div key={c.id} className="ed-comment-item">
+                    <div className="ed-comment-head">
                       <div>
-                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111', display: 'block' }}>{c.authorName}</span>
-                        <span style={{ fontSize: '0.72rem', color: '#bbb' }}>{format(c.createdAt, 'd MMM yyyy HH:mm', { locale: tr })}</span>
+                        <span className="ed-comment-author">{c.authorName}</span>
+                        <span className="ed-comment-date">{format(c.createdAt, 'd MMM yyyy HH:mm', { locale: tr })}</span>
                       </div>
                       {(ADMIN_EMAILS.includes(user?.email || '') || user?.uid === c.uid) && (
-                        <button onClick={() => deleteComment(c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700 }}>SİL</button>
+                        <button className="ed-comment-del" onClick={() => deleteComment(c.id)}>Sil</button>
                       )}
                     </div>
-                    <p style={{ fontSize: '1rem', color: '#333', lineHeight: 1.65, margin: 0 }}>{c.text}</p>
+                    <p className="ed-comment-text">{c.text}</p>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
+            </section>
+          </article>
         </div>
       )}
     </div>
