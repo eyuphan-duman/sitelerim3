@@ -70,8 +70,8 @@ export default function ArticleDetailPage({ params }: { params: { id: string } }
       try {
         const snap = await getDoc(doc(db, 'articles', id));
         if (!snap.exists()) { setNotFound(true); return; }
-        const data = snap.data();
-        const serialized = {
+        const data = snap.data() as any;
+        const serialized: any = {
           id: snap.id,
           ...data,
           createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || null),
