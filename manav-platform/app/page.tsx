@@ -34,6 +34,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
   const [searchOpen, setSearchOpen] = useState(false);
+  const [latestArticles, setLatestArticles] = useState<any[]>([]);
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -51,6 +52,15 @@ export default function HomePage() {
   useEffect(() => {
     const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
     setDailyQuote(QUOTES[dayOfYear % QUOTES.length]);
+  }, []);
+
+  useEffect(() => {
+    getDocs(query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(4)))
+      .then(snap => setLatestArticles(snap.docs.map(d => {
+        const data = d.data();
+        return { id: d.id, ...data, createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : null };
+      })))
+      .catch(() => {});
   }, []);
 
 
@@ -288,6 +298,43 @@ export default function HomePage() {
       </section>
 
 
+
+      {/* ══════════════════ LATEST ARTICLES ══════════════════ */}
+      {latestArticles.length > 0 && (
+        <section style={{ padding: '80px 0', background: '#f8fafc' }}>
+          <div className="container-main">
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 48, flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 12, color: 'var(--gold-dim)' }}>Güncel İçerikler</div>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,2.6rem)', fontWeight: 700, color: 'var(--navy)' }}>Son Makaleler</h2>
+              </div>
+              <Link href="/yazilarim" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--navy)', fontWeight: 700, fontSize: '0.8rem', textDecoration: 'none', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Tümünü Gör <ArrowRight size={14}/>
+              </Link>
+            </div>
+            <div className="yz-grid">
+              {latestArticles.map(a => (
+                <Link href={`/yazilarim/${a.id}`} key={a.id} className="article-card" style={{ textDecoration: 'none' }}>
+                  {a.featuredImage && (
+                    <div className="article-card-image">
+                      <img src={a.featuredImage} alt={a.title} loading="lazy" />
+                    </div>
+                  )}
+                  <div className="article-card-body">
+                    <div className="article-card-meta">
+                      {a.category && <span className="article-card-category">{a.category}</span>}
+                      {a.createdAt && <span className="article-card-date">{format(new Date(a.createdAt), 'd MMM yyyy', { locale: tr })}</span>}
+                    </div>
+                    <h3 className="article-card-title">{a.title}</h3>
+                    {a.excerpt && <p className="article-card-excerpt">{a.excerpt}</p>}
+                    <span className="article-card-btn">Makaleyi Oku <ArrowRight size={14} className="article-card-btn-arrow" /></span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ══════════════════ QUOTE CTA ══════════════════ */}
       <section style={{ padding: '120px 0', background: 'var(--navy)', position: 'relative', overflow: 'hidden' }}>
