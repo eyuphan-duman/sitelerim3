@@ -100,13 +100,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   const modules = useMemo(() => ({
     toolbar: {
       container: [
-        [{ 'header': [1, 2, 3, false] }],
+        [{ 'header': [1, 2, 3, 4, false] }],
+        [{ 'font': [] }],
         [{ 'size': ['small', false, 'large', 'huge'] }],
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'color': [] }, { 'background': [] }],
+        [{ 'script': 'sub' }, { 'script': 'super' }],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'indent': '-1' }, { 'indent': '+1' }],
         [{ 'align': [] }],
-        ['link', 'image'],
+        ['blockquote', 'code-block'],
+        ['link', 'image', 'video'],
         ['image-grow', 'image-shrink'],
         ['clean']
       ],
@@ -119,11 +123,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   }), [QuillEditor]);
 
   const formats = [
-    'header', 'size',
+    'header', 'font', 'size',
     'bold', 'italic', 'underline', 'strike',
     'color', 'background',
-    'list', 'bullet',
-    'link', 'image', 'width'
+    'script', 'list', 'bullet', 'indent', 'align',
+    'blockquote', 'code-block',
+    'link', 'image', 'video', 'width'
   ];
 
   if (!QuillEditor) {
@@ -149,22 +154,26 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         .ql-image-shrink::before { content: '🖼️-'; font-size: 11px; font-weight: bold; }
         
         .rich-text-editor .ql-editor {
-          min-height: 400px;
-          font-size: 1.1rem;
-          line-height: 1.8;
-          color: #333;
+          min-height: 500px;
+          font-size: 1.15rem;
+          line-height: 1.9;
+          color: #1a202c;
           background: #fff;
+          font-family: 'Inter', sans-serif;
+          padding: 30px;
         }
         .rich-text-editor .ql-container {
-          border-bottom-left-radius: 4px;
-          border-bottom-right-radius: 4px;
-          font-family: inherit;
+          border-bottom-left-radius: 12px;
+          border-bottom-right-radius: 12px;
+          border-color: #e2e8f0;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         }
         .rich-text-editor .ql-toolbar {
-          border-top-left-radius: 4px;
-          border-top-right-radius: 4px;
-          background: #f8f9fa;
-          border-color: #ddd;
+          border-top-left-radius: 12px;
+          border-top-right-radius: 12px;
+          background: #f8fafc;
+          border-color: #e2e8f0;
+          padding: 12px;
         }
         .rich-text-editor .ql-editor img {
           max-width: 100%;
