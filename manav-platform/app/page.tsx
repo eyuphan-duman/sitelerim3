@@ -34,7 +34,6 @@ export default function HomePage() {
   const { user } = useAuth();
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
   const [searchOpen, setSearchOpen] = useState(false);
-  const [latestArticles, setLatestArticles] = useState<any[]>([]);
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -54,23 +53,6 @@ export default function HomePage() {
     setDailyQuote(QUOTES[dayOfYear % QUOTES.length]);
   }, []);
 
-  useEffect(() => {
-    async function fetchLatestArticles() {
-      try {
-        const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(4));
-        const snap = await getDocs(q);
-        setLatestArticles(snap.docs.map(d => {
-          const data = d.data();
-          return { 
-            id: d.id, 
-            ...data, 
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt || new Date()) 
-          };
-        }));
-      } catch (err) { console.error(err); }
-    }
-    fetchLatestArticles();
-  }, []);
 
 
   useEffect(() => {
@@ -84,8 +66,7 @@ export default function HomePage() {
       setSearching(true);
       try {
         const q = searchQ.toLowerCase();
-        const [articlesSnap, forumSnap, usersSnap] = await Promise.all([
-          getDocs(query(collection(db, 'articles'), limit(30))),
+        const [forumSnap, usersSnap] = await Promise.all([
           getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(50))),
           getDocs(query(collection(db, 'users'), limit(50))),
         ]);
@@ -104,14 +85,6 @@ export default function HomePage() {
           }
         });
 
-        articlesSnap.docs.forEach(d => {
-          const data = d.data();
-          if ((data.title||'').toLowerCase().includes(q) || (data.excerpt||'').toLowerCase().includes(q) || (data.content||'').toLowerCase().includes(q)) {
-            const raw = data.excerpt || stripHtml(data.content || '');
-            const truncated = raw.length > 100 ? raw.slice(0, 100) + '...' : raw;
-            results.push({ id: d.id, type: 'post', title: data.title, excerpt: truncated, href: '/yazilarim/' + d.id });
-          }
-        });
 
         forumSnap.docs.forEach(d => {
           const data = d.data();
@@ -315,53 +288,6 @@ export default function HomePage() {
       </section>
 
 
-      {/* ══════════════════ LATEST ARTICLES ══════════════════ */}
-      <section className="py-24 bg-[#fafafa]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-12 gap-6">
-            <div>
-              <div className="text-[var(--gold)] font-bold text-xs tracking-[0.2em] uppercase mb-3">Güncel İçerikler</div>
-              <h2 className="font-serif text-4xl md:text-5xl font-bold text-[var(--navy)] leading-tight">Son Makaleler</h2>
-            </div>
-            <Link href="/yazilarim" className="inline-flex items-center gap-2 text-[var(--navy)] font-bold text-sm tracking-wider uppercase hover:text-[var(--gold)] transition-colors">
-              Tümünü Gör <ArrowRight size={16} />
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {latestArticles.map(article => (
-              <Link href={`/yazilarim/${article.id}`} key={article.id} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.03)] border border-gray-100 hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 h-full min-h-[250px] p-8 md:p-10 relative">
-                
-                {article.category && (
-                  <span className="absolute top-8 right-8 flex items-center gap-1 text-gray-400 text-[10px] font-bold tracking-widest uppercase">
-                    {article.category}
-                  </span>
-                )}
-                
-                {/* Content */}
-                <div className="flex flex-col flex-1">
-                  <span className="text-[11px] font-bold text-[var(--gold-dim)] tracking-widest uppercase mb-3">
-                    {article.createdAt ? format(new Date(article.createdAt), 'd MMMM yyyy', { locale: tr }) : ''}
-                  </span>
-                  <h3 className="font-serif text-2xl md:text-3xl font-bold text-[var(--navy)] mb-4 leading-snug group-hover:text-[var(--gold)] transition-colors line-clamp-2">
-                    {article.title}
-                  </h3>
-                  <p className="text-gray-500 text-base md:text-lg leading-relaxed mb-8 line-clamp-3 font-serif flex-1">
-                    {article.excerpt}
-                  </p>
-                  
-                  <div className="mt-auto pt-5 border-t border-gray-100/50 flex items-center">
-                    <span className="text-[var(--navy)] text-xs font-bold tracking-widest uppercase flex items-center gap-1.5 group-hover:text-[var(--gold)] transition-colors bg-gray-50 px-5 py-2.5 rounded-full">
-                      Makaleyi Oku <ArrowRight size={14} className="transform group-hover:translate-x-1 transition-transform" />
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-            {latestArticles.length === 0 && <p className="text-gray-400 italic font-serif">Henüz makale bulunmuyor.</p>}
-          </div>
-        </div>
-      </section>
 
       {/* ══════════════════ QUOTE CTA ══════════════════ */}
       <section style={{ padding: '120px 0', background: 'var(--navy)', position: 'relative', overflow: 'hidden' }}>
@@ -440,7 +366,7 @@ export default function HomePage() {
               <div style={{ padding: '24px 20px' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {[{ label: 'Yazılarım', href: '/yazilarim', icon: '📝' }, { label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Hakkımda', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
+                  {[{ label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Hakkımda', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
                     <Link key={l.href} href={l.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, textDecoration: 'none', color: '#334155', fontSize: '0.92rem', fontWeight: 500, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                       <span style={{ fontSize: '1.1rem' }}>{l.icon}</span> {l.label}
                     </Link>
