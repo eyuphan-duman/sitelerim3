@@ -139,7 +139,7 @@ export default function YazilarimClient() {
                 <span style={{ background: 'rgba(201,169,110,0.15)', color: 'var(--gold-light)', padding: '5px 14px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', border: '1px solid rgba(201,169,110,0.25)' }}>{selectedPost.category}</span>
               </div>
             )}
-            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 700, color: 'white', lineHeight: 1.15, marginBottom: 20 }}>{selectedPost.title}</h1>
+            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', fontWeight: 700, color: 'white', lineHeight: 1.1, marginBottom: 24 }}>{selectedPost.title}</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
                 <Clock size={14} /> {selectedPost.date ? format(new Date(selectedPost.date), 'd MMMM yyyy', { locale: tr }) : ''}
@@ -154,9 +154,19 @@ export default function YazilarimClient() {
         </div>
 
         {/* Article Body */}
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '56px 24px 120px' }}>
+        <div style={{ maxWidth: 850, margin: '0 auto', padding: '64px 24px 120px' }}>
           <div
-            className="article-content"
+            className="yz-detail-content"
+            style={{ 
+              fontFamily: 'Montserrat, sans-serif', 
+              fontSize: '1.1rem', 
+              lineHeight: '1.8', 
+              color: '#1f2937', 
+              textAlign: 'left',
+              wordBreak: 'normal',
+              overflowWrap: 'break-word',
+              hyphens: 'none'
+            }}
             dangerouslySetInnerHTML={{ __html: selectedPost.content || '' }}
           />
         </div>
@@ -236,25 +246,93 @@ export default function YazilarimClient() {
         ) : posts.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#94a3b8', padding: '80px 0', fontStyle: 'italic' }}>Henüz yayınlanan bir yazı bulunmuyor.</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 32 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 40 }}>
             {posts.map(p => {
               const preview = p.excerpt || truncate(stripHtml(p.content || ''), 160);
               return (
-                <div key={p.id} onClick={() => openPost(p.id)} className="post-card" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', border: 'none', borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-                  {/* Card Header */}
-                  <div style={{ padding: '32px 28px 20px', background: 'linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%)', borderRadius: '16px 16px 0 0', position: 'relative', overflow: 'hidden', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                    <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(201,169,110,0.08)' }} />
-                    {p.category && <span style={{ alignSelf: 'flex-start', background: 'rgba(201,169,110,0.15)', color: 'var(--gold-light)', padding: '4px 12px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>{p.category}</span>}
-                    <h3 style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: '1.25rem', fontWeight: 700, lineHeight: 1.3 }}>{p.title}</h3>
+                <div 
+                  key={p.id} 
+                  onClick={() => openPost(p.id)} 
+                  className="post-card" 
+                  style={{ 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    background: 'white',
+                    borderRadius: 20, 
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
+                    border: '1px solid #f1f5f9',
+                    overflow: 'hidden',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                  }}
+                >
+                  {/* Card Header (Image or Accent) */}
+                  <div style={{ height: 180, background: 'linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, opacity: 0.1, background: 'radial-gradient(circle at 70% 30%, var(--gold) 0%, transparent 70%)' }} />
+                    <div style={{ position: 'absolute', bottom: 20, left: 24 }}>
+                      {p.category && (
+                        <span style={{ 
+                          background: 'var(--gold)', 
+                          color: 'var(--navy)', 
+                          padding: '4px 12px', 
+                          borderRadius: 4, 
+                          fontSize: '0.65rem', 
+                          fontWeight: 700, 
+                          letterSpacing: '0.1em', 
+                          textTransform: 'uppercase' 
+                        }}>{p.category}</span>
+                      )}
+                    </div>
                   </div>
+                  
                   {/* Card Body */}
-                  <div style={{ padding: '20px 28px 24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <p style={{ fontFamily: 'Crimson Text, serif', color: '#64748b', fontSize: '1rem', lineHeight: 1.6, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{preview}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
-                      <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{p.date ? format(new Date(p.date), 'd MMM yyyy', { locale: tr }) : ''}</span>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ color: 'var(--gold-dim)', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Devamını Oku →</span>
-                        {isAdmin && <button onClick={e => deletePost(p.id, e)} style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={12} /></button>}
+                  <div style={{ padding: '28px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <h3 style={{ 
+                      fontFamily: 'Montserrat, sans-serif', 
+                      color: 'var(--navy)', 
+                      fontSize: '1.25rem', 
+                      fontWeight: 700, 
+                      lineHeight: 1.3,
+                      marginBottom: 14,
+                      wordBreak: 'normal',
+                      overflowWrap: 'break-word'
+                    }}>{p.title}</h3>
+                    
+                    <p style={{ 
+                      fontFamily: 'Montserrat, sans-serif', 
+                      color: '#64748b', 
+                      fontSize: '0.95rem', 
+                      lineHeight: 1.6, 
+                      marginBottom: 20, 
+                      display: '-webkit-box', 
+                      WebkitLineClamp: 3, 
+                      WebkitBoxOrient: 'vertical', 
+                      overflow: 'hidden',
+                      wordBreak: 'normal',
+                      overflowWrap: 'break-word'
+                    }}>{preview}</p>
+                    
+                    <div style={{ 
+                      marginTop: 'auto',
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      paddingTop: 16,
+                      borderTop: '1px solid #f1f5f9'
+                    }}>
+                      <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>
+                        {p.date ? format(new Date(p.date), 'd MMM yyyy', { locale: tr }) : ''}
+                      </span>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <span style={{ color: 'var(--gold-dim)', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>İncele →</span>
+                        {isAdmin && (
+                          <button 
+                            onClick={e => deletePost(p.id, e)} 
+                            style={{ background: '#fff1f1', color: '#ef4444', border: '1px solid #fee2e2', width: 30, height: 30, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
