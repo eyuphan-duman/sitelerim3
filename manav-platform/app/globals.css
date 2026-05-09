@@ -851,7 +851,7 @@ body {
 ═══════════════════════════════════════════════ */
 .yz-detail-page { min-height: 100vh; background: #fff; padding-bottom: 120px; }
 .yz-detail-container { 
-  max-width: 800px; 
+  max-width: 1000px; 
   margin: 0 auto; 
   padding: 80px 24px; 
   width: 100%;
@@ -973,24 +973,31 @@ body {
 .yz-comment-del-min { background: none; border: none; color: #fca5a5; cursor: pointer; padding: 4px; }
 .yz-comment-item-minimal p { color: #475569; line-height: 1.6; }
 .yz-detail-content {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 1.1rem;
+  font-family: 'Crimson Text', serif;
+  font-size: 1.2rem;
   font-weight: 400;
   line-height: 1.8;
-  color: #1f2937;
+  color: #1e293b;
   text-align: left !important;
   /* Word-wrapping rules: No splitting words */
-  word-break: normal;
-  overflow-wrap: break-word;
-  hyphens: none;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: none !important;
   text-wrap: pretty; /* Better line breaks */
   -webkit-font-smoothing: antialiased;
+  /* Matching Editor Container exactly */
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid #e2e8f0;
+  overflow: hidden;
+  /* Matching Editor Padding exactly */
+  padding: 28px 32px;
 }
 .yz-detail-content p, .yz-detail-content span, .article-card-excerpt, .ql-editor, .ql-editor p {
   text-align: left !important;
 }
 .yz-detail-content p { 
-  margin-bottom: 2rem; 
+  margin-bottom: 1.4rem; 
   text-align: left !important;
 }
 .yz-detail-content h2, .yz-detail-content h3, .yz-detail-content h4 {
@@ -1304,6 +1311,25 @@ body {
   color: #1e293b;
 }
 .yz-editor-quill .ql-editor p { margin-bottom: 1.4rem; }
+.yz-editor-quill .ql-editor h2, .yz-editor-quill .ql-editor h3, .yz-editor-quill .ql-editor h4 {
+  font-family: 'Playfair Display', serif !important;
+  color: var(--navy) !important;
+  font-weight: 700 !important;
+  margin: 2.5rem 0 1rem !important;
+  line-height: 1.25 !important;
+}
+.yz-editor-quill .ql-editor h2 { font-size: 2rem !important; }
+.yz-editor-quill .ql-editor h3 { font-size: 1.6rem !important; }
+.yz-editor-quill .ql-editor h4 { font-size: 1.35rem !important; }
+
+.yz-editor-quill .ql-editor img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 12px !important;
+  margin: 2.5rem auto !important;
+  display: block !important;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.08) !important;
+}
 
 /* ═══════════════════════════════════════════════
    RESPONSIVE
