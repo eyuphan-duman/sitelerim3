@@ -1,199 +1,184 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, deleteDoc, updateDoc, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
+import {
+  doc, deleteDoc, updateDoc,
+  collection, addDoc, serverTimestamp, query, orderBy, onSnapshot
+} from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Clock, Folder, Edit3, Trash2, MessageSquare, Send, User, Calendar } from 'lucide-react';
-import Link from 'next/link';
-
-// Dynamic import for the editor to avoid SSR issues
+import {
+  ArrowLeft, Calendar, Tag, Edit3, Trash2,
+  MessageSquare, Send, User, X, Check
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
+
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
-const quillModules = {
+const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
+
+const QUILL_MODULES = {
   toolbar: [
-    [{ 'header': [2, 3, 4, false] }, { 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+    [{ header: [2, 3, 4, false] }],
+    [{ font: [] }, { size: ['small', false, 'large', 'huge'] }],
     ['bold', 'italic', 'underline', 'strike'],
-    [{ 'color': [] }, { 'background': [] }],
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': ['', 'center', 'right'] }],
-    ['blockquote'],
-    ['link', 'image'],
-    ['clean']
+    [{ color: [] }, { background: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ align: ['', 'center', 'right'] }],
+    ['blockquote', 'link', 'image'],
+    ['clean'],
   ],
 };
 
-const quillFormats = [
+const QUILL_FORMATS = [
   'header', 'font', 'size',
   'bold', 'italic', 'underline', 'strike',
   'color', 'background',
   'list', 'bullet', 'align',
-  'blockquote', 'link', 'image'
+  'blockquote', 'link', 'image',
 ];
 
-export default function ArticleDetailClient({ initialArticle, id }: { initialArticle: any, id: string }) {
+interface Props {
+  id: string;
+  initialArticle: any;
+}
+
+export default function ArticleDetailClient({ id, initialArticle }: Props) {
   const { user } = useAuth();
   const router = useRouter();
-  const isAdmin = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'].includes(user?.email || '');
-  
-  const [article, setArticle] = useState(initialArticle);
-  const [comments, setComments] = useState<any[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [submittingComment, setSubmittingComment] = useState(false);
-  
-  // Editor state
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ title: '', category: '', featuredImage: '', content: '' });
-  const [updating, setUpdating] = useState(false);
+  const isAdmin = ADMIN_EMAILS.includes(user?.email || '');
 
-  // Fetch comments
+  const [article, setArticle] = useState<any>(initialArticle);
+  
+  // Edit state
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ 
+    title: initialArticle?.title || '', 
+    category: initialArticle?.category || '', 
+    featuredImage: initialArticle?.featuredImage || '', 
+    content: initialArticle?.content || '' 
+  });
+  const [saving, setSaving] = useState(false);
+
+  // Comments
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
+
+  // Comments realtime
   useEffect(() => {
     const q = query(collection(db, 'articles', id, 'comments'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, snap => {
-      setComments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setComments(snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || null),
+        };
+      }));
     });
     return () => unsub();
   }, [id]);
 
   const handleDelete = async () => {
-    if (confirm('Bu makaleyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-      try {
-        await deleteDoc(doc(db, 'articles', id));
-        toast.success('Makale başarıyla silindi.');
-        router.push('/yazilarim');
-      } catch (err) {
-        toast.error('Silinirken bir hata oluştu.');
-      }
-    }
-  };
-
-  const handleEditOpen = () => {
-    setEditForm({
-      title: article.title,
-      category: article.category || '',
-      featuredImage: article.featuredImage || '',
-      content: article.content || ''
-    });
-    setIsEditing(true);
+    if (!confirm('Bu makaleyi kalıcı olarak silmek istediğinize emin misiniz?')) return;
+    try {
+      await deleteDoc(doc(db, 'articles', id));
+      toast.success('Makale silindi.');
+      router.push('/yazilarim');
+    } catch { toast.error('Silme başarısız.'); }
   };
 
   const handleUpdate = async () => {
-    if (!editForm.title.trim() || !editForm.content.trim()) {
-      toast.error('Başlık ve içerik zorunludur.');
-      return;
-    }
-    setUpdating(true);
+    if (!editForm.title.trim()) { toast.error('Başlık zorunludur.'); return; }
+    if (!editForm.content || editForm.content === '<p><br></p>') { toast.error('İçerik zorunludur.'); return; }
+    setSaving(true);
     try {
-      const stripHtml = (html: string) => html.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
-      const raw = stripHtml(editForm.content);
-      const excerpt = raw.length > 200 ? raw.slice(0, 200) + '...' : raw;
-
-      await updateDoc(doc(db, 'articles', id), {
-        ...editForm,
-        excerpt
-      });
-      setArticle({ ...article, ...editForm, excerpt });
-      setIsEditing(false);
-      toast.success('Makale başarıyla güncellendi.');
-    } catch (err) {
-      toast.error('Güncellenirken hata oluştu.');
-    } finally {
-      setUpdating(false);
-    }
+      const strip = (h: string) => h.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
+      const raw = strip(editForm.content);
+      const excerpt = raw.length > 220 ? raw.slice(0, 220) + '…' : raw;
+      await updateDoc(doc(db, 'articles', id), { ...editForm, excerpt });
+      setArticle((a: any) => ({ ...a, ...editForm, excerpt }));
+      setEditing(false);
+      toast.success('Makale güncellendi!');
+    } catch { toast.error('Güncelleme başarısız.'); }
+    finally { setSaving(false); }
   };
 
-  const handlePostComment = async (e: React.FormEvent) => {
+  const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) { toast.error('Yorum yapmak için giriş yapmalısınız.'); return; }
-    if (!newComment.trim()) return;
-
-    setSubmittingComment(true);
+    if (!user) { toast.error('Yorum için giriş yapmalısınız.'); return; }
+    if (!commentText.trim()) return;
+    setPostingComment(true);
     try {
       await addDoc(collection(db, 'articles', id, 'comments'), {
         userId: user.uid,
         userName: user.displayName || user.email?.split('@')[0] || 'Kullanıcı',
-        content: newComment,
-        createdAt: serverTimestamp()
+        content: commentText,
+        createdAt: serverTimestamp(),
       });
-      setNewComment('');
-      toast.success('Yorumunuz paylaşıldı.');
-    } catch (err) {
-      toast.error('Yorum eklenirken hata oluştu.');
-    } finally {
-      setSubmittingComment(false);
-    }
+      setCommentText('');
+      toast.success('Yorum paylaşıldı!');
+    } catch { toast.error('Yorum eklenemedi.'); }
+    finally { setPostingComment(false); }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    if (confirm('Yorumu silmek istediğinize emin misiniz?')) {
-      try {
-        await deleteDoc(doc(db, 'articles', id, 'comments', commentId));
-        toast.success('Yorum silindi.');
-      } catch (err) {
-        toast.error('Yorum silinirken hata oluştu.');
-      }
-    }
+  const handleDeleteComment = async (cid: string) => {
+    if (!confirm('Yorumu silmek istediğinize emin misiniz?')) return;
+    try {
+      await deleteDoc(doc(db, 'articles', id, 'comments', cid));
+      toast.success('Yorum silindi.');
+    } catch { toast.error('Silme başarısız.'); }
   };
 
-  if (isEditing) {
+  // ── EDITOR MODE ──
+  if (editing) {
     return (
-      <div className="fixed inset-0 z-[99999] bg-[#f8fafc] flex flex-col overflow-y-auto">
-        {/* Editor Top Bar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsEditing(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-gray-600">
-              <ArrowLeft size={20} />
-            </button>
-            <h2 className="font-serif text-2xl font-bold text-[var(--navy)]">Makaleyi Düzenle</h2>
-          </div>
-          <button onClick={handleUpdate} disabled={updating} className="bg-[var(--gold)] hover:bg-[var(--gold-dim)] text-[var(--navy)] px-8 py-2.5 rounded-lg font-bold transition-colors shadow-sm">
-            {updating ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+      <div className="yz-editor-overlay">
+        <div className="yz-editor-topbar">
+          <button onClick={() => setEditing(false)} className="yz-editor-back">
+            <X size={20} /> İptal
+          </button>
+          <span className="yz-editor-label">Makaleyi Düzenle</span>
+          <button onClick={handleUpdate} disabled={saving} className="yz-editor-save">
+            <Check size={18} /> {saving ? 'Kaydediliyor…' : 'Kaydet'}
           </button>
         </div>
-
-        {/* Editor Body */}
-        <div className="max-w-[1000px] w-full mx-auto py-10 px-6 flex flex-col gap-6 flex-1">
-          <input 
-            value={editForm.title} 
-            onChange={e => setEditForm({...editForm, title: e.target.value})} 
-            placeholder="Makale Başlığı" 
-            className="w-full text-4xl font-serif font-bold text-[var(--navy)] bg-transparent border-none outline-none placeholder:text-gray-300"
+        <div className="yz-editor-body">
+          <input
+            className="yz-editor-title-input"
+            value={editForm.title}
+            onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+            placeholder="Makale başlığı…"
           />
-          
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Kategori</label>
-              <input 
-                value={editForm.category} 
-                onChange={e => setEditForm({...editForm, category: e.target.value})} 
-                placeholder="Örn: Psikanaliz" 
-                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-[var(--gold)] transition-colors"
-              />
-            </div>
-            <div className="flex-[2]">
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Kapak Görseli URL</label>
-              <input 
-                value={editForm.featuredImage} 
-                onChange={e => setEditForm({...editForm, featuredImage: e.target.value})} 
-                placeholder="https://..." 
-                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-[var(--gold)] transition-colors"
-              />
-            </div>
+          <div className="yz-editor-row">
+            <input
+              className="yz-editor-field"
+              value={editForm.category}
+              onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+              placeholder="Kategori"
+            />
+            <input
+              className="yz-editor-field"
+              value={editForm.featuredImage}
+              onChange={e => setEditForm(f => ({ ...f, featuredImage: e.target.value }))}
+              placeholder="Kapak görseli URL (opsiyonel)"
+            />
           </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col flex-1 min-h-[600px] shadow-sm premium-editor">
-            <ReactQuill 
+          <div className="yz-editor-quill">
+            <ReactQuill
               theme="snow"
               value={editForm.content}
-              onChange={val => setEditForm({...editForm, content: val})}
-              modules={quillModules}
-              formats={quillFormats}
-              className="flex-1 flex flex-col"
+              onChange={val => setEditForm(f => ({ ...f, content: val }))}
+              modules={QUILL_MODULES}
+              formats={QUILL_FORMATS}
             />
           </div>
         </div>
@@ -201,132 +186,129 @@ export default function ArticleDetailClient({ initialArticle, id }: { initialArt
     );
   }
 
+  const dateStr = article.createdAt
+    ? format(new Date(article.createdAt), 'd MMMM yyyy', { locale: tr })
+    : '';
+
+  // ── ARTICLE VIEW ──
   return (
-    <div className="min-h-screen bg-white">
-      {/* Article Header */}
-      <div className="pt-40 md:pt-48 pb-16 px-6 max-w-4xl mx-auto">
-        <Link href="/yazilarim" className="inline-flex items-center gap-2 text-[var(--gold-dim)] font-bold text-xs uppercase tracking-widest hover:text-[var(--gold)] transition-colors mb-10">
-          <ArrowLeft size={16} /> Tüm Makaleler
-        </Link>
-        
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          {article.category && (
-            <span className="bg-[var(--navy)] text-[var(--gold)] text-xs font-bold px-3 py-1.5 rounded-md tracking-wider uppercase">
-              {article.category}
-            </span>
+    <div className="yz-detail-page">
+      {/* ── HERO ── */}
+      <header className="yz-detail-hero">
+        <div className="yz-detail-hero-inner">
+          <Link href="/yazilarim" className="yz-detail-back">
+            <ArrowLeft size={16} /> Tüm Yazılar
+          </Link>
+
+          <div className="yz-detail-meta">
+            {article.category && (
+              <span className="yz-detail-category"><Tag size={13} />{article.category}</span>
+            )}
+            {dateStr && (
+              <span className="yz-detail-date"><Calendar size={13} />{dateStr}</span>
+            )}
+          </div>
+
+          <h1 className="yz-detail-title">{article.title}</h1>
+
+          {/* Admin controls */}
+          {isAdmin && (
+            <div className="yz-detail-admin-bar">
+              <button onClick={() => setEditing(true)} className="yz-admin-edit-btn">
+                <Edit3 size={15} /> Düzenle
+              </button>
+              <button onClick={handleDelete} className="yz-admin-delete-btn">
+                <Trash2 size={15} /> Sil
+              </button>
+            </div>
           )}
-          <span className="flex items-center gap-1.5 text-gray-400 text-sm font-semibold tracking-wide">
-            <Clock size={16} />
-            {article.createdAt ? format(new Date(article.createdAt.seconds ? article.createdAt.toDate() : article.createdAt), 'd MMMM yyyy', { locale: tr }) : ''}
-          </span>
         </div>
+      </header>
 
-        <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-[var(--navy)] leading-[1.15] mb-8">
-          {article.title}
-        </h1>
-
-        {/* Admin Controls */}
-        {isAdmin && (
-          <div className="flex flex-wrap items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 mb-8">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-2">Yönetici Kontrolleri:</span>
-            <button onClick={handleEditOpen} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 hover:text-[var(--navy)] hover:border-[var(--navy)] px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm">
-              <Edit3 size={16} /> Düzenle
-            </button>
-            <button onClick={handleDelete} className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 hover:bg-red-500 hover:text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm">
-              <Trash2 size={16} /> Makaleyi Sil
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Featured Image */}
+      {/* ── COVER IMAGE ── */}
       {article.featuredImage && (
-        <div className="max-w-6xl mx-auto px-6 mb-16">
-          <div className="w-full aspect-video md:aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl relative">
-            <img src={article.featuredImage} alt={article.title} className="w-full h-full object-cover" />
-          </div>
+        <div className="yz-detail-cover">
+          <img src={article.featuredImage} alt={article.title} />
         </div>
       )}
 
-      {/* Article Content */}
-      <div className="max-w-3xl mx-auto px-6 pb-20">
-        <div 
-          className="premium-article-content"
+      {/* ── CONTENT ── */}
+      <div className="yz-detail-content-wrap">
+        <div
+          className="yz-detail-content"
           dangerouslySetInnerHTML={{ __html: article.content || '' }}
         />
       </div>
 
-      {/* Divider */}
-      <div className="max-w-3xl mx-auto px-6">
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-      </div>
+      {/* ── COMMENTS ── */}
+      <section className="yz-comments">
+        <div className="yz-comments-inner">
+          <h3 className="yz-comments-title">
+            <MessageSquare size={22} />
+            Yorumlar
+            <span className="yz-comments-count">{comments.length}</span>
+          </h3>
 
-      {/* Comments Section */}
-      <div className="max-w-3xl mx-auto px-6 py-20">
-        <div className="flex items-center gap-3 mb-10">
-          <MessageSquare size={24} className="text-[var(--gold)]" />
-          <h3 className="font-serif text-3xl font-bold text-[var(--navy)]">Yorumlar</h3>
-          <span className="bg-gray-100 text-gray-500 font-bold px-3 py-1 rounded-full text-sm">{comments.length}</span>
-        </div>
-
-        {user ? (
-          <form onSubmit={handlePostComment} className="mb-12 bg-[#f8fafc] p-6 rounded-2xl border border-gray-100">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-[var(--navy)] text-[var(--gold)] flex items-center justify-center font-bold text-xs">
-                {user.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
+          {/* Comment form */}
+          {user ? (
+            <form className="yz-comment-form" onSubmit={handleComment}>
+              <div className="yz-comment-avatar">
+                {(user.displayName || user.email || 'U')[0].toUpperCase()}
               </div>
-              <span className="font-semibold text-gray-700">{user.displayName || user.email?.split('@')[0]}</span>
-            </div>
-            <textarea 
-              value={newComment}
-              onChange={e => setNewComment(e.target.value)}
-              placeholder="Düşüncelerinizi paylaşın..."
-              className="w-full bg-white border border-gray-200 rounded-xl p-4 min-h-[120px] outline-none focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)] transition-all resize-y mb-4"
-              required
-            />
-            <div className="flex justify-end">
-              <button disabled={submittingComment} type="submit" className="flex items-center gap-2 bg-[var(--navy)] hover:bg-[#1e293b] text-white px-6 py-2.5 rounded-lg font-bold transition-colors disabled:opacity-50 shadow-md">
-                <Send size={16} /> {submittingComment ? 'Gönderiliyor...' : 'Yorum Yap'}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="mb-12 bg-[#f8fafc] p-8 rounded-2xl border border-gray-100 text-center">
-            <p className="text-gray-500 mb-4">Yorum yapabilmek için giriş yapmalısınız.</p>
-            <button className="bg-[var(--gold)] text-[var(--navy)] px-6 py-2.5 rounded-lg font-bold shadow-sm">Giriş Yap / Üye Ol</button>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-6">
-          {comments.map(comment => (
-            <div key={comment.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-4 group">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 text-gray-500 flex items-center justify-center flex-shrink-0">
-                <User size={20} />
+              <div className="yz-comment-form-right">
+                <textarea
+                  className="yz-comment-textarea"
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  placeholder="Düşüncelerinizi paylaşın…"
+                  rows={3}
+                  required
+                />
+                <button type="submit" disabled={postingComment} className="yz-comment-submit">
+                  <Send size={16} />
+                  {postingComment ? 'Gönderiliyor…' : 'Yorum Yap'}
+                </button>
               </div>
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-[var(--navy)]">{comment.userName}</span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Calendar size={12} />
-                      {comment.createdAt ? format(new Date(comment.createdAt.seconds ? comment.createdAt.toDate() : comment.createdAt), 'd MMM yyyy, HH:mm', { locale: tr }) : 'Az önce'}
-                    </span>
-                  </div>
-                  {isAdmin && (
-                    <button onClick={() => handleDeleteComment(comment.id)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-                <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
-              </div>
+            </form>
+          ) : (
+            <div className="yz-comment-login-prompt">
+              Yorum yapmak için giriş yapmalısınız.
             </div>
-          ))}
-          {comments.length === 0 && (
-            <div className="text-center py-10 text-gray-400 italic">Henüz yorum yapılmamış. İlk yorumu siz yapın.</div>
           )}
+
+          {/* Comment list */}
+          <div className="yz-comment-list">
+            {comments.length === 0 && (
+              <p className="yz-no-comments">Henüz yorum yapılmamış. İlk yorumu siz yapın!</p>
+            )}
+            {comments.map(c => (
+              <div key={c.id} className="yz-comment-item">
+                <div className="yz-comment-item-avatar"><User size={18} /></div>
+                <div className="yz-comment-item-body">
+                  <div className="yz-comment-item-header">
+                    <strong className="yz-comment-username">{c.userName}</strong>
+                    {c.createdAt && (
+                      <span className="yz-comment-time">
+                        {format(new Date(c.createdAt), 'd MMM yyyy, HH:mm', { locale: tr })}
+                      </span>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeleteComment(c.id)}
+                        className="yz-comment-delete"
+                        title="Yorumu sil"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                  <p className="yz-comment-text">{c.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
