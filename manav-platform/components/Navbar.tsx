@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 const links = [
   { href: '/', label: 'Anasayfa' },
   { href: '/ben-kimim', label: 'Hakkımda' },
+  { href: '/yazilarim', label: 'Yazılarım' },
 
   { href: '/videolarim', label: 'Videolarım' },
   { href: '/forum', label: 'Forum', badge: 'BETA' },
@@ -38,7 +39,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const forceSolid = pathname === '/forum' || pathname === '/videolarim';
+  const forceSolid = pathname === '/forum' || pathname === '/yazilarim' || pathname === '/videolarim';
 
   return (
     <>

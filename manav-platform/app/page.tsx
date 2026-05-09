@@ -33,7 +33,7 @@ const truncateText = (text: string, limit: number) => {
 export default function HomePage() {
   const { user } = useAuth();
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
-
+  const [realPosts, setRealPosts] = useState<any[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -54,7 +54,16 @@ export default function HomePage() {
     setDailyQuote(QUOTES[dayOfYear % QUOTES.length]);
   }, []);
 
-
+  useEffect(() => {
+    async function fetchLatest() {
+      try {
+        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(3));
+        const snap = await getDocs(q);
+        setRealPosts(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })));
+      } catch (err) { console.error(err); }
+    }
+    fetchLatest();
+  }, []);
 
   useEffect(() => {
     if (!searchOpen) { setSearchQ(''); setSearchResults([]); return; }
@@ -87,7 +96,14 @@ export default function HomePage() {
           }
         });
 
-
+        postsSnap.docs.forEach(d => {
+          const data = d.data();
+          if ((data.title||'').toLowerCase().includes(q) || (data.excerpt||'').toLowerCase().includes(q) || (data.content||'').toLowerCase().includes(q)) {
+            const raw = data.excerpt || stripHtml(data.content || '');
+            const truncated = raw.length > 100 ? raw.slice(0, 100).slice(0, raw.slice(0, 100).lastIndexOf(' ')) + '...' : raw;
+            results.push({ id: d.id, type: 'post', title: data.title, excerpt: truncated, href: '/yazilarim?post=' + d.id });
+          }
+        });
         forumSnap.docs.forEach(d => {
           const data = d.data();
           if ((data.body||'').toLowerCase().includes(q) || (data.authorName||'').toLowerCase().includes(q) || (data.category||'').toLowerCase().includes(q))
@@ -284,13 +300,50 @@ export default function HomePage() {
               <Link href="/forum" className="btn-gold">
                 Topluluğa Katıl
               </Link>
-
+              <Link href="/yazilarim" className="btn-dark-outline">
+                Yazıları İncele
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-
+      {/* ══════════════════ LATEST POSTS ══════════════════ */}
+      <section style={{ padding: '112px 0', background: 'var(--sand-light)' }}>
+        <div className="container-main">
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 64 }}>
+            <div>
+              <div className="eyebrow" style={{ marginBottom: 16 }}>Son Paylaşımlar</div>
+              <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,2.8rem)', fontWeight: 700, color: 'var(--navy)' }}>Yazılarım</h2>
+            </div>
+            <Link href="/yazilarim" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--navy)', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Tüm Yazılar <ArrowRight size={14}/>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {realPosts.length === 0 && <div className="text-gray-400 italic">Henüz yayınlanan bir makale bulunmuyor.</div>}
+            {realPosts.map(p => {
+              const previewText = p.excerpt || (p.content ? truncateText(stripHtml(p.content), 150) : '');
+              return (
+                <Link href={`/yazilarim?post=${p.id}`} key={p.id} className="post-card" style={{ display: 'flex', flexDirection: 'column', textDecoration: 'none', border: 'none', borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.06)', overflow: 'hidden', minHeight: 380 }}>
+                  <div style={{ padding: '32px 28px 20px', background: 'linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%)', flex: '0 0 auto', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(201,169,110,0.08)' }}/>
+                    {p.category && <span style={{ display: 'inline-block', background: 'rgba(201,169,110,0.15)', color: 'var(--gold-light)', padding: '4px 12px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>{p.category}</span>}
+                    <h3 style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: '1.2rem', fontWeight: 700, lineHeight: 1.3 }}>{p.title}</h3>
+                  </div>
+                  <div style={{ padding: '20px 28px 24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'white' }}>
+                    <p style={{ fontFamily: 'Crimson Text, serif', color: '#64748b', fontSize: '1rem', lineHeight: 1.6, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{previewText}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{p.date ? format(new Date(p.date), 'd MMM yyyy', { locale: tr }) : ''}</span>
+                      <span style={{ color: 'var(--gold-dim)', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Devamını Oku →</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* ══════════════════ QUOTE CTA ══════════════════ */}
       <section style={{ padding: '120px 0', background: 'var(--navy)', position: 'relative', overflow: 'hidden' }}>
@@ -369,7 +422,7 @@ export default function HomePage() {
               <div style={{ padding: '24px 20px' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {[{ label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Hakkımda', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
+                  {[{ label: 'Yazılarım', href: '/yazilarim', icon: '📝' }, { label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Hakkımda', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
                     <Link key={l.href} href={l.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, textDecoration: 'none', color: '#334155', fontSize: '0.92rem', fontWeight: 500, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                       <span style={{ fontSize: '1.1rem' }}>{l.icon}</span> {l.label}
                     </Link>
