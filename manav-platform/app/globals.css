@@ -980,8 +980,9 @@ body {
   color: #1e293b;
   text-align: left !important;
   /* Word-wrapping rules: No splitting words */
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
+  /* Strict Word Integrity: Words will NEVER be split */
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
   hyphens: none !important;
   text-wrap: pretty; /* Better line breaks */
   -webkit-font-smoothing: antialiased;
@@ -1305,8 +1306,9 @@ body {
   min-height: 450px;
   line-height: 1.8;
   text-align: left !important;
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
+  /* Strict Word Integrity: Words will NEVER be split */
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
   hyphens: none !important;
   color: #1e293b;
 }
