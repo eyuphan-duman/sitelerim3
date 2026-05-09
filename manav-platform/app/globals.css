@@ -875,22 +875,26 @@ body {
   text-align: left !important;
 }
 .yz-detail-title-minimal {
-  font-family: 'Playfair Display', serif; /* Fikir Turu often uses serif for titles */
-  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
   font-weight: 700;
-  color: #111827; /* Darker title */
-  line-height: 1.2;
-  margin-bottom: 20px;
-  text-align: left !important;
+  color: #111827;
+  line-height: 1.3;
+  margin-bottom: 32px;
+  text-align: center !important;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 .yz-detail-meta-minimal {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 20px;
   color: #64748b;
   font-size: 0.9rem;
   font-weight: 500;
-  text-align: left !important;
+  text-align: center !important;
+  margin-bottom: 60px;
 }
 .yz-detail-meta-item {
   display: inline-flex;
@@ -980,9 +984,9 @@ body {
   color: #1e293b;
   text-align: left !important;
   /* Word-wrapping rules: No splitting words */
-  /* Strict Word Integrity: Words will NEVER be split */
-  word-break: keep-all !important;
-  overflow-wrap: normal !important;
+  /* Prevent splitting words unless they are too long for the screen */
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
   hyphens: none !important;
   text-wrap: pretty; /* Better line breaks */
   -webkit-font-smoothing: antialiased;
@@ -997,9 +1001,9 @@ body {
   text-align: left !important;
 }
 .yz-detail-content p { 
-  margin-bottom: 1.4rem; 
+  margin-bottom: 2.2rem; 
   text-align: left !important;
-  text-indent: 2rem;
+  text-indent: 3.5rem; /* Large academic indent like in the image */
 }
 .yz-detail-content h2, .yz-detail-content h3, .yz-detail-content h4 {
   font-family: 'Playfair Display', serif;
@@ -1256,7 +1260,7 @@ body {
 .yz-editor-title-input {
   width: 100%;
   font-family: 'Playfair Display', serif;
-  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-size: clamp(1.6rem, 4vw, 2rem);
   font-weight: 700;
   color: var(--navy);
   background: transparent;
@@ -1264,6 +1268,8 @@ body {
   border-bottom: 2px solid #e2e8f0;
   outline: none;
   padding-bottom: 14px;
+  text-align: center;
+  text-transform: uppercase;
 }
 .yz-editor-title-input::placeholder { color: #cbd5e1; }
 .yz-editor-row { display: flex; gap: 16px; flex-wrap: wrap; }
@@ -1306,15 +1312,15 @@ body {
   min-height: 450px;
   line-height: 1.8;
   text-align: left !important;
-  /* Strict Word Integrity: Words will NEVER be split */
-  word-break: keep-all !important;
-  overflow-wrap: normal !important;
+  /* Prevent splitting words unless they are too long for the screen */
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
   hyphens: none !important;
   color: #1e293b;
 }
 .yz-editor-quill .ql-editor p { 
-  margin-bottom: 1.4rem; 
-  text-indent: 2rem;
+  margin-bottom: 2.2rem; 
+  text-indent: 3.5rem;
 }
 .yz-editor-quill .ql-editor h2, .yz-editor-quill .ql-editor h3, .yz-editor-quill .ql-editor h4 {
   font-family: 'Playfair Display', serif !important;
@@ -1351,7 +1357,11 @@ body {
   .yz-detail-hero { padding: 110px 20px 48px; }
   .yz-detail-title { font-size: 1.9rem; }
   .yz-detail-content-wrap { padding: 40px 20px 60px; }
-  .yz-detail-content { font-size: 1.12rem; line-height: 1.8; }
+  .yz-detail-content { 
+    font-size: 1.12rem; 
+    line-height: 1.8; 
+    padding: 20px 16px !important; /* Less padding on mobile to prevent overflow */
+  }
   .yz-detail-content h2 { font-size: 1.6rem; }
   .yz-detail-content h3 { font-size: 1.35rem; }
 
