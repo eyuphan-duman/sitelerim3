@@ -264,7 +264,7 @@ export default function AdminPage() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">İçerik Editörü</label>
                   <div className="yz-editor-quill" style={{ minHeight: 400 }}>
-                    <ReactQuill theme="snow" value={postForm.content} onChange={val=>setPostForm({...postForm, content: val})} modules={{ toolbar: [[{header:[2,3,4,false]}],[{font:[]},{size:['small',false,'large','huge']}],['bold','italic','underline','strike'],[{color:[]},{background:[]}],[{list:'ordered'},{list:'bullet'}],[{align:['','center','right']}],['blockquote','link','image'],['clean']] }} formats={['header','font','size','bold','italic','underline','strike','color','background','list','bullet','align','blockquote','link','image']}/>
+                    <ReactQuill theme="snow" value={postForm.content} onChange={val=>setPostForm({...postForm, content: val})} modules={{ toolbar: [[{header:[2,3,4,false]}],[{font:[]},{size:['small',false,'large','huge']}],['bold','italic','underline','strike'],[{color:[]},{background:[]}],[{list:'ordered'},{list:'bullet'}],[{align:['','center']}],['blockquote','link','image'],['clean']] }} formats={['header','font','size','bold','italic','underline','strike','color','background','list','bullet','align','blockquote','link','image']}/>
                   </div>
                 </div>
                 <button disabled={submitting} type="submit" className="btn-gold justify-center mt-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={16}/> {submitting ? 'Yayımlanıyor…' : 'Makaleyi Yayımla'}</button>
