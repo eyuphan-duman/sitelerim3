@@ -105,6 +105,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'color': [] }, { 'background': [] }],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'align': [] }],
         ['link', 'image'],
         ['image-grow', 'image-shrink'],
         ['clean']

@@ -30,7 +30,7 @@ const QUILL_MODULES = {
     ['bold', 'italic', 'underline', 'strike'],
     [{ color: [] }, { background: [] }],
     [{ list: 'ordered' }, { list: 'bullet' }],
-    [{ align: ['', 'center'] }],
+    [{ align: [] }],
     ['blockquote', 'link', 'image'],
     ['clean'],
   ],

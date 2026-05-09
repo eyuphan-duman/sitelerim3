@@ -983,6 +983,13 @@ body {
   line-height: 1.8;
   color: #1e293b;
   text-align: left !important;
+  /* Wide Frame for Article Content */
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.03);
+  overflow: hidden; /* Prevent content leaking out */
+  box-sizing: border-box;
   /* Word-wrapping rules: No splitting words */
   word-break: normal !important;
   overflow-wrap: normal !important;
@@ -990,12 +997,8 @@ body {
   white-space: normal !important;
   word-wrap: normal !important;
   -webkit-font-smoothing: antialiased;
-  /* No frame, just white background (or inherited) */
-  background: transparent;
-  border: none;
-  overflow: visible;
   /* Matching Editor Padding exactly */
-  padding: 28px 32px;
+  padding: 40px 48px;
 }
 .yz-detail-content p, .yz-detail-content span, .article-card-excerpt, .ql-editor, .ql-editor p {
   text-align: left !important;
@@ -1288,7 +1291,7 @@ body {
 .yz-editor-quill {
   background: #fff;
   border-radius: 14px;
-  border: none;
+  border: 1px solid #e2e8f0;
   overflow: hidden;
   min-height: 500px;
   display: flex;
@@ -1308,7 +1311,7 @@ body {
   flex: 1;
 }
 .yz-editor-quill .ql-editor {
-  padding: 28px 32px !important;
+  padding: 40px 48px !important;
   min-height: 450px;
   line-height: 1.8;
   text-align: left !important;
