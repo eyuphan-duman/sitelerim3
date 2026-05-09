@@ -984,11 +984,11 @@ body {
   color: #1e293b;
   text-align: left !important;
   /* Word-wrapping rules: No splitting words */
-  /* Prevent splitting words unless they are too long for the screen */
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
+  /* ABSOLUTE WORD INTEGRITY: Words will NEVER be split */
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
   hyphens: none !important;
-  text-wrap: pretty; /* Better line breaks */
+  white-space: normal !important;
   -webkit-font-smoothing: antialiased;
   /* No frame, just white background (or inherited) */
   background: transparent;
@@ -1312,10 +1312,11 @@ body {
   min-height: 450px;
   line-height: 1.8;
   text-align: left !important;
-  /* Prevent splitting words unless they are too long for the screen */
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
+  /* ABSOLUTE WORD INTEGRITY: Words will NEVER be split */
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
   hyphens: none !important;
+  white-space: normal !important;
   color: #1e293b;
 }
 .yz-editor-quill .ql-editor p { 
