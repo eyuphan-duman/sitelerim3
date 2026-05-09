@@ -965,9 +965,18 @@ body {
   color: #1e293b;
   text-align: left !important;
   word-break: normal !important;
-  overflow-wrap: break-word;
+  overflow-wrap: break-word !important;
   hyphens: none !important;
   -webkit-hyphens: none !important;
+  text-justify: none !important;
+}
+.yz-detail-content p, .yz-detail-content span, .yz-detail-content h2, .yz-detail-content h3, .article-card-excerpt, .article-card-title {
+  text-align: left !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  text-justify: none !important;
 }
 .yz-detail-content p { margin-bottom: 1.6rem; }
 .yz-detail-content h2, .yz-detail-content h3, .yz-detail-content h4 {
@@ -1310,3 +1319,6 @@ body {
   .yz-editor-body { padding: 24px 16px 40px; }
   .yz-editor-quill .ql-editor { padding: 20px !important; }
 }
+
+/* Global Text Fixes Applied */
+

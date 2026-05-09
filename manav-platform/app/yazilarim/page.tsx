@@ -17,7 +17,7 @@ function ArticleCard({ article }: { article: any }) {
     : '';
 
   return (
-    <article className="article-card group">
+    <Link href={`/yazilarim/${article.id}`} className="article-card group" style={{ textDecoration: 'none' }}>
       {/* Cover Image */}
       {article.featuredImage && (
         <div className="article-card-image">
@@ -52,13 +52,13 @@ function ArticleCard({ article }: { article: any }) {
           <p className="article-card-excerpt">{article.excerpt}</p>
         )}
 
-        <Link href={`/yazilarim/${article.id}`} className="article-card-btn">
+        <div className="article-card-btn">
           <BookOpen size={16} />
           Makaleyi Oku
           <ArrowRight size={16} className="article-card-btn-arrow" />
-        </Link>
+        </div>
       </div>
-    </article>
+    </Link>
   );
 }
 
