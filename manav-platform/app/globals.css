@@ -988,17 +988,15 @@ body {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.03);
-  overflow: hidden; /* Prevent content leaking out */
   box-sizing: border-box;
-  /* Word-wrapping rules: No splitting words */
+  /* Word-wrapping rules: No splitting words unless absolutely necessary */
   word-break: normal !important;
-  overflow-wrap: normal !important;
+  overflow-wrap: break-word !important;
   hyphens: none !important;
   white-space: normal !important;
-  word-wrap: normal !important;
   -webkit-font-smoothing: antialiased;
-  /* Matching Editor Padding exactly */
-  padding: 40px 48px;
+  /* Balanced Padding to give more space for text */
+  padding: 32px 32px;
 }
 .yz-detail-content p, .yz-detail-content span, .article-card-excerpt, .ql-editor, .ql-editor p {
   text-align: left !important;
@@ -1311,7 +1309,7 @@ body {
   flex: 1;
 }
 .yz-editor-quill .ql-editor {
-  padding: 40px 48px !important;
+  padding: 32px 32px !important;
   min-height: 450px;
   line-height: 1.8;
   text-align: left !important;
