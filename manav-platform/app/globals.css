@@ -242,16 +242,15 @@ body {
 /* ─── CARDS ─── */
 .post-card {
   background: white;
-  border-radius: 4px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(0,0,0,0.07);
-  box-shadow: 0 2px 12px rgba(10,22,40,0.05);
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   transition: all 0.4s cubic-bezier(.4,0,.2,1);
 }
 .post-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 28px 56px rgba(10,22,40,0.14);
-  border-color: rgba(201,169,110,0.3);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
 }
 
 .service-card {
@@ -664,29 +663,33 @@ body {
 }
 
 /* ─── ARTICLE CONTENT (Rich Text) ─── */
+.article-content,
+.article-content p,
+.article-content span {
+  text-align: left !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  -moz-hyphens: none !important;
+  -ms-hyphens: none !important;
+}
+
 .article-content {
   font-family: 'Crimson Text', serif;
   font-size: 1.2rem;
-  line-height: 1.8;
+  line-height: 1.7 !important;
   color: #222;
-  word-break: normal;
-  overflow-wrap: break-word;
-  word-wrap: normal;
-  hyphens: none;
-  -webkit-hyphens: none;
-  -moz-hyphens: none;
-  -ms-hyphens: none;
-  text-align: left;
   text-wrap: pretty;
-  max-width: 800px;
+  max-width: 100% !important;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 40px !important;
 }
 @media (max-width: 600px) {
   .article-content {
     font-size: 1.05rem;
-    line-height: 1.6;
-    padding: 0 16px;
+    line-height: 1.6 !important;
+    padding: 0 20px !important;
   }
 }
 .article-content p {
@@ -756,7 +759,7 @@ body {
 .modal-content {
   background: #fff;
   width: 100%;
-  max-width: 850px;
+  max-width: 1000px;
   margin: 0 auto;
   box-shadow: 0 25px 70px rgba(0,0,0,0.15);
   display: flex;
