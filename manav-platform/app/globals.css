@@ -972,13 +972,11 @@ body {
   font-size: 1.15rem;
   font-weight: 400;
   line-height: 1.85;
-  color: #475569; /* Softer, readable grey matching the image */
+  color: #475569;
   text-align: left !important;
   text-justify: none !important;
   word-break: normal !important;
-  overflow-wrap: normal !important;
-  word-wrap: normal !important;
-  white-space: normal !important;
+  overflow-wrap: break-word !important;
   hyphens: none !important;
   -webkit-hyphens: none !important;
 }
@@ -986,9 +984,7 @@ body {
   text-align: left !important;
   text-justify: none !important;
   word-break: normal !important;
-  overflow-wrap: normal !important;
-  word-wrap: normal !important;
-  white-space: normal !important;
+  overflow-wrap: break-word !important;
   hyphens: none !important;
   -webkit-hyphens: none !important;
 }
@@ -1344,8 +1340,7 @@ body {
   text-align: left !important;
   text-justify: none !important;
   word-break: normal !important;
-  overflow-wrap: normal !important;
-  word-wrap: normal !important;
+  overflow-wrap: break-word !important;
   hyphens: none !important;
   -webkit-hyphens: none !important;
 }
