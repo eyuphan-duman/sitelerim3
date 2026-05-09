@@ -974,19 +974,9 @@ body {
   line-height: 1.85;
   color: #475569;
   text-align: left !important;
-  text-justify: none !important;
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
-  hyphens: none !important;
-  -webkit-hyphens: none !important;
 }
 .yz-detail-content p, .yz-detail-content span, .article-card-excerpt, .ql-editor, .ql-editor p {
   text-align: left !important;
-  text-justify: none !important;
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
-  hyphens: none !important;
-  -webkit-hyphens: none !important;
 }
 .yz-detail-content p { margin-bottom: 1.6rem; }
 .yz-detail-content h2, .yz-detail-content h3, .yz-detail-content h4 {
@@ -1338,11 +1328,6 @@ body {
 /* Global Strict Alignment Fix */
 .yz-detail-content, .yz-detail-content p, .article-card-excerpt, .ql-editor, .ql-editor p {
   text-align: left !important;
-  text-justify: none !important;
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
-  hyphens: none !important;
-  -webkit-hyphens: none !important;
 }
 
 /* Global Text Fixes Applied */
