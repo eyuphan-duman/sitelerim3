@@ -985,11 +985,10 @@ body {
   hyphens: none !important;
   text-wrap: pretty; /* Better line breaks */
   -webkit-font-smoothing: antialiased;
-  /* Matching Editor Container exactly */
-  background: #fff;
-  border-radius: 14px;
-  border: 1.5px solid #e2e8f0;
-  overflow: hidden;
+  /* No frame, just white background (or inherited) */
+  background: transparent;
+  border: none;
+  overflow: visible;
   /* Matching Editor Padding exactly */
   padding: 28px 32px;
 }
@@ -999,6 +998,7 @@ body {
 .yz-detail-content p { 
   margin-bottom: 1.4rem; 
   text-align: left !important;
+  text-indent: 2rem;
 }
 .yz-detail-content h2, .yz-detail-content h3, .yz-detail-content h4 {
   font-family: 'Playfair Display', serif;
@@ -1281,7 +1281,7 @@ body {
 .yz-editor-quill {
   background: #fff;
   border-radius: 14px;
-  border: 1.5px solid #e2e8f0;
+  border: none;
   overflow: hidden;
   min-height: 500px;
   display: flex;
@@ -1310,7 +1310,10 @@ body {
   hyphens: none !important;
   color: #1e293b;
 }
-.yz-editor-quill .ql-editor p { margin-bottom: 1.4rem; }
+.yz-editor-quill .ql-editor p { 
+  margin-bottom: 1.4rem; 
+  text-indent: 2rem;
+}
 .yz-editor-quill .ql-editor h2, .yz-editor-quill .ql-editor h3, .yz-editor-quill .ql-editor h4 {
   font-family: 'Playfair Display', serif !important;
   color: var(--navy) !important;
