@@ -964,16 +964,16 @@ body {
   line-height: 1.85;
   color: #1e293b;
   text-align: left !important;
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
   hyphens: none !important;
   -webkit-hyphens: none !important;
   text-justify: none !important;
 }
 .yz-detail-content p, .yz-detail-content span, .yz-detail-content h2, .yz-detail-content h3, .article-card-excerpt, .article-card-title {
   text-align: left !important;
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
   hyphens: none !important;
   -webkit-hyphens: none !important;
   text-justify: none !important;
@@ -1284,7 +1284,8 @@ body {
   min-height: 450px;
   line-height: 1.8;
   text-align: left !important;
-  word-break: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
   hyphens: none !important;
   color: #1e293b;
 }
