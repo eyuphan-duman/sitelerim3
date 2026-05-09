@@ -204,7 +204,7 @@ export default function ArticleDetailClient({ initialArticle, id }: { initialArt
   return (
     <div className="min-h-screen bg-white">
       {/* Article Header */}
-      <div className="pt-32 pb-16 px-6 max-w-4xl mx-auto">
+      <div className="pt-40 md:pt-48 pb-16 px-6 max-w-4xl mx-auto">
         <Link href="/yazilarim" className="inline-flex items-center gap-2 text-[var(--gold-dim)] font-bold text-xs uppercase tracking-widest hover:text-[var(--gold)] transition-colors mb-10">
           <ArrowLeft size={16} /> Tüm Makaleler
         </Link>
