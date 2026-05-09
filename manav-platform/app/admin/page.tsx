@@ -13,7 +13,7 @@ export default function AdminPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const [appointments, setAppointments] = useState<any[]>([]);
-  const [posts, setPosts] = useState<any[]>([]);
+
   const [videos, setVideos] = useState<any[]>([]);
   
   const [activeTab, setActiveTab] = useState<'appointments' | 'posts' | 'videos' | 'messages'>('appointments');
@@ -25,7 +25,7 @@ export default function AdminPage() {
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
   // Forms
-  const [postForm, setPostForm] = useState({ title: '', category: '', excerpt: '', content: '' });
+
   const [videoForm, setVideoForm] = useState({ title: '', category: '', desc: '', dur: '', views: '1', link: '' });
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -35,11 +35,11 @@ export default function AdminPage() {
     if (!user || !ADMIN_EMAILS.includes(user.email || '')) return;
 
     const u1 = onSnapshot(query(collection(db, 'appointments'), orderBy('createdAt', 'desc')), snap => setAppointments(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-    const u2 = onSnapshot(query(collection(db, 'posts'), orderBy('createdAt', 'desc')), snap => setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+
     const u3 = onSnapshot(query(collection(db, 'reels'), orderBy('createdAt', 'desc')), snap => setVideos(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const u4 = onSnapshot(query(collection(db, 'messages'), orderBy('createdAt', 'desc')), snap => setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
 
-    return () => { u1(); u2(); u3(); u4(); };
+    return () => { u1(); u3(); u4(); };
   }, [user]);
 
   const updateAppointment = async (id: string, newStatus: string) => {
@@ -47,15 +47,7 @@ export default function AdminPage() {
     catch { toast.error('İşlem başarısız.'); }
   };
 
-  const handleAddPost = async (e: React.FormEvent) => {
-    e.preventDefault(); setSubmitting(true);
-    try {
-      await addDoc(collection(db, 'posts'), { ...postForm, likes: 0, commentCount: 0, createdAt: serverTimestamp(), date: new Date().toISOString() });
-      setPostForm({ title: '', category: '', excerpt: '', content: '' });
-      toast.success('Yazı paylaşıldı!');
-    } catch { toast.error('Hata oluştu'); } finally { setSubmitting(false); }
-  };
-  const deletePost = async (id: string) => { if (confirm('Makaleyi silmek istediğinize emin misiniz?')) { await deleteDoc(doc(db, 'posts', id)); toast.success('Silindi'); } };
+
 
   const handleAddVideo = async (e: React.FormEvent) => {
     e.preventDefault(); 
@@ -100,7 +92,7 @@ export default function AdminPage() {
 
   const MENUS = [
     { id: 'appointments', label: 'Randevular', icon: <Calendar size={18}/> },
-    { id: 'posts', label: 'Yazılarım', icon: <FileText size={18}/> },
+
     { id: 'videos', label: 'Videolarım', icon: <Video size={18}/> },
     { id: 'messages', label: 'Mesajlar', icon: <Mail size={18}/> },
   ] as const;
@@ -206,42 +198,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* POSTS TAB */}
-        {activeTab === 'posts' && (
-          <div className="admin-posts-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr)', gap: 40, alignItems: 'start' }}>
-            {/* New Post Form */}
-            <div style={{ background: 'white', padding: 32, borderRadius: 6, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(10,22,40,0.02)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
-                <PenTool size={20} color="var(--gold-dim)"/> <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>Yeni Makale Editörü</h2>
-              </div>
-              <form onSubmit={handleAddPost} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Başlık</label><input required className="input-field" value={postForm.title} onChange={e=>setPostForm({...postForm, title: e.target.value})} placeholder="Makale Başlığı"/></div>
-                <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kategori (Opsiyonel)</label><input className="input-field" value={postForm.category} onChange={e=>setPostForm({...postForm, category: e.target.value})} placeholder="Örn: Psikoloji, Rüyalar, Varoluş"/></div>
-                <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kısa Açıklama (Opsiyonel)</label><textarea className="input-field" style={{ minHeight: 60 }} value={postForm.excerpt} onChange={e=>setPostForm({...postForm, excerpt: e.target.value})} placeholder="Kısaca ne anlatıyorsunuz?"/></div>
-                <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Makale İçeriği (Tam Metin)</label><textarea required className="input-field" style={{ minHeight: 250 }} value={postForm.content} onChange={e=>setPostForm({...postForm, content: e.target.value})} placeholder="Makalenizin tamamını yazın. Paragraflar arasına birer boşluk bırakabilirsiniz."/></div>
-                <button disabled={submitting} type="submit" className="btn-gold justify-center mt-4"><Plus size={16}/> Makaleyi Yayınla</button>
-              </form>
-            </div>
 
-            {/* Existing Posts */}
-            <div>
-              <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)', marginBottom: 24 }}>Yayındaki Makaleleriniz</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {posts.map(p => (
-                  <div key={p.id} style={{ background: 'white', padding: 20, borderRadius: 6, border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--gold-dim)', fontWeight: 700, textTransform: 'uppercase' }}>{p.category}</span>
-                      <h3 style={{ fontWeight: 700, color: 'var(--navy)', marginTop: 4 }}>{p.title}</h3>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 4 }}>{p.commentCount} Yorum • {p.likes} Beğeni</div>
-                    </div>
-                    <button onClick={() => deletePost(p.id)} style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}><Trash2 size={16}/></button>
-                  </div>
-                ))}
-                {posts.length === 0 && <div style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Henüz makale paylaşılmadı.</div>}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* VIDEOS TAB */}
         {activeTab === 'videos' && (

@@ -33,7 +33,7 @@ const truncateText = (text: string, limit: number) => {
 export default function HomePage() {
   const { user } = useAuth();
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
-  const [realPosts, setRealPosts] = useState<any[]>([]);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -54,16 +54,7 @@ export default function HomePage() {
     setDailyQuote(QUOTES[dayOfYear % QUOTES.length]);
   }, []);
 
-  useEffect(() => {
-    async function fetchLatest() {
-      try {
-        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(3));
-        const snap = await getDocs(q);
-        setRealPosts(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })));
-      } catch (err) { console.error(err); }
-    }
-    fetchLatest();
-  }, []);
+
 
   useEffect(() => {
     if (!searchOpen) { setSearchQ(''); setSearchResults([]); return; }
@@ -96,14 +87,7 @@ export default function HomePage() {
           }
         });
 
-        postsSnap.docs.forEach(d => {
-          const data = d.data();
-          if ((data.title||'').toLowerCase().includes(q) || (data.excerpt||'').toLowerCase().includes(q) || (data.content||'').toLowerCase().includes(q)) {
-            const raw = data.excerpt || stripHtml(data.content || '');
-            const truncated = raw.length > 100 ? raw.slice(0, 100).slice(0, raw.slice(0, 100).lastIndexOf(' ')) + '...' : raw;
-            results.push({ id: d.id, type: 'post', title: data.title, excerpt: truncated, href: '/yazilarim?post=' + d.id });
-          }
-        });
+
         forumSnap.docs.forEach(d => {
           const data = d.data();
           if ((data.body||'').toLowerCase().includes(q) || (data.authorName||'').toLowerCase().includes(q) || (data.category||'').toLowerCase().includes(q))
@@ -122,18 +106,7 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, [searchQ]);
 
-  const deletePost = async (id: string, e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation();
-    if (confirm('Emin misin?')) {
-      try {
-        await deleteDoc(doc(db, 'posts', id));
-        setRealPosts(prev => prev.filter(p => p.id !== id));
-        toast.success('Kaldırıldı.');
-      } catch (err) {
-        toast.error('Hata oluştu.');
-      }
-    }
-  };
+
 
   const stats = [
     { n: '8+', label: 'Yıllık Deneyim' },
@@ -311,61 +284,13 @@ export default function HomePage() {
               <Link href="/forum" className="btn-gold">
                 Topluluğa Katıl
               </Link>
-              <Link href="/yazilarim" className="btn-dark-outline">
-                Yazıları İncele
-              </Link>
+
             </div>
           </div>
         </div>
       </section>
 
-      {/* ══════════════════ LATEST POSTS ══════════════════ */}
-      <section style={{ padding: '112px 0', background: 'var(--sand-light)' }}>
-        <div className="container-main">
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 64 }}>
-            <div>
-              <div className="eyebrow" style={{ marginBottom: 16 }}>Son Paylaşımlar</div>
-              <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,2.8rem)', fontWeight: 700, color: 'var(--navy)' }}>Yazılarım</h2>
-            </div>
-            <Link href="/yazilarim" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--navy)', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              Tüm Yazılar <ArrowRight size={14}/>
-            </Link>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {realPosts.length === 0 && <div className="text-gray-400 italic">Henüz yayınlanan bir makale bulunmuyor.</div>}
-            {realPosts.map(p => {
-              const previewText = p.excerpt || (p.content ? truncateText(stripHtml(p.content), 150) : '');
-              return (
-                <Link href={`/yazilarim?post=${p.id}`} key={p.id} className="post-card group flex flex-col overflow-hidden bg-white shadow-sm hover:shadow-2xl transition-all duration-300 rounded-2xl border border-gray-100" style={{ minHeight: 400 }}>
-                  {/* Header Section */}
-                  <div className="h-[45%] p-8 relative overflow-hidden flex flex-col justify-center" style={{ background: 'linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%)' }}>
-                    <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[rgba(201,169,110,0.08)] group-hover:scale-125 transition-transform duration-700"/>
-                    <div className="flex justify-between items-start z-10">
-                      <span className="tag-gold text-xs px-3 py-1 mb-3">{p.category}</span>
-                    </div>
-                    <h3 className="font-serif text-white text-xl md:text-2xl font-bold leading-tight line-clamp-2">
-                      {p.title}
-                    </h3>
-                  </div>
-                  {/* Body Section */}
-                  <div className="flex-1 p-8 flex flex-col justify-between bg-white">
-                    <p className="crimson text-gray-500 text-[1.05rem] leading-relaxed line-clamp-3">
-                      {previewText}
-                    </p>
-                    <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
-                      <span className="text-xs text-gray-400 font-medium">{format(new Date(p.date), 'd MMM yyyy', { locale: tr })}</span>
-                      <span className="text-[var(--gold-dim)] text-xs font-bold tracking-widest uppercase flex items-center gap-2 group-hover:gap-3 transition-all">
-                        DEVAMINI OKU <ArrowRight size={12}/>
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* ══════════════════ QUOTE CTA ══════════════════ */}
       <section style={{ padding: '120px 0', background: 'var(--navy)', position: 'relative', overflow: 'hidden' }}>
@@ -444,7 +369,7 @@ export default function HomePage() {
               <div style={{ padding: '24px 20px' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {[{ label: 'Yazılarım', href: '/yazilarim', icon: '📝' }, { label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Hakkımda', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
+                  {[{ label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Hakkımda', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
                     <Link key={l.href} href={l.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, textDecoration: 'none', color: '#334155', fontSize: '0.92rem', fontWeight: 500, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                       <span style={{ fontSize: '1.1rem' }}>{l.icon}</span> {l.label}
                     </Link>
