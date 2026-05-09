@@ -10,28 +10,13 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import 'react-quill-new/dist/quill.snow.css';
 import { useRouter } from 'next/navigation';
 
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
+  ssr: false,
+  loading: () => <div style={{ height: 300, background: '#f8f9fa', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', borderRadius: 8 }}>Editör yükleniyor...</div>
+});
 
-const quillModules = {
-  toolbar: [
-    [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
-    [{ 'color': [] }, { 'background': [] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': ['', 'center', 'right'] }],
-    ['link', 'image'],
-    ['clean']
-  ],
-};
-
-const quillFormats = [
-  'font', 'size', 'color', 'background',
-  'bold', 'italic', 'underline', 'strike',
-  'list', 'bullet', 'align',
-  'link', 'image'
-];
 
 export default function AdminPage() {
   const { user, loading, logout } = useAuth();
@@ -262,9 +247,12 @@ export default function AdminPage() {
                 </div>
                 <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kapak Görseli URL (opsiyonel)</label><input className="input-field" value={postForm.featuredImage} onChange={e=>setPostForm({...postForm, featuredImage: e.target.value})} placeholder="https://…"/></div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">İçerik Editörü</label>
-                  <div className="yz-editor-quill" style={{ minHeight: 400 }}>
-                    <ReactQuill theme="snow" value={postForm.content} onChange={val=>setPostForm({...postForm, content: val})} modules={{ toolbar: [[{header:[2,3,4,false]}],[{font:[]},{size:['small',false,'large','huge']}],['bold','italic','underline','strike'],[{color:[]},{background:[]}],[{list:'ordered'},{list:'bullet'}],[{align:['','center']}],['blockquote','link','image'],['clean']] }} formats={['header','font','size','bold','italic','underline','strike','color','background','list','bullet','align','blockquote','link','image']}/>
+                  <div className="editor-container" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                    <RichTextEditor 
+                      value={postForm.content} 
+                      onChange={val=>setPostForm({...postForm, content: val})} 
+                      placeholder="Makale içeriğini buraya yazın..."
+                    />
                   </div>
                 </div>
                 <button disabled={submitting} type="submit" className="btn-gold justify-center mt-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={16}/> {submitting ? 'Yayımlanıyor…' : 'Makaleyi Yayımla'}</button>

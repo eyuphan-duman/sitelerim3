@@ -11,33 +11,17 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import 'react-quill-new/dist/quill.snow.css';
 
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
+  ssr: false,
+  loading: () => <div style={{ height: 400, background: '#f8f9fa', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', borderRadius: 8 }}>Editör yükleniyor...</div>
+});
 
 const stripHtml = (html: string) => html.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 const truncate = (t: string, n: number) => { if (t.length <= n) return t; const s = t.slice(0, n); const l = s.lastIndexOf(' '); return (l === -1 ? s : s.slice(0, l)) + '...'; };
 
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
-// Quill Modules configuration (Word-style, NO justify)
-const quillModules = {
-  toolbar: [
-    [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
-    [{ 'color': [] }, { 'background': [] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': ['', 'center', 'right'] }],
-    ['link', 'image'],
-    ['clean']
-  ],
-};
-
-const quillFormats = [
-  'font', 'size', 'color', 'background',
-  'bold', 'italic', 'underline', 'strike',
-  'list', 'bullet', 'align',
-  'link', 'image'
-];
 
 export default function YazilarimClient() {
   const { user } = useAuth();
@@ -203,15 +187,11 @@ export default function YazilarimClient() {
              <input value={editorCategory} onChange={e => setEditorCategory(e.target.value)} placeholder="Kategori" className="input-field" style={{ fontSize: '1.1rem', padding: '20px 24px', flex: 1 }} />
           </div>
 
-          <div className="quill-editor-container" style={{ background: 'white', borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: '600px' }}>
-            <ReactQuill 
-              theme="snow"
+          <div className="editor-wrapper" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+            <RichTextEditor 
               value={editorContent}
               onChange={setEditorContent}
-              modules={quillModules}
-              formats={quillFormats}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-              className="custom-quill"
+              placeholder="Düşüncelerinizi buraya dökün..."
             />
           </div>
 

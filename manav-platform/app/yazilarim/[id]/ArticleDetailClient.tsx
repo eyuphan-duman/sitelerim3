@@ -14,35 +14,17 @@ import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Calendar, Tag, Edit3, Trash2,
-  MessageSquare, Send, User, X, Check
+  MessageSquare, Send, User, X, Check,
+  Share2, Twitter, Facebook, Link2, MessageCircle
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import 'react-quill-new/dist/quill.snow.css';
-
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
+  ssr: false,
+  loading: () => <div style={{ height: 300, background: '#f8f9fa', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', borderRadius: 8 }}>Editör yükleniyor...</div>
+});
 
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
-const QUILL_MODULES = {
-  toolbar: [
-    [{ header: [2, 3, 4, false] }],
-    [{ font: [] }, { size: ['small', false, 'large', 'huge'] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ color: [] }, { background: [] }],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    [{ align: [] }],
-    ['blockquote', 'link', 'image'],
-    ['clean'],
-  ],
-};
-
-const QUILL_FORMATS = [
-  'header', 'font', 'size',
-  'bold', 'italic', 'underline', 'strike',
-  'color', 'background',
-  'list', 'bullet', 'align',
-  'blockquote', 'link', 'image',
-];
 
 interface Props {
   id: string;
@@ -172,13 +154,11 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
               placeholder="Kapak görseli URL (opsiyonel)"
             />
           </div>
-          <div className="yz-editor-quill">
-            <ReactQuill
-              theme="snow"
+          <div className="editor-container" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+            <RichTextEditor
               value={editForm.content}
               onChange={val => setEditForm(f => ({ ...f, content: val }))}
-              modules={QUILL_MODULES}
-              formats={QUILL_FORMATS}
+              placeholder="Makale içeriğini buraya yazın..."
             />
           </div>
         </div>
@@ -237,11 +217,45 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
         )}
 
         {/* ── CONTENT ── */}
-        <div className="yz-detail-content-minimal">
+        <div className="yz-detail-content-wrapper">
           <div
-            className="yz-detail-content"
+            className="yz-detail-content ql-editor-view"
             dangerouslySetInnerHTML={{ __html: article.content || '' }}
           />
+        </div>
+
+        {/* ── SHARE BUTTONS ── */}
+        <div className="yz-detail-share-bar">
+          <span className="yz-share-label">Yazıyı Paylaş:</span>
+          <div className="yz-share-actions">
+            <button 
+              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(article.title + ' ' + window.location.href)}`, '_blank')}
+              className="yz-share-btn wa" title="WhatsApp'ta Paylaş"
+            >
+              <MessageCircle size={18} />
+            </button>
+            <button 
+              onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(window.location.href)}`, '_blank')}
+              className="yz-share-btn tw" title="Twitter'da Paylaş"
+            >
+              <Twitter size={18} />
+            </button>
+            <button 
+              onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
+              className="yz-share-btn fb" title="Facebook'ta Paylaş"
+            >
+              <Facebook size={18} />
+            </button>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success('Bağlantı kopyalandı!');
+              }}
+              className="yz-share-btn copy" title="Bağlantıyı Kopyala"
+            >
+              <Link2 size={18} />
+            </button>
+          </div>
         </div>
 
         {/* ── COMMENTS ── */}
