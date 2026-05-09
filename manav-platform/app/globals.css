@@ -984,11 +984,11 @@ body {
   color: #1e293b;
   text-align: left !important;
   /* Word-wrapping rules: No splitting words */
-  /* ABSOLUTE WORD INTEGRITY: Words will NEVER be split */
-  word-break: keep-all !important;
+  word-break: normal !important;
   overflow-wrap: normal !important;
   hyphens: none !important;
   white-space: normal !important;
+  word-wrap: normal !important;
   -webkit-font-smoothing: antialiased;
   /* No frame, just white background (or inherited) */
   background: transparent;
@@ -1313,10 +1313,11 @@ body {
   line-height: 1.8;
   text-align: left !important;
   /* ABSOLUTE WORD INTEGRITY: Words will NEVER be split */
-  word-break: keep-all !important;
+  word-break: normal !important;
   overflow-wrap: normal !important;
   hyphens: none !important;
   white-space: normal !important;
+  word-wrap: normal !important;
   color: #1e293b;
 }
 .yz-editor-quill .ql-editor p { 
@@ -1358,10 +1359,15 @@ body {
   .yz-detail-hero { padding: 110px 20px 48px; }
   .yz-detail-title { font-size: 1.9rem; }
   .yz-detail-content-wrap { padding: 40px 20px 60px; }
+  .yz-detail-content p {
+    text-indent: 1.5rem !important; /* Smaller indent on mobile to prevent overflow */
+    margin-bottom: 1.8rem;
+  }
   .yz-detail-content { 
     font-size: 1.12rem; 
     line-height: 1.8; 
     padding: 20px 16px !important; /* Less padding on mobile to prevent overflow */
+    overflow-wrap: normal !important;
   }
   .yz-detail-content h2 { font-size: 1.6rem; }
   .yz-detail-content h3 { font-size: 1.35rem; }
@@ -1378,6 +1384,10 @@ body {
     padding: 20px !important; 
     text-align: left !important;
     text-justify: none !important;
+    overflow-wrap: normal !important;
+  }
+  .yz-editor-quill .ql-editor p {
+    text-indent: 1.5rem !important;
   }
 }
 
