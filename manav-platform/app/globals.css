@@ -983,28 +983,29 @@ body {
   line-height: 1.8;
   color: #1e293b;
   text-align: left !important;
-  /* Wide Frame for Article Content */
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.03);
+  /* Minimalist Centered Style - Matching Homepage */
+  background: transparent;
+  border: none;
+  box-shadow: none;
   box-sizing: border-box;
-  /* Word-wrapping rules: No splitting words unless absolutely necessary */
+  /* Centered Layout */
+  text-align: center !important;
+  /* Word-wrapping rules: Safe and whole words */
   word-break: normal !important;
   overflow-wrap: break-word !important;
   hyphens: none !important;
   white-space: normal !important;
   -webkit-font-smoothing: antialiased;
-  /* Balanced Padding to give more space for text */
-  padding: 32px 32px;
+  /* Vertical Spacing */
+  padding: 0;
 }
 .yz-detail-content p, .yz-detail-content span, .article-card-excerpt, .ql-editor, .ql-editor p {
-  text-align: left !important;
+  text-align: center !important;
 }
 .yz-detail-content p { 
   margin-bottom: 2.2rem; 
-  text-align: left !important;
-  text-indent: 3.5rem; /* Large academic indent like in the image */
+  text-align: center !important;
+  text-indent: 0 !important; /* No indent for centered style */
 }
 .yz-detail-content h2, .yz-detail-content h3, .yz-detail-content h4 {
   font-family: 'Playfair Display', serif;
@@ -1287,9 +1288,9 @@ body {
 }
 .yz-editor-field:focus { border-color: var(--gold); }
 .yz-editor-quill {
-  background: #fff;
+  background: transparent;
   border-radius: 14px;
-  border: 1px solid #e2e8f0;
+  border: none;
   overflow: hidden;
   min-height: 500px;
   display: flex;
@@ -1309,13 +1310,13 @@ body {
   flex: 1;
 }
 .yz-editor-quill .ql-editor {
-  padding: 32px 32px !important;
+  padding: 32px 0 !important;
   min-height: 450px;
   line-height: 1.8;
-  text-align: left !important;
-  /* ABSOLUTE WORD INTEGRITY: Words will NEVER be split */
+  text-align: center !important;
+  /* Prevent splitting words unless they are too long for the screen */
   word-break: normal !important;
-  overflow-wrap: normal !important;
+  overflow-wrap: break-word !important;
   hyphens: none !important;
   white-space: normal !important;
   word-wrap: normal !important;
@@ -1323,7 +1324,8 @@ body {
 }
 .yz-editor-quill .ql-editor p { 
   margin-bottom: 2.2rem; 
-  text-indent: 3.5rem;
+  text-indent: 0 !important;
+  text-align: center !important;
 }
 .yz-editor-quill .ql-editor h2, .yz-editor-quill .ql-editor h3, .yz-editor-quill .ql-editor h4 {
   font-family: 'Playfair Display', serif !important;
