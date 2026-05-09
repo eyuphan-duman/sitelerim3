@@ -193,82 +193,77 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
   // ── ARTICLE VIEW ──
   return (
     <div className="yz-detail-page">
-      {/* ── HERO ── */}
-      <header className="yz-detail-hero">
-        <div className="yz-detail-hero-inner">
-          <Link href="/yazilarim" className="yz-detail-back">
-            <ArrowLeft size={16} /> Tüm Yazılar
-          </Link>
+      <div className="yz-detail-container">
+        {/* ── BACK BUTTON ── */}
+        <Link href="/yazilarim" className="yz-detail-back-minimal">
+          <ArrowLeft size={16} /> Yazılara Dön
+        </Link>
 
-          <div className="yz-detail-meta">
+        {/* ── HEADER ── */}
+        <header className="yz-detail-header-minimal">
+          <h1 className="yz-detail-title-minimal">{article.title}</h1>
+          
+          <div className="yz-detail-meta-minimal">
             {article.category && (
-              <span className="yz-detail-category"><Tag size={13} />{article.category}</span>
+              <span className="yz-detail-meta-item">
+                <Tag size={14} /> {article.category}
+              </span>
             )}
             {dateStr && (
-              <span className="yz-detail-date"><Calendar size={13} />{dateStr}</span>
+              <span className="yz-detail-meta-item">
+                <Calendar size={14} /> {dateStr}
+              </span>
             )}
           </div>
 
-          <h1 className="yz-detail-title">{article.title}</h1>
-
           {/* Admin controls */}
           {isAdmin && (
-            <div className="yz-detail-admin-bar">
-              <button onClick={() => setEditing(true)} className="yz-admin-edit-btn">
-                <Edit3 size={15} /> Düzenle
+            <div className="yz-detail-admin-bar-minimal">
+              <button onClick={() => setEditing(true)} className="yz-admin-edit-btn-min">
+                <Edit3 size={14} /> Düzenle
               </button>
-              <button onClick={handleDelete} className="yz-admin-delete-btn">
-                <Trash2 size={15} /> Sil
+              <button onClick={handleDelete} className="yz-admin-delete-btn-min">
+                <Trash2 size={14} /> Sil
               </button>
             </div>
           )}
+        </header>
+
+        {/* ── COVER IMAGE ── */}
+        {article.featuredImage && (
+          <div className="yz-detail-cover-minimal">
+            <img src={article.featuredImage} alt={article.title} />
+          </div>
+        )}
+
+        {/* ── CONTENT ── */}
+        <div className="yz-detail-content-minimal">
+          <div
+            className="yz-detail-content"
+            dangerouslySetInnerHTML={{ __html: article.content || '' }}
+          />
         </div>
-      </header>
 
-      {/* ── COVER IMAGE ── */}
-      {article.featuredImage && (
-        <div className="yz-detail-cover">
-          <img src={article.featuredImage} alt={article.title} />
-        </div>
-      )}
-
-      {/* ── CONTENT ── */}
-      <div className="yz-detail-content-wrap">
-        <div
-          className="yz-detail-content"
-          dangerouslySetInnerHTML={{ __html: article.content || '' }}
-        />
-      </div>
-
-      {/* ── COMMENTS ── */}
-      <section className="yz-comments">
-        <div className="yz-comments-inner">
+        {/* ── COMMENTS ── */}
+        <section className="yz-comments-minimal">
           <h3 className="yz-comments-title">
-            <MessageSquare size={22} />
-            Yorumlar
-            <span className="yz-comments-count">{comments.length}</span>
+            <MessageSquare size={20} />
+            Yorumlar ({comments.length})
           </h3>
 
-          {/* Comment form */}
           {user ? (
-            <form className="yz-comment-form" onSubmit={handleComment}>
-              <div className="yz-comment-avatar">
-                {(user.displayName || user.email || 'U')[0].toUpperCase()}
-              </div>
-              <div className="yz-comment-form-right">
-                <textarea
-                  className="yz-comment-textarea"
-                  value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
-                  placeholder="Düşüncelerinizi paylaşın…"
-                  rows={3}
-                  required
-                />
-                <button type="submit" disabled={postingComment} className="yz-comment-submit">
-                  <Send size={16} />
-                  {postingComment ? 'Gönderiliyor…' : 'Yorum Yap'}
-                </button>
-              </div>
+            <form className="yz-comment-form-minimal" onSubmit={handleComment}>
+              <textarea
+                className="yz-comment-textarea-minimal"
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                placeholder="Yorumunuzu buraya yazın..."
+                rows={3}
+                required
+              />
+              <button type="submit" disabled={postingComment} className="yz-comment-submit-minimal">
+                <Send size={14} /> {postingComment ? 'Gönderiliyor...' : 'Paylaş'}
+              </button>
             </form>
           ) : (
             <div className="yz-comment-login-prompt">
@@ -276,39 +271,26 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
             </div>
           )}
 
-          {/* Comment list */}
-          <div className="yz-comment-list">
-            {comments.length === 0 && (
-              <p className="yz-no-comments">Henüz yorum yapılmamış. İlk yorumu siz yapın!</p>
-            )}
+          <div className="yz-comment-list-minimal">
             {comments.map(c => (
-              <div key={c.id} className="yz-comment-item">
-                <div className="yz-comment-item-avatar"><User size={18} /></div>
-                <div className="yz-comment-item-body">
-                  <div className="yz-comment-item-header">
-                    <strong className="yz-comment-username">{c.userName}</strong>
-                    {c.createdAt && (
-                      <span className="yz-comment-time">
-                        {format(new Date(c.createdAt), 'd MMM yyyy, HH:mm', { locale: tr })}
-                      </span>
-                    )}
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleDeleteComment(c.id)}
-                        className="yz-comment-delete"
-                        title="Yorumu sil"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </div>
-                  <p className="yz-comment-text">{c.content}</p>
+              <div key={c.id} className="yz-comment-item-minimal">
+                <div className="yz-comment-header-minimal">
+                  <strong>{c.userName}</strong>
+                  {c.createdAt && (
+                    <span>{format(new Date(c.createdAt), 'd MMM yyyy, HH:mm', { locale: tr })}</span>
+                  )}
+                  {isAdmin && (
+                    <button onClick={() => handleDeleteComment(c.id)} className="yz-comment-del-min">
+                      <Trash2 size={12} />
+                    </button>
+                  )}
                 </div>
+                <p>{c.content}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
