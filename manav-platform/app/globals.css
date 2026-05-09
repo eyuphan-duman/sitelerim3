@@ -855,7 +855,7 @@ body {
   background: linear-gradient(160deg, var(--navy) 0%, #162d52 100%);
   padding: 140px 24px 64px;
 }
-.yz-detail-hero-inner { max-width: 1400px; width: 90%; margin: 0 auto; }
+.yz-detail-hero-inner { max-width: 900px; width: 92%; margin: 0 auto; }
 
 .yz-detail-back {
   display: inline-flex;
@@ -953,8 +953,8 @@ body {
 }
 
 .yz-detail-content-wrap {
-  max-width: 1400px;
-  width: 90%;
+  max-width: 900px;
+  width: 92%;
   margin: 0 auto;
   padding: 64px 24px 100px;
 }
@@ -1040,7 +1040,7 @@ body {
   border-top: 1px solid #e2e8f0;
   padding: 64px 24px;
 }
-.yz-comments-inner { max-width: 1400px; width: 90%; margin: 0 auto; }
+.yz-comments-inner { max-width: 900px; width: 92%; margin: 0 auto; }
 .yz-comments-title {
   display: flex;
   align-items: center;
