@@ -14,11 +14,17 @@ async function getArticle(id: string) {
   }
   
   const data = docSnap.data();
+  const serializedData = JSON.parse(JSON.stringify(data, (key, value) => {
+    if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+      return new Date(value.seconds * 1000).toISOString();
+    }
+    return value;
+  }));
+
   return {
     id: docSnap.id,
-    ...data,
-    // Convert Firestore Timestamp to string or plain object to pass to client component safely
-    createdAt: data.createdAt?.toDate()?.toISOString() || null
+    ...serializedData,
+    createdAt: serializedData.createdAt || null
   };
 }
 

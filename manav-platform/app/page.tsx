@@ -59,7 +59,14 @@ export default function HomePage() {
       try {
         const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(4));
         const snap = await getDocs(q);
-        setLatestArticles(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })));
+        setLatestArticles(snap.docs.map(d => {
+          const data = d.data();
+          return { 
+            id: d.id, 
+            ...data, 
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt || new Date()) 
+          };
+        }));
       } catch (err) { console.error(err); }
     }
     fetchLatestArticles();
@@ -321,39 +328,30 @@ export default function HomePage() {
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {latestArticles.map(article => (
-              <Link href={`/yazilarim/${article.id}`} key={article.id} className="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 hover:shadow-[0_12px_30px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 min-h-[420px]">
-                {/* Image */}
-                <div className="relative h-48 w-full bg-gray-100 overflow-hidden flex-shrink-0">
-                  {article.featuredImage ? (
-                    <img src={article.featuredImage} alt={article.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[var(--navy)] to-[#1e293b] flex items-center justify-center opacity-90 group-hover:opacity-100 transition-opacity">
-                      <span className="font-serif text-white/20 text-3xl font-bold italic">FM</span>
-                    </div>
-                  )}
-                  {article.category && (
-                    <span className="absolute top-3 left-3 bg-white/95 backdrop-blur text-[var(--navy)] text-[10px] font-bold px-2 py-1 rounded shadow-sm tracking-widest uppercase">
-                      {article.category}
-                    </span>
-                  )}
-                </div>
+              <Link href={`/yazilarim/${article.id}`} key={article.id} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.03)] border border-gray-100 hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 h-full min-h-[250px] p-8 md:p-10 relative">
+                
+                {article.category && (
+                  <span className="absolute top-8 right-8 flex items-center gap-1 text-gray-400 text-[10px] font-bold tracking-widest uppercase">
+                    {article.category}
+                  </span>
+                )}
                 
                 {/* Content */}
-                <div className="p-6 flex flex-col flex-1">
-                  <span className="text-[11px] font-semibold text-gray-400 tracking-widest uppercase mb-3">
-                    {article.createdAt ? format(new Date(article.createdAt), 'd MMM yyyy', { locale: tr }) : ''}
+                <div className="flex flex-col flex-1">
+                  <span className="text-[11px] font-bold text-[var(--gold-dim)] tracking-widest uppercase mb-3">
+                    {article.createdAt ? format(new Date(article.createdAt), 'd MMMM yyyy', { locale: tr }) : ''}
                   </span>
-                  <h3 className="font-serif text-xl font-bold text-[var(--navy)] mb-3 leading-snug group-hover:text-[var(--gold)] transition-colors line-clamp-2">
+                  <h3 className="font-serif text-2xl md:text-3xl font-bold text-[var(--navy)] mb-4 leading-snug group-hover:text-[var(--gold)] transition-colors line-clamp-2">
                     {article.title}
                   </h3>
-                  <p className="text-gray-500 text-sm leading-relaxed mb-6 line-clamp-3 font-serif flex-1">
+                  <p className="text-gray-500 text-base md:text-lg leading-relaxed mb-8 line-clamp-3 font-serif flex-1">
                     {article.excerpt}
                   </p>
                   
-                  <div className="mt-auto pt-4 border-t border-gray-50">
-                    <span className="text-[var(--gold-dim)] text-[11px] font-bold tracking-widest uppercase flex items-center gap-1.5 group-hover:text-[var(--gold)] transition-colors">
+                  <div className="mt-auto pt-5 border-t border-gray-100/50 flex items-center">
+                    <span className="text-[var(--navy)] text-xs font-bold tracking-widest uppercase flex items-center gap-1.5 group-hover:text-[var(--gold)] transition-colors bg-gray-50 px-5 py-2.5 rounded-full">
                       Makaleyi Oku <ArrowRight size={14} className="transform group-hover:translate-x-1 transition-transform" />
                     </span>
                   </div>

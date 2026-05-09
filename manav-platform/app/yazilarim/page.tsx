@@ -52,48 +52,32 @@ export default async function ArticlesPage() {
             Henüz yayımlanmış bir makale bulunmuyor.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {articles.map((article: any) => (
-              <Link href={`/yazilarim/${article.id}`} key={article.id} className="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 hover:shadow-[0_12px_30px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 h-full min-h-[420px]">
-                {/* Featured Image */}
-                <div className="relative h-64 w-full overflow-hidden bg-gray-100">
-                  {article.featuredImage ? (
-                    <img 
-                      src={article.featuredImage} 
-                      alt={article.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[var(--navy)] to-[#1e293b] flex items-center justify-center opacity-90 group-hover:opacity-100 transition-opacity">
-                      <span className="font-serif text-white/20 text-4xl font-bold italic tracking-wider">FM</span>
-                    </div>
-                  )}
-                  {/* Category Badge */}
-                  {article.category && (
-                    <div className="absolute top-4 left-4">
-                      <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur text-[var(--navy)] text-xs font-bold px-3 py-1.5 rounded-md shadow-sm tracking-wider uppercase">
-                        <Folder size={12} className="text-[var(--gold)]" /> {article.category}
-                      </span>
-                    </div>
-                  )}
-                </div>
+              <Link href={`/yazilarim/${article.id}`} key={article.id} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.03)] border border-gray-100 hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)] transition-all duration-300 transform hover:-translate-y-1 h-full min-h-[300px] p-8 md:p-12 relative">
+                
+                {article.category && (
+                  <span className="absolute top-8 right-8 flex items-center gap-1.5 text-gray-400 text-xs font-bold tracking-widest uppercase">
+                    <Folder size={14} className="text-[var(--gold)]" /> {article.category}
+                  </span>
+                )}
 
                 {/* Content */}
-                <div className="p-8 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 mb-4 tracking-wider uppercase">
-                    <Clock size={14} />
+                <div className="flex flex-col flex-1">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-[var(--gold-dim)] mb-4 tracking-wider uppercase">
+                    <Clock size={16} />
                     {article.createdAt ? format(new Date(article.createdAt.seconds ? article.createdAt.toDate() : article.createdAt), 'd MMMM yyyy', { locale: tr }) : 'Tarih Yok'}
                   </div>
-                  <h3 className="font-serif text-2xl font-bold text-[var(--navy)] mb-4 leading-snug group-hover:text-[var(--gold)] transition-colors line-clamp-2">
+                  <h3 className="font-serif text-3xl md:text-4xl font-bold text-[var(--navy)] mb-6 leading-snug group-hover:text-[var(--gold)] transition-colors">
                     {article.title}
                   </h3>
-                  <p className="text-gray-500 leading-relaxed mb-6 line-clamp-3 font-serif flex-1">
+                  <p className="text-gray-500 text-lg leading-relaxed mb-10 line-clamp-4 font-serif flex-1">
                     {article.excerpt}
                   </p>
                   
                   {/* Footer */}
-                  <div className="mt-auto pt-5 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-[var(--gold-dim)] text-sm font-bold tracking-widest uppercase flex items-center gap-2 group-hover:text-[var(--gold)] transition-colors">
+                  <div className="mt-auto pt-6 border-t border-gray-100/50 flex items-center">
+                    <span className="text-[var(--navy)] text-sm font-bold tracking-widest uppercase flex items-center gap-2 group-hover:text-[var(--gold)] transition-colors bg-gray-50 px-6 py-3 rounded-full">
                       Makaleyi Oku <ArrowRight size={16} className="transform group-hover:translate-x-1 transition-transform" />
                     </span>
                   </div>
