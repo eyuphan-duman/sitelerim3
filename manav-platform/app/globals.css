@@ -671,18 +671,22 @@ body {
   color: #222;
   word-break: normal;
   overflow-wrap: break-word;
-  word-wrap: break-word;
-  hyphens: auto;
-  -webkit-hyphens: auto;
-  -moz-hyphens: auto;
-  -ms-hyphens: auto;
+  word-wrap: normal;
+  hyphens: none;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
   text-align: left;
   text-wrap: pretty;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 @media (max-width: 600px) {
   .article-content {
     font-size: 1.05rem;
     line-height: 1.6;
+    padding: 0 16px;
   }
 }
 .article-content p {
