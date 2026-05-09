@@ -10,20 +10,34 @@ import { ArrowLeft, Edit3, Trash2, Plus, Clock, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 const stripHtml = (html: string) => html.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 const truncate = (t: string, n: number) => { if (t.length <= n) return t; const s = t.slice(0, n); const l = s.lastIndexOf(' '); return (l === -1 ? s : s.slice(0, l)) + '...'; };
 
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
-// ─── Toolbar Button ───
-const TBtn = ({ cmd, arg, label, active }: { cmd: string; arg?: string; label: React.ReactNode; active?: boolean }) => (
-  <button
-    type="button"
-    onMouseDown={e => { e.preventDefault(); document.execCommand(cmd, false, arg); }}
-    style={{ padding: '6px 10px', background: active ? 'var(--navy)' : '#f1f5f9', color: active ? 'white' : '#334155', border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, transition: 'all 0.15s', lineHeight: 1 }}
-  >{label}</button>
-);
+// Quill Modules configuration (Word-style, NO justify)
+const quillModules = {
+  toolbar: [
+    [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+    [{ 'color': [] }, { 'background': [] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': ['', 'center', 'right'] }],
+    ['link', 'image'],
+    ['clean']
+  ],
+};
+
+const quillFormats = [
+  'font', 'size', 'color', 'background',
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet', 'align',
+  'link', 'image'
+];
 
 export default function YazilarimClient() {
   const { user } = useAuth();
@@ -41,7 +55,7 @@ export default function YazilarimClient() {
   const [editingPost, setEditingPost] = useState<any>(null);
   const [editorTitle, setEditorTitle] = useState('');
   const [editorCategory, setEditorCategory] = useState('');
-  const editorRef = useRef<HTMLDivElement>(null);
+  const [editorContent, setEditorContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch posts
@@ -72,26 +86,21 @@ export default function YazilarimClient() {
 
   // Editor functions
   const openNewEditor = () => {
-    setEditingPost(null); setEditorTitle(''); setEditorCategory('');
+    setEditingPost(null); setEditorTitle(''); setEditorCategory(''); setEditorContent('');
     setShowEditor(true);
-    setTimeout(() => { if (editorRef.current) editorRef.current.innerHTML = ''; }, 50);
   };
 
   const openEditEditor = (post: any) => {
     setEditingPost(post); setEditorTitle(post.title); setEditorCategory(post.category || '');
+    setEditorContent(post.content || '');
     setShowEditor(true);
-    setTimeout(() => { if (editorRef.current) editorRef.current.innerHTML = post.content || ''; }, 50);
   };
 
-  const insertImage = () => {
-    const url = prompt('Resim URL\'si girin:');
-    if (url) document.execCommand('insertHTML', false, `<img src="${url}" style="max-width:100%;height:auto;border-radius:8px;margin:24px 0;display:block;" />`);
-  };
 
   const handleSave = async () => {
     if (!editorTitle.trim()) { toast.error('Başlık zorunlu.'); return; }
-    const content = editorRef.current?.innerHTML || '';
-    if (!content.trim()) { toast.error('İçerik zorunlu.'); return; }
+    const content = editorContent;
+    if (!content.trim() || content === '<p><br></p>') { toast.error('İçerik zorunlu.'); return; }
     setSubmitting(true);
     try {
       const excerpt = truncate(stripHtml(content), 200);
@@ -158,57 +167,44 @@ export default function YazilarimClient() {
     );
   }
 
-  // ─── EDITOR OVERLAY (shared) ───
+  // ─── EDITOR OVERLAY (FULL-PAGE) ───
   function renderEditor() {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,22,40,0.6)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto', padding: '80px 20px 40px' }}>
-        <div style={{ background: 'white', width: '100%', maxWidth: 860, borderRadius: 16, boxShadow: '0 30px 80px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
-          {/* Editor Header */}
-          <div style={{ padding: '24px 32px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: 'var(--navy)' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#f8fafc', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        
+        {/* Editor Top Bar */}
+        <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button onClick={() => setShowEditor(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 40, height: 40, cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>✕</button>
+            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 700, color: 'var(--navy)' }}>
               {editingPost ? 'Yazıyı Düzenle' : 'Yeni Yazı Oluştur'}
             </h2>
-            <button onClick={() => setShowEditor(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 36, height: 36, cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>✕</button>
+          </div>
+          <button onClick={handleSave} disabled={submitting} className="btn-gold" style={{ padding: '12px 32px' }}>
+            {submitting ? 'Kaydediliyor...' : editingPost ? 'Güncelle' : 'Yayınla'}
+          </button>
+        </div>
+
+        {/* Editor Body */}
+        <div style={{ maxWidth: 1000, width: '100%', margin: '40px auto', padding: '0 24px', flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          
+          <div style={{ display: 'flex', gap: 16 }}>
+             <input value={editorTitle} onChange={e => setEditorTitle(e.target.value)} placeholder="Yazı Başlığı" className="input-field" style={{ fontSize: '1.4rem', fontWeight: 700, padding: '20px 24px', flex: 2 }} />
+             <input value={editorCategory} onChange={e => setEditorCategory(e.target.value)} placeholder="Kategori" className="input-field" style={{ fontSize: '1.1rem', padding: '20px 24px', flex: 1 }} />
           </div>
 
-          <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <input value={editorTitle} onChange={e => setEditorTitle(e.target.value)} placeholder="Yazı Başlığı" className="input-field" style={{ fontSize: '1.1rem', fontWeight: 600 }} />
-            <input value={editorCategory} onChange={e => setEditorCategory(e.target.value)} placeholder="Kategori (opsiyonel)" className="input-field" />
-
-            {/* Toolbar */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 0' }}>
-              <TBtn cmd="bold" label={<b>B</b>} />
-              <TBtn cmd="italic" label={<i>I</i>} />
-              <TBtn cmd="underline" label={<u>U</u>} />
-              <div style={{ width: 1, background: '#e2e8f0', margin: '0 4px' }} />
-              <TBtn cmd="fontSize" arg="4" label="A+" />
-              <TBtn cmd="fontSize" arg="2" label="A-" />
-              <div style={{ width: 1, background: '#e2e8f0', margin: '0 4px' }} />
-              <TBtn cmd="foreColor" arg="#0a1628" label="Navy" />
-              <TBtn cmd="foreColor" arg="#c9a96e" label="Gold" />
-              <TBtn cmd="foreColor" arg="#ef4444" label="Red" />
-              <div style={{ width: 1, background: '#e2e8f0', margin: '0 4px' }} />
-              <TBtn cmd="formatBlock" arg="h2" label="H2" />
-              <TBtn cmd="formatBlock" arg="h3" label="H3" />
-              <TBtn cmd="formatBlock" arg="blockquote" label="❝" />
-              <div style={{ width: 1, background: '#e2e8f0', margin: '0 4px' }} />
-              <TBtn cmd="insertUnorderedList" label="• List" />
-              <TBtn cmd="insertOrderedList" label="1. List" />
-              <button type="button" onClick={insertImage} style={{ padding: '6px 10px', background: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>🖼 Resim</button>
-            </div>
-
-            {/* Editable Area */}
-            <div
-              ref={editorRef}
-              contentEditable
-              suppressContentEditableWarning
-              style={{ minHeight: 320, maxHeight: 500, overflowY: 'auto', padding: 20, border: '1.5px solid #e2e8f0', borderRadius: 8, outline: 'none', fontFamily: 'Crimson Text, serif', fontSize: '1.1rem', lineHeight: 1.7, color: '#222', textAlign: 'left', wordBreak: 'normal', hyphens: 'none' }}
+          <div className="quill-editor-container" style={{ background: 'white', borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: '600px' }}>
+            <ReactQuill 
+              theme="snow"
+              value={editorContent}
+              onChange={setEditorContent}
+              modules={quillModules}
+              formats={quillFormats}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+              className="custom-quill"
             />
-
-            <button onClick={handleSave} disabled={submitting} className="btn-gold" style={{ justifyContent: 'center', width: '100%', marginTop: 8 }}>
-              {submitting ? 'Kaydediliyor...' : editingPost ? 'Güncelle' : 'Yayınla'}
-            </button>
           </div>
+
         </div>
       </div>
     );

@@ -6,8 +6,32 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteD
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home } from 'lucide-react';
+import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
 import { useRouter } from 'next/navigation';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+
+const quillModules = {
+  toolbar: [
+    [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+    [{ 'color': [] }, { 'background': [] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': ['', 'center', 'right'] }],
+    ['link', 'image'],
+    ['clean']
+  ],
+};
+
+const quillFormats = [
+  'font', 'size', 'color', 'background',
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet', 'align',
+  'link', 'image'
+];
 
 export default function AdminPage() {
   const { user, loading, logout } = useAuth();
@@ -53,7 +77,16 @@ export default function AdminPage() {
   const handleAddPost = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
-      await addDoc(collection(db, 'posts'), { ...postForm, likes: 0, commentCount: 0, createdAt: serverTimestamp(), date: new Date().toISOString() });
+      if (!postForm.content || postForm.content === '<p><br></p>') {
+         toast.error('İçerik zorunlu.');
+         setSubmitting(false);
+         return;
+      }
+      const stripHtml = (html: string) => html.replace(/<[^>]*>?/gm, ' ').trim();
+      const raw = stripHtml(postForm.content);
+      const excerpt = raw.length > 200 ? raw.slice(0, 200).slice(0, raw.slice(0, 200).lastIndexOf(' ')) + '...' : raw;
+
+      await addDoc(collection(db, 'posts'), { ...postForm, excerpt, likes: 0, commentCount: 0, createdAt: serverTimestamp(), date: new Date().toISOString() });
       setPostForm({ title: '', category: '', excerpt: '', content: '' });
       toast.success('Yazı paylaşıldı!');
     } catch { toast.error('Hata oluştu'); } finally { setSubmitting(false); }
@@ -211,7 +244,7 @@ export default function AdminPage() {
 
         {/* POSTS TAB */}
         {activeTab === 'posts' && (
-          <div className="admin-posts-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr)', gap: 40, alignItems: 'start' }}>
+          <div className="admin-posts-grid" style={{ display: 'flex', flexDirection: 'column', gap: 40, alignItems: 'stretch' }}>
             <div style={{ background: 'white', padding: 32, borderRadius: 6, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(10,22,40,0.02)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
                 <PenTool size={20} color="var(--gold-dim)"/> <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>Yeni Makale</h2>
@@ -219,7 +252,18 @@ export default function AdminPage() {
               <form onSubmit={handleAddPost} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Başlık</label><input required className="input-field" value={postForm.title} onChange={e=>setPostForm({...postForm, title: e.target.value})} placeholder="Makale Başlığı"/></div>
                 <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kategori</label><input className="input-field" value={postForm.category} onChange={e=>setPostForm({...postForm, category: e.target.value})} placeholder="Örn: Psikoloji"/></div>
-                <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">İçerik</label><textarea required className="input-field" style={{ minHeight: 250 }} value={postForm.content} onChange={e=>setPostForm({...postForm, content: e.target.value})} placeholder="Makalenizin tamamını yazın."/></div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">İçerik</label>
+                  <div className="quill-editor-container custom-quill" style={{ border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
+                    <ReactQuill 
+                      theme="snow"
+                      value={postForm.content}
+                      onChange={val => setPostForm({...postForm, content: val})}
+                      modules={quillModules}
+                      formats={quillFormats}
+                    />
+                  </div>
+                </div>
                 <button disabled={submitting} type="submit" className="btn-gold justify-center mt-4"><Plus size={16}/> Yayınla</button>
               </form>
             </div>
