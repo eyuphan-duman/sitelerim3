@@ -1,11 +1,13 @@
 export const LOCAL_ARTICLES = [
   {
     id: "oteki-ile-kuramadigin-bag",
-    title: "“ÖTEKİ İLE KURAMADIĞIN BAĞIN CEZASINI KENDİNE VERİRSİN”",
+    title: "Bir Tehdit Olarak “Öteki” ve Kurulamayan Bağ.",
     category: "Psikanaliz",
     date: "2026-05-11",
     excerpt: "İnsan, doğası gereği bir \"bağ\" öznesi olarak dünyaya gelir. Ancak bağ kurma süreci, her zaman göründüğü kadar romantik veya pürüzsüz ilerlemez. Çoğu zaman hayatımızda derin bir sessizlik, bitmek milmeyen bir mesafe veya kopukluk hissederiz...",
-    content: `<p>İnsan, doğası gereği bir \"bağ\" öznesi olarak dünyaya gelir. Ancak bağ kurma süreci, her zaman göründüğü kadar romantik veya pürüzsüz ilerlemez. Çoğu zaman hayatımızda derin bir sessizlik, bitmek milmeyen bir mesafe veya kopukluk hissederiz. Genelde bu durumu \"yalnızlık\" olarak adlandırıp geçsek de işin aslı daha karanlıktır. Ötekiyle -başka- dışarıda kurulamayan her bağ, içeride bir savaş alanına dönüşür.</p>
+    content: `<p><strong>“Öteki ile kuramadığın bağın cezasını kendine verirsin”</strong></p>
+
+<p>İnsan, doğası gereği bir \"bağ\" öznesi olarak dünyaya gelir. Ancak bağ kurma süreci, her zaman göründüğü kadar romantik veya pürüzsüz ilerlemez. Çoğu zaman hayatımızda derin bir sessizlik, bitmek milmeyen bir mesafe veya kopukluk hissederiz. Genelde bu durumu \"yalnızlık\" olarak adlandırıp geçsek de işin aslı daha karanlıktır. Ötekiyle -başka- dışarıda kurulamayan her bağ, içeride bir savaş alanına dönüşür.</p>
 
 <p><strong>Öteki İle Karşılaşma</strong></p>
 
