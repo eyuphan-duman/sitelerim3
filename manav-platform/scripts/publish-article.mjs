@@ -27,15 +27,31 @@ async function publish() {
   const excerpt = raw.length > 220 ? raw.slice(0, 220) + '…' : raw;
 
   try {
-    const docRef = await addDoc(collection(db, 'articles'), {
+    // 1. Add to 'articles' collection
+    const articleRef = await addDoc(collection(db, 'articles'), {
       title: articleData.title,
       category: articleData.category,
       content: articleData.content,
       excerpt: excerpt,
       createdAt: serverTimestamp(),
-      featuredImage: "" // Optional
+      featuredImage: ""
     });
-    console.log("Article published with ID:", docRef.id);
+    console.log("Article added to 'articles' with ID:", articleRef.id);
+
+    // 2. Add to 'posts' collection (for YazilarimClient compatibility)
+    const postRef = await addDoc(collection(db, 'posts'), {
+      title: articleData.title,
+      category: articleData.category,
+      content: articleData.content,
+      excerpt: excerpt,
+      likes: 0,
+      commentCount: 0,
+      createdAt: serverTimestamp(),
+      date: new Date().toISOString()
+    });
+    console.log("Article added to 'posts' with ID:", postRef.id);
+
+    console.log("Success: Article published to both collections.");
     process.exit(0);
   } catch (e) {
     console.error("Error publishing article:", e);
