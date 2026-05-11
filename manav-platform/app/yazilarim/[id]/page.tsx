@@ -1,3 +1,4 @@
+import { LOCAL_ARTICLES } from '@/data/local-articles';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
@@ -6,6 +7,10 @@ import ArticleDetailClient from './ArticleDetailClient';
 export const dynamic = 'force-dynamic';
 
 async function getArticle(id: string) {
+  // First check local articles
+  const localArticle = LOCAL_ARTICLES.find(a => a.id === id);
+  if (localArticle) return localArticle;
+
   try {
     const docRef = doc(db, 'articles', id);
     const docSnap = await getDoc(docRef);

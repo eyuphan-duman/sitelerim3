@@ -9,6 +9,8 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ArrowRight, Calendar, Tag, BookOpen, Plus } from 'lucide-react';
 
+import { LOCAL_ARTICLES } from '@/data/local-articles';
+
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
 function ArticleCard({ article }: { article: any }) {
@@ -73,14 +75,23 @@ export default function YazilarimPage() {
       try {
         const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
         const snap = await getDocs(q);
-        setArticles(snap.docs.map(d => {
+        const fbArticles = snap.docs.map(d => {
           const data = d.data();
           return {
             id: d.id,
             ...data,
             createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || null),
           };
-        }));
+        });
+
+        // Merge local articles and sort by createdAt
+        const combined = [...fbArticles, ...LOCAL_ARTICLES].sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        });
+
+        setArticles(combined);
       } catch (e) {
         console.error(e);
       } finally {
