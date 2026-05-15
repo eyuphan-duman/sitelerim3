@@ -76,9 +76,17 @@ export default function AdminPage() {
 
   const deletePost = async (id: string) => {
     if (!confirm('Makaleyi silmek istediğinize emin misiniz?')) return;
-    await deleteDoc(doc(db, 'articles', id));
-    toast.success('Silindi.');
+    try {
+      await Promise.all([
+        deleteDoc(doc(db, 'articles', id)),
+        deleteDoc(doc(db, 'posts', id)).catch(() => {})
+      ]);
+      toast.success('Silindi.');
+    } catch {
+      toast.error('Hata oluştu.');
+    }
   };
+
 
   const handleAddVideo = async (e: React.FormEvent) => {
     e.preventDefault(); 

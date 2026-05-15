@@ -17,6 +17,7 @@ import {
   MessageSquare, Send, User, X, Check,
   Share2, Link2, MessageCircle
 } from 'lucide-react';
+import { LOCAL_ARTICLES } from '@/data/local-articles';
 import dynamic from 'next/dynamic';
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -71,8 +72,20 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
 
   const handleDelete = async () => {
     if (!confirm('Bu makaleyi kalıcı olarak silmek istediğinize emin misiniz?')) return;
+    
+    // Check if it's a local article
+    const isLocal = LOCAL_ARTICLES.some(a => a.id === id);
+    if (isLocal) {
+      toast.error('Bu makale yerel bir dosyadır, veritabanından silinemez.');
+      return;
+    }
+
     try {
-      await deleteDoc(doc(db, 'articles', id));
+      await Promise.all([
+        deleteDoc(doc(db, 'articles', id)),
+        // Try to delete from posts as well (they might have different IDs but let's try or handle separately)
+        deleteDoc(doc(db, 'posts', id))
+      ]);
       toast.success('Makale silindi.');
       router.push('/yazilarim');
     } catch { toast.error('Silme başarısız.'); }
@@ -81,16 +94,41 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
   const handleUpdate = async () => {
     if (!editForm.title.trim()) { toast.error('Başlık zorunludur.'); return; }
     if (!editForm.content || editForm.content === '<p><br></p>') { toast.error('İçerik zorunludur.'); return; }
+    
+    // Check if it's a local article
+    const isLocal = LOCAL_ARTICLES.some(a => a.id === id);
+    if (isLocal) {
+      toast.error('Bu makale yerel bir dosyadır. Değişiklikler kalıcı olmaz. Lütfen veritabanına taşıyın.');
+      setEditing(false);
+      return;
+    }
+
     setSaving(true);
     try {
       const strip = (h: string) => h.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
       const raw = strip(editForm.content);
       const excerpt = raw.length > 220 ? raw.slice(0, 220) + '…' : raw;
-      await updateDoc(doc(db, 'articles', id), { ...editForm, excerpt });
+      
+      const updateData = { ...editForm, excerpt };
+      
+      await Promise.all([
+        updateDoc(doc(db, 'articles', id), updateData),
+        // If posts use the same ID, update it too
+        updateDoc(doc(db, 'posts', id), {
+          title: editForm.title,
+          category: editForm.category,
+          content: editForm.content,
+          excerpt: excerpt
+        }).catch(() => {/* Ignore if post ID doesn't match */})
+      ]);
+
       setArticle((a: any) => ({ ...a, ...editForm, excerpt }));
       setEditing(false);
       toast.success('Makale güncellendi!');
-    } catch { toast.error('Güncelleme başarısız.'); }
+    } catch (e) { 
+      console.error(e);
+      toast.error('Güncelleme başarısız.'); 
+    }
     finally { setSaving(false); }
   };
 
@@ -199,7 +237,13 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
           {/* Admin controls */}
           {isAdmin && (
             <div className="yz-detail-admin-bar-minimal">
-              <button onClick={() => setEditing(true)} className="yz-admin-edit-btn-min">
+              <button onClick={() => {
+                if (LOCAL_ARTICLES.some(a => a.id === id)) {
+                  toast.error('Bu makale yerel bir dosyadır ve buradan düzenlenemez.');
+                } else {
+                  setEditing(true);
+                }
+              }} className="yz-admin-edit-btn-min">
                 <Edit3 size={14} /> Düzenle
               </button>
               <button onClick={handleDelete} className="yz-admin-delete-btn-min">

@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { LOCAL_ARTICLES } from '@/data/local-articles';
 
 const stripHtml = (html: string) => {
   return html
@@ -55,12 +56,24 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    getDocs(query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(4)))
-      .then(snap => setLatestArticles(snap.docs.map(d => {
-        const data = d.data();
-        return { id: d.id, ...data, createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : null };
-      })))
-      .catch(() => {});
+    async function fetchLatest() {
+      try {
+        const snap = await getDocs(query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(10)));
+        const fbArticles = snap.docs.map(d => {
+          const data = d.data();
+          return { id: d.id, ...data, createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || null) };
+        });
+
+        const combined = [...fbArticles, ...LOCAL_ARTICLES]
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 2);
+
+        setLatestArticles(combined);
+      } catch (e) {
+        console.error("Error fetching latest articles:", e);
+      }
+    }
+    fetchLatest();
   }, []);
 
 
