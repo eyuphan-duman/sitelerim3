@@ -1,30 +1,32 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { serverTimestamp, updateDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function SeedPage() {
   const [status, setStatus] = useState('Initializing...');
 
-  const article = {
-    title: "Simgesel Babanın Çöküşü ve Yeniden İnşaası",
-    category: "Psikanaliz",
-    content: `<p><strong>“SİMGESEL BABA ÇÖKTÜĞÜNDE, GERÇEK BABA DA İŞLEVSİZLEŞİR”</strong></p>
+  const articles = [
+    {
+      id: "WQVaC7GJCyww6MfvhbsD", // First article Firestore ID
+      title: "Simgesel Babanın Çöküşü ve Yeniden İnşaası",
+      category: "Psikanaliz",
+      content: `<p><strong>SİMGESEL BABA ÇÖKTÜĞÜNDE, GERÇEK BABA DA İŞLEVSİZLEŞİR</strong></p>
 
-<p>Günümüzün modern toplum yapısında en sık karşılaştığımız klinik tabloların ve toplumsal huzursuzlukların merkezinde tarifi zor bir "boşluk" hissi yatıyor. Bu boşluk, genellikle "babanın yokluğu" olarak adlandırılsa da psikanalitik bir büyüteçle bakıldığında meselenin biyolojik bir eksikliğin çok ötesinde olduğu görülür. Jacques Lacan’ın kuramsal mirasında baba, bir birey olmanın ötesinde bir “işlev”ve bir “konumdur.” Simgesel baba çöktüğünde, evdeki gerçek baba figürü ne kadar iyi niyetli, orada veya otoriter olursa olsun, yapısal bir işlevsizliğe mahkum kalır.</p>
+<p>Günümüzün modern toplum yapısında en sık karşılaştığımız klinik tabloların ve toplumsal huzursuzlukların merkezinde tarifi zor bir "boşluk" hissi yatıyor. Bu boşluk, genellikle "babanın yokluğu" olarak adlandırılsa da psikanalitik bir büyüteçle bakıldığında meselenin biyolojik bir eksikliğin çok ötesinde olduğu görülür. Jacques Lacan’ın kuramsal mirasında baba, bir birey olmanın ötesinde bir “işlev” ve bir “konumdur.” Simgesel baba çöktüğünde, evdeki gerçek baba figürü ne kadar iyi niyetli, orada veya otoriter olursa olsun, yapısal bir işlevsizliğe mahkum kalır.</p>
 
 <p><strong>Simgesel Baba: Et ve Kemikten Öte Bir Kesinti</strong></p>
 
-<p>Simgesel baba, biyolojik babanın karakterinden veya gücünden bağımsız olarak işleyen bir “üçüncü”dür. Çocuğun dünyası başlangıçta anne ile kurulan ikili ve her şeyi kapsayan bir bütünlükten ibarettir. Bu evrede anne, çocuk için hem arzunun tek nesnesi hem de sınırsız bir güçtür. İşte simgesel baba, bu ikili ilişkinin arasına giren bir "kesinti"dir. Lacan bu işlevi "Babanın-Adı" (Nom-du-Père) olarak tanımlar. Burada kritik olan kelime oyunudur: Fransızca’da "Babanın-Adı" (Nom) ile "Babanın-Hayırı" (Non) eş seslidir. Baba, "Hayır" diyerek sınırı çizer; çocuğu annenin keyfiyetinden kurtarır ve onu dilin, kuralların, kültürün ve toplumsal yasaların dünyasına davet eder. Bu, çocuğu bir "nesne" olmaktan çıkarıp bir "özne" haline getiren kurucu hamledir.</p>
+<p>Simgesel baba, biyolojik babanın karakterinden veya gücünden bağımsız olarak işleyen bir “üçüncü”dür. Çocuğun dünyası başlangıçta anne ile kurulan ikili ve her şeyi kapsayan bir bütünlükten ibarettir. Bu evrede anne, çocuk için hem arzunun tek nesnesi hem de sınırsız bir güçtür. İşte simgesel baba, bu ikili ilişkinin arasına giren bir \"kesinti\"dir. Lacan bu işlevi "Babanın-Adı" (Nom-du-Père) olarak tanımlar. Burada kritik olan kelime oyunudur: Fransızca’da "Babanın-Adı" (Nom) ile "Babanın-Hayırı" (Non) eş seslidir. Baba, "Hayır" diyerek sınırı çizer; çocuğu annenin keyfiyetinden kurtarır ve onu dilin, kuralların, kültürün ve toplumsal yasaların dünyasına davet eder. Bu, çocuğu bir "nesne" olmaktan çıkarıp bir "özne" haline getiren kurucu hamledir.</p>
 
 <p><strong>İşlevsizleşen Gerçek Baba: Otorite mi, Arkadaş mı?</strong></p>
 
-<p>Simgesel baba işlevi çöktüğünde —yani toplumsal değerlerin aktarımı koptuğunda veya yasa, saygınliğini yitirdiğinde— gerçek baba figürü bu boşluğu doldurmak için iki sakıncalı yola sapar:</p>
+<p>Simgesel baba işlevi çöktüğünde —yani toplumsal değerlerin aktarımı koptuğunda veya yasa, saygınlığını yitirdiğinde— gerçek baba figürü bu boşluğu doldurmak için iki sakıncalı yola sapar:</p>
 
 <p>1. <strong>Zorba ve Aşırı Otoriter:</strong> Simgesel gücünü -sözün gücünü- kaybeden baba, otorite kurabilmek için çıplak güce ve şiddete başvurur. Ancak bu, yasanın temsili değil, bir güç gösterisidir. Çocuk bu durumda yasaya saygı duymaz, sadece güçten korkar. Bu da ileride otoriteye karşı körü körüne bir isyana veya tam bir sinmeye yol açar.</p>
 
-<p>2. <strong>Sınırsız ve "Arkadaş" Figür:</strong> Modern babalık imajında sıkça gördüğümüz "çocuğuyla arkadaş olma" çabası, aslında yasa koyma sorumluluğundan bir kaçıştır. Baba sınır çizmediğinde, çocuk kendisini arzularını düzenleyecek bir haritadan mahrum bulur. Sınırın olmadığı yerde özgürlük değil, yoğun bir kaygı hüküm sürer.</p>
+<p>2. <strong>Sınırsız ve "Arkadaş" Figür:</strong> Modern babalık imajında sıkça gördüğümüz "çocuğuyla arkadaş olma" çabası, aslında yasa koyma sorumluluğundan bir kaçıştır. Baba sınır çizmediğinde, child kendisini arzularını düzenleyecek bir haritadan mahrum bulur. Sınırın olmadığı yerde özgürlük değil, yoğun bir kaygı hüküm sürer.</p>
 
 <p><strong>Boşluğun Klinik Yansımaları</strong></p>
 
@@ -36,7 +38,7 @@ export default function SeedPage() {
 
 <p><strong>Otoriteyle Sorunlu İlişki:</strong> İş hayatında veya toplumsal yaşamda kurallarla barışık olamama, sürekli bir onaylanma ihtiyacı ya da her türlü kurala karşı yıkıcı bir direnç gösterme eğilimi baş gösterir.</p>
 
-<p><em>"Asıl trajedi babanın fiziksel yokluğu değil; babanın temsil ettiği o simgesel makamın boş kalmasıdır. Bu boşlukta çocuk, ne çarpışacağı bir sınır findebilir ne de yaslanacağı bir yasa."</em></p>
+<p><em>"Asıl trajedi babanın fiziksel yokluğu değil; babanın temsil ettiği o simgesel makamın boş kalmasıdır. Bu boşlukta çocuk, ne çarpışacağı bir sınır bulabilir ne de yaslanacağı bir yasa."</em></p>
 
 <p><strong>Yeni Bir Sınır İnşa Etmek:</strong></p>
 
@@ -46,7 +48,7 @@ export default function SeedPage() {
 
 <p>İnşanın ilk adımı, her şeyi bilen, her şeyi çözen ve bizi her tehlikeden koruyan o ideal baba figürünün artık var olmadığını kabul etmektir. Birçok birey, yaşamı boyunca bu hayali otoriteyi arar; bazen bir liderde, bazen bir partnerde, bazen de katı bir ideolojide bu eksikliği gidermeye çalışır. Ancak sınır inşa etmek, bu arayıştan vazgeçip “babanın da eksik olduğunu” fark etmekle başlar. Baba figürünün yetersizliğiyle yüzleşmek, kişiyi onun onayına muhtaç olmaktan kurtarır.</p>
 
-<p>2. <strong>Kendi "Hayır"ını Keşfetmek: Arzuyu Sınırla Korumak</strong></p>
+<p>2. <strong>Kendi \"Hayır\"ını Keşfetmek: Arzuyu Sınırla Korumak</strong></p>
 
 <p>Psikanalizde sınır, sadece kısıtlayıcı bir barikat değil, aynı zamanda arzuyu koruyan bir kaptır. Sınırın olmadığı yerde arzu, uçsuz buçaksız bir okyanusta kaybolabilir. Yeniden sınır inşa etmek, bireyin kendi değerlerine, etik ilkelerine ve limitlerine sahip çıkmasıdır. Kişi, başkalarının beklentileri ile kendi hakikati arasına bir sınır koyabildiğinde, o zamana kadar her yöne dağılmış olan enerjisini -libidosunu- anlamlı bir amaca yönlendirmeye başlar. Bu, pasif bir sürüklenişten, aktif bir özneleşmeye geçiştir.</p>
 
@@ -58,7 +60,7 @@ export default function SeedPage() {
 
 <p>Mitolojik anlamda baba, kaosu düzene (kosmos) çeviren güçtür. Dış dünyada bu düzen sarsıldığında, birey kendi mikro evreninde bu düzeni kurmakla yükümlüdür. Bu; rutinler oluşturmak, etik tercihler yapmak ve kendi arzusu için bedel ödemeye gönüllü olmakla mümkündür. Yeniden inşa edilen bu sınır, dışarıdan gelen bir emirle değil, kişinin kendi varoluşsal tercihlerinden süzülen bir “öznel yasa” ile ayakta kalır.</p>
 
-<p><em>\"Babanın mirası, bize bıraktığı maddi imkanlar veya hazır doğrular değildir; babanın asıl mirası, koyduğu sınır ve bizim kendi yasamızı kurabilmemiz için bıraktığı o 'anlamlı boşluk'tur.\"</em></p>
+<p><em>"Babanın mirası, bize bıraktığı maddi imkanlar veya hazır doğrular değildir; babanın asıl mirası, koyduğu sınır ve bizim kendi yasamızı kurabilmemiz için bıraktığı o 'anlamlı boşluk'tur."</em></p>
 
 <p>Sonuç olarak, simgesel babanın enkazı üzerinde yükselen yeni sınır, bizi dünyadan koparan bir duvar değil; dünyayla sağlıklı, mesafeli ve anlamlı bir ilişki kurmamızı sağlayan bir köprüdür. Kendi sınırını çizebilen insan, başkasının sınırına da saygı duymayı öğrenir ve böylece gerçek bir "başka" ile ilişki kurma kapasitesine erişir.</p>
 
@@ -66,34 +68,98 @@ export default function SeedPage() {
 
 <p>Tura, S. M. (2015). Freud’dan Lacan’a Psikanaliz. İstanbul: Metis Yayınları.</p>
 <p>Lacan, J. (2013). Psikanalizin Dört Temel Kavramı: Seminer 11. (Çev. N. Erdem). İstanbul: Metis Yayınları.</p>
-<p>Fink, B. (2016). Lacanian Özne: Dil ve Arzu Arasında. (Çev. M. Erşen). İstanbul: Encore Yayınları.</p>`
-  };
+<p>Fink, B. (2016). Lacanian Özne: Dil ve Arzu Arasında. (Çev. M. Erşen). İstanbul: Encore Yayınları.</p>`,
+      posts: ["2LCGtzQTaoiCIfKwXeb0", "mqeVvWOsK7voUX9HVixk"]
+    },
+    {
+      id: "oteki-ile-kuramadigin-bag-id", // placeholder or real ID if found
+      title: "Bir Tehdit Olarak “Öteki” ve Kurulamayan Bağ.",
+      category: "Psikanaliz",
+      content: `<p>İnsan, doğası gereği bir "bağ" öznesi olarak dünyaya gelir. Ancak bağ kurma süreci, her zaman göründüğü kadar romantik veya pürüzsüz ilerlemez. Çoğu zaman hayatımızda derin bir sessizlik, bitmek bilmeyen bir mesafe veya kopukluk hissederiz. Genelde bu durumu "yalnızlık" olarak adlandırıp geçsek de işin aslı daha karanlıktır. Ötekiyle -başka- dışarıda kurulamayan her bağ, içeride bir savaş alanına dönüşür.</p>
+
+<p><strong>Öteki İle Karşılaşma</strong></p>
+
+<p>Psikanalitik süreçte ve yaşamın içinde "karşılaşma", sadece iki kişinin aynı ortamda bulunması değildir. Gerçek bir karşılaşma, ötekinin benim üzerimdeki o öngörülemez etkisine izin verdiğim, kendi savunma zırhımı bir anlığına araladığım o sarsıcı andır. Ötekiyle karşılaşmak, aslında kendi narsisistik bütünlüğümüzün bozulmasına rıza göstermektedir.</p>
+
+<p>Genellikle ötekine -başkaya- baktığımızda gördüğümüz şey, kendi arzularımızın veya korkularımızın bir yansımasıdır. Ancak gerçek bir "karşılaşma" gerçekleştiğinde, öteki bizim için bir ayna olmaktan çıkar ve bir “yabancı” olarak belirir. Bu yabancılık bizi korkutabilir çünkü ötekinin bakışı, kontrol edemediğimiz bir güçtür. Emmanuel Levinas’ın da vurguladığı gibi, ötekinin yüzü bize bir sorumluluk yükler. Karşılaşmadan kaçan kişi, aslında bu sorumluluktan ve ötekinin yaratacağı o sarsıntıdan kaçmaktadır.</p>
+
+<p><strong>Tehdit ve Yakınlık</strong></p>
+
+<p>Ötekiyle (başkayla) bağ kuramamak, çoğu zaman sosyal bir beceri eksikliği değil, ruhun derinlerinde işleyen bir “savunma mekanizmasıdır.” Yakınlık kurmak, savunmasız kalmayı göze almaktır. Birine "ihtiyaç duymak" demek, kendi eksikliğimizi ve bağımlılık ihtimalimizi kabul etmektir.</p>
+
+<p>Lacan’ın perspektifinden bakarsak; öteki, hem arzumuzun nesnesi hem de bizi tanımlayan aynadır. Ancak bu ayna bazen o kadar sarsıcıdır ki, kişi kendi kırılganlığıyla yüzleşmektense mesafeyi -bağ kurmamayı- tercih eder. Yakınlık bir risk haline geldiğinde, insan kendini korumak adına kalelerini ve duvarlarını inşa eder. Fakat bu kaleler bizi sadece başkalarından değil, kendi canlılığımızdan da koparır.</p>
+
+<p><strong>Dışarıda Kurulamayan Bağın İçerideki Yankısı</strong></p>
+
+<p>İnsan psikolojisi boşluk ile daima çatışma halindedir. Dışarıdaki o "başka", yani ötekiyle kurulması gereken o temas gerçekleşmediğinde, ortaya çıkan gerilim yok olmaz; yön değiştirir. Bağın kurulamadığı yerde suçluluk, değersizlik ve oto-agresyon (kendine yönelik saldırganlık) devreye girer.</p>
+
+<p>Birey, ötekiyle kuramadığı bağın hıncını, o bağı kurmayı beceremeyen "kendinden" çıkarır. Bu bir tür cezalandırma ayinidir. Bazen “sevilmeye değer olmadığını”, bazen “anlaşılmadığını” düşünür ve kendince yargılar oluşturur: “Zaten herkes eninde sonunda bir gün gider.”</p>
+
+<p>Bu cümleler aslında birer teşhis değil, bağ kurmanın getireceği o büyük sorumluluktan ve incinme ihtimalinden kaçmak için ruhun kendine kestiği cezalardır. Çatışma dışarıda -ilişkide- yaşanmadığında, tüm o yıkıcı enerji içeriye, öznenin kendi benliğine akar.</p>
+
+<p><strong>Karşılaşmanın İyileştirici Gücü</strong></p>
+
+<p>Bağın kurulamadığı ve cezanın içeriye -kendine- kesildiği o kısır döngüden çıkışın yolu, ancak bu sarsıcı karşılaşmayla mümkündür. Karşılaşma, bizi kendi iç dünyamızın tekdüzeliğinden çıkarır.</p>
+
+<p>Kendimize verdiğimiz bu cezadan kurtulmanın yolu, daha fazla "kendini sevme" olumlaması yapmak değildir. Aksine, “eksikliğimizi ve ihtiyacımızı” kabul etmektir. Psikanalitik süreçte gördüğümüz en temel gerçek şudur: Kişi, kendi "muhtaç" tarafıyla barışmadığı sürece, ötekini her zaman bir tehdit olarak görecektir.</p>
+
+<p>Bağ kurmak, birine teslim olmak değil; kendi kırılganlığınla ötekinin -başkanın- karşısında durabilme cesaretidir. Kişinin kendisine verdiği ceza, aslında bir zamanlar kurulamamış olan o güvenli bağın yas tutma biçimidir.</p>
+
+<p><strong>Ötekiyle kurulan o gerçek temas:</strong></p>
+
+<p><strong>Kendi sınırımızı görmemizi sağlar:</strong> "Ben"in nerede bittiğini anlamak için, "Ben olmayan"ın (Öteki) nerede başladığını hissetmek gerekir.</p>
+
+<p><strong>İhtiyacı onurlandırır:</strong> Ötekiyle gerçekten karşılaştığımızda, ona olan ihtiyacımızı bastırmak yerine bu ihtiyacın insani bir hakikat olduğunu fark ederiz.</p>
+
+<p><strong>Yaratıcılığı tetikler:</strong> İki farklı dünyanın çarpışması, tek başımıza asla üretemeyeceğimiz yeni bir anlamın doğmasına vesile olur.</p>
+
+<p><strong>Savunmadan Temasa Geçiş</strong></p>
+
+<p>Elbette bahsettiğimiz bu karşılaşma ve kurulabilir olan bağa direnç uygulamamak bir başka deyişle izin vermek, bir risk almaktır. Ötekiyle karşılaşmak bizi kırabilir, sarsabilir ya da değiştirebilir. Ancak bu risk alınmadığında, kişi kendi kurduğu steril ama boğucu dünyasına hapsolur. Bağ kuramamak bir kader değildir; bir pozisyondur. Ve gayet tabii değiştirilebilir. Ancak bu değişim, kişinin neden "bağsızlığı" bir kale olarak seçtiğini anlamasıyla başlar.</p>
+
+<p>Terapi odası da aslında tam olarak bu "güvenli karşılaşma" alanıdır. Analist, orada her zaman bir ayna değil, yaşayan bir "başka" (öteki) olarak durur. Danışan, analistle kurduğu o özgün bağ sayesinde, dış dünyadaki ötekilerle karşılaşabilme cesaretini prova eder.</p>
+
+<p><strong>Referanslar ve Okuma Önerileri:</strong></p>
+
+<p>Lacan, J. (2013). Psikanalizin Dört Temel Kavramı. (Çev. N. Erdem). İstanbul: Metis Yayınları.</p>
+<p>Yalom, I. D. (2018). Varoluşçu Psikoterapi. (Çev. Z. İ. Babayiğit). İstanbul: Pegasus Yayınları.</p>`,
+      posts: [] // If I don't have the post IDs, I'll search for them or use the same title match
+    }
+  ];
 
   const strip = (h: string) => h.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
 
   useEffect(() => {
     async function seed() {
       try {
-        const raw = strip(article.content);
-        const excerpt = raw.length > 220 ? raw.slice(0, 220) + '…' : raw;
+        for (const art of articles) {
+          const raw = strip(art.content);
+          const excerpt = raw.length > 220 ? raw.slice(0, 220) + '…' : raw;
 
-        const updateData = {
-          ...article,
-          featuredImage: "",
-          excerpt: excerpt,
-          updatedAt: serverTimestamp(),
-        };
+          const updateData = {
+            title: art.title,
+            category: art.category,
+            content: art.content,
+            featuredImage: "",
+            excerpt: excerpt,
+            updatedAt: serverTimestamp(),
+          };
 
-        setStatus('Updating article WQVaC7GJCyww6MfvhbsD...');
-        await updateDoc(doc(db, 'articles', 'WQVaC7GJCyww6MfvhbsD'), updateData);
-        
-        setStatus('Updating post 2LCGtzQTaoiCIfKwXeb0...');
-        await updateDoc(doc(db, 'posts', '2LCGtzQTaoiCIfKwXeb0'), updateData);
+          if (art.id !== "oteki-ile-kuramadigin-bag-id") {
+            setStatus(`Updating article ${art.id}...`);
+            await updateDoc(doc(db, 'articles', art.id), updateData);
+            
+            for (const postId of art.posts) {
+              setStatus(`Updating post ${postId}...`);
+              await updateDoc(doc(db, 'posts', postId), updateData);
+            }
+          } else {
+            // For the second article, since we don't have the ID, we might need to find it or skip if not found
+            setStatus(`Skipping second article sync as ID is unknown. Update it locally in local-articles.ts.`);
+          }
+        }
 
-        setStatus('Updating post mqeVvWOsK7voUX9HVixk...');
-        await updateDoc(doc(db, 'posts', 'mqeVvWOsK7voUX9HVixk'), updateData);
-
-        setStatus('Success! Articles and posts updated in Firestore.');
+        setStatus('Success! Firestore updated where IDs were known.');
       } catch (err: any) {
         setStatus('Error: ' + err.message);
       }
