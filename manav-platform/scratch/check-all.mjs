@@ -13,21 +13,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-async function checkCollections() {
-  try {
-    console.log("--- Articles Collection ---");
-    const artSnap = await getDocs(collection(db, 'articles'));
-    console.log("Count:", artSnap.size);
-    artSnap.forEach(d => console.log(d.id, "|", d.data().title, "|", d.data().createdAt?.toDate ? d.data().createdAt.toDate().toISOString() : d.data().createdAt));
-
-    console.log("\n--- Posts Collection ---");
-    const postSnap = await getDocs(collection(db, 'posts'));
-    console.log("Count:", postSnap.size);
-    postSnap.forEach(d => console.log(d.id, "|", d.data().title, "|", d.data().createdAt?.toDate ? d.data().createdAt.toDate().toISOString() : d.data().createdAt));
-  } catch (e) {
-    console.error("Failed:", e);
-  }
+async function checkAll() {
+  const snap = await getDocs(collection(db, 'posts'));
+  snap.forEach(d => {
+    const data = d.data();
+    console.log(`ID: ${d.id}`);
+    console.log(`Title: ${data.title}`);
+    console.log(`Date: ${data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt}`);
+    console.log(`Content Snapshot: ${data.content.substring(0, 100)}...`);
+    console.log('---');
+  });
   process.exit(0);
 }
 
-checkCollections();
+checkAll();

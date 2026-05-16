@@ -5,9 +5,7 @@ export const LOCAL_ARTICLES = [
     category: "Psikanaliz",
     date: "2026-05-16",
     excerpt: "Günümüzün modern toplum yapısında en sık karşılaştığımız klinik tabloların ve toplumsal huzursuzlukların merkezinde tarifi zor bir \"boşluk\" hissi yatıyor. Bu boşluk, genellikle \"babanın yokluğu\" olarak adlandırılsa da psikanalitik bir büyüteçle bakıldığında meselenin biyolojik bir eksikliğin çok ötesinde olduğu görülür...",
-    content: `<p><strong>“Öteki ile kuramadığın bağın cezasını kendine verirsin”</strong></p>
-
-<p><strong>SİMGESEL BABA ÇÖKTÜĞÜNDE, GERÇEK BABA DA İŞLEVSİZLEŞİR</strong></p>
+    content: `<p><strong>SİMGESEL BABA ÇÖKTÜĞÜNDE, GERÇEK BABA DA İŞLEVSİZLEŞİR</strong></p>
 
 <p>Günümüzün modern toplum yapısında en sık karşılaştığımız klinik tabloların ve toplumsal huzursuzlukların merkezinde tarifi zor bir "boşluk" hissi yatıyor. Bu boşluk, genellikle "babanın yokluğu" olarak adlandırılsa da psikanalitik bir büyüteçle bakıldığında meselenin biyolojik bir eksikliğin çok ötesinde olduğu görülür. Jacques Lacan’ın kuramsal mirasında baba, bir birey olmanın ötesinde bir “işlev” ve bir “konumdur.” Simgesel baba çöktüğünde, evdeki gerçek baba figürü ne kadar iyi niyetli, orada veya otoriter olursa olsun, yapısal bir işlevsizliğe mahkum kalır.</p>
 
@@ -73,7 +71,9 @@ export const LOCAL_ARTICLES = [
     category: "Psikanaliz",
     date: "2026-05-11",
     excerpt: "İnsan, doğası gereği bir \"bağ\" öznesi olarak dünyaya gelir. Ancak bağ kurma süreci, her zaman göründüğü kadar romantik veya pürüzsüz ilerlemez. Çoğu zaman hayatımızda derin bir sessizlik, bitmek bilmeyen bir mesafe veya kopukluk hissederiz...",
-    content: `<p>İnsan, doğası gereği bir "bağ" öznesi olarak dünyaya gelir. Ancak bağ kurma süreci, her zaman göründüğü kadar romantik veya pürüzsüz ilerlemez. Çoğu zaman hayatımızda derin bir sessizlik, bitmek bilmeyen bir mesafe veya kopukluk hissederiz. Genelde bu durumu "yalnızlık" olarak adlandırıp geçsek de işin aslı daha karanlıktır. Ötekiyle -başka- dışarıda kurulamayan her bağ, içeride bir savaş alanına dönüşür.</p>
+    content: `<p><strong>“Öteki ile kuramadığın bağın cezasını kendine verirsin”</strong></p>
+
+<p>İnsan, doğası gereği bir "bağ" öznesi olarak dünyaya gelir. Ancak bağ kurma süreci, her zaman göründüğü kadar romantik veya pürüzsüz ilerlemez. Çoğu zaman hayatımızda derin bir sessizlik, bitmek bilmeyen bir mesafe veya kopukluk hissederiz. Genelde bu durumu "yalnızlık" olarak adlandırıp geçsek de işin aslı daha karanlıktır. Ötekiyle -başka- dışarıda kurulamayan her bağ, içeride bir savaş alanına dönüşür.</p>
 
 <p><strong>Öteki İle Karşılaşma</strong></p>
 
