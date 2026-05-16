@@ -10,6 +10,7 @@ import { tr } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
+import { QUOTES } from '@/data/quotes';
 
 const stripHtml = (html: string) => {
   return html
@@ -40,19 +41,25 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const QUOTES = [
-    { text: "Varoluş özden önce gelir. Siz kim olacağınızı kendi eylemlerinizle belirliyorsunuz.", author: "Jean-Paul Sartre" },
-    { text: "Kendi alevinle yanmaya hazır olmalısın; önce kül olmadan nasıl yeniden doğabilirsin ki?", author: "Friedrich Nietzsche" },
-    { text: "Bir insanın yaşayabileceği en büyük keşif, kendi zihninin derinlikleridir.", author: "Sigmund Freud" },
-    { text: "Acı çekmeden bilinç uyanmaz. İnsanlar aydınlanmayı ışığı hayal ederek değil, karanlığı idrak ederek bulurlar.", author: "Carl Jung" },
-    { text: "Anlam bulmak, varoluşun en derin ihtiyacıdır.", author: "Viktor Frankl" },
-    { text: "İfade edilmemiş duygular asla ölmez; sadece diri diri gömülür ve sonradan daha korkunç şekillerde tezahür ederler.", author: "Sigmund Freud" }
-  ];
   const [dailyQuote, setDailyQuote] = useState(QUOTES[0]);
 
   useEffect(() => {
-    const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
-    setDailyQuote(QUOTES[dayOfYear % QUOTES.length]);
+    const getDailyQuote = () => {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const diff = now.getTime() - start.getTime();
+      const oneDay = 1000 * 60 * 60 * 24;
+      const day = Math.floor(diff / oneDay);
+      return QUOTES[day % QUOTES.length];
+    };
+
+    setDailyQuote(getDailyQuote());
+
+    const interval = setInterval(() => {
+      setDailyQuote(getDailyQuote());
+    }, 60000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

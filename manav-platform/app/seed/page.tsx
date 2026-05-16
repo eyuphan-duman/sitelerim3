@@ -9,10 +9,12 @@ export default function SeedPage() {
 
   const articles = [
     {
-      id: "WQVaC7GJCyww6MfvhbsD", // First article Firestore ID
+      id: "mqeVvWOsK7voUX9HVixk", // Corrected Post ID
       title: "Simgesel Babanın Çöküşü ve Yeniden İnşaası",
       category: "Psikanaliz",
-      content: `<p><strong>SİMGESEL BABA ÇÖKTÜĞÜNDE, GERÇEK BABA DA İŞLEVSİZLEŞİR</strong></p>
+      content: `<p><strong>“Öteki ile kuramadığın bağın cezasını kendine verirsin”</strong></p>
+
+<p><strong>SİMGESEL BABA ÇÖKTÜĞÜNDE, GERÇEK BABA DA İŞLEVSİZLEŞİR</strong></p>
 
 <p>Günümüzün modern toplum yapısında en sık karşılaştığımız klinik tabloların ve toplumsal huzursuzlukların merkezinde tarifi zor bir "boşluk" hissi yatıyor. Bu boşluk, genellikle "babanın yokluğu" olarak adlandırılsa da psikanalitik bir büyüteçle bakıldığında meselenin biyolojik bir eksikliğin çok ötesinde olduğu görülür. Jacques Lacan’ın kuramsal mirasında baba, bir birey olmanın ötesinde bir “işlev” ve bir “konumdur.” Simgesel baba çöktüğünde, evdeki gerçek baba figürü ne kadar iyi niyetli, orada veya otoriter olursa olsun, yapısal bir işlevsizliğe mahkum kalır.</p>
 
@@ -69,7 +71,7 @@ export default function SeedPage() {
 <p>Tura, S. M. (2015). Freud’dan Lacan’a Psikanaliz. İstanbul: Metis Yayınları.</p>
 <p>Lacan, J. (2013). Psikanalizin Dört Temel Kavramı: Seminer 11. (Çev. N. Erdem). İstanbul: Metis Yayınları.</p>
 <p>Fink, B. (2016). Lacanian Özne: Dil ve Arzu Arasında. (Çev. M. Erşen). İstanbul: Encore Yayınları.</p>`,
-      posts: ["2LCGtzQTaoiCIfKwXeb0", "mqeVvWOsK7voUX9HVixk"]
+      posts: ["2LCGtzQTaoiCIfKwXeb0"]
     },
     {
       id: "oteki-ile-kuramadigin-bag-id", // placeholder or real ID if found
@@ -145,17 +147,22 @@ export default function SeedPage() {
             updatedAt: serverTimestamp(),
           };
 
-          if (art.id !== "oteki-ile-kuramadigin-bag-id") {
+          if (art.id && !art.id.endsWith('-id')) {
             setStatus(`Updating article ${art.id}...`);
-            await updateDoc(doc(db, 'articles', art.id), updateData);
-            
-            for (const postId of art.posts) {
-              setStatus(`Updating post ${postId}...`);
-              await updateDoc(doc(db, 'posts', postId), updateData);
+            try {
+              await updateDoc(doc(db, 'articles', art.id), updateData);
+            } catch (e) {
+              console.warn(`Article ${art.id} update failed, trying posts...`);
             }
-          } else {
-            // For the second article, since we don't have the ID, we might need to find it or skip if not found
-            setStatus(`Skipping second article sync as ID is unknown. Update it locally in local-articles.ts.`);
+          }
+
+          for (const postId of art.posts) {
+            setStatus(`Updating post ${postId}...`);
+            try {
+              await updateDoc(doc(db, 'posts', postId), updateData);
+            } catch (e) {
+              console.error(`Post ${postId} update failed:`, e);
+            }
           }
         }
 
