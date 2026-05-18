@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import QuickContact from "@/components/QuickContact";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import CookieConsent from "@/components/CookieConsent";
@@ -150,6 +151,7 @@ export default function RootLayout({
           <Navbar />
           <main>{children}</main>
           <Footer />
+          <QuickContact />
           <CookieConsent />
         </AuthProvider>
 

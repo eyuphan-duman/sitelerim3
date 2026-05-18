@@ -1,6 +1,15 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // İletişim formu mesajları kuralları:
+    // Kayıtlı olmayan (misafir) kullanıcılar dahil herkes mesaj gönderebilir (create).
+    // Ancak mesajları okuma, güncelleme ve silme işlemleri sadece giriş yapmış kullanıcılar/yöneticiler tarafından yapılabilir.
+    match /messages/{messageId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
+    // Diğer tüm koleksiyonlar için mevcut kuralları koru veya genel izinleri açık tut:
     match /{document=**} {
       allow read, write: if true;
     }

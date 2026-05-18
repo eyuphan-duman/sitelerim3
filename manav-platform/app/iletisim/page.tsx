@@ -20,15 +20,31 @@ export default function IletisimPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
+      // 1. Veritabanına kaydet (Asıl işlem)
       await addDoc(collection(db, 'messages'), { ...form, createdAt: serverTimestamp(), status: 'unread' });
-      await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
-      });
-      setSent(true); toast.success('Mesajınız gönderildi!');
+      
+      // 2. E-posta bildirimini tetikle (Yardımcı işlem - hata oluşursa ana akışı bozmaz)
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
+        if (!res.ok) {
+          console.warn('E-posta bildirimi gönderilemedi, ancak mesaj veritabanına başarıyla kaydedildi.');
+        }
+      } catch (emailError) {
+        console.error('E-posta API çağrısı sırasında hata oluştu:', emailError);
+      }
+
+      // Mesaj Firestore'a başarıyla kaydedildiği için kullanıcıya başarı mesajı gösteriyoruz
+      setSent(true); 
+      toast.success('Mesajınız gönderildi!');
       setForm({ name: '', email: '', subject: '', message: '' });
-    } catch { toast.error('Mesaj gönderilemedi.'); }
+    } catch (error) {
+      console.error('Mesaj veritabanına kaydedilirken hata oluştu:', error);
+      toast.error('Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.');
+    }
     finally { setSubmitting(false); }
   };
 
