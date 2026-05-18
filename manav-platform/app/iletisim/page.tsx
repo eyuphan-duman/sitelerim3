@@ -76,6 +76,23 @@ export default function IletisimPage() {
 
           {/* Left column */}
           <div>
+            {/* Hızlı İletişim Uyarı Bannerı */}
+            <div style={{ 
+              background: 'rgba(201, 169, 110, 0.08)', 
+              border: '1px solid rgba(201, 169, 110, 0.25)', 
+              borderRadius: 4, 
+              padding: '16px 20px', 
+              marginBottom: 24, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 14 
+            }}>
+              <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>⚡</div>
+              <p style={{ color: 'var(--navy)', fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.5, margin: 0 }}>
+                <strong style={{ color: 'var(--gold-dim)' }}>En Hızlı İletişim Yöntemi:</strong> Randevu ve acil konular için telefon üzerinden doğrudan arama yapmak (+90 507 875 15 03) kullanıcılarımız için en hızlı ve etkili iletişim yöntemidir.
+              </p>
+            </div>
+
             {/* Contact cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
               {infos.map(item => (

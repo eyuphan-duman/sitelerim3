@@ -417,7 +417,7 @@ export default function VideolarimPage() {
                
                {allReels[expandedReelIndex].youtubeId ? (
                  <iframe
-                   src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1`}
+                   src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1`}
                    title={allReels[expandedReelIndex].title}
                    frameBorder="0"
                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -429,7 +429,6 @@ export default function VideolarimPage() {
                     src={allReels[expandedReelIndex].videoUrl} 
                     autoPlay 
                     loop 
-                    muted
                     controls
                     playsInline
                     className="w-auto h-full max-w-full mx-auto object-contain"

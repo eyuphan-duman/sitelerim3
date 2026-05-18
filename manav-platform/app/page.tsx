@@ -184,9 +184,9 @@ export default function HomePage() {
         <div className="hero-grain" />
 
         {/* Hero Float Badges (Desktop Only) */}
-        <div className="absolute top-[10%] right-[6%] hidden xl:flex flex-col gap-4 z-10">
+        <div className="absolute top-[10%] right-[6%] hidden xl:flex flex-col gap-2.5 z-10">
           {/* Badge 1 — Varoluşçu Psikoterapi */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
               <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=200&auto=format&fit=crop" alt="Varoluşçu Psikoterapi" className="w-full h-full object-cover" />
             </div>
@@ -196,7 +196,7 @@ export default function HomePage() {
             </div>
           </div>
           {/* Badge 2 — Psikanalitik */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-10 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-10 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
               <img src="https://images.unsplash.com/photo-1580130601254-05fa235abeab?q=80&w=200&auto=format&fit=crop" alt="Psikanalitik" className="w-full h-full object-cover" />
             </div>
@@ -206,7 +206,7 @@ export default function HomePage() {
             </div>
           </div>
           {/* Badge 3 — Rüya Analizi */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
               <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=200&auto=format&fit=crop" alt="Rüya Analizi" className="w-full h-full object-cover" />
             </div>
@@ -216,7 +216,7 @@ export default function HomePage() {
             </div>
           </div>
           {/* Badge 4 — Bağlanma */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-6 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-6 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
               <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=200&auto=format&fit=crop" alt="Bağlanma Kuramı" className="w-full h-full object-cover" />
             </div>
@@ -226,7 +226,7 @@ export default function HomePage() {
             </div>
           </div>
           {/* Badge 5 — Travma */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
               <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=200&auto=format&fit=crop" alt="Travma" className="w-full h-full object-cover" />
             </div>
@@ -236,7 +236,7 @@ export default function HomePage() {
             </div>
           </div>
           {/* Badge 6 — Kendilik */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-8 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-8 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
               <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=200&auto=format&fit=crop" alt="Kendilik" className="w-full h-full object-cover" />
             </div>
@@ -331,7 +331,7 @@ export default function HomePage() {
             </div>
 
             {/* Tags */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 40 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, justifyContent: 'center', marginBottom: 40 }}>
               {['Psikanaliz','Varoluşçu Yaklaşım','Felsefe','Topluluk','Videolarım','Blog','Forum'].map(t => (
                 <span key={t} className="tag-navy">{t === 'Videolarım' ? (
                   <Link href="/videolarim" style={{ textDecoration: 'none', color: 'inherit' }}>{t}</Link>
