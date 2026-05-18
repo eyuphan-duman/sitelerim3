@@ -19,7 +19,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function publish() {
-  const articlePath = path.join(__dirname, '../data/articles/oteki-ile-kuramadigin-bag.json');
+  const articlePath = path.join(__dirname, '../data/articles/yuzlesme-sanati-psikoterapi.json');
   const articleData = JSON.parse(fs.readFileSync(articlePath, 'utf8'));
 
   const strip = (h) => h.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
