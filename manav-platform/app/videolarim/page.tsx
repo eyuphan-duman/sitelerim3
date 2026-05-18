@@ -1,7 +1,7 @@
 'use client';
 // ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - YOUTUBE SHORTS ENTEGRASYONU AKTİF.
 import React, { useState, useRef, useEffect } from 'react';
-import { Film, Play, Heart, MessageCircle, Send, X, Share2, ThumbsUp, ThumbsDown, CheckCircle } from 'lucide-react';
+import { Film, Play, Heart, MessageCircle, Send, X, Share2, ThumbsUp, ThumbsDown, CheckCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -10,6 +10,13 @@ import AuthModal from '@/components/AuthModal';
 import Link from 'next/link';
 
 const YOUTUBE_SHORTS = [
+  { id: 'ABmIev4nIkg', title: "MİTOMANİ", youtubeId: 'ABmIev4nIkg' },
+  { id: 'h6QcOFJXhEk', title: "İYİLEŞMEK, YÜZLEŞMENİN YAN ETKİSİDİR.", youtubeId: 'h6QcOFJXhEk' },
+  { id: 'MqNcDuOdAN4', title: "PSİKANALİZ VE TEDAVİ?", youtubeId: 'MqNcDuOdAN4' },
+  { id: 'mwlGa5M92hQ', title: "SINIRDA BAĞLANMA", youtubeId: 'mwlGa5M92hQ' },
+  { id: 'AIDZ4MFxPhQ', title: "İLK BAŞKA", youtubeId: 'AIDZ4MFxPhQ' },
+  { id: '3f2Z7V_uaH8', title: "DUYGUSAL YEME", youtubeId: '3f2Z7V_uaH8' },
+  { id: '4PL2GaHwm5E', title: "KAYGI ÖZGÜRLÜĞÜN BAŞ DÖNMESİDİR.", youtubeId: '4PL2GaHwm5E' },
   { id: 'AutXH_X1_bQ', title: "YAPAY ZEKADAN TERAPİST OLUR MU?", youtubeId: 'AutXH_X1_bQ' },
   { id: '0IOo2TBCFIo', title: "TRAVMASIZ ÇOCUKLUK MÜMKÜN MÜ?", youtubeId: '0IOo2TBCFIo' },
   { id: '0ZGO5Z6kMWM', title: "MANİPULASYON", youtubeId: '0ZGO5Z6kMWM' },
@@ -19,7 +26,11 @@ const YOUTUBE_SHORTS = [
   { id: '-Z1pEXOcyt8', title: "AŞIRI İSTEMEK", youtubeId: '-Z1pEXOcyt8' },
   { id: 'k4Vvc95RO-o', title: "İNSANI BASTIRDIKLARI YÖNETİR", youtubeId: 'k4Vvc95RO-o' },
   { id: 'Y5GIkYguVv8', title: "NASIL MUTLU OLURUZ ?", youtubeId: 'Y5GIkYguVv8' },
-  { id: '0rFsbd7v3Do', title: "OVERTHİNKİNG", youtubeId: '0rFsbd7v3Do' }
+  { id: '0rFsbd7v3Do', title: "OVERTHİNKİNG", youtubeId: '0rFsbd7v3Do' },
+  { id: 'GXtl4K1_ARM', title: "SERBEST ÇAĞRIŞIM", youtubeId: 'GXtl4K1_ARM' },
+  { id: 'ylLFvU5j9Kk', title: "HAYATIN BİR ANLAMI VAR MIDIR ?", youtubeId: 'ylLFvU5j9Kk' },
+  { id: 'Y8in1KIUceg', title: "BİLİNÇ DIŞI", youtubeId: 'Y8in1KIUceg' },
+  { id: '5RqlJYyZB_E', title: "PARADOKSAL NİYET", youtubeId: '5RqlJYyZB_E' }
 ];
 
 interface CommentType {
@@ -63,6 +74,66 @@ export default function VideolarimPage() {
   }, []);
 
   const allReels = [...firebaseVideos, ...YOUTUBE_SHORTS];
+
+  const handleNextReel = () => {
+    if (expandedReelIndex !== null && expandedReelIndex < allReels.length - 1) {
+      setExpandedReelIndex(expandedReelIndex + 1);
+    }
+  };
+
+  const handlePrevReel = () => {
+    if (expandedReelIndex !== null && expandedReelIndex > 0) {
+      setExpandedReelIndex(expandedReelIndex - 1);
+    }
+  };
+
+  // Keyboard navigation (Arrow keys & Escape)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (expandedReelIndex === null) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        handleNextReel();
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        handlePrevReel();
+      } else if (e.key === 'Escape') {
+        setExpandedReelIndex(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [expandedReelIndex, allReels]);
+
+  // Touch Swipe Gesture Refs & Handlers for Instagram Reels Style
+  const touchStartY = useRef<number | null>(null);
+  const touchEndY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.targetTouches[0].clientY;
+    touchEndY.current = e.targetTouches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndY.current = e.targetTouches[0].clientY;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartY.current === null || touchEndY.current === null) return;
+    const diffY = touchStartY.current - touchEndY.current;
+    const minSwipeDistance = 50; // threshold in pixels
+
+    if (Math.abs(diffY) > minSwipeDistance) {
+      if (diffY > 0) {
+        // Swiped UP -> Next video
+        handleNextReel();
+      } else {
+        // Swiped DOWN -> Previous video
+        handlePrevReel();
+      }
+    }
+
+    touchStartY.current = null;
+    touchEndY.current = null;
+  };
 
   useEffect(() => {
     if (expandedReelIndex !== null) {
@@ -220,24 +291,24 @@ export default function VideolarimPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#fafafa' }}>
       
-      {/* ─── HEADER ─── added top margin so it won't overlap */}
-      <div className="pt-[180px] pb-12 bg-white border-b border-gray-100 mt-8">
-        <div className="container-main text-center">
-          <div className="inline-flex items-center justify-center p-3 mb-6 rounded-2xl bg-gradient-to-tr from-gray-800 to-black shadow-md">
-            <Film size={36} color="white" strokeWidth={2} />
+      {/* ─── HEADER ─── */}
+      <div style={{ paddingTop: '130px', paddingBottom: '24px', background: 'white', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+        <div className="container-main" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <div className="inline-flex items-center justify-center p-3 mb-4 rounded-2xl bg-gradient-to-tr from-gray-800 to-black shadow-md">
+            <Film size={32} color="white" strokeWidth={2} />
           </div>
-          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-gray-900 mb-4 tracking-tight">Kısa Format Videolar</h1>
-          <p className="text-gray-500 text-lg max-w-xl mx-auto mb-8">
-             Psikoloji ve varoluş analizleri odaklı reels serisi. İncelemek için videolara tıklayın.
-          </p>
           
-
+          <div className="gold-line" style={{ marginBottom: '20px' }} />
+          
+          <p style={{ fontFamily: 'Inter, sans-serif', color: 'var(--muted)', fontSize: '1.05rem', fontWeight: 500, lineHeight: 1.6, maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+            Psikoloji ve varoluş analizleri odaklı reels serisi. İncelemek için videolara tıklayın.
+          </p>
         </div>
       </div>
 
       {/* ─── GRID ─── */}
-      <div className="container-main py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      <div style={{ maxWidth: '1720px', margin: '0 auto', padding: '0 24px' }} className="pt-6 pb-16">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4 sm:gap-6">
           
           {allReels.map((reel, index) => {
             const hasWatched = watchedVideos.includes(reel.id);
@@ -317,7 +388,15 @@ export default function VideolarimPage() {
           <div className="relative w-full h-full max-w-[1200px] md:h-[90vh] md:rounded-[20px] overflow-hidden flex flex-col md:flex-row bg-[#0a0a0a] border border-white/10 shadow-2xl">
             
             {/* Video Pane */}
-            <div className="flex-1 relative bg-black flex flex-col justify-center h-[50vh] md:h-full group">
+            <div 
+              className="flex-1 relative bg-black flex flex-col justify-center h-[50vh] md:h-full group"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+               {/* Transparent gesture overlay for mobile swipe navigation (over the iframe) */}
+               <div className="absolute inset-0 z-10 md:hidden bg-transparent" />
+               
                {allReels[expandedReelIndex].youtubeId ? (
                  <iframe
                    src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&rel=0&modestbranding=1`}
@@ -338,12 +417,7 @@ export default function VideolarimPage() {
                   />
                )}
                 
-                {/* Fixed Top Info */}
-                <div className="absolute top-4 left-4 pointer-events-none">
-                   <h2 className="text-white text-xl md:text-2xl font-bold drop-shadow-md">
-                     {allReels[expandedReelIndex!].title}
-                   </h2>
-                </div>
+
                 {/* Watch Badge */}
                 <div className="absolute top-4 right-4 pointer-events-none bg-black/50 text-white/80 text-[12px] px-3 py-1 rounded-full backdrop-blur">
                   Daha önce izledin!
@@ -513,6 +587,24 @@ export default function VideolarimPage() {
           </div>
         </div>
       )}
+
+      {/* ─── CTA: YAZILARIMA GÖZ ATIN ─── */}
+      <div style={{ background: 'white', borderTop: '1px solid rgba(0,0,0,0.05)', padding: '64px 24px', textAlign: 'center', marginTop: '16px' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold)', display: 'block', marginBottom: '12px' }}>
+            Derinlemesine Analizler
+          </span>
+          <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '16px' }}>
+            Düşüncelerim ve Makalelerim
+          </h3>
+          <p style={{ fontFamily: 'Inter, sans-serif', color: 'var(--muted)', fontSize: '0.98rem', lineHeight: 1.6, marginBottom: '28px' }}>
+            İnsan psikolojisi, psikanaliz ve varoluşsal sorgulamalara dair kaleme aldığım makalelerime de göz atabilirsiniz.
+          </p>
+          <Link href="/yazilarim" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--navy)', color: 'white', fontWeight: 600, padding: '12px 28px', borderRadius: '30px', transition: 'all 0.3s ease', textDecoration: 'none', border: '1px solid var(--navy)', fontFamily: 'Inter, sans-serif', fontSize: '0.9rem' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--navy)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--navy)'; e.currentTarget.style.color = 'white'; }}>
+             Yazılarıma Göz Atın <ArrowRight size={16} />
+          </Link>
+        </div>
+      </div>
 
       {/* Required for "Üye olunmalı" restriction */}
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
