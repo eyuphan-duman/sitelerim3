@@ -53,6 +53,7 @@ export default function VideolarimPage() {
   const [newComment, setNewComment] = useState('');
   
   const [expandedReelIndex, setExpandedReelIndex] = useState<number | null>(null);
+  const [mobileCommentsOpen, setMobileCommentsOpen] = useState(false);
   
   const [replyingTo, setReplyingTo] = useState<{ reelId: string, commentId: string } | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -144,8 +145,10 @@ export default function VideolarimPage() {
         setWatchedVideos(nw);
         localStorage.setItem('manav_watched_reels', JSON.stringify(nw));
       }
+      setMobileCommentsOpen(false);
     } else {
       document.body.style.overflow = 'auto';
+      setMobileCommentsOpen(false);
     }
   }, [expandedReelIndex, allReels]);
 
@@ -389,13 +392,13 @@ export default function VideolarimPage() {
             
             {/* Video Pane */}
             <div 
-              className="flex-1 relative bg-black flex flex-col justify-center h-[50vh] md:h-full group"
+              className="flex-1 relative bg-black flex flex-col justify-center h-full md:h-full group"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-               {/* Transparent gesture overlay for mobile swipe navigation (over the iframe) */}
-               <div className="absolute inset-0 z-10 md:hidden bg-transparent" />
+               {/* Transparent gesture overlay for mobile swipe navigation (over the iframe) - pointer-events-none to prevent blocking player controls */}
+               <div className="absolute inset-0 z-10 md:hidden bg-transparent pointer-events-none" />
                
                {allReels[expandedReelIndex].youtubeId ? (
                  <iframe
@@ -445,6 +448,19 @@ export default function VideolarimPage() {
                       <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">{dislikes[allReels[expandedReelIndex!].id] ? 1 : 0}</span>
                     </button>
 
+                    {/* Yorum Yap / Göster Butonu (Mobil için sağda konumlandırıldı) */}
+                    <button 
+                      onClick={() => setMobileCommentsOpen(prev => !prev)}
+                      className="flex flex-col items-center gap-1 group/btn md:hidden"
+                    >
+                      <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center flex-col transition-all group-hover/btn:scale-105 group-active/btn:scale-95 shadow-xl">
+                        <MessageCircle size={24} className="text-white" />
+                      </div>
+                      <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">
+                        {(comments[allReels[expandedReelIndex!].id] || []).length}
+                      </span>
+                    </button>
+
                     <button 
                       onClick={() => handleShare(allReels[expandedReelIndex!].title, allReels[expandedReelIndex!].videoUrl)}
                       className="flex flex-col items-center gap-1 group/btn"
@@ -457,8 +473,23 @@ export default function VideolarimPage() {
                 </div>
             </div>
 
+            {/* Backdrop for mobile comments drawer */}
+            {mobileCommentsOpen && (
+              <div 
+                onClick={() => setMobileCommentsOpen(false)}
+                className="fixed inset-0 bg-black/60 z-[2040] md:hidden transition-opacity duration-300"
+              />
+            )}
+
             {/* Interactions Pane (Right Sidebar with Comments) */}
-            <div className="w-full md:w-[400px] h-[50vh] md:h-full flex flex-col border-l border-white/10 bg-[#121212]">
+            <div className={`
+              w-full md:w-[400px] 
+              fixed md:relative bottom-0 left-0 right-0 z-[2050] md:z-auto
+              h-[65vh] md:h-full 
+              flex flex-col border-t md:border-t-0 md:border-l border-white/10 bg-[#121212]
+              transition-all duration-300 ease-in-out rounded-t-[20px] md:rounded-t-none
+              ${mobileCommentsOpen ? 'translate-y-0 opacity-100' : 'translate-y-full md:translate-y-0 opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto'}
+            `}>
               
               {/* Header */}
               <div className="p-4 border-b border-white/5 flex items-center justify-between">
@@ -466,6 +497,13 @@ export default function VideolarimPage() {
                     <MessageCircle size={20}/>
                     Yorumlar ({(comments[allReels[expandedReelIndex!].id] || []).length})
                  </div>
+                 {/* Kapat butonu (Sadece mobilde çekmeceyi kapatmak için) */}
+                 <button 
+                   onClick={() => setMobileCommentsOpen(false)}
+                   className="md:hidden text-white/60 hover:text-white p-1 transition-colors"
+                 >
+                   <X size={20} />
+                 </button>
               </div>
 
               {/* Comments List */}
