@@ -1,6 +1,6 @@
 'use client';
 // ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - YOUTUBE SHORTS ENTEGRASYONU AKTİF.
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Film, Play, Heart, MessageCircle, Send, X, Share2, ThumbsUp, ThumbsDown, CheckCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
@@ -74,7 +74,21 @@ export default function VideolarimPage() {
     return () => unsub();
   }, []);
 
-  const allReels = [...firebaseVideos, ...YOUTUBE_SHORTS];
+  const allReels = useMemo(() => [...firebaseVideos, ...YOUTUBE_SHORTS], [firebaseVideos]);
+
+  // URL query parameter check to auto-open video
+  useEffect(() => {
+    if (allReels.length > 0) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlId = searchParams.get('id');
+      if (urlId) {
+        const idx = allReels.findIndex(r => r.id === urlId);
+        if (idx !== -1) {
+          setExpandedReelIndex(idx);
+        }
+      }
+    }
+  }, [allReels]);
 
   const handleNextReel = () => {
     if (expandedReelIndex !== null && expandedReelIndex < allReels.length - 1) {
@@ -139,18 +153,19 @@ export default function VideolarimPage() {
   useEffect(() => {
     if (expandedReelIndex !== null) {
       document.body.style.overflow = 'hidden';
-      const reelId = allReels[expandedReelIndex].id;
-      if (!watchedVideos.includes(reelId)) {
-        const nw = [...watchedVideos, reelId];
-        setWatchedVideos(nw);
-        localStorage.setItem('manav_watched_reels', JSON.stringify(nw));
+      if (allReels[expandedReelIndex]) {
+        const reelId = allReels[expandedReelIndex].id;
+        if (!watchedVideos.includes(reelId)) {
+          const nw = [...watchedVideos, reelId];
+          setWatchedVideos(nw);
+          localStorage.setItem('manav_watched_reels', JSON.stringify(nw));
+        }
       }
-      setMobileCommentsOpen(false);
     } else {
       document.body.style.overflow = 'auto';
-      setMobileCommentsOpen(false);
     }
-  }, [expandedReelIndex, allReels]);
+    setMobileCommentsOpen(false);
+  }, [expandedReelIndex]);
 
   const toggleLikeReel = (id: string) => {
     setReactions(prev => ({ ...prev, [id]: !prev[id] }));
@@ -402,7 +417,7 @@ export default function VideolarimPage() {
                
                {allReels[expandedReelIndex].youtubeId ? (
                  <iframe
-                   src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+                   src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1`}
                    title={allReels[expandedReelIndex].title}
                    frameBorder="0"
                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -414,6 +429,7 @@ export default function VideolarimPage() {
                     src={allReels[expandedReelIndex].videoUrl} 
                     autoPlay 
                     loop 
+                    muted
                     controls
                     playsInline
                     className="w-auto h-full max-w-full mx-auto object-contain"

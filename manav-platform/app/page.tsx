@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User } from 'lucide-react';
+import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play } from 'lucide-react';
 import { collection, query, orderBy, limit, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
@@ -11,6 +11,30 @@ import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
 import { QUOTES } from '@/data/quotes';
+
+const YOUTUBE_SHORTS = [
+  { id: 'ABmIev4nIkg', title: "MİTOMANİ", youtubeId: 'ABmIev4nIkg' },
+  { id: 'h6QcOFJXhEk', title: "İYİLEŞMEK, YÜZLEŞMENİN YAN ETKİSİDİR.", youtubeId: 'h6QcOFJXhEk' },
+  { id: 'MqNcDuOdAN4', title: "PSİKANALİZ VE TEDAVİ?", youtubeId: 'MqNcDuOdAN4' },
+  { id: 'mwlGa5M92hQ', title: "SINIRDA BAĞLANMA", youtubeId: 'mwlGa5M92hQ' },
+  { id: 'AIDZ4MFxPhQ', title: "İLK BAŞKA", youtubeId: 'AIDZ4MFxPhQ' },
+  { id: '3f2Z7V_uaH8', title: "DUYGUSAL YEME", youtubeId: '3f2Z7V_uaH8' },
+  { id: '4PL2GaHwm5E', title: "KAYGI ÖZGÜRLÜĞÜN BAŞ DÖNMESİDİR.", youtubeId: '4PL2GaHwm5E' },
+  { id: 'AutXH_X1_bQ', title: "YAPAY ZEKADAN TERAPİST OLUR MU?", youtubeId: 'AutXH_X1_bQ' },
+  { id: '0IOo2TBCFIo', title: "TRAVMASIZ ÇOCUKLUK MÜMKÜN MÜ?", youtubeId: '0IOo2TBCFIo' },
+  { id: '0ZGO5Z6kMWM', title: "MANİPULASYON", youtubeId: '0ZGO5Z6kMWM' },
+  { id: 'N7NxQbUArsM', title: "PASİF AGRESİF", youtubeId: 'N7NxQbUArsM' },
+  { id: '6iWdKTNOWJU', title: "AKTARIM", youtubeId: '6iWdKTNOWJU' },
+  { id: 'kEDKyzGEWt4', title: "İLİŞKİ DÖNGÜSÜ", youtubeId: 'kEDKyzGEWt4' },
+  { id: '-Z1pEXOcyt8', title: "AŞIRI İSTEMEK", youtubeId: '-Z1pEXOcyt8' },
+  { id: 'k4Vvc95RO-o', title: "İNSANI BASTIRDIKLARI YÖNETİR", youtubeId: 'k4Vvc95RO-o' },
+  { id: 'Y5GIkYguVv8', title: "NASIL MUTLU OLURUZ ?", youtubeId: 'Y5GIkYguVv8' },
+  { id: '0rFsbd7v3Do', title: "OVERTHİNKİNG", youtubeId: '0rFsbd7v3Do' },
+  { id: 'GXtl4K1_ARM', title: "SERBEST ÇAĞRIŞIM", youtubeId: 'GXtl4K1_ARM' },
+  { id: 'ylLFvU5j9Kk', title: "HAYATIN BİR ANLAMI VAR MIDIR ?", youtubeId: 'ylLFvU5j9Kk' },
+  { id: 'Y8in1KIUceg', title: "BİLİNÇ DIŞI", youtubeId: 'Y8in1KIUceg' },
+  { id: '5RqlJYyZB_E', title: "PARADOKSAL NİYET", youtubeId: '5RqlJYyZB_E' }
+];
 
 const stripHtml = (html: string) => {
   return html
@@ -42,6 +66,13 @@ export default function HomePage() {
   const [searching, setSearching] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [dailyQuote, setDailyQuote] = useState(QUOTES[0]);
+  const [randomVideos, setRandomVideos] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Shuffle and pick 4 random videos on client mount to avoid hydration mismatch
+    const shuffled = [...YOUTUBE_SHORTS].sort(() => 0.5 - Math.random());
+    setRandomVideos(shuffled.slice(0, 4));
+  }, []);
 
   useEffect(() => {
     const getDailyQuote = () => {
@@ -351,6 +382,76 @@ export default function HomePage() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════ FEATURED VIDEOS ══════════════════ */}
+      {randomVideos.length > 0 && (
+        <section style={{ padding: '80px 0', background: 'white', borderTop: '1px solid rgba(0,0,0,0.02)' }}>
+          <div className="container-main">
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 48, flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 12, color: 'var(--gold-dim)' }}>Video Paylaşımları</div>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,2.6rem)', fontWeight: 700, color: 'var(--navy)' }}>
+                  Öne Çıkan <em style={{ color: 'var(--gold)', fontStyle: 'italic' }}>Videolarım</em>
+                </h2>
+              </div>
+              <Link href="/videolarim" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--navy)', fontWeight: 700, fontSize: '0.8rem', textDecoration: 'none', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Tüm Videoları Gör <ArrowRight size={14}/>
+              </Link>
+            </div>
+
+            {/* Video Cards Grid */}
+            <div className="featured-videos-grid">
+              {randomVideos.map(video => {
+                const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                return (
+                  <Link 
+                    href={`/videolarim?id=${video.id}`} 
+                    key={video.id}
+                    className="glow-frame-container aspect-[9/16]"
+                    style={{ textDecoration: 'none', display: 'block' }}
+                  >
+                    <div className="glow-frame-inner relative w-full h-full">
+                      {/* Image Thumbnail */}
+                      <img 
+                        src={thumbUrl} 
+                        alt={video.title}
+                        loading="lazy" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.75, transition: 'opacity 0.3s' }}
+                      />
+                      
+                      {/* Gradient overlay */}
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), transparent 60%, rgba(0,0,0,0.85))', pointerEvents: 'none' }} />
+
+                      {/* Content overlay */}
+                      <div style={{ position: 'absolute', top: 20, left: 16, right: 16, zIndex: 10 }}>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--gold-light)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', display: 'block', marginBottom: 4 }}>
+                          REELS / SHORTS
+                        </span>
+                        <h3 style={{ color: 'white', fontFamily: 'Montserrat, sans-serif', fontSize: '1rem', fontWeight: 800, lineHeight: 1.3, textShadow: '0 2px 4px rgba(0,0,0,0.6)', margin: 0 }}>
+                          {video.title}
+                        </h3>
+                      </div>
+
+                      {/* Play Button Overlay */}
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                        <div style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', transition: 'transform 0.3s' }} className="play-btn-circle">
+                          <Play size={18} fill="white" color="white" style={{ marginLeft: 3 }} />
+                        </div>
+                      </div>
+
+                      {/* Watch Action Label */}
+                      <div style={{ position: 'absolute', bottom: 20, left: 16, right: 16, display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: 600 }}>
+                        <span style={{ transition: 'color 0.3s' }}>Şimdi İzle</span>
+                        <ArrowRight size={12} style={{ transition: 'transform 0.3s' }} className="arrow-icon" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
