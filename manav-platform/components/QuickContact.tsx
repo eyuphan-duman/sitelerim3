@@ -32,6 +32,13 @@ export default function QuickContact() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleConversionClick = () => {
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'ads_conversion_Ki_i_1');
+    }
+    setIsOpen(false);
+  };
+
   return (
     <div className="quick-contact-container" ref={containerRef}>
       {/* Styles injected to guarantee local styling without complex build dependencies */}
@@ -169,7 +176,7 @@ export default function QuickContact() {
           target="_blank" 
           rel="noopener noreferrer" 
           className="quick-contact-item"
-          onClick={() => setIsOpen(false)}
+          onClick={handleConversionClick}
         >
           <span className="quick-contact-label">WhatsApp'tan Yazın</span>
           <div className="quick-contact-btn" style={{ background: 'white' }}>
@@ -181,7 +188,7 @@ export default function QuickContact() {
         <a 
           href={callUrl} 
           className="quick-contact-item"
-          onClick={() => setIsOpen(false)}
+          onClick={handleConversionClick}
         >
           <span className="quick-contact-label">Hemen Arayın</span>
           <div className="quick-contact-btn" style={{ background: '#0070f3' }}>

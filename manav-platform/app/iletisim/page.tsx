@@ -40,6 +40,12 @@ export default function IletisimPage() {
       // Mesaj Firestore'a başarıyla kaydedildiği için kullanıcıya başarı mesajı gösteriyoruz
       setSent(true); 
       toast.success('Mesajınız gönderildi!');
+
+      // Google Ads Conversion Tracking
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'ads_conversion_Ki_i_1');
+      }
+
       setForm({ name: '', email: '', subject: '', message: '' });
     } catch (error) {
       console.error('Mesaj veritabanına kaydedilirken hata oluştu:', error);
