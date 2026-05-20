@@ -130,14 +130,6 @@ export default function IletisimPage() {
               </div>
             </div>
 
-            {/* Map */}
-            <div style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 12px rgba(10,22,40,0.06)' }}>
-              <iframe
-                title="Ankara Çankaya"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3059.792940044948!2d32.8597!3d39.9052!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14d34f190b3151f1%3A0x400d18c70e8d930!2sÇankaya%2C%20Ankara!5e0!3m2!1str!2str!4v1682000000000!5m2!1str!2str"
-                width="100%" height="260" style={{ border: 0, display: 'block' }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
           </div>
 
           {/* Right column — Form */}
