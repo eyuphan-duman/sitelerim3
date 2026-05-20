@@ -275,7 +275,7 @@ export default function HomePage() {
                 Foruma Katıl
                 <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: 'var(--navy)', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>BETA</span>
               </Link>
-              <Link href="/iletisim" className="btn-ghost">İletişime Geçin <ArrowRight size={14}/></Link>
+              <Link href="/iletisim" className="btn-ghost">Randevular Hakkında Bilgi Almak İçin İletişime Geçin <ArrowRight size={14}/></Link>
             </div>
 
             {/* Eyebrow (Mobile) */}
