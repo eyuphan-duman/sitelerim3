@@ -179,7 +179,7 @@ export default function HomePage() {
       {/* ══════════════════ HERO ══════════════════ */}
       <section className="hero">
         {/* Background image */}
-        <Image src="/hero-bg.jpg" alt="Psikolog Furkan Manav" fill priority quality={100} unoptimized={true} className="hero-image" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
+        <Image src="/hero-bg.jpg" alt="Psikolog Furkan Manav" fill priority quality={90} sizes="100vw" className="hero-image" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
         <div className="hero-overlay" />
         <div className="hero-grain" />
 
@@ -188,7 +188,7 @@ export default function HomePage() {
           {/* Badge 1 — Varoluşçu Psikoterapi */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=200&auto=format&fit=crop" alt="Varoluşçu Psikoterapi" className="w-full h-full object-cover" />
+              <Image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=200&auto=format&fit=crop" alt="Varoluşçu Psikoterapi" width={200} height={200} className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Anlam Arayışı</div>
@@ -198,7 +198,7 @@ export default function HomePage() {
           {/* Badge 2 — Psikanalitik */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-10 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <img src="https://images.unsplash.com/photo-1580130601254-05fa235abeab?q=80&w=200&auto=format&fit=crop" alt="Psikanalitik" className="w-full h-full object-cover" />
+              <Image src="https://images.unsplash.com/photo-1580130601254-05fa235abeab?q=80&w=200&auto=format&fit=crop" alt="Psikanalitik" width={200} height={200} className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bilinçdışı</div>
@@ -208,7 +208,7 @@ export default function HomePage() {
           {/* Badge 3 — Rüya Analizi */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=200&auto=format&fit=crop" alt="Rüya Analizi" className="w-full h-full object-cover" />
+              <Image src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=200&auto=format&fit=crop" alt="Rüya Analizi" width={200} height={200} className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Rüya Analizi</div>
@@ -218,7 +218,7 @@ export default function HomePage() {
           {/* Badge 4 — Bağlanma */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-6 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=200&auto=format&fit=crop" alt="Bağlanma Kuramı" className="w-full h-full object-cover" />
+              <Image src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=200&auto=format&fit=crop" alt="Bağlanma Kuramı" width={200} height={200} className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bağlanma Kuramı</div>
@@ -228,7 +228,7 @@ export default function HomePage() {
           {/* Badge 5 — Travma */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=200&auto=format&fit=crop" alt="Travma" className="w-full h-full object-cover" />
+              <Image src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=200&auto=format&fit=crop" alt="Travma" width={200} height={200} className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Travma Psikolojisi</div>
@@ -238,7 +238,7 @@ export default function HomePage() {
           {/* Badge 6 — Kendilik */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-8 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=200&auto=format&fit=crop" alt="Kendilik" className="w-full h-full object-cover" />
+              <Image src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=200&auto=format&fit=crop" alt="Kendilik" width={200} height={200} className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Kendilik Psikolojisi</div>
@@ -368,7 +368,7 @@ export default function HomePage() {
                 <Link href={`/yazilarim/${a.id}`} key={a.id} className="article-card" style={{ textDecoration: 'none' }}>
                   {a.featuredImage && (
                     <div className="article-card-image">
-                      <img src={a.featuredImage} alt={a.title} loading="lazy" />
+                      <Image src={a.featuredImage} alt={a.title} width={400} height={250} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
                     </div>
                   )}
                   <div className="article-card-body">
@@ -416,11 +416,12 @@ export default function HomePage() {
                   >
                     <div className="glow-frame-inner relative w-full h-full">
                       {/* Image Thumbnail */}
-                      <img 
+                      <Image 
                         src={thumbUrl} 
                         alt={video.title}
-                        loading="lazy" 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.75, transition: 'opacity 0.3s' }}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                        style={{ objectFit: 'cover', opacity: 0.75, transition: 'opacity 0.3s' }}
                       />
                       
                       {/* Gradient overlay */}

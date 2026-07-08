@@ -7,6 +7,12 @@ import QuickContact from "@/components/QuickContact";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import CookieConsent from "@/components/CookieConsent";
+import { Inter, Playfair_Display, Crimson_Text, Montserrat } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
+const crimson = Crimson_Text({ weight: ["400", "600"], subsets: ["latin"], variable: "--font-crimson" });
+const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
 
 
 export const metadata: Metadata = {
@@ -104,7 +110,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr">
+    <html lang="tr" className={`${inter.variable} ${playfair.variable} ${crimson.variable} ${montserrat.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <link rel="canonical" href="https://pskfurkanmanav.com" />
