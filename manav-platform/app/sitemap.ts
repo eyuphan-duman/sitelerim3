@@ -4,7 +4,7 @@ import { db } from '@/lib/firebase';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://furkanmanav.com';
+  const baseUrl = 'https://pskfurkanmanav.com';
 
   // 1. Ana (Statik) Sayfalar
   const staticRoutes = [

@@ -79,7 +79,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   verification: {
-    google: 'google-site-verification-kodunuz-buraya',
+    google: 'google64eb6c07aa6ad607',
     other: {
       'google-adsense-account': 'ca-pub-7052967416613692',
     },

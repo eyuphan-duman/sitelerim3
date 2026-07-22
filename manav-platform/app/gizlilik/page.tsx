@@ -11,7 +11,7 @@ export default function GizlilikPage() {
   const sections = [
     {
       title: '1. Veri Sorumlusu',
-      content: `Bu gizlilik politikası, Psikolog Furkan Manav ("Veri Sorumlusu") tarafından işletilen furkanmanav.com web platformuna ait olup 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) çerçevesinde hazırlanmıştır.
+      content: `Bu gizlilik politikası, Psikolog Furkan Manav ("Veri Sorumlusu") tarafından işletilen pskfurkanmanav.com web platformuna ait olup 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) çerçevesinde hazırlanmıştır.
 
 İletişim: pskfurkan.manav@gmail.com | +90 507 875 15 03`
     },

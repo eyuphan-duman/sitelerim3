@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/admin/', '/api/'],
     },
-    sitemap: 'https://furkanmanav.com/sitemap.xml',
+    sitemap: 'https://pskfurkanmanav.com/sitemap.xml',
   };
 }
