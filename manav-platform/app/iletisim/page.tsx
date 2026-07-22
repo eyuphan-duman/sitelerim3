@@ -55,7 +55,7 @@ export default function IletisimPage() {
   };
 
   const infos = [
-    { icon: <MapPin size={18} color="var(--gold)"/>, label: 'Adres', val: 'Polatlı/ANKARA\nÇankaya/ANKARA', href: undefined },
+    { icon: <MapPin size={18} color="var(--gold)"/>, label: 'Adres', val: 'Willy Brandt Sokak No:2\nBotanik Apartmanı Daire 4\nÇankaya/ANKARA', href: undefined },
     { icon: <Phone size={18} color="var(--gold)"/>, label: 'Telefon', val: '+90 507 875 15 03', href: 'tel:+905078751503' },
     { icon: <Mail size={18} color="var(--gold)"/>, label: 'E-posta', val: 'pskfurkan.manav@gmail.com', href: 'mailto:pskfurkan.manav@gmail.com' },
     { icon: <Clock size={18} color="var(--gold)"/>, label: 'Çalışma Saatleri', val: 'Pzt–Cuma: 09:00–18:00\nCumartesi: 10:00–14:00', href: undefined },
