@@ -328,8 +328,8 @@ export default function ProfilClient({ username }: { username: string }) {
         {/* ── CENTER COLUMN (PROFILE) ── */}
         <main style={{ borderRight: '1px solid #e2e8f0', minHeight: 'calc(100vh - 72px)', background: 'white' }}>
           
-          {/* Sticky header */}
-          <div style={{ position: 'sticky', top: 72, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e2e8f0', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 20, zIndex: 100 }}>
+          {/* Header (normal scroll, non-sticky) */}
+          <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 20 }}>
             <Link href="/forum" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: '#f1f5f9', textDecoration: 'none', color: '#0f172a' }}>
               <ArrowLeft size={18} />
             </Link>
@@ -396,7 +396,7 @@ export default function ProfilClient({ username }: { username: string }) {
           </div>
 
           {/* Profile Tabs */}
-          <div className="profil-tabs" style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', borderTop: '1px solid #f1f5f9', position: 'sticky', top: 132, background: 'white', zIndex: 90 }}>
+          <div className="profil-tabs" style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', borderTop: '1px solid #f1f5f9', background: 'white' }}>
             {[['posts','Gönderiler'],['replies','Yanıtlar'],['likes','Beğeniler']].map(([k,l]) => (
               <button key={k} onClick={() => setTab(k as any)} className="profil-tab-btn" style={{ flex: 1, padding: '16px 12px', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 800, fontSize: '0.92rem', color: tab === k ? '#0f172a' : '#94a3b8', borderBottom: tab === k ? '3px solid #0f172a' : '3px solid transparent', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
                 {l}
