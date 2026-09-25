@@ -102,13 +102,75 @@ export default function ProfilClient({ username }: { username: string }) {
       setLoading(true);
       try {
         let data: any = null;
-        const strats = [
-          () => getDocs(query(collection(db,'users'), where('username','==',username))),
-          () => getDocs(query(collection(db,'users'), where('username','==',username.toLowerCase()))),
-          () => getDocs(query(collection(db,'users'), where('displayName','==',username))),
-        ];
-        for (const s of strats) { try { const snap = await s(); if (!snap.empty) { data = snap.docs[0].data(); break; } } catch {} }
-        if (!data) { try { const d = await getDoc(doc(db,'users',username)); if (d.exists()) data = d.data(); } catch {} }
+        const decoded = decodeURIComponent(username).trim();
+
+        // 1. Direct UID check (doc id or uid field)
+        try {
+          const directDoc = await getDoc(doc(db, 'users', decoded));
+          if (directDoc.exists()) {
+            data = directDoc.data();
+          }
+        } catch {}
+
+        if (!data) {
+          try {
+            const uidSnap = await getDocs(query(collection(db, 'users'), where('uid', '==', decoded)));
+            if (!uidSnap.empty) data = uidSnap.docs[0].data();
+          } catch {}
+        }
+
+        // 2. Exact match strategies on username and displayName
+        if (!data) {
+          const strats = [
+            () => getDocs(query(collection(db, 'users'), where('username', '==', decoded))),
+            () => getDocs(query(collection(db, 'users'), where('username', '==', decoded.toLowerCase()))),
+            () => getDocs(query(collection(db, 'users'), where('displayName', '==', decoded))),
+            () => getDocs(query(collection(db, 'users'), where('displayName', '==', decoded.toLowerCase()))),
+          ];
+          for (const s of strats) {
+            try {
+              const snap = await s();
+              if (!snap.empty) {
+                data = snap.docs[0].data();
+                break;
+              }
+            } catch {}
+          }
+        }
+
+        // 3. Resilient fuzzy scan (handles spaces, casing, Turkish characters, email prefixes)
+        if (!data) {
+          try {
+            const allUsersSnap = await getDocs(collection(db, 'users'));
+            const norm = (str: string) => 
+              (str || '')
+                .toLowerCase()
+                .trim()
+                .replace(/[\s_\-\.]+/g, '')
+                .replace(/ğ/g, 'g')
+                .replace(/ü/g, 'u')
+                .replace(/ş/g, 's')
+                .replace(/ı/g, 'i')
+                .replace(/ö/g, 'o')
+                .replace(/ç/g, 'c');
+            
+            const targetNorm = norm(decoded);
+
+            for (const d of allUsersSnap.docs) {
+              const u = d.data();
+              const uNorm = norm(u.username);
+              const dNorm = norm(u.displayName);
+              const eNorm = norm(u.email ? u.email.split('@')[0] : '');
+              if (uNorm === targetNorm || dNorm === targetNorm || eNorm === targetNorm) {
+                data = { ...u, uid: u.uid || d.id };
+                break;
+              }
+            }
+          } catch (e) {
+            console.error('Fuzzy user lookup error:', e);
+          }
+        }
+
         if (data) {
           setPd(data);
           setEd({ displayName: data.displayName||'', bio: data.bio||'', location: data.location||'', website: data.website||'' });
@@ -455,7 +517,7 @@ export default function ProfilClient({ username }: { username: string }) {
           {/* Profile Bio Details */}
           <div style={{ padding: '0 24px 24px' }}>
             <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{pd.displayName || pd.username}</h1>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '2px 0 14px', fontWeight: 500 }}>@{pd.username}</p>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '2px 0 14px', fontWeight: 500 }}>@{((pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, ''))}</p>
             {pd.bio && <p style={{ fontSize: '1rem', color: '#334155', lineHeight: 1.6, marginBottom: 14 }}>{pd.bio}</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, color: '#64748b', fontSize: '0.88rem', marginBottom: 16 }}>
               {pd.location && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={15} />{pd.location}</span>}
