@@ -94,7 +94,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!heroSettings.autoSlide || isHeroHovered) return;
-    const intervalSec = heroSettings.slideInterval || 20;
+    const intervalSec = Number(heroSettings.slideInterval) > 0 ? Number(heroSettings.slideInterval) : 10;
     const totalMs = intervalSec * 1000;
     const stepMs = 100;
 

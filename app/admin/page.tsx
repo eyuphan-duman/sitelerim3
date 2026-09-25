@@ -124,7 +124,11 @@ export default function AdminPage() {
   const handleSaveHeroSettings = async () => {
     setSavingHero(true);
     try {
-      await setDoc(doc(db, 'settings', 'hero'), heroSettings, { merge: true });
+      const dataToSave = {
+        ...heroSettings,
+        slideInterval: Number(heroSettings.slideInterval) > 0 ? Number(heroSettings.slideInterval) : 10
+      };
+      await setDoc(doc(db, 'settings', 'hero'), dataToSave, { merge: true });
       toast.success('Ana sayfa kapak ayarları başarıyla kaydedildi!');
     } catch (err: any) {
       toast.error('Kaydedilirken hata oluştu: ' + (err.message || ''));
@@ -451,7 +455,7 @@ export default function AdminPage() {
                     transition: 'all 0.2s',
                   }}
                 >
-                  <Clock size={16} /> Geçiş & Zamanlama ({heroSettings.slideInterval || 20}sn)
+                  <Clock size={16} /> Geçiş & Zamanlama ({heroSettings.slideInterval ? `${heroSettings.slideInterval}sn` : ''})
                 </button>
               </div>
 
@@ -984,16 +988,19 @@ export default function AdminPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <input
                         type="number"
-                        min="5"
-                        max="120"
-                        value={heroSettings.slideInterval || 20}
-                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slideInterval: Number(e.target.value) || 20 }))}
+                        min="1"
+                        value={heroSettings.slideInterval ?? ''}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setHeroSettings(prev => ({ ...prev, slideInterval: v === '' ? ('' as any) : Number(v) }));
+                        }}
+                        placeholder="Örn: 10"
                         style={{ width: 140, padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
                       />
-                      <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>saniye (Varsayılan: 20 saniye)</span>
+                      <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>saniye</span>
                     </div>
                     <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 8 }}>
-                      Her slayt bu süre boyunca ekranda kalır, dolduğunda yumuşak bir şekilde sonraki slayta geçer.
+                      Buraya girdiğiniz saniye kadar her slayt ekranda kalır, ardından otomatik olarak diğer ekrana geçer. Kaç yazarsanız o sürede geçecektir.
                     </p>
                   </div>
                 </div>
