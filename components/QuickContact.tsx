@@ -16,17 +16,6 @@ export default function QuickContact() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Hide completely on forum pages as requested
-  if (pathname?.startsWith('/forum')) {
-    return null;
-  }
-
-  const rawPhoneNumber = '5078751503';
-  
-  // WhatsApp Link - Pre-filled with a professional message
-  const whatsappUrl = `https://wa.me/90${rawPhoneNumber}?text=Merhaba%20Furkan%20Bey,%20psikoterapi%20seanslar%C4%B1%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum.`;
-  const callUrl = `tel:+90${rawPhoneNumber}`;
-
   // Close when clicked outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -37,6 +26,17 @@ export default function QuickContact() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Hide completely on forum pages as requested
+  if (pathname?.startsWith('/forum')) {
+    return null;
+  }
+
+  const rawPhoneNumber = '5078751503';
+  
+  // WhatsApp Link - Pre-filled with a professional message
+  const whatsappUrl = `https://wa.me/90${rawPhoneNumber}?text=Merhaba%20Furkan%20Bey,%20psikoterapi%20seanslar%C4%B1%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum.`;
+  const callUrl = `tel:+90${rawPhoneNumber}`;
 
   const handleConversionClick = () => {
     if (typeof window !== 'undefined' && (window as any).gtag) {

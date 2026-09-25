@@ -1,16 +1,12 @@
-'use client';
+import { Metadata } from 'next';
+import ForumWrapper from '@/components/forum/ForumWrapper';
 
-import dynamic from 'next/dynamic';
-
-const ForumClient = dynamic(() => import('./ForumClient'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '0.95rem' }}>
-      Yükleniyor...
-    </div>
-  )
-});
+export const metadata: Metadata = {
+  title: 'Topluluk & Forum',
+  description: 'Psikoloji, psikanaliz ve varoluşçu felsefe üzerine tartışmaların yapıldığı topluluk forumu.',
+  keywords: ['psikoloji forumu', 'psikanaliz tartışmaları', 'varoluşçu topluluk', 'psikoterapi forum', 'furkan manav forum'],
+};
 
 export default function ForumPage() {
-  return <ForumClient />;
+  return <ForumWrapper />;
 }
