@@ -86,7 +86,8 @@ export default function ForumClient() {
   }, [searchParams]);
 
   const filtered = (() => {
-    let list = filter === 'Tümü' ? threads : threads.filter(t => t.category === filter);
+    let list = threads.filter(t => !t.isRepost);
+    if (filter !== 'Tümü') list = list.filter(t => t.category === filter);
     if (feedTab === 'following') list = list.filter(t => followingUids.includes(t.uid));
     if (searchQuery.trim()) { 
       const q = searchQuery.toLowerCase(); 

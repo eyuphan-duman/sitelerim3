@@ -20,6 +20,7 @@ interface Post {
   createdAt: any; commentCount: number; reactionsData?: Record<string, string>; 
   repostsData?: Record<string, any>; bookmarksData?: Record<string, any>;
   category?: string; imageUrl?: string; authorPhotoURL?: string;
+  authorIsPsychologist?: boolean; isPsychologist?: boolean;
   isRepost?: boolean; originalPostId?: string; originalAuthorName?: string;
   originalAuthorUsername?: string; originalAuthorPhotoURL?: string; originalAuthorIsPsychologist?: boolean;
 }
@@ -36,37 +37,51 @@ function Empty({ icon, text }: { icon?: React.ReactNode; text: string }) {
   );
 }
 
-function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isOwn: boolean; userEmail: string; onDelete: (id: string) => void }) {
+function PostCard({ 
+  p, 
+  pd, 
+  isOwn, 
+  userEmail, 
+  onDelete,
+  repostedBy
+}: { 
+  p: Post; 
+  pd: any; 
+  isOwn: boolean; 
+  userEmail: string; 
+  onDelete: (id: string) => void;
+  repostedBy?: string;
+}) {
   const router = useRouter();
-  const isRepost = Boolean(p.isRepost);
-  const authorName = isRepost && p.originalAuthorName ? p.originalAuthorName : (p.authorName || pd.displayName || pd.username);
-  const authorUsername = isRepost && p.originalAuthorUsername ? p.originalAuthorUsername : (p.authorUsername || (p.uid === pd.uid ? pd.username : '') || authorName?.toLowerCase().replace(/\s+/g, '') || 'kullanici');
-  const authorPhoto = isRepost && p.originalAuthorPhotoURL ? p.originalAuthorPhotoURL : (p.authorPhotoURL || (p.uid === pd.uid ? pd.photoURL : ''));
+  const authorName = p.authorName || 'Kullanıcı';
+  const authorUsername = p.authorUsername || authorName.toLowerCase().replace(/\s+/g, '') || 'kullanici';
+  const authorPhoto = p.authorPhotoURL;
+  const isPsych = Boolean(p.authorIsPsychologist);
 
   return (
     <div 
       style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', background: 'white', cursor: 'pointer' }}
-      onClick={() => router.push(`/forum?thread=${p.originalPostId || p.id}`)}
+      onClick={() => router.push(`/forum?thread=${p.id}`)}
       onMouseOver={e => (e.currentTarget.style.background = '#fafbfc')}
       onMouseOut={e => (e.currentTarget.style.background = 'white')}
     >
       {/* Repost banner */}
-      {isRepost && (
+      {repostedBy && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#16a34a', fontSize: '0.78rem', fontWeight: 700, marginBottom: 8, paddingLeft: 46 }}>
           <Repeat2 size={13} strokeWidth={2.4} />
-          <span>{pd.displayName || pd.username} yeniden paylaştı</span>
+          <span>{repostedBy} yeniden gönderdi</span>
         </div>
       )}
 
       <div style={{ display: 'flex', gap: 14 }}>
         <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '1.05rem' }}>
-          {authorPhoto ? <img key={authorPhoto} src={authorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (authorName || 'U')[0].toUpperCase()}
+          {authorPhoto ? <img key={authorPhoto} src={authorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : authorName[0].toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.96rem' }}>{authorName}</span>
-              {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && (
+              {isPsych && (
                 <span
                   style={{
                     display: 'inline-flex',
@@ -83,7 +98,7 @@ function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isO
                   title="Doğrulanmış Lisanslı Psikolog"
                 >
                   <CheckCircle size={11} color="#facc15" />
-                  <span>{pd.title || 'Psikolog'}</span>
+                  <span>Psikolog</span>
                 </span>
               )}
               <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{authorUsername}</span>
@@ -91,7 +106,7 @@ function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isO
               <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(p.createdAt)}</span>
               {p.category && <span style={{ background: '#f1f5f9', color: '#64748b', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.category}</span>}
             </div>
-            {(isOwn || ADMIN.includes(userEmail)) && (
+            {(isOwn && !repostedBy) && (
               <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, transition: 'all 0.15s' }} onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }} onMouseOut={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none'; }} title="Gönderiyi Sil">
                 <Trash2 size={14} />
               </button>
@@ -110,6 +125,7 @@ function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isO
           <div style={{ display: 'flex', gap: 20, marginTop: 12, color: '#94a3b8', fontSize: '0.85rem' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><MessageCircle size={15} />{p.commentCount || 0}</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><Heart size={15} />{Object.keys(p.reactionsData || {}).length}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><Repeat2 size={15} />{Object.keys(p.repostsData || {}).length}</span>
           </div>
         </div>
       </div>
@@ -124,9 +140,10 @@ export default function ProfilClient({ username }: { username: string }) {
   const [pd, setPd] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [replies, setReplies] = useState<any[]>([]);
+  const [reposts, setReposts] = useState<Post[]>([]);
   const [likes, setLikes] = useState<Post[]>([]);
   const [bookmarks, setBookmarks] = useState<Post[]>([]);
-  const [tab, setTab] = useState<'posts'|'replies'|'likes'|'bookmarks'>('posts');
+  const [tab, setTab] = useState<'posts'|'replies'|'reposts'|'likes'|'bookmarks'>('posts');
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(false);
   const [followers, setFollowers] = useState(0);
@@ -262,14 +279,24 @@ export default function ProfilClient({ username }: { username: string }) {
           setEd({ displayName: data.displayName||'', bio: data.bio||'', location: data.location||'', website: data.website||'' });
           try {
             const ps = await getDocs(query(collection(db,'forum'), where('uid','==',data.uid)));
-            const pList = ps.docs.map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[];
+            const pList = (ps.docs
+              .map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[])
+              .filter(p => !p.isRepost);
             setPosts(pList.sort((a,b) => b.createdAt - a.createdAt));
           } catch (e) { console.error('Posts fetch error:', e); }
           try {
             const all = await getDocs(collection(db,'forum'));
-            setLikes(all.docs.filter(d => d.data().reactionsData?.[data.uid]).map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[]);
             
-            // Bookmarks for this user
+            // 1. Reposts (Yeniden gönderiler): original posts that this user reposted
+            const repostList = all.docs
+              .filter(d => !d.data().isRepost && d.data().repostsData?.[data.uid])
+              .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
+            setReposts(repostList.sort((a, b) => b.createdAt - a.createdAt));
+
+            // 2. Likes
+            setLikes(all.docs.filter(d => !d.data().isRepost && d.data().reactionsData?.[data.uid]).map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[]);
+            
+            // 3. Bookmarks
             let bookmarkedIds: string[] = [];
             try {
               const bSnap = await getDocs(collection(db, 'users', data.uid, 'bookmarks'));
@@ -277,12 +304,14 @@ export default function ProfilClient({ username }: { username: string }) {
             } catch {}
 
             const bPosts = all.docs
-              .filter(d => d.data().bookmarksData?.[data.uid] || bookmarkedIds.includes(d.id))
+              .filter(d => !d.data().isRepost && (d.data().bookmarksData?.[data.uid] || bookmarkedIds.includes(d.id)))
               .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
             setBookmarks(bPosts.sort((a, b) => b.createdAt - a.createdAt));
 
+            // 4. Replies
             const rList: any[] = [];
             for (const p of all.docs) {
+              if (p.data().isRepost) continue;
               try {
                 const cs = await getDocs(query(collection(db,'forum',p.id,'comments'), where('uid','==',data.uid)));
                 cs.docs.forEach(c => rList.push({ ...c.data(), id:c.id, postId:p.id, postBody:p.data().body?.slice(0,60), createdAt:c.data().createdAt?.toDate()||new Date() }));
@@ -301,7 +330,7 @@ export default function ProfilClient({ username }: { username: string }) {
 
   useEffect(() => {
     const t = searchParams.get('tab');
-    if (t === 'bookmarks' || t === 'posts' || t === 'replies' || t === 'likes') {
+    if (t === 'bookmarks' || t === 'posts' || t === 'replies' || t === 'reposts' || t === 'likes') {
       setTab(t as any);
     }
   }, [searchParams]);
@@ -697,9 +726,48 @@ export default function ProfilClient({ username }: { username: string }) {
 
           {/* Profile Tabs */}
           <div className="profil-tabs" style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', borderTop: '1px solid #f1f5f9', background: 'white' }}>
-            {[['posts','Gönderiler'],['replies','Yanıtlar'],['likes','Beğeniler'],['bookmarks','Yer İşaretleri']].map(([k,l]) => (
-              <button key={k} onClick={() => setTab(k as any)} className="profil-tab-btn" style={{ flex: 1, padding: '16px 12px', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 800, fontSize: '0.92rem', color: tab === k ? '#0f172a' : '#94a3b8', borderBottom: tab === k ? '3px solid #0f172a' : '3px solid transparent', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
-                {l}
+            {[
+              ['posts', 'Gönderiler'],
+              ['replies', 'Yanıtlar'],
+              ['reposts', 'Yeniden gönderiler'],
+              ['likes', 'Beğeniler'],
+              ['bookmarks', 'Yer İşaretleri']
+            ].map(([k, l]) => (
+              <button
+                key={k}
+                onClick={() => setTab(k as any)}
+                className="profil-tab-btn"
+                style={{
+                  flex: 1,
+                  padding: '16px 12px',
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  fontWeight: tab === k ? 800 : 600,
+                  fontSize: '0.92rem',
+                  color: tab === k ? '#0f172a' : '#64748b',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span>{l}</span>
+                {tab === k && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: '25%',
+                      right: '25%',
+                      height: 3.5,
+                      background: '#1d9bf0',
+                      borderRadius: '4px 4px 0 0'
+                    }}
+                  />
+                )}
               </button>
             ))}
           </div>
@@ -724,6 +792,17 @@ export default function ProfilClient({ username }: { username: string }) {
                 </div>
               </div>
             </div>
+          )))}
+          {tab === 'reposts' && (reposts.length === 0 ? <Empty icon={<Repeat2 size={36} color="#cbd5e1" />} text="Henüz yeniden gönderi yok" /> : reposts.map(p => (
+            <PostCard 
+              key={p.id} 
+              p={p} 
+              pd={pd} 
+              isOwn={isOwn} 
+              userEmail={user?.email || ''} 
+              onDelete={delPost} 
+              repostedBy={pd.displayName || pd.username}
+            />
           )))}
           {tab === 'likes' && (likes.length === 0 ? <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" /> : likes.map(p => (
             <div 
