@@ -70,10 +70,15 @@ export default function ForumClient() {
   useEffect(() => { if (!user || user.isAnonymous) return; const q = query(collection(db, 'notifications'), where('toUid', '==', user.uid), where('read', '==', false)); return onSnapshot(q, snap => setUnreadCount(snap.size)); }, [user]);
   useEffect(() => { if (!user || user.isAnonymous) return; const q = query(collection(db, 'follows'), where('followerId', '==', user.uid)); return onSnapshot(q, snap => setFollowingUids(snap.docs.map(d => d.data().followingId))); }, [user]);
 
-  // Sync search query, category, and feed from URL
+  // Sync search query, tag, category, and feed from URL
   useEffect(() => {
+    const tagParam = searchParams.get('tag');
     const qParam = searchParams.get('search') || searchParams.get('q');
-    if (qParam !== null && qParam !== undefined) {
+    if (tagParam) {
+      setSearchQuery(tagParam.startsWith('#') ? tagParam : `#${tagParam}`);
+      setFilter('Tümü');
+      setActiveThread(null);
+    } else if (qParam !== null && qParam !== undefined) {
       if (qParam === 'open' || qParam === '1') {
         setTimeout(() => {
           searchInputRef.current?.focus();
@@ -99,23 +104,66 @@ export default function ForumClient() {
     if (feedTab === 'bookmarks') list = list.filter(t => Boolean(t.bookmarksData?.[user?.uid || '']));
     if (feedTab === 'likes') list = list.filter(t => t.reactionsData?.[user?.uid || ''] === 'like' || t.reactionsData?.[user?.uid || ''] === 'heart');
     if (searchQuery.trim()) { 
-      const q = searchQuery.toLowerCase(); 
-      list = list.filter(t => 
-        (t.body || '').toLowerCase().includes(q) || 
-        (t.authorName || '').toLowerCase().includes(q) || 
-        (t.category && t.category.toLowerCase().includes(q))
-      ); 
+      const rawQ = searchQuery.trim().toLocaleLowerCase('tr-TR');
+      const cleanQ = rawQ.startsWith('#') ? rawQ.slice(1) : rawQ;
+      list = list.filter(t => {
+        const body = (t.body || '').toLocaleLowerCase('tr-TR');
+        const author = (t.authorName || '').toLocaleLowerCase('tr-TR');
+        const username = (t.authorUsername || '').toLocaleLowerCase('tr-TR');
+        const category = (t.category || '').toLocaleLowerCase('tr-TR');
+        const cleanCat = category.replace(/[\s&]+/g, '');
+
+        if (rawQ.startsWith('#')) {
+          return body.includes(`#${cleanQ}`) || cleanCat === cleanQ || category.includes(cleanQ);
+        }
+        return (
+          body.includes(rawQ) ||
+          body.includes(`#${cleanQ}`) ||
+          author.includes(rawQ) ||
+          username.includes(rawQ) ||
+          category.includes(rawQ)
+        );
+      });
     }
     return list;
   })();
 
-  const catCounts = threads.reduce((acc, t) => { 
-    if (t.category) { 
-      acc[t.category] = (acc[t.category] || 0) + 1; 
-    } 
-    return acc; 
-  }, {} as Record<string, number>);
-  const trends = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  // Dynamic trending hashtags from all post bodies
+  const trends = (() => {
+    const tagCounts: Record<string, { tag: string; count: number }> = {};
+    threads.forEach(t => {
+      if (!t.body) return;
+      const matches = t.body.match(/#([a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+)/g);
+      if (matches) {
+        const uniqueInPost = Array.from(new Set(matches.map(m => m.trim())));
+        uniqueInPost.forEach(rawTag => {
+          const clean = rawTag.startsWith('#') ? rawTag.slice(1) : rawTag;
+          if (!clean) return;
+          const key = clean.toLocaleLowerCase('tr-TR');
+          if (!tagCounts[key]) {
+            tagCounts[key] = { tag: clean, count: 0 };
+          }
+          tagCounts[key].count += 1;
+        });
+      }
+    });
+
+    // Also include categories as fallback hashtags
+    CATEGORIES.filter(c => c !== 'Tümü').forEach(c => {
+      const clean = c.replace(/[\s&]+/g, '');
+      const key = clean.toLocaleLowerCase('tr-TR');
+      const catCount = threads.filter(t => t.category === c).length;
+      if (!tagCounts[key]) {
+        tagCounts[key] = { tag: clean, count: catCount || 1 };
+      } else {
+        tagCounts[key].count += catCount;
+      }
+    });
+
+    return Object.values(tagCounts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  })();
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -525,6 +573,25 @@ export default function ForumClient() {
                     <button onClick={() => setFilter('Tümü')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={14} /></button>
                   </div>
                 )}
+                {searchQuery && (
+                  <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: searchQuery.startsWith('#') ? '#f0f9ff' : '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>{searchQuery.startsWith('#') ? 'Etiket:' : 'Arama:'}</span>
+                      <span style={{ background: searchQuery.startsWith('#') ? '#0284c7' : '#0f172a', color: 'white', fontSize: '0.82rem', fontWeight: 700, padding: '3px 12px', borderRadius: 999 }}>
+                        {searchQuery}
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => { 
+                        setSearchQuery(''); 
+                        router.replace('/forum', { scroll: false }); 
+                      }} 
+                      style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', fontWeight: 600 }}
+                    >
+                      <X size={14} /> Temizle
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Compose */}
@@ -682,15 +749,29 @@ export default function ForumClient() {
           <div style={{ background: '#f8fafc', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
             <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #e2e8f0' }}>
               <TrendingUp size={18} color="#64748b" />
-              <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Gündem</h3>
+              <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Gündemdekiler</h3>
             </div>
-            {trends.map(([cat, count]) => (
-              <button key={cat} onClick={() => { setFilter(cat); setFeedTab('all'); }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '13px 18px', border: 'none', background: 'transparent', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', textAlign: 'left' }} onMouseOver={e => (e.currentTarget.style.background = '#f1f5f9')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+            {trends.map(({ tag, count }) => (
+              <button 
+                key={tag} 
+                type="button"
+                onClick={() => { 
+                  setSearchQuery(`#${tag}`); 
+                  setFilter('Tümü'); 
+                  setFeedTab('all'); 
+                  if (activeThread) closeThread();
+                  router.replace(`/forum?tag=${encodeURIComponent(tag)}`, { scroll: false });
+                }} 
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '13px 18px', border: 'none', background: 'transparent', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', textAlign: 'left' }} 
+                onMouseOver={e => (e.currentTarget.style.background = '#f1f5f9')} 
+                onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+              >
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Psikoloji · Gündem</div>
-                  <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>#{cat.replace(/\s+/g, '')}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Gündemdekiler · Türkiye</div>
+                  <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem' }}>#{tag}</div>
+                  <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 2 }}>{count} gönderi</div>
                 </div>
-                <span style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999 }}>{count}</span>
+                <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999 }}>#{tag}</span>
               </button>
             ))}
           </div>

@@ -865,13 +865,14 @@ export default function ProfilClient({ username }: { username: string }) {
             </div>
             {trends.length > 0 ? (
               trends.map(t => (
-                <Link key={t.tag} href={`/forum?search=${encodeURIComponent(t.tag)}`} style={{ textDecoration: 'none' }}>
+                <Link key={t.tag} href={`/forum?tag=${encodeURIComponent(t.tag.replace(/^#/, ''))}`} style={{ textDecoration: 'none' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 18px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f1f5f9')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                     <div>
-                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Psikoloji · Gündem</div>
-                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>#{t.tag.replace(/\s+/g, '')}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Gündemdekiler · Türkiye</div>
+                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>#{t.tag.replace(/^#/, '').replace(/\s+/g, '')}</div>
+                      <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 2 }}>{t.count} gönderi</div>
                     </div>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{t.count} gönderi</span>
+                    <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999 }}>#{t.tag.replace(/^#/, '')}</span>
                   </div>
                 </Link>
               ))

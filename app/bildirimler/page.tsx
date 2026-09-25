@@ -65,9 +65,42 @@ export default function BildirimlerPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<'all' | 'comment' | 'reaction' | 'repost'>('all');
+  const [trends, setTrends] = useState<{ tag: string; count: number }[]>([]);
   const [searchVal, setSearchVal] = useState('');
 
   const myUsername = userProfile?.username || (user?.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
+
+  // Dynamic trending hashtags from forum
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'forum'), snap => {
+      const tagCounts: Record<string, { tag: string; count: number }> = {};
+      snap.docs.forEach(docSnap => {
+        const d = docSnap.data();
+        if (d.body) {
+          const matches = d.body.match(/#([a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+)/g);
+          if (matches) {
+            const set = new Set(matches.map((m: string) => m.trim()));
+            set.forEach((rawTag: any) => {
+              const clean = rawTag.startsWith('#') ? rawTag.slice(1) : rawTag;
+              if (!clean) return;
+              const key = clean.toLocaleLowerCase('tr-TR');
+              if (!tagCounts[key]) tagCounts[key] = { tag: clean, count: 0 };
+              tagCounts[key].count += 1;
+            });
+          }
+        }
+      });
+      CATEGORIES.forEach(c => {
+        const clean = c.replace(/[\s&]+/g, '');
+        const key = clean.toLocaleLowerCase('tr-TR');
+        const catCount = snap.docs.filter(d => d.data().category === c).length;
+        if (!tagCounts[key]) tagCounts[key] = { tag: clean, count: catCount || 1 };
+        else tagCounts[key].count += catCount;
+      });
+      setTrends(Object.values(tagCounts).sort((a, b) => b.count - a.count).slice(0, 5));
+    });
+    return () => unsub();
+  }, []);
 
   // Firestore query: only filter by toUid to prevent missing composite index error
   useEffect(() => {
@@ -485,19 +518,21 @@ export default function BildirimlerPage() {
           <div style={{ background: '#f8fafc', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
             <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #e2e8f0' }}>
               <TrendingUp size={18} color="#64748b" />
-              <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Gündem</h3>
+              <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Gündemdekiler</h3>
             </div>
-            {CATEGORIES.slice(0, 5).map(cat => (
+            {trends.map(({ tag, count }) => (
               <Link 
-                key={cat} 
-                href={`/forum?cat=${encodeURIComponent(cat)}`}
+                key={tag} 
+                href={`/forum?tag=${encodeURIComponent(tag)}`}
                 style={{ textDecoration: 'none' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '13px 18px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', transition: 'background 0.15s' }}>
                   <div>
-                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Psikoloji Forumu</div>
-                    <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>#{cat.replace(/\s+/g, '')}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Gündemdekiler · Türkiye</div>
+                    <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>#{tag}</div>
+                    <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 2 }}>{count} gönderi</div>
                   </div>
+                  <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999 }}>#{tag}</span>
                 </div>
               </Link>
             ))}

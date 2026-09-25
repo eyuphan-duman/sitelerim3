@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 
 export function renderTextWithMentions(text: string) {
   if (!text) return null;
-  const parts = text.split(/(@[a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+)/g);
+  const parts = text.split(/(@[a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+|#[a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+)/g);
   return parts.map((part, i) => {
     if (part.startsWith('@')) {
       const cleanUsername = part.slice(1);
@@ -24,6 +24,25 @@ export function renderTextWithMentions(text: string) {
         <Link
           key={i}
           href={`/forum/profil/${encodeURIComponent(cleanUsername)}`}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            color: '#1d9bf0',
+            fontWeight: 600,
+            textDecoration: 'none'
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+          onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+        >
+          {part}
+        </Link>
+      );
+    }
+    if (part.startsWith('#')) {
+      const cleanTag = part.slice(1);
+      return (
+        <Link
+          key={i}
+          href={`/forum?tag=${encodeURIComponent(cleanTag)}`}
           onClick={(e) => e.stopPropagation()}
           style={{
             color: '#1d9bf0',
