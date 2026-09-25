@@ -53,10 +53,33 @@ export default function ForumClient() {
   useEffect(() => { if (!user || user.isAnonymous) return; const q = query(collection(db, 'notifications'), where('toUid', '==', user.uid), where('read', '==', false)); return onSnapshot(q, snap => setUnreadCount(snap.size)); }, [user]);
   useEffect(() => { if (!user || user.isAnonymous) return; const q = query(collection(db, 'follows'), where('followerId', '==', user.uid)); return onSnapshot(q, snap => setFollowingUids(snap.docs.map(d => d.data().followingId))); }, [user]);
 
+  // Sync search query, category, and feed from URL
+  useEffect(() => {
+    const qParam = searchParams.get('search') || searchParams.get('q');
+    if (qParam !== null && qParam !== undefined) {
+      setSearchQuery(qParam);
+    }
+    const catParam = searchParams.get('cat');
+    if (catParam) {
+      setFilter(catParam);
+    }
+    const feedParam = searchParams.get('feed');
+    if (feedParam === 'following') {
+      setFeedTab('following');
+    }
+  }, [searchParams]);
+
   const filtered = (() => {
     let list = filter === 'Tümü' ? threads : threads.filter(t => t.category === filter);
     if (feedTab === 'following') list = list.filter(t => followingUids.includes(t.uid));
-    if (searchQuery.trim()) { const q = searchQuery.toLowerCase(); list = list.filter(t => t.body.toLowerCase().includes(q) || t.authorName.toLowerCase().includes(q)); }
+    if (searchQuery.trim()) { 
+      const q = searchQuery.toLowerCase(); 
+      list = list.filter(t => 
+        t.body.toLowerCase().includes(q) || 
+        t.authorName.toLowerCase().includes(q) || 
+        (t.category && t.category.toLowerCase().includes(q))
+      ); 
+    }
     return list;
   })();
 
@@ -280,11 +303,31 @@ export default function ForumClient() {
             </div>
           )}
 
+          {/* Active Search Banner */}
+          {searchQuery.trim() && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#eff6ff', borderBottom: '1px solid #bfdbfe' }}>
+              <div style={{ color: '#1e3a8a', fontSize: '0.88rem', fontWeight: 600 }}>
+                🔍 <strong>"{searchQuery}"</strong> için arama sonuçları ({filtered.length} gönderi)
+              </div>
+              <button 
+                onClick={() => {
+                  setSearchQuery('');
+                  router.replace('/forum', { scroll: false });
+                }} 
+                style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
+              >
+                Aramayı Temizle
+              </button>
+            </div>
+          )}
+
           {/* Posts */}
           {filtered.length === 0 ? (
             <div style={{ padding: '60px 24px', textAlign: 'center' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>💭</div>
-              <h3 style={{ color: '#94a3b8', fontWeight: 700 }}>{feedTab === 'following' ? 'Takip ettiğiniz kişi paylaşım yapmamış.' : 'Bu kategoride henüz gönderi yok.'}</h3>
+              <h3 style={{ color: '#94a3b8', fontWeight: 700 }}>
+                {searchQuery.trim() ? `"${searchQuery}" ile eşleşen gönderi bulunamadı.` : (feedTab === 'following' ? 'Takip ettiğiniz kişi paylaşım yapmamış.' : 'Bu kategoride henüz gönderi yok.')}
+              </h3>
             </div>
           ) : (
             filtered.map(t => (
@@ -295,9 +338,26 @@ export default function ForumClient() {
 
         {/* RIGHT SIDEBAR */}
         <aside className="forum-sidebar-right" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f1f5f9', borderRadius: 12, padding: '12px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f1f5f9', borderRadius: 12, padding: '12px 16px', border: '1px solid #e2e8f0' }}>
             <Search size={17} color="#94a3b8" />
-            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Forumda ara..." style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', color: '#0f172a', width: '100%' }} />
+            <input 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+              placeholder="Forumda ara..." 
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', color: '#0f172a', width: '100%' }} 
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => {
+                  setSearchQuery('');
+                  router.replace('/forum', { scroll: false });
+                }} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', padding: 2 }}
+                title="Aramayı temizle"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
           {user && !user.isAnonymous && (
             <Link href="/bildirimler" style={{ textDecoration: 'none' }}>

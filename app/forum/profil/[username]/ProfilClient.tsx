@@ -91,6 +91,8 @@ export default function ProfilClient({ username }: { username: string }) {
   const [upCover, setUpCover] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
+  const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
+  const [trends, setTrends] = useState<{ tag: string; count: number }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const photoRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
@@ -150,12 +152,67 @@ export default function ProfilClient({ username }: { username: string }) {
     return onSnapshot(q, snap => setUnreadCount(snap.size));
   }, [user]);
 
+  // Real following map for current user
   useEffect(() => {
-    getDocs(query(collection(db, 'users'), limit(8))).then(snap => {
-      const list = snap.docs.map(d => d.data()).filter((u: any) => u.uid !== pd?.uid && u.uid !== user?.uid);
-      setSuggestedUsers(list.slice(0, 3));
-    }).catch(() => {});
-  }, [pd, user]);
+    if (!user || user.isAnonymous) {
+      setFollowingMap({});
+      return;
+    }
+    const q = query(collection(db, 'follows'), where('followerId', '==', user.uid));
+    return onSnapshot(q, snap => {
+      const map: Record<string, boolean> = {};
+      snap.docs.forEach(d => {
+        map[d.data().followingId] = true;
+      });
+      setFollowingMap(map);
+    });
+  }, [user]);
+
+  // Real suggested users (excluding self, currently viewed user, and already followed users)
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'users'), snap => {
+      const list = snap.docs
+        .map(d => ({ ...d.data(), uid: d.data().uid || d.id }))
+        .filter((u: any) => {
+          if (!u.uid) return false;
+          if (user && u.uid === user.uid) return false;
+          if (pd && u.uid === pd.uid) return false;
+          if (followingMap[u.uid]) return false;
+          if (!u.displayName && !u.username) return false;
+          return true;
+        });
+      setSuggestedUsers(list.slice(0, 4));
+    });
+    return () => unsub();
+  }, [user, pd, followingMap]);
+
+  // Real trending tags from forum posts
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'forum'), snap => {
+      const tagCounts: Record<string, number> = {};
+      snap.docs.forEach(doc => {
+        const d = doc.data();
+        if (d.category && d.category !== 'Tümü') {
+          tagCounts[d.category] = (tagCounts[d.category] || 0) + 1;
+        }
+        if (d.body) {
+          const matches = d.body.match(/#([a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+)/g);
+          if (matches) {
+            matches.forEach((m: string) => {
+              const clean = m.replace('#', '');
+              tagCounts[clean] = (tagCounts[clean] || 0) + 1;
+            });
+          }
+        }
+      });
+      const sorted = Object.entries(tagCounts)
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+      setTrends(sorted);
+    });
+    return () => unsub();
+  }, []);
 
   const uploadImg = async (file: File, path: string): Promise<string> => {
     const fd = new FormData();
@@ -224,8 +281,28 @@ export default function ProfilClient({ username }: { username: string }) {
     await deleteDoc(doc(db,'forum',id)); setPosts(p => p.filter(x => x.id !== id)); toast.success('Silindi.');
   };
 
-  const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
+  const handleFollowSuggested = async (e: React.MouseEvent, targetUid: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user || user.isAnonymous) {
+      return toast.error('Takip etmek için giriş yapmalısınız.');
+    }
+    const fid = `${user.uid}_${targetUid}`;
+    try {
+      await setDoc(doc(db, 'follows', fid), {
+        followerId: user.uid,
+        followingId: targetUid,
+        createdAt: serverTimestamp(),
+      });
+      toast.success('Takip edildi!');
+    } catch {
+      toast.error('Hata oluştu.');
+    }
+  };
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (searchQuery.trim()) {
       router.push(`/forum?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
@@ -441,68 +518,83 @@ export default function ProfilClient({ username }: { username: string }) {
 
         {/* ── RIGHT SIDEBAR ── */}
         <aside className="profile-sidebar-right" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Search box */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f1f5f9', borderRadius: 12, padding: '12px 16px' }}>
+          {/* Search box - strictly searches forum */}
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f1f5f9', borderRadius: 12, padding: '10px 14px', border: '1px solid #e2e8f0' }}>
             <Search size={17} color="#94a3b8" />
             <input 
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
-              onKeyDown={handleSearchSubmit} 
-              placeholder="Forumda veya kullanıcı ara..." 
+              placeholder="Forumda ara..." 
               style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', color: '#0f172a', width: '100%' }} 
             />
-          </div>
+            <button 
+              type="submit" 
+              style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+            >
+              Ara
+            </button>
+          </form>
 
-          {/* Trending Topics Widget */}
+          {/* Trending Topics Widget - Real tags & categories from forum posts */}
           <div style={{ background: '#f8fafc', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
             <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #e2e8f0' }}>
               <TrendingUp size={18} color="#64748b" />
               <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Gündemdekiler</h3>
             </div>
-            {[
-              { tag: 'Psikanaliz', count: '14 gönderi' },
-              { tag: 'VaroluşveAnlam', count: '9 gönderi' },
-              { tag: 'Rüyalar', count: '6 gönderi' },
-              { tag: 'KaygıveDepresyon', count: '11 gönderi' },
-              { tag: 'İlişkiler', count: '8 gönderi' },
-            ].map(t => (
-              <Link key={t.tag} href={`/forum?cat=${encodeURIComponent(t.tag)}`} style={{ textDecoration: 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 18px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f1f5f9')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Psikoloji · Gündem</div>
-                    <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>#{t.tag}</div>
+            {trends.length > 0 ? (
+              trends.map(t => (
+                <Link key={t.tag} href={`/forum?search=${encodeURIComponent(t.tag)}`} style={{ textDecoration: 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 18px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f1f5f9')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Psikoloji · Gündem</div>
+                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>#{t.tag.replace(/\s+/g, '')}</div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{t.count} gönderi</span>
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{t.count}</span>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))
+            ) : (
+              <div style={{ padding: '20px 18px', color: '#94a3b8', fontSize: '0.84rem', textAlign: 'center' }}>
+                Henüz etiket veya konu yok
+              </div>
+            )}
           </div>
 
-          {/* Suggested Users (Kimi Takip Etmeli) */}
-          {suggestedUsers.length > 0 && (
-            <div style={{ background: '#f8fafc', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-              <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #e2e8f0' }}>
-                <Users size={18} color="#64748b" />
-                <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Kimi Takip Etmeli</h3>
-              </div>
-              {suggestedUsers.map((su: any) => (
-                <div key={su.uid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderBottom: '1px solid #f1f5f9' }}>
-                  <Link href={`/forum/profil/${encodeURIComponent(su.username || '')}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', minWidth: 0 }}>
-                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>
-                      {su.photoURL ? <img src={su.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (su.displayName || 'U')[0].toUpperCase()}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{su.displayName || su.username}</div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>@{su.username}</div>
-                    </div>
-                  </Link>
-                  <Link href={`/forum/profil/${encodeURIComponent(su.username || '')}`} style={{ padding: '6px 14px', borderRadius: 999, background: '#0f172a', color: 'white', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}>
-                    Gör
-                  </Link>
-                </div>
-              ))}
+          {/* Suggested Users (Kimi Takip Etmeli) - Real active members with follow action */}
+          <div style={{ background: '#f8fafc', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+            <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #e2e8f0' }}>
+              <Users size={18} color="#64748b" />
+              <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Kimi Takip Etmeli</h3>
             </div>
-          )}
+            {suggestedUsers.length > 0 ? (
+              suggestedUsers.map((su: any) => {
+                const suUsername = (su.username || su.displayName || 'kullanici').toLowerCase().replace(/\s+/g, '');
+                return (
+                  <div key={su.uid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderBottom: '1px solid #f1f5f9' }}>
+                    <Link href={`/forum/profil/${encodeURIComponent(suUsername)}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', minWidth: 0, flex: 1 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>
+                        {su.photoURL ? <img src={su.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (su.displayName || 'U')[0].toUpperCase()}
+                      </div>
+                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{su.displayName || su.username}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.78rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{suUsername}</div>
+                      </div>
+                    </Link>
+                    <button 
+                      onClick={(e) => handleFollowSuggested(e, su.uid)}
+                      style={{ padding: '6px 14px', borderRadius: 999, background: '#0f172a', color: 'white', fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0, marginLeft: 8, transition: 'all 0.15s' }}
+                    >
+                      Takip Et
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <div style={{ padding: '20px 18px', color: '#94a3b8', fontSize: '0.84rem', textAlign: 'center' }}>
+                Şu an için yeni öneri yok
+              </div>
+            )}
+          </div>
 
           {/* Footer & Copyright */}
           <div style={{ padding: '0 8px', fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.6 }}>
