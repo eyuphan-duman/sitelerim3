@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -21,23 +21,26 @@ const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
 export default function AdminPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [appointments, setAppointments] = useState<any[]>([]);
 
   const [articles, setArticles] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'appointments' | 'posts' | 'videos' | 'messages'>(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
-      return tabParam;
-    }
-    return 'appointments';
-  });
+  const [activeTab, setActiveTab] = useState<'appointments' | 'posts' | 'videos' | 'messages'>('appointments');
   const [subTab, setSubTab] = useState<'pending' | 'approved'>('pending');
   const [messages, setMessages] = useState<any[]>([]);
   const [editingMsg, setEditingMsg] = useState<string | null>(null);
   const [editMsgText, setEditMsgText] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
+        setActiveTab(tabParam as any);
+      }
+    }
+  }, []);
 
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
