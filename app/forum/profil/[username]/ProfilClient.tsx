@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { updateProfile } from 'firebase/auth';
+import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Camera, MapPin, Link as LinkIcon, Calendar, MessageCircle, Heart, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -112,35 +112,52 @@ export default function ProfilClient({ username }: { username: string }) {
   }, [pd, user]);
 
   const uploadImg = async (file: File, path: string): Promise<string> => {
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('folder', `manav-platform/${path.split('/')[0]}`);
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (data.success && data.url) return data.url;
-    } catch (e) {
-      console.warn('Cloudinary upload fallback to Firebase storage:', e);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('folder', `manav-platform/${path.split('/')[0]}`);
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Yükleme başarısız oldu');
     }
-    const r = storageRef(storage, path);
-    const t = uploadBytesResumable(r, file);
-    return new Promise((res, rej) => {
-      t.on('state_changed', null, rej, async () => res(await getDownloadURL(t.snapshot.ref)));
-    });
+    return data.url;
   };
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f || !user) return;
     setUpPhoto(true);
-    try { const url = await uploadImg(f, `avatars/${user.uid}`); await updateDoc(doc(db,'users',user.uid), { photoURL:url }); setPd((p: any) => ({ ...p, photoURL:url })); toast.success('Fotoğraf güncellendi!'); }
-    catch { toast.error('Yükleme hatası.'); } finally { setUpPhoto(false); }
+    const toastId = toast.loading('Profil fotoğrafı Cloudinary\'ye yükleniyor...');
+    try {
+      const url = await uploadImg(f, `avatars/${user.uid}`);
+      await setDoc(doc(db, 'users', user.uid), { photoURL: url }, { merge: true });
+      try { await updateProfile(user, { photoURL: url }); } catch {}
+      setPd((p: any) => ({ ...p, photoURL: url }));
+      toast.success('Profil fotoğrafı güncellendi!', { id: toastId });
+    } catch (err: any) {
+      console.error('handlePhoto error:', err);
+      toast.error('Hata: ' + (err.message || 'Yükleme başarısız'), { id: toastId });
+    } finally {
+      setUpPhoto(false);
+      if (e.target) e.target.value = '';
+    }
   };
 
   const handleCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f || !user) return;
     setUpCover(true);
-    try { const url = await uploadImg(f, `covers/${user.uid}`); await updateDoc(doc(db,'users',user.uid), { coverURL:url }); setPd((p: any) => ({ ...p, coverURL:url })); toast.success('Kapak güncellendi!'); }
-    catch { toast.error('Yükleme hatası.'); } finally { setUpCover(false); }
+    const toastId = toast.loading('Kapak fotoğrafı Cloudinary\'ye yükleniyor...');
+    try {
+      const url = await uploadImg(f, `covers/${user.uid}`);
+      await setDoc(doc(db, 'users', user.uid), { coverURL: url }, { merge: true });
+      setPd((p: any) => ({ ...p, coverURL: url }));
+      toast.success('Kapak fotoğrafı güncellendi!', { id: toastId });
+    } catch (err: any) {
+      console.error('handleCover error:', err);
+      toast.error('Hata: ' + (err.message || 'Yükleme başarısız'), { id: toastId });
+    } finally {
+      setUpCover(false);
+      if (e.target) e.target.value = '';
+    }
   };
 
   const toggleFollow = async () => {
