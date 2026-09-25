@@ -2,8 +2,22 @@
 import React, { useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, CheckCircle, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const InstagramIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
+
+const YoutubeIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+);
 
 const LinkedInIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
@@ -93,7 +107,9 @@ export default function IletisimPage() {
               alignItems: 'center', 
               gap: 14 
             }}>
-              <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>⚡</div>
+              <div style={{ flexShrink: 0, color: 'var(--gold-dim)' }}>
+                <Zap size={22} />
+              </div>
               <p style={{ color: 'var(--navy)', fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.5, margin: 0 }}>
                 <strong style={{ color: 'var(--gold-dim)' }}>En Hızlı İletişim Yöntemi:</strong> Randevu ve acil konular için telefon üzerinden doğrudan arama yapmak (+90 507 875 15 03) kullanıcılarımız için en hızlı ve etkili iletişim yöntemidir.
               </p>
@@ -123,8 +139,8 @@ export default function IletisimPage() {
               <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 16 }}>Sosyal Medya</div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 {[
-                  { label: 'Instagram', icon: '📸', href: 'https://www.instagram.com/pskfurkanmanav/' },
-                  { label: 'YouTube', icon: '▶️', href: 'https://www.youtube.com/@pskfurkanmanav' },
+                  { label: 'Instagram', icon: <InstagramIcon/>, href: 'https://www.instagram.com/pskfurkanmanav/' },
+                  { label: 'YouTube', icon: <YoutubeIcon/>, href: 'https://www.youtube.com/@pskfurkanmanav' },
                   { label: 'LinkedIn', icon: <LinkedInIcon/>, href: 'https://www.linkedin.com/in/pskfurkanmanav/' },
                 ].map(s => (
                   <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 3, border: '1px solid rgba(0,0,0,0.1)', fontSize: '0.78rem', fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', transition: 'all 0.2s ease' }}

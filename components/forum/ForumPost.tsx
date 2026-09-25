@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { MessageCircle, Trash2, MoreHorizontal } from 'lucide-react';
+import { MessageCircle, Trash2, Heart, Lightbulb, ThumbsUp, Flame, CheckCircle } from 'lucide-react';
 
 interface Post {
   id: string; title?: string; body: string; category: string;
@@ -9,6 +9,7 @@ interface Post {
   commentCount: number; createdAt: Date; reactionsData?: Record<string, string>;
   authorPhotoURL?: string;
   imageUrl?: string;
+  authorIsPsychologist?: boolean;
 }
 
 interface Props {
@@ -16,22 +17,24 @@ interface Props {
   currentUserUid?: string;
   currentUserEmail?: string;
   adminEmails: string[];
+  isPsychologist?: boolean;
   onOpen: (p: Post) => void;
   onReact: (e: React.MouseEvent, p: Post, emoji: string) => void;
   onDelete: (id: string) => void;
 }
 
-const EMOJIS = [
-  { key: 'heart', emoji: '❤️', color: '#ef4444' },
-  { key: 'lightbulb', emoji: '💡', color: '#eab308' },
-  { key: 'clap', emoji: '👏', color: '#3b82f6' },
-  { key: 'fire', emoji: '🔥', color: '#f97316' },
+const REACTIONS = [
+  { key: 'heart', label: 'Beğen', Icon: Heart, color: '#ef4444' },
+  { key: 'lightbulb', label: 'Fikir', Icon: Lightbulb, color: '#eab308' },
+  { key: 'clap', label: 'Tebrik', Icon: ThumbsUp, color: '#3b82f6' },
+  { key: 'fire', label: 'Etkileyici', Icon: Flame, color: '#f97316' },
 ];
 
-export default function ForumPost({ post, currentUserUid, currentUserEmail, adminEmails, onOpen, onReact, onDelete }: Props) {
+export default function ForumPost({ post, currentUserUid, currentUserEmail, adminEmails, isPsychologist, onOpen, onReact, onDelete }: Props) {
   const username = post.authorUsername || post.authorName.toLowerCase().replace(/\s+/g, '');
   const userReaction = post.reactionsData?.[currentUserUid || ''];
   const canDelete = (currentUserUid && currentUserUid === post.uid) || adminEmails.includes(currentUserEmail || '');
+  const hasPsychBadge = Boolean(isPsychologist || post.authorIsPsychologist);
 
   return (
     <article
@@ -59,6 +62,24 @@ export default function ForumPost({ post, currentUserUid, currentUserEmail, admi
                 style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem', textDecoration: 'none' }}>
                 {post.authorName}
               </Link>
+              {hasPsychBadge && (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  background: 'rgba(212, 175, 55, 0.12)',
+                  color: '#926100',
+                  border: '1px solid rgba(212, 175, 55, 0.45)',
+                  padding: '1px 8px',
+                  borderRadius: 999,
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.02em',
+                }}>
+                  <CheckCircle size={10} color="#926100" />
+                  <span>Psikolog</span>
+                </span>
+              )}
               <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{username}</span>
               <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>·</span>
               <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{post.createdAt.toLocaleDateString('tr-TR')}</span>
@@ -91,8 +112,8 @@ export default function ForumPost({ post, currentUserUid, currentUserEmail, admi
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            {EMOJIS.map(({ key, emoji, color }) => {
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {REACTIONS.map(({ key, Icon, color }) => {
               const count = Object.values(post.reactionsData || {}).filter(v => v === key).length;
               const active = userReaction === key;
               return (
@@ -102,7 +123,8 @@ export default function ForumPost({ post, currentUserUid, currentUserEmail, admi
                   color: active ? color : '#94a3b8', fontWeight: active ? 700 : 500, fontSize: '0.85rem',
                   transition: 'all 0.2s'
                 }}>
-                  {emoji} {count > 0 && <span>{count}</span>}
+                  <Icon size={15} color={active ? color : '#94a3b8'} fill={active && key === 'heart' ? color : 'none'} />
+                  {count > 0 && <span>{count}</span>}
                 </button>
               );
             })}

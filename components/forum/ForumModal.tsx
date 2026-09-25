@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { X, Send, Trash2, ThumbsUp, ThumbsDown, MessageCircle } from 'lucide-react';
+import { X, Send, Trash2, Heart, Lightbulb, ThumbsUp, Flame, Camera, Loader, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface Post {
@@ -9,12 +9,14 @@ interface Post {
   commentCount: number; createdAt: Date; reactionsData?: Record<string, string>;
   authorPhotoURL?: string;
   imageUrl?: string;
+  authorIsPsychologist?: boolean;
 }
 interface Comment {
   id: string; authorName: string; authorUsername?: string;
   text: string; createdAt: Date; reactionsData?: Record<string, string>; uid: string;
   authorPhotoURL?: string;
   imageUrl?: string;
+  authorIsPsychologist?: boolean;
 }
 interface Props {
   post: Post; comments: Comment[];
@@ -27,11 +29,11 @@ interface Props {
   onOpenAuth: () => void;
 }
 
-const EMOJIS = [
-  { key: 'heart', emoji: '❤️', color: '#ef4444' },
-  { key: 'lightbulb', emoji: '💡', color: '#eab308' },
-  { key: 'clap', emoji: '👏', color: '#3b82f6' },
-  { key: 'fire', emoji: '🔥', color: '#f97316' },
+const REACTIONS = [
+  { key: 'heart', label: 'Beğen', Icon: Heart, color: '#ef4444' },
+  { key: 'lightbulb', label: 'Fikir', Icon: Lightbulb, color: '#eab308' },
+  { key: 'clap', label: 'Tebrik', Icon: ThumbsUp, color: '#3b82f6' },
+  { key: 'fire', label: 'Etkileyici', Icon: Flame, color: '#f97316' },
 ];
 
 export default function ForumModal({ post, comments, currentUser, userProfile, adminEmails, onClose, onReact, onCommentReact, onSubmitComment, onDeleteComment, onOpenAuth }: Props) {
@@ -103,7 +105,26 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
                 </div>
               </Link>
               <div>
-                <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '1rem' }}>{post.authorName}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '1rem' }}>{post.authorName}</span>
+                  {post.authorIsPsychologist && (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      background: 'rgba(212, 175, 55, 0.12)',
+                      color: '#926100',
+                      border: '1px solid rgba(212, 175, 55, 0.45)',
+                      padding: '1px 7px',
+                      borderRadius: 999,
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                    }}>
+                      <CheckCircle size={10} color="#926100" />
+                      <span>Psikolog</span>
+                    </span>
+                  )}
+                </div>
                 <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{username} · {post.createdAt.toLocaleDateString('tr-TR')}</div>
               </div>
             </div>
@@ -115,7 +136,7 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
               </div>
             )}
             <div style={{ display: 'flex', gap: 8, paddingTop: 16, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-              {EMOJIS.map(({ key, emoji, color }) => {
+              {REACTIONS.map(({ key, label, Icon, color }) => {
                 const count = Object.values(post.reactionsData || {}).filter(v => v === key).length;
                 const active = post.reactionsData?.[currentUser?.uid || ''] === key;
                 return (
@@ -124,7 +145,11 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
                     border: `1px solid ${active ? color + '40' : '#e2e8f0'}`, borderRadius: 999,
                     padding: '6px 14px', cursor: 'pointer', color: active ? color : '#64748b',
                     fontWeight: active ? 700 : 500, fontSize: '0.88rem', transition: 'all 0.2s'
-                  }}>{emoji} {count}</button>
+                  }}>
+                    <Icon size={15} color={active ? color : '#64748b'} fill={active && key === 'heart' ? color : 'none'} />
+                    <span>{label}</span>
+                    {count > 0 && <span>({count})</span>}
+                  </button>
                 );
               })}
             </div>
@@ -136,7 +161,7 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
                 <div style={{ position: 'relative', width: 80, height: 80, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                   <img src={commentImageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <button onClick={() => setCommentImageUrl('')} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 12 }}>
-                    ✕
+                    <X size={12} />
                   </button>
                 </div>
               )}
@@ -150,8 +175,8 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
                     style={{ flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '10px 14px', fontSize: '0.95rem', outline: 'none', color: '#0f172a' }}
                   />
-                  <label style={{ background: '#f1f5f9', padding: '10px 12px', borderRadius: 12, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }} title="Görsel ekle (Cloudinary)">
-                    {uploadingImage ? '⏳' : '📷'}
+                  <label style={{ background: '#f1f5f9', padding: '10px 12px', borderRadius: 12, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }} title="Görsel ekle">
+                    {uploadingImage ? <Loader size={16} className="animate-spin" /> : <Camera size={16} />}
                     <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage} />
                   </label>
                   <button onClick={handleSubmit} disabled={uploadingImage || (!text.trim() && !commentImageUrl)} style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: 12, padding: '10px 16px', cursor: (text.trim() || commentImageUrl) ? 'pointer' : 'default', display: 'flex', alignItems: 'center', opacity: (!text.trim() && !commentImageUrl) ? 0.5 : 1 }}>
@@ -182,6 +207,23 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                       <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>{c.authorName}</span>
+                      {c.authorIsPsychologist && (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          background: 'rgba(212, 175, 55, 0.12)',
+                          color: '#926100',
+                          border: '1px solid rgba(212, 175, 55, 0.45)',
+                          padding: '1px 7px',
+                          borderRadius: 999,
+                          fontSize: '0.65rem',
+                          fontWeight: 800,
+                        }}>
+                          <CheckCircle size={9} color="#926100" />
+                          <span>Psikolog</span>
+                        </span>
+                      )}
                       <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>@{cu}</span>
                       <span style={{ color: '#cbd5e1', fontSize: '0.8rem' }}>· {c.createdAt.toLocaleDateString('tr-TR')}</span>
                       {canDeleteComment && (
@@ -207,13 +249,20 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
                       </div>
                     )}
                     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                      {[{ key: 'heart', emoji: '❤️' }, { key: 'lightbulb', emoji: '💡' }].map(({ key, emoji }) => {
+                      {[
+                        { key: 'heart', Icon: Heart, color: '#ef4444' },
+                        { key: 'lightbulb', Icon: Lightbulb, color: '#eab308' }
+                      ].map(({ key, Icon, color }) => {
                         const count = Object.values(c.reactionsData || {}).filter(v => v === key).length;
+                        const active = c.reactionsData?.[currentUser?.uid || ''] === key;
                         return (
                           <button key={key} onClick={e => onCommentReact(e, c, key)} style={{
-                            background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8',
-                            fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 4, padding: '2px 6px'
-                          }}>{emoji} {count > 0 && count}</button>
+                            background: active ? `${color}15` : 'none', border: 'none', cursor: 'pointer', color: active ? color : '#94a3b8',
+                            fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6
+                          }}>
+                            <Icon size={14} color={active ? color : '#94a3b8'} fill={active && key === 'heart' ? color : 'none'} />
+                            {count > 0 && <span>{count}</span>}
+                          </button>
                         );
                       })}
                     </div>

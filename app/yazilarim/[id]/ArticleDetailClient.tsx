@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 import {
   ArrowLeft, Calendar, Tag, Edit3, Trash2,
   MessageSquare, Send, User, X, Check,
-  Share2, Link2, MessageCircle
+  Share2, Link2, MessageCircle, Upload
 } from 'lucide-react';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
 import dynamic from 'next/dynamic';
@@ -195,7 +195,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
                 placeholder="Kapak görseli URL veya dosya yükleyin"
               />
               <label style={{ background: '#2563eb', color: 'white', padding: '10px 14px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap' }} title="Cloudinary'ye görsel yükle">
-                ☁️ Yükle
+                <Upload size={16} /> Yükle
                 <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;

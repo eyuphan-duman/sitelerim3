@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   ArrowLeft, Camera, MapPin, Link as LinkIcon, Calendar, 
   MessageCircle, Heart, Trash2, Home, Users, Film, FileText, 
-  Bell, Search, TrendingUp, Hash, X, Check, Share2
+  Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX 
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,10 +22,10 @@ interface Post {
 const CATEGORIES = ['Tümü','Psikanaliz','Varoluş & Anlam','Kaygı & Depresyon','İlişkiler','Çocukluk & Travma','Rüyalar','Kimlik & Benlik','Kişisel Gelişim'];
 const ADMIN = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
-function Empty({ icon, text }: { icon: string; text: string }) {
+function Empty({ icon, text }: { icon?: React.ReactNode; text: string }) {
   return (
     <div style={{ padding: '80px 20px', textAlign: 'center', color: '#94a3b8' }}>
-      <div style={{ fontSize: '3rem', marginBottom: 16 }}>{icon}</div>
+      {icon && <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>{icon}</div>}
       <p style={{ fontWeight: 700, fontSize: '1rem', color: '#64748b' }}>{text}</p>
     </div>
   );
@@ -44,6 +44,26 @@ function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isO
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.96rem' }}>{pd.displayName || pd.username}</span>
+            {(pd.isPsychologist || pd.role === 'psychologist') && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                  border: '1px solid rgba(201,169,110,0.4)',
+                  color: '#facc15',
+                  fontSize: '0.65rem',
+                  fontWeight: 800,
+                  padding: '2px 7px',
+                  borderRadius: 999
+                }}
+                title="Doğrulanmış Lisanslı Psikolog"
+              >
+                <CheckCircle size={11} color="#facc15" />
+                <span>{pd.title || 'Psikolog'}</span>
+              </span>
+            )}
             <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{pd.username}</span>
             <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>·</span>
             <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{p.createdAt?.toLocaleDateString?.('tr-TR')}</span>
@@ -380,8 +400,9 @@ export default function ProfilClient({ username }: { username: string }) {
 
   if (!pd) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-        <p style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: 16 }}>👤 Hesap bulunamadı</p>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: 20 }}>
+        <UserX size={44} color="#94a3b8" style={{ marginBottom: 14 }} />
+        <p style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: 16 }}>Hesap bulunamadı</p>
         <Link href="/forum" style={{ color: '#2563eb', fontWeight: 700, textDecoration: 'none' }}>← Topluluğa Dön</Link>
       </div>
     );
@@ -415,7 +436,7 @@ export default function ProfilClient({ username }: { username: string }) {
             <Link href="/forum" style={{ textDecoration: 'none' }}>
               <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
                 Topluluk
-                <span style={{ fontSize: '0.6rem', background: '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>BETA</span>
+                <span style={{ fontSize: '0.6rem', background: '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
               </h1>
             </Link>
             <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 4 }}>Psikoloji forumu</p>
@@ -516,8 +537,31 @@ export default function ProfilClient({ username }: { username: string }) {
 
           {/* Profile Bio Details */}
           <div style={{ padding: '0 24px 24px' }}>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{pd.displayName || pd.username}</h1>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '2px 0 14px', fontWeight: 500 }}>@{((pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, ''))}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{pd.displayName || pd.username}</h1>
+              {(pd.isPsychologist || pd.role === 'psychologist') && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                    border: '1px solid rgba(201,169,110,0.5)',
+                    color: '#facc15',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: 999,
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+                  }}
+                  title="Doğrulanmış Lisanslı Psikolog"
+                >
+                  <CheckCircle size={13} color="#facc15" />
+                  <span>{pd.title || 'Psikolog'}</span>
+                </span>
+              )}
+            </div>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 14px', fontWeight: 500 }}>@{((pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, ''))}</p>
             {pd.bio && <p style={{ fontSize: '1rem', color: '#334155', lineHeight: 1.6, marginBottom: 14 }}>{pd.bio}</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, color: '#64748b', fontSize: '0.88rem', marginBottom: 16 }}>
               {pd.location && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={15} />{pd.location}</span>}
@@ -544,8 +588,8 @@ export default function ProfilClient({ username }: { username: string }) {
           </div>
 
           {/* Tab Content */}
-          {tab === 'posts' && (posts.length === 0 ? <Empty icon="📝" text="Henüz gönderi yok" /> : posts.map(p => <PostCard key={p.id} p={p} pd={pd} isOwn={isOwn} userEmail={user?.email || ''} onDelete={delPost} />))}
-          {tab === 'replies' && (replies.length === 0 ? <Empty icon="💬" text="Henüz yanıt yok" /> : replies.map((r, i) => (
+          {tab === 'posts' && (posts.length === 0 ? <Empty icon={<FileText size={36} color="#cbd5e1" />} text="Henüz gönderi yok" /> : posts.map(p => <PostCard key={p.id} p={p} pd={pd} isOwn={isOwn} userEmail={user?.email || ''} onDelete={delPost} />))}
+          {tab === 'replies' && (replies.length === 0 ? <Empty icon={<MessageCircle size={36} color="#cbd5e1" />} text="Henüz yanıt yok" /> : replies.map((r, i) => (
             <div key={i} style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
               <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: 8 }}>Yanıtladı: <em>"{r.postBody}..."</em></p>
               <div style={{ display: 'flex', gap: 12 }}>
@@ -560,7 +604,7 @@ export default function ProfilClient({ username }: { username: string }) {
               </div>
             </div>
           )))}
-          {tab === 'likes' && (likes.length === 0 ? <Empty icon="❤️" text="Henüz beğeni yok" /> : likes.map(p => (
+          {tab === 'likes' && (likes.length === 0 ? <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" /> : likes.map(p => (
             <div key={p.id} style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
               <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{(p.authorName || 'U')[0].toUpperCase()}</div>
               <div style={{ flex: 1, minWidth: 0 }}>

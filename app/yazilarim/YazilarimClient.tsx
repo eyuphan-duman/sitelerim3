@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { collection, query, orderBy, onSnapshot, doc, getDoc, updateDoc, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Edit3, Trash2, Plus, Clock, Tag } from 'lucide-react';
+import { ArrowLeft, Edit3, Trash2, Plus, Clock, Tag, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -169,7 +169,7 @@ export default function YazilarimClient() {
         {/* Editor Top Bar */}
         <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button onClick={() => setShowEditor(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 40, height: 40, cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>✕</button>
+            <button onClick={() => setShowEditor(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}><X size={20} /></button>
             <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 700, color: 'var(--navy)' }}>
               {editingPost ? 'Yazıyı Düzenle' : 'Yeni Yazı Oluştur'}
             </h2>

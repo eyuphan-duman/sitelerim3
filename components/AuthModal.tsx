@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { X as CloseIcon, Loader } from 'lucide-react';
+import { X as CloseIcon, Loader, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -117,9 +118,29 @@ export default function AuthModal({ isOpen, onClose }: Props) {
           
           <div className="w-full max-w-[340px] flex flex-col">
             
-            <h1 className="text-[31px] font-bold text-black mt-2 mb-8 tracking-[-0.03em] leading-snug">
+            <h1 className="text-[31px] font-bold text-black mt-2 mb-6 tracking-[-0.03em] leading-snug">
               {mode === 'signin' ? "Manavplatform'a giriş yap" : "Manavplatform'a katıl"}
             </h1>
+
+            {/* Psychologist Registration Prompt */}
+            {mode === 'signup' && (
+              <div className="mb-6 p-3.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50 to-amber-100/60 flex items-center justify-between gap-3 shadow-sm">
+                <div>
+                  <div className="text-[14px] font-bold text-slate-900 flex items-center gap-1.5">
+                    <Award size={15} className="text-amber-600" />
+                    <span>Psikolog musunuz?</span>
+                  </div>
+                  <div className="text-[12px] text-slate-600 mt-0.5">Diploma ile uzman rozetli kayıt olun.</div>
+                </div>
+                <Link
+                  href="/kayit/psikolog"
+                  onClick={onClose}
+                  className="text-[12px] font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 px-3 py-1.5 rounded-lg whitespace-nowrap shadow-sm transition-colors"
+                >
+                  Uzman Kaydı →
+                </Link>
+              </div>
+            )}
 
             {/* Social Buttons */}
             <div className="flex flex-col gap-3">

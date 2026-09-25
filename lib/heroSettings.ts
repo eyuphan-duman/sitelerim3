@@ -51,7 +51,7 @@ export const DEFAULT_HERO_SETTINGS: HeroSettings = {
     description: 'Varoluşçu-psikanalitik yaklaşımla ilgili derinlemesine incelemeler, forum tartışmaları ve yazılar. Bilinçdışının katmanlarını keşfederek özgün bir anlam inşa edin.',
     primaryBtnText: 'Foruma Katıl',
     primaryBtnLink: '/forum',
-    primaryBtnBadge: 'BETA',
+    primaryBtnBadge: 'v2.0',
     secondaryBtnText: 'Randevular Hakkında Bilgi Almak İçin İletişime Geçin',
     secondaryBtnLink: '/iletisim',
     searchPlaceholder: 'Site içinde ara — yazılar, forum, içerikler...',

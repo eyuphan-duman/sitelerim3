@@ -1,5 +1,4 @@
 'use client';
-// ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - FORUM BETA ETİKETLERİ EKLENDİ.
 import React, { useState, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -7,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ForumModal from '@/components/forum/ForumModal';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -17,12 +16,14 @@ interface Post {
   authorName: string; authorUsername?: string; uid: string;
   commentCount: number; createdAt: Date; reactionsData?: Record<string, string>;
   authorPhotoURL?: string;
+  authorIsPsychologist?: boolean;
   imageUrl?: string;
 }
 interface Comment {
   id: string; authorName: string; authorUsername?: string;
   text: string; createdAt: Date; reactionsData?: Record<string, string>; uid: string;
   authorPhotoURL?: string;
+  authorIsPsychologist?: boolean;
   imageUrl?: string;
 }
 
@@ -112,6 +113,7 @@ export default function ForumClient() {
     if (!user || (!form.body.trim() && !form.imageUrl)) return toast.error('Yazı veya görsel eklemelisiniz.');
     if (user.isAnonymous) return setAuthOpen(true);
     setPosting(true);
+    const isPsychologist = Boolean(userProfile?.isPsychologist || userProfile?.role === 'psychologist');
     try {
       await addDoc(collection(db, 'forum'), {
         body: form.body,
@@ -119,6 +121,7 @@ export default function ForumClient() {
         imageUrl: form.imageUrl || '',
         authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
         authorUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+        authorIsPsychologist: isPsychologist,
         uid: user.uid,
         commentCount: 0,
         createdAt: serverTimestamp(),
@@ -169,9 +172,11 @@ export default function ForumClient() {
   const submitComment = async (text: string, imageUrl?: string) => {
     if (!user || (!text.trim() && !imageUrl) || !activeThread) return;
     if (user.isAnonymous) return setAuthOpen(true);
+    const isPsychologist = Boolean(userProfile?.isPsychologist || userProfile?.role === 'psychologist');
     await addDoc(collection(db, 'forum', activeThread.id, 'comments'), {
       authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
       authorUsername: userProfile?.username || '',
+      authorIsPsychologist: isPsychologist,
       text,
       imageUrl: imageUrl || '',
       createdAt: serverTimestamp(),
@@ -206,7 +211,7 @@ export default function ForumClient() {
           <div style={{ padding: '0 8px 16px', marginBottom: 8 }}>
             <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
               Topluluk
-              <span style={{ fontSize: '0.6rem', background: '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>BETA</span>
+              <span style={{ fontSize: '0.6rem', background: '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
             </h1>
             <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 4 }}>Psikoloji forumu</p>
           </div>
@@ -246,7 +251,7 @@ export default function ForumClient() {
                 <button key={tab.key} onClick={() => tab.key === 'following' && !user?.uid ? setAuthOpen(true) : setFeedTab(tab.key as any)}
                   style={{ flex: 1, padding: '16px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', background: 'transparent', color: feedTab === tab.key ? '#0f172a' : '#94a3b8', borderBottom: feedTab === tab.key ? '3px solid #0f172a' : '3px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   {tab.label}
-                  {tab.key === 'all' && <span style={{ fontSize: '0.55rem', background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>BETA</span>}
+                  {tab.key === 'all' && <span style={{ fontSize: '0.55rem', background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>v2.0</span>}
                 </button>
               ))}
             </div>
@@ -270,8 +275,8 @@ export default function ForumClient() {
                 {form.imageUrl && (
                   <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: 12 }}>
                     <img src={form.imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <button onClick={() => setForm({ ...form, imageUrl: '' })} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13 }}>
-                      ✕
+                    <button onClick={() => setForm({ ...form, imageUrl: '' })} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                      <X size={14} />
                     </button>
                   </div>
                 )}
@@ -282,8 +287,18 @@ export default function ForumClient() {
                       {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
 
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', fontWeight: 600 }} title="Görsel ekle (Cloudinary)">
-                      {uploadingImage ? '⏳ Yükleniyor…' : '📷 Görsel Ekle'}
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', fontWeight: 600 }} title="Görsel ekle">
+                      {uploadingImage ? (
+                        <>
+                          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                          <span>Yükleniyor…</span>
+                        </>
+                      ) : (
+                        <>
+                          <Camera size={14} />
+                          <span>Görsel Ekle</span>
+                        </>
+                      )}
                       <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage} />
                     </label>
                   </div>
@@ -296,7 +311,7 @@ export default function ForumClient() {
 
           {!user && (
             <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', background: 'linear-gradient(135deg,#f8fafc,#eff6ff)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: 12 }}>🧠</div>
+              <Users size={32} color="#0f172a" style={{ margin: '0 auto 12px' }} />
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>Psikoloji topluluğuna katılın</h3>
               <p style={{ color: '#64748b', marginBottom: 20, fontSize: '0.95rem' }}>Düşüncelerinizi paylaşın, tartışmalara katılın.</p>
               <button onClick={() => setAuthOpen(true)} style={{ background: '#0f172a', color: 'white', border: 'none', padding: '12px 28px', borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}>Katıl</button>
@@ -306,8 +321,9 @@ export default function ForumClient() {
           {/* Active Search Banner */}
           {searchQuery.trim() && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#eff6ff', borderBottom: '1px solid #bfdbfe' }}>
-              <div style={{ color: '#1e3a8a', fontSize: '0.88rem', fontWeight: 600 }}>
-                🔍 <strong>"{searchQuery}"</strong> için arama sonuçları ({filtered.length} gönderi)
+              <div style={{ color: '#1e3a8a', fontSize: '0.88rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Search size={15} />
+                <span><strong>"{searchQuery}"</strong> için arama sonuçları ({filtered.length} gönderi)</span>
               </div>
               <button 
                 onClick={() => {
@@ -324,14 +340,27 @@ export default function ForumClient() {
           {/* Posts */}
           {filtered.length === 0 ? (
             <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>💭</div>
+              <MessageSquare size={36} color="#94a3b8" style={{ margin: '0 auto 16px' }} />
               <h3 style={{ color: '#94a3b8', fontWeight: 700 }}>
                 {searchQuery.trim() ? `"${searchQuery}" ile eşleşen gönderi bulunamadı.` : (feedTab === 'following' ? 'Takip ettiğiniz kişi paylaşım yapmamış.' : 'Bu kategoride henüz gönderi yok.')}
               </h3>
             </div>
           ) : (
             filtered.map(t => (
-              <ForumPost key={t.id} post={{ ...t, authorPhotoURL: usersMap[t.uid]?.photoURL }} currentUserUid={user?.uid} currentUserEmail={user?.email || ''} adminEmails={ADMIN_EMAILS} onOpen={openThread} onReact={handleReact} onDelete={deletePost} />
+              <ForumPost
+                key={t.id}
+                post={{
+                  ...t,
+                  authorPhotoURL: usersMap[t.uid]?.photoURL,
+                  authorIsPsychologist: Boolean(t.authorIsPsychologist || usersMap[t.uid]?.isPsychologist || usersMap[t.uid]?.role === 'psychologist')
+                }}
+                currentUserUid={user?.uid}
+                currentUserEmail={user?.email || ''}
+                adminEmails={ADMIN_EMAILS}
+                onOpen={openThread}
+                onReact={handleReact}
+                onDelete={deletePost}
+              />
             ))
           )}
         </main>
@@ -390,7 +419,7 @@ export default function ForumClient() {
           </div>
           {!user && (
             <div style={{ background: 'linear-gradient(135deg,#0f172a,#1e293b)', borderRadius: 16, padding: '24px 20px', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.8rem', marginBottom: 12 }}>🧠</div>
+              <Sparkles size={28} color="#d97706" style={{ margin: '0 auto 12px' }} />
               <h3 style={{ fontWeight: 800, color: 'white', fontSize: '1rem', marginBottom: 8 }}>Topluluğa Katılın</h3>
               <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: 16, lineHeight: 1.5 }}>Paylaşın, tartışın, büyüyün.</p>
               <button onClick={() => setAuthOpen(true)} style={{ background: 'white', color: '#0f172a', border: 'none', padding: '10px 22px', borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', width: '100%' }}>Katıl</button>
@@ -400,7 +429,27 @@ export default function ForumClient() {
       </div>
 
       {activeThread && (
-        <ForumModal post={{ ...activeThread, authorPhotoURL: usersMap[activeThread.uid]?.photoURL }} comments={comments.map(c => ({ ...c, authorPhotoURL: usersMap[c.uid]?.photoURL }))} currentUser={user} userProfile={userProfile} adminEmails={ADMIN_EMAILS} onClose={closeThread} onReact={handleReact} onCommentReact={async () => {}} onSubmitComment={submitComment} onDeleteComment={deleteComment} onOpenAuth={() => setAuthOpen(true)} />
+        <ForumModal
+          post={{
+            ...activeThread,
+            authorPhotoURL: usersMap[activeThread.uid]?.photoURL,
+            authorIsPsychologist: Boolean(activeThread.authorIsPsychologist || usersMap[activeThread.uid]?.isPsychologist || usersMap[activeThread.uid]?.role === 'psychologist')
+          }}
+          comments={comments.map(c => ({
+            ...c,
+            authorPhotoURL: usersMap[c.uid]?.photoURL,
+            authorIsPsychologist: Boolean(c.authorIsPsychologist || usersMap[c.uid]?.isPsychologist || usersMap[c.uid]?.role === 'psychologist')
+          }))}
+          currentUser={user}
+          userProfile={userProfile}
+          adminEmails={ADMIN_EMAILS}
+          onClose={closeThread}
+          onReact={handleReact}
+          onCommentReact={async () => {}}
+          onSubmitComment={submitComment}
+          onDeleteComment={deleteComment}
+          onOpenAuth={() => setAuthOpen(true)}
+        />
       )}
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
 

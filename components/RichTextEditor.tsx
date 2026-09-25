@@ -196,8 +196,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         .rich-text-editor {
           margin-bottom: 1rem;
         }
-        .ql-image-grow::before { content: '🖼️+'; font-size: 11px; font-weight: bold; }
-        .ql-image-shrink::before { content: '🖼️-'; font-size: 11px; font-weight: bold; }
+        .ql-image-grow::before { content: 'IMG+'; font-size: 11px; font-weight: bold; }
+        .ql-image-shrink::before { content: 'IMG-'; font-size: 11px; font-weight: bold; }
         
         .rich-text-editor .ql-editor {
           min-height: 500px;

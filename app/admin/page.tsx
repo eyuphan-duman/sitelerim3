@@ -185,7 +185,7 @@ export default function AdminPage() {
     setEditingArticleId(a.id);
     setActiveTab('posts');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    toast('Makale düzenleme moduna alındı.', { icon: '✏️' });
+    toast.success('Makale düzenleme moduna alındı.');
   };
 
   const handleCancelEdit = () => {
@@ -585,13 +585,13 @@ export default function AdminPage() {
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Rozeti (Örn: BETA)</label>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Rozeti (Örn: v2.0)</label>
                       <input
                         type="text"
                         value={heroSettings.slide1.primaryBtnBadge}
                         onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, primaryBtnBadge: e.target.value } }))}
                         style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
-                        placeholder="BETA"
+                        placeholder="v2.0"
                       />
                     </div>
                   </div>
@@ -1081,7 +1081,7 @@ export default function AdminPage() {
                   <div style={{ display: 'flex', gap: 10 }}>
                     <input className="input-field" style={{ flex: 1 }} value={postForm.featuredImage} onChange={e=>setPostForm({...postForm, featuredImage: e.target.value})} placeholder="https://… veya dosya seçip yükleyin"/>
                     <label style={{ background: '#2563eb', color: 'white', padding: '10px 16px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap' }} title="Cloudinary'ye görsel yükle">
-                      ☁️ Yükle
+                      <Upload size={16} /> Yükle
                       <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;

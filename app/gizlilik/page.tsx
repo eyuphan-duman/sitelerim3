@@ -92,9 +92,9 @@ Bu haklarınızı kullanmak için **pskfurkan.manav@gmail.com** adresine yazıl�
       title: '10. İletişim ve Başvuru',
       content: `Gizlilik politikamızla ilgili soru, şikayet veya talepleriniz için:
 
-📧 pskfurkan.manav@gmail.com
-📞 +90 507 875 15 03
-📍 Polatlı/Ankara & Çankaya/Ankara
+E-posta: pskfurkan.manav@gmail.com
+Telefon: +90 507 875 15 03
+Adres: Polatlı/Ankara & Çankaya/Ankara
 
 Başvurularınız en geç 30 gün içinde yanıtlanacaktır.`
     },

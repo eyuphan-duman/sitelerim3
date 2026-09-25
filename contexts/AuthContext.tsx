@@ -5,12 +5,21 @@ import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEma
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 
+export interface PsychologistData {
+  isPsychologist?: boolean;
+  role?: string;
+  title?: string;
+  university?: string;
+  diplomaUrl?: string;
+  fullName?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   userProfile?: any;
   signIn: (usernameOrEmail: string, password: string) => Promise<void>;
-  signUp: (username: string, email: string, password: string) => Promise<void>;
+  signUp: (username: string, email: string, password: string, psychologistData?: PsychologistData) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
@@ -51,18 +60,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const createUserDocument = async (u: User, customUsername?: string) => {
+  const createUserDocument = async (u: User, customUsername?: string, psychData?: PsychologistData) => {
     const ref = doc(db, 'users', u.uid);
     const snap = await getDoc(ref);
     if (!snap.exists()) {
       await setDoc(ref, {
         uid: u.uid,
         username: customUsername || u.displayName || u.email?.split('@')[0],
-        displayName: customUsername || u.displayName || '',
+        displayName: psychData?.fullName || customUsername || u.displayName || '',
         email: u.email,
         photoURL: u.photoURL || '',
         createdAt: serverTimestamp(),
-        role: 'member',
+        role: psychData?.isPsychologist ? 'psychologist' : 'member',
+        isPsychologist: Boolean(psychData?.isPsychologist),
+        title: psychData?.title || (psychData?.isPsychologist ? 'Psikolog' : ''),
+        university: psychData?.university || '',
+        diplomaUrl: psychData?.diplomaUrl || '',
       });
     }
   };
@@ -79,14 +92,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(auth, authEmail, password);
   };
 
-  const signUp = async (username: string, email: string, password: string) => {
-    const q = query(collection(db, 'users'), where('username', '==', username));
+  const signUp = async (username: string, email: string, password: string, psychologistData?: PsychologistData) => {
+    const cleanUsername = username.toLowerCase().replace(/\s+/g, '');
+    const q = query(collection(db, 'users'), where('username', '==', cleanUsername));
     const snap = await getDocs(q);
     if (!snap.empty) throw new Error('Bu kullanıcı adı zaten alınmış!');
 
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: username });
-    await createUserDocument(cred.user, username);
+    const displayName = psychologistData?.fullName || username;
+    await updateProfile(cred.user, { displayName });
+    await createUserDocument(cred.user, cleanUsername, psychologistData);
+
+    // Update state immediately
+    const userDocRef = doc(db, 'users', cred.user.uid);
+    const userSnap = await getDoc(userDocRef);
+    if (userSnap.exists()) {
+      setUserProfile(userSnap.data());
+    }
   };
 
   const signInWithGoogle = async () => {

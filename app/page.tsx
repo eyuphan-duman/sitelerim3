@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen, ShieldCheck, Users, CheckCircle2, Sparkles } from 'lucide-react';
+import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen, ShieldCheck, Users, CheckCircle2, Sparkles, Mail } from 'lucide-react';
 import { collection, query, orderBy, limit, getDocs, deleteDoc, doc, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
@@ -636,8 +636,9 @@ export default function HomePage() {
                       transition: 'all 0.25s',
                     }}
                   >
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--gold-light)' }}>
-                      💬 Aklındaki soruyu şimdi sor & katıl
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--gold-light)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <MessageCircle size={15} color="var(--gold)" />
+                      Aklındaki soruyu şimdi sor & katıl
                     </span>
                     <ArrowRight size={16} color="var(--gold)" />
                   </Link>
@@ -647,7 +648,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ────── NAVIGATION PILL BAR (BOTTOM CENTER) ────── */}
+        {/* ────── NAVIGATION CONTROLS (BOTTOM CENTER: ARROWS ONLY) ────── */}
         <div
           style={{
             position: 'absolute',
@@ -657,129 +658,109 @@ export default function HomePage() {
             zIndex: 30,
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
-            background: 'rgba(7, 14, 27, 0.82)',
+            gap: 10,
+            background: 'rgba(7, 14, 27, 0.85)',
             backdropFilter: 'blur(16px)',
-            padding: '7px 16px',
+            padding: '8px 14px',
             borderRadius: 999,
             border: '1px solid rgba(201, 169, 110, 0.35)',
             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
           }}
         >
-          {/* Prev Slide button */}
+          {/* Prev Slide Arrow */}
           <button
             type="button"
             onClick={() => goToSlide(currentSlide === 0 ? 1 : 0)}
             aria-label="Önceki Slayt"
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'rgba(255,255,255,0.7)',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '50%',
+              width: 36,
+              height: 36,
+              color: 'rgba(255,255,255,0.85)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              padding: 4,
-              transition: 'color 0.2s',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
             }}
-            onMouseOver={e => e.currentTarget.style.color = 'var(--gold)'}
-            onMouseOut={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+            onMouseOver={e => {
+              e.currentTarget.style.color = 'var(--gold)';
+              e.currentTarget.style.borderColor = 'var(--gold)';
+              e.currentTarget.style.background = 'rgba(201, 169, 110, 0.15)';
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+            }}
           >
             <ChevronLeft size={18} />
           </button>
 
-          {/* Slide 1 Pill with 20s progress bar */}
-          <button
-            type="button"
-            onClick={() => goToSlide(0)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: currentSlide === 0 ? 'rgba(201, 169, 110, 0.22)' : 'transparent',
-              border: currentSlide === 0 ? '1px solid var(--gold)' : '1px solid transparent',
-              borderRadius: 999,
-              padding: '6px 14px',
-              color: currentSlide === 0 ? 'var(--gold-light)' : 'rgba(255,255,255,0.65)',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {currentSlide === 0 && heroSettings.autoSlide && (
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  height: '2.5px',
-                  background: 'var(--gold)',
-                  width: `${slideProgress}%`,
-                  transition: 'width 0.1s linear',
-                }}
-              />
-            )}
-            <span style={{ fontSize: '0.7rem', opacity: 0.75 }}>01</span>
-            <span>Kapak</span>
-          </button>
+          {/* Minimal Slide Indicator Dots */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px' }}>
+            <button
+              type="button"
+              onClick={() => goToSlide(0)}
+              aria-label="1. Slayt"
+              style={{
+                width: currentSlide === 0 ? 20 : 8,
+                height: 8,
+                borderRadius: 999,
+                background: currentSlide === 0 ? 'var(--gold)' : 'rgba(255,255,255,0.25)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                padding: 0,
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => goToSlide(1)}
+              aria-label="2. Slayt"
+              style={{
+                width: currentSlide === 1 ? 20 : 8,
+                height: 8,
+                borderRadius: 999,
+                background: currentSlide === 1 ? 'var(--gold)' : 'rgba(255,255,255,0.25)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                padding: 0,
+              }}
+            />
+          </div>
 
-          {/* Slide 2 Pill with 20s progress bar */}
-          <button
-            type="button"
-            onClick={() => goToSlide(1)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: currentSlide === 1 ? 'rgba(201, 169, 110, 0.22)' : 'transparent',
-              border: currentSlide === 1 ? '1px solid var(--gold)' : '1px solid transparent',
-              borderRadius: 999,
-              padding: '6px 14px',
-              color: currentSlide === 1 ? 'var(--gold-light)' : 'rgba(255,255,255,0.65)',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {currentSlide === 1 && heroSettings.autoSlide && (
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  height: '2.5px',
-                  background: 'var(--gold)',
-                  width: `${slideProgress}%`,
-                  transition: 'width 0.1s linear',
-                }}
-              />
-            )}
-            <span style={{ fontSize: '0.7rem', opacity: 0.75 }}>02</span>
-            <span>Forum Tanıtımı</span>
-          </button>
-
-          {/* Next Slide button */}
+          {/* Next Slide Arrow */}
           <button
             type="button"
             onClick={() => goToSlide(currentSlide === 0 ? 1 : 0)}
             aria-label="Sonraki Slayt"
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'rgba(255,255,255,0.7)',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '50%',
+              width: 36,
+              height: 36,
+              color: 'rgba(255,255,255,0.85)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              padding: 4,
-              transition: 'color 0.2s',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
             }}
-            onMouseOver={e => e.currentTarget.style.color = 'var(--gold)'}
-            onMouseOut={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+            onMouseOver={e => {
+              e.currentTarget.style.color = 'var(--gold)';
+              e.currentTarget.style.borderColor = 'var(--gold)';
+              e.currentTarget.style.background = 'rgba(201, 169, 110, 0.15)';
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+            }}
           >
             <ChevronRight size={18} />
           </button>
@@ -1088,7 +1069,7 @@ export default function HomePage() {
           </p>
           <Link href="/forum" className="btn-gold" style={{ position: 'relative' }}>
             Foruma Git
-            <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: '#fff', color: 'var(--navy)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>BETA</span>
+            <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: '#fff', color: 'var(--navy)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>v2.0</span>
           </Link>
         </div>
       </section>
@@ -1137,7 +1118,7 @@ export default function HomePage() {
 
             {searchQ && !searching && searchResults.length === 0 && (
               <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
-                <div style={{ fontSize: '2rem', marginBottom: 12 }}>🔍</div>
+                <Search size={36} style={{ margin: '0 auto 12px', opacity: 0.35 }} />
                 <p style={{ fontWeight: 700 }}>"<em>{searchQ}</em>" için sonuç bulunamadı</p>
               </div>
             )}
@@ -1146,11 +1127,20 @@ export default function HomePage() {
               <div style={{ padding: '24px 20px' }}>
                 <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {[{ label: 'Videolarım', href: '/videolarim', icon: '🎬' }, { label: 'Forum', href: '/forum', icon: '💬' }, { label: 'Hakkımda', href: '/ben-kimim', icon: '🧠' }, { label: 'İletişim', href: '/iletisim', icon: '📬' }].map(l => (
-                    <Link key={l.href} href={l.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, textDecoration: 'none', color: '#334155', fontSize: '0.92rem', fontWeight: 500, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                      <span style={{ fontSize: '1.1rem' }}>{l.icon}</span> {l.label}
-                    </Link>
-                  ))}
+                  {[
+                    { label: 'Videolarım', href: '/videolarim', icon: Film },
+                    { label: 'Forum', href: '/forum', icon: MessageCircle },
+                    { label: 'Hakkımda', href: '/ben-kimim', icon: User },
+                    { label: 'İletişim', href: '/iletisim', icon: Mail }
+                  ].map(l => {
+                    const IconComp = l.icon;
+                    return (
+                      <Link key={l.href} href={l.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, textDecoration: 'none', color: '#334155', fontSize: '0.92rem', fontWeight: 500, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                        <IconComp size={16} color="var(--gold)" />
+                        <span>{l.label}</span>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
