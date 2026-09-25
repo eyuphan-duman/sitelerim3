@@ -846,7 +846,8 @@ body {
 /* ─── MOBILE BOTTOM NAVIGATION BAR ─── */
 @media (max-width: 1024px) {
   .forum-mobile-bottom-nav {
-    display: flex !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
   }
 
   .forum-grid-3col main {

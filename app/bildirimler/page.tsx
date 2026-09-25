@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, where, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, MessageCircle, Heart, ArrowLeft, Home, Search } from 'lucide-react';
+import { Bell, MessageCircle, Heart, ArrowLeft, Home, Search, User } from 'lucide-react';
 import Link from 'next/link';
 
 interface Notification {
@@ -19,7 +19,7 @@ interface Notification {
 }
 
 export default function BildirimlerPage() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -129,55 +129,122 @@ export default function BildirimlerPage() {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation Bar (Symmetric 4-Item Grid) */}
       <nav className="forum-mobile-bottom-nav" style={{
         display: 'none',
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
-        height: 64,
-        background: 'rgba(255,255,255,0.97)',
+        height: 60,
+        background: 'rgba(255,255,255,0.98)',
         backdropFilter: 'blur(20px)',
         borderTop: '1px solid #e2e8f0',
         zIndex: 2100,
+        gridTemplateColumns: 'repeat(4, 1fr)',
         alignItems: 'center',
-        justifyContent: 'space-around',
         paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: '0 -4px 20px rgba(15,23,42,0.06)',
+        boxShadow: '0 -2px 16px rgba(15,23,42,0.06)',
       }}>
-        {/* Search */}
+        {/* 1. Home */}
         <Link
           href="/forum"
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '8px 20px', borderRadius: 12, transition: 'all 0.15s', textDecoration: 'none' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: '#64748b',
+            transition: 'color 0.15s ease',
+            padding: 0,
+            textDecoration: 'none'
+          }}
         >
-          <Search size={24} />
-          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Ara</span>
+          <Home size={22} strokeWidth={1.9} />
+          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Anasayfa</span>
         </Link>
 
-        {/* Home - center, prominent */}
+        {/* 2. Search */}
         <Link
           href="/forum"
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#475569', padding: '10px 24px', borderRadius: 16, transition: 'all 0.2s', textDecoration: 'none' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: '#64748b',
+            transition: 'color 0.15s ease',
+            padding: 0,
+            textDecoration: 'none'
+          }}
         >
-          <Home size={24} />
-          <span style={{ fontSize: '0.65rem', fontWeight: 700 }}>Anasayfa</span>
+          <Search size={22} strokeWidth={1.9} />
+          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Ara</span>
         </Link>
 
-        {/* Notifications (Active) */}
+        {/* 3. Notifications (Active) */}
         <div
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, color: 'white', background: '#0f172a', padding: '8px 20px', borderRadius: 12, position: 'relative', boxShadow: '0 4px 12px rgba(15,23,42,0.25)', transform: 'scale(1.05)' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            color: '#0f172a',
+            padding: 0,
+            position: 'relative'
+          }}
         >
-          <div style={{ position: 'relative' }}>
-            <Bell size={24} />
+          <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: '#0f172a', borderRadius: '0 0 4px 4px' }} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Bell size={22} strokeWidth={2.4} />
             {notifications.filter(n => !n.read).length > 0 && (
-              <div style={{ position: 'absolute', top: -5, right: -5, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ position: 'absolute', top: -4, right: -6, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, minWidth: 16, height: 16, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
                 {notifications.filter(n => !n.read).length > 9 ? '9+' : notifications.filter(n => !n.read).length}
-              </div>
+              </span>
             )}
           </div>
-          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Bildirim</span>
+          <span style={{ fontSize: '0.68rem', fontWeight: 700 }}>Bildirim</span>
         </div>
+
+        {/* 4. Profile */}
+        <Link
+          href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(userProfile?.username || user?.displayName?.replace(/\s+/g, '').toLowerCase() || user?.uid || '')}` : '/forum'}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            color: '#64748b',
+            textDecoration: 'none',
+            padding: 0,
+            transition: 'color 0.15s ease'
+          }}
+        >
+          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
+            {userProfile?.photoURL ? (
+              <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : user && !user.isAnonymous ? (
+              (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()
+            ) : (
+              <User size={13} color="white" />
+            )}
+          </div>
+          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Profilim</span>
+        </Link>
       </nav>
     </div>
   );

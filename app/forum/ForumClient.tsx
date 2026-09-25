@@ -497,65 +497,125 @@ export default function ForumClient() {
         </div>
       )}
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation Bar (Symmetric 4-Item Grid) */}
       <nav className="forum-mobile-bottom-nav" style={{
         display: 'none',
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
-        height: 64,
-        background: 'rgba(255,255,255,0.97)',
+        height: 60,
+        background: 'rgba(255,255,255,0.98)',
         backdropFilter: 'blur(20px)',
         borderTop: '1px solid #e2e8f0',
         zIndex: 2100,
+        gridTemplateColumns: 'repeat(4, 1fr)',
         alignItems: 'center',
-        justifyContent: 'space-around',
         paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: '0 -4px 20px rgba(15,23,42,0.06)',
+        boxShadow: '0 -2px 16px rgba(15,23,42,0.06)',
       }}>
-        {/* Search */}
+        {/* 1. Home */}
         <button
-          onClick={() => setMobileSearchOpen(true)}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '8px 20px', borderRadius: 12, transition: 'all 0.15s' }}
-        >
-          <Search size={24} />
-          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Ara</span>
-        </button>
-
-        {/* Home - center, prominent */}
-        <button
+          type="button"
           onClick={() => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); }}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: feedTab === 'all' && filter === 'Tümü' ? '#0f172a' : '#f1f5f9', border: 'none', cursor: 'pointer', color: feedTab === 'all' && filter === 'Tümü' ? 'white' : '#475569', padding: '10px 24px', borderRadius: 16, transition: 'all 0.2s', transform: feedTab === 'all' && filter === 'Tümü' ? 'scale(1.05)' : 'scale(1)', boxShadow: feedTab === 'all' && filter === 'Tümü' ? '0 4px 12px rgba(15,23,42,0.25)' : 'none' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: feedTab === 'all' && filter === 'Tümü' && !searchQuery ? '#0f172a' : '#64748b',
+            transition: 'color 0.15s ease',
+            padding: 0,
+            position: 'relative'
+          }}
         >
-          <Home size={24} />
-          <span style={{ fontSize: '0.65rem', fontWeight: 700 }}>Anasayfa</span>
+          {feedTab === 'all' && filter === 'Tümü' && !searchQuery && (
+            <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: '#0f172a', borderRadius: '0 0 4px 4px' }} />
+          )}
+          <Home size={22} strokeWidth={feedTab === 'all' && filter === 'Tümü' && !searchQuery ? 2.4 : 1.9} />
+          <span style={{ fontSize: '0.68rem', fontWeight: feedTab === 'all' && filter === 'Tümü' && !searchQuery ? 700 : 500 }}>Anasayfa</span>
         </button>
 
-        {/* Notifications */}
+        {/* 2. Search */}
+        <button
+          type="button"
+          onClick={() => setMobileSearchOpen(true)}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: mobileSearchOpen || searchQuery ? '#0f172a' : '#64748b',
+            transition: 'color 0.15s ease',
+            padding: 0,
+            position: 'relative'
+          }}
+        >
+          {(mobileSearchOpen || searchQuery) && (
+            <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: '#0f172a', borderRadius: '0 0 4px 4px' }} />
+          )}
+          <Search size={22} strokeWidth={mobileSearchOpen || searchQuery ? 2.4 : 1.9} />
+          <span style={{ fontSize: '0.68rem', fontWeight: mobileSearchOpen || searchQuery ? 700 : 500 }}>Ara</span>
+        </button>
+
+        {/* 3. Notifications */}
         <Link
           href={user && !user.isAnonymous ? '/bildirimler' : '#'}
           onClick={!user || user.isAnonymous ? (e) => { e.preventDefault(); setAuthOpen(true); } : undefined}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, color: '#64748b', textDecoration: 'none', padding: '8px 16px', borderRadius: 12, position: 'relative' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            color: '#64748b',
+            textDecoration: 'none',
+            padding: 0,
+            position: 'relative',
+            transition: 'color 0.15s ease'
+          }}
         >
-          <div style={{ position: 'relative' }}>
-            <Bell size={22} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Bell size={22} strokeWidth={1.9} />
             {unreadCount > 0 && (
-              <div style={{ position: 'absolute', top: -5, right: -5, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ position: 'absolute', top: -4, right: -6, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, minWidth: 16, height: 16, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
                 {unreadCount > 9 ? '9+' : unreadCount}
-              </div>
+              </span>
             )}
           </div>
-          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Bildirim</span>
+          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Bildirim</span>
         </Link>
 
-        {/* Profile */}
+        {/* 4. Profile */}
         <Link
           href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername)}` : '#'}
           onClick={!user || user.isAnonymous ? (e) => { e.preventDefault(); setAuthOpen(true); } : undefined}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, color: '#64748b', textDecoration: 'none', padding: '8px 16px', borderRadius: 12 }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            color: '#64748b',
+            textDecoration: 'none',
+            padding: 0,
+            position: 'relative',
+            transition: 'color 0.15s ease'
+          }}
         >
-          <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
+          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : user && !user.isAnonymous ? (
@@ -564,7 +624,7 @@ export default function ForumClient() {
               <User size={13} color="white" />
             )}
           </div>
-          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Profilim</span>
+          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Profilim</span>
         </Link>
       </nav>
     </div>
