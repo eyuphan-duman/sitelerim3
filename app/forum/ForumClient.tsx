@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ForumModal from '@/components/forum/ForumModal';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -113,7 +113,10 @@ export default function ForumClient() {
     if (!user || (!form.body.trim() && !form.imageUrl)) return toast.error('Yazı veya görsel eklemelisiniz.');
     if (user.isAnonymous) return setAuthOpen(true);
     setPosting(true);
-    const isPsychologist = Boolean(userProfile?.isPsychologist || userProfile?.role === 'psychologist');
+    const isPsychologist = Boolean(
+      (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+      (userProfile?.isPsychologist && !userProfile?.psychologistStatus)
+    );
     try {
       await addDoc(collection(db, 'forum'), {
         body: form.body,
@@ -172,7 +175,10 @@ export default function ForumClient() {
   const submitComment = async (text: string, imageUrl?: string) => {
     if (!user || (!text.trim() && !imageUrl) || !activeThread) return;
     if (user.isAnonymous) return setAuthOpen(true);
-    const isPsychologist = Boolean(userProfile?.isPsychologist || userProfile?.role === 'psychologist');
+    const isPsychologist = Boolean(
+      (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+      (userProfile?.isPsychologist && !userProfile?.psychologistStatus)
+    );
     await addDoc(collection(db, 'forum', activeThread.id, 'comments'), {
       authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
       authorUsername: userProfile?.username || '',
@@ -346,22 +352,29 @@ export default function ForumClient() {
               </h3>
             </div>
           ) : (
-            filtered.map(t => (
-              <ForumPost
-                key={t.id}
-                post={{
-                  ...t,
-                  authorPhotoURL: usersMap[t.uid]?.photoURL,
-                  authorIsPsychologist: Boolean(t.authorIsPsychologist || usersMap[t.uid]?.isPsychologist || usersMap[t.uid]?.role === 'psychologist')
-                }}
-                currentUserUid={user?.uid}
-                currentUserEmail={user?.email || ''}
-                adminEmails={ADMIN_EMAILS}
-                onOpen={openThread}
-                onReact={handleReact}
-                onDelete={deletePost}
-              />
-            ))
+            filtered.map(t => {
+              const isAuthorPsych = Boolean(
+                t.authorIsPsychologist ||
+                (usersMap[t.uid]?.isPsychologist && usersMap[t.uid]?.psychologistStatus === 'approved') ||
+                (usersMap[t.uid]?.isPsychologist && !usersMap[t.uid]?.psychologistStatus)
+              );
+              return (
+                <ForumPost
+                  key={t.id}
+                  post={{
+                    ...t,
+                    authorPhotoURL: usersMap[t.uid]?.photoURL,
+                    authorIsPsychologist: isAuthorPsych
+                  }}
+                  currentUserUid={user?.uid}
+                  currentUserEmail={user?.email || ''}
+                  adminEmails={ADMIN_EMAILS}
+                  onOpen={openThread}
+                  onReact={handleReact}
+                  onDelete={deletePost}
+                />
+              );
+            })
           )}
         </main>
 
@@ -523,10 +536,10 @@ export default function ForumClient() {
         <Link
           href={user && !user.isAnonymous ? '/bildirimler' : '#'}
           onClick={!user || user.isAnonymous ? (e) => { e.preventDefault(); setAuthOpen(true); } : undefined}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, color: '#64748b', textDecoration: 'none', padding: '8px 20px', borderRadius: 12, position: 'relative' }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, color: '#64748b', textDecoration: 'none', padding: '8px 16px', borderRadius: 12, position: 'relative' }}
         >
           <div style={{ position: 'relative' }}>
-            <Bell size={24} />
+            <Bell size={22} />
             {unreadCount > 0 && (
               <div style={{ position: 'absolute', top: -5, right: -5, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -534,6 +547,24 @@ export default function ForumClient() {
             )}
           </div>
           <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Bildirim</span>
+        </Link>
+
+        {/* Profile */}
+        <Link
+          href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername)}` : '#'}
+          onClick={!user || user.isAnonymous ? (e) => { e.preventDefault(); setAuthOpen(true); } : undefined}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, color: '#64748b', textDecoration: 'none', padding: '8px 16px', borderRadius: 12 }}
+        >
+          <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
+            {userProfile?.photoURL ? (
+              <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : user && !user.isAnonymous ? (
+              (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()
+            ) : (
+              <User size={13} color="white" />
+            )}
+          </div>
+          <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Profilim</span>
         </Link>
       </nav>
     </div>

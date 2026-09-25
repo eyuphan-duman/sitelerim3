@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check, Award, ExternalLink, GraduationCap } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -27,7 +26,9 @@ export default function AdminPage() {
   const [articles, setArticles] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'hero' | 'appointments' | 'posts' | 'videos' | 'messages'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'psychologists' | 'appointments' | 'posts' | 'videos' | 'messages'>('hero');
+  const [psychApplications, setPsychApplications] = useState<any[]>([]);
+  const [psychFilter, setPsychFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [subTab, setSubTab] = useState<'pending' | 'approved'>('pending');
   const [messages, setMessages] = useState<any[]>([]);
   const [editingMsg, setEditingMsg] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export default function AdminPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam === 'hero' || tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
+      if (tabParam === 'hero' || tabParam === 'psychologists' || tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
         setActiveTab(tabParam as any);
       }
     }
@@ -79,9 +80,74 @@ export default function AdminPage() {
         }));
       }
     });
+    const u6 = onSnapshot(collection(db, 'users'), snap => {
+      const psychs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter((u: any) => u.psychologistStatus || u.diplomaUrl || u.role === 'psychologist' || u.role === 'psychologist_pending');
+      setPsychApplications(psychs);
+    });
 
-    return () => { u1(); u2(); u3(); u4(); u5(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); };
   }, [user]);
+
+  const handleApprovePsychologist = async (applicant: any) => {
+    try {
+      await updateDoc(doc(db, 'users', applicant.id), {
+        isPsychologist: true,
+        psychologistStatus: 'approved',
+        role: 'psychologist',
+        reviewedAt: serverTimestamp()
+      });
+      try {
+        await updateDoc(doc(db, 'psychologist_applications', applicant.id), {
+          status: 'approved',
+          reviewedAt: serverTimestamp()
+        });
+      } catch {}
+      toast.success(`${applicant.displayName || applicant.fullName || 'Kullanıcı'} başarıyla onaylandı. Psikolog rozeti aktif edildi!`);
+    } catch (err: any) {
+      toast.error('Onaylanırken hata oluştu: ' + (err.message || ''));
+    }
+  };
+
+  const handleRejectPsychologist = async (applicant: any) => {
+    if (!confirm(`${applicant.displayName || applicant.fullName || 'Bu aday'}'ın psikolog başvurusunu reddetmek istediğinize emin misiniz?`)) return;
+    try {
+      await updateDoc(doc(db, 'users', applicant.id), {
+        isPsychologist: false,
+        psychologistStatus: 'rejected',
+        role: 'member',
+        reviewedAt: serverTimestamp()
+      });
+      try {
+        await updateDoc(doc(db, 'psychologist_applications', applicant.id), {
+          status: 'rejected',
+          reviewedAt: serverTimestamp()
+        });
+      } catch {}
+      toast.success('Başvuru reddedildi.');
+    } catch (err: any) {
+      toast.error('İşlem başarısız: ' + (err.message || ''));
+    }
+  };
+
+  const handlePendingPsychologist = async (applicant: any) => {
+    try {
+      await updateDoc(doc(db, 'users', applicant.id), {
+        isPsychologist: false,
+        psychologistStatus: 'pending',
+        role: 'psychologist_pending',
+      });
+      try {
+        await updateDoc(doc(db, 'psychologist_applications', applicant.id), {
+          status: 'pending',
+        });
+      } catch {}
+      toast.success('Başvuru tekrar inceleme durumuna alındı.');
+    } catch (err: any) {
+      toast.error('İşlem başarısız: ' + (err.message || ''));
+    }
+  };
 
   const updateAppointment = async (id: string, newStatus: string) => {
     try { await updateDoc(doc(db, 'appointments', id), { status: newStatus }); toast.success('Randevu ' + newStatus); }
@@ -256,6 +322,7 @@ export default function AdminPage() {
 
   const MENUS = [
     { id: 'hero', label: 'Ana Sayfa Kapağı', icon: <Sliders size={18}/> },
+    { id: 'psychologists', label: 'Psikolog Başvuruları', icon: <Award size={18}/> },
     { id: 'appointments', label: 'Randevular', icon: <Calendar size={18}/> },
     { id: 'posts', label: 'Yazılarım', icon: <FileText size={18}/> },
     { id: 'videos', label: 'Videolarım', icon: <Video size={18}/> },
@@ -366,6 +433,11 @@ export default function AdminPage() {
             }}>
               {m.icon}
               <span style={{ fontSize: '0.95rem' }}>{m.label}</span>
+              {m.id === 'psychologists' && psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length > 0 && (
+                <span style={{ marginLeft: 'auto', background: '#f59e0b', color: 'white', fontSize: '0.65rem', fontWeight: 800, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length}
+                </span>
+              )}
               {m.id === 'messages' && messages.filter(msg => msg.status === 'unread').length > 0 && (
                 <span style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', fontSize: '0.65rem', fontWeight: 800, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {messages.filter(msg => msg.status === 'unread').length}
@@ -1004,6 +1076,287 @@ export default function AdminPage() {
                     </p>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PSYCHOLOGISTS APPLICATIONS TAB */}
+        {activeTab === 'psychologists' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setPsychFilter('pending')}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    border: psychFilter === 'pending' ? '1px solid var(--navy)' : '1px solid transparent',
+                    background: psychFilter === 'pending' ? 'var(--navy)' : '#e2e8f0',
+                    color: psychFilter === 'pending' ? 'white' : '#475569',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <span>Onay Bekleyenler</span>
+                  <span style={{ background: '#f59e0b', color: 'white', fontSize: '0.68rem', fontWeight: 800, padding: '1px 6px', borderRadius: 999 }}>
+                    {psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setPsychFilter('approved')}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    border: psychFilter === 'approved' ? '1px solid var(--navy)' : '1px solid transparent',
+                    background: psychFilter === 'approved' ? 'var(--navy)' : '#e2e8f0',
+                    color: psychFilter === 'approved' ? 'white' : '#475569',
+                  }}
+                >
+                  Onaylananlar ({psychApplications.filter(a => (a.isPsychologist && a.psychologistStatus === 'approved') || (a.isPsychologist && !a.psychologistStatus)).length})
+                </button>
+
+                <button
+                  onClick={() => setPsychFilter('rejected')}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    border: psychFilter === 'rejected' ? '1px solid var(--navy)' : '1px solid transparent',
+                    background: psychFilter === 'rejected' ? 'var(--navy)' : '#e2e8f0',
+                    color: psychFilter === 'rejected' ? 'white' : '#475569',
+                  }}
+                >
+                  Reddedilenler ({psychApplications.filter(a => a.psychologistStatus === 'rejected').length})
+                </button>
+
+                <button
+                  onClick={() => setPsychFilter('all')}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    border: psychFilter === 'all' ? '1px solid var(--navy)' : '1px solid transparent',
+                    background: psychFilter === 'all' ? 'var(--navy)' : '#e2e8f0',
+                    color: psychFilter === 'all' ? 'white' : '#475569',
+                  }}
+                >
+                  Tümü ({psychApplications.length})
+                </button>
+              </div>
+            </div>
+
+            {psychApplications
+              .filter(app => {
+                const isApproved = (app.isPsychologist && app.psychologistStatus === 'approved') || (app.isPsychologist && !app.psychologistStatus);
+                const isRejected = app.psychologistStatus === 'rejected';
+                const isPending = !isApproved && !isRejected;
+
+                if (psychFilter === 'pending') return isPending;
+                if (psychFilter === 'approved') return isApproved;
+                if (psychFilter === 'rejected') return isRejected;
+                return true;
+              }).length === 0 ? (
+              <div style={{ background: 'white', borderRadius: 10, border: '1px solid #e2e8f0', padding: '60px 24px', textAlign: 'center', color: '#94a3b8' }}>
+                <Award size={40} style={{ margin: '0 auto 14px', opacity: 0.4 }} />
+                <p style={{ fontWeight: 700, fontSize: '1rem', color: '#64748b' }}>Bu filtrede başvuru bulunmamaktadır.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+                {psychApplications
+                  .filter(app => {
+                    const isApproved = (app.isPsychologist && app.psychologistStatus === 'approved') || (app.isPsychologist && !app.psychologistStatus);
+                    const isRejected = app.psychologistStatus === 'rejected';
+                    const isPending = !isApproved && !isRejected;
+
+                    if (psychFilter === 'pending') return isPending;
+                    if (psychFilter === 'approved') return isApproved;
+                    if (psychFilter === 'rejected') return isRejected;
+                    return true;
+                  })
+                  .map(app => {
+                    const isApproved = (app.isPsychologist && app.psychologistStatus === 'approved') || (app.isPsychologist && !app.psychologistStatus);
+                    const isRejected = app.psychologistStatus === 'rejected';
+                    const isPending = !isApproved && !isRejected;
+
+                    return (
+                      <div
+                        key={app.id}
+                        style={{
+                          background: 'white',
+                          borderRadius: 12,
+                          border: '1px solid #e2e8f0',
+                          padding: '20px 24px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 16,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #0f172a, #1e293b)', color: '#facc15', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem', flexShrink: 0 }}>
+                              {app.photoURL ? <img src={app.photoURL} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : (app.displayName || app.fullName || 'P')[0]?.toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--navy)', margin: 0 }}>
+                                  {app.displayName || app.fullName || 'İsimsiz Psikolog'}
+                                </h4>
+                                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>@{app.username || 'kullanici'}</span>
+                                <span style={{ background: '#f1f5f9', color: '#0369a1', fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999 }}>
+                                  {app.title || 'Psikolog'}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Mail size={14} />
+                                <span>{app.email}</span>
+                                {app.university && (
+                                  <>
+                                    <span>·</span>
+                                    <GraduationCap size={14} />
+                                    <span>{app.university}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Status Badge */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {isPending && (
+                              <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.75rem', fontWeight: 700, padding: '4px 12px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <Clock size={13} /> İnceleme Bekliyor
+                              </span>
+                            )}
+                            {isApproved && (
+                              <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', fontSize: '0.75rem', fontWeight: 700, padding: '4px 12px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <CheckCircle size={13} /> Onaylandı (Rozetli)
+                              </span>
+                            )}
+                            {isRejected && (
+                              <span style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', fontSize: '0.75rem', fontWeight: 700, padding: '4px 12px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <XCircle size={13} /> Reddedildi
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Diploma Belgesi Preview & Link */}
+                        <div style={{ background: '#f8fafc', borderRadius: 8, padding: '14px 18px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <Award size={18} color="#b45309" />
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1e293b' }}>Yüklenen Diploma / Mezuniyet Belgesi</div>
+                              <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                                {app.diplomaUrl ? 'Aday tarafından onay için yüklenen resmi belge' : 'Belge henüz yüklenmedi'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {app.diplomaUrl ? (
+                            <a
+                              href={app.diplomaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                background: '#0f172a',
+                                color: 'white',
+                                padding: '8px 16px',
+                                borderRadius: 6,
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+                                textDecoration: 'none',
+                                transition: 'background 0.15s'
+                              }}
+                            >
+                              <ExternalLink size={14} /> Diplomayı Görüntüle
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Belge yok</span>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
+                          {!isApproved && (
+                            <button
+                              onClick={() => handleApprovePsychologist(app)}
+                              style={{
+                                background: '#16a34a',
+                                color: 'white',
+                                border: 'none',
+                                padding: '9px 20px',
+                                borderRadius: 6,
+                                fontSize: '0.85rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
+                              <CheckCircle size={15} /> Başvuruyu Onayla (Rozet Ver)
+                            </button>
+                          )}
+
+                          {!isRejected && (
+                            <button
+                              onClick={() => handleRejectPsychologist(app)}
+                              style={{
+                                background: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                padding: '9px 18px',
+                                borderRadius: 6,
+                                fontSize: '0.85rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
+                              <XCircle size={15} /> Reddet
+                            </button>
+                          )}
+
+                          {(isApproved || isRejected) && (
+                            <button
+                              onClick={() => handlePendingPsychologist(app)}
+                              style={{
+                                background: 'transparent',
+                                color: '#64748b',
+                                border: '1px solid #cbd5e1',
+                                padding: '8px 16px',
+                                borderRadius: 6,
+                                fontSize: '0.82rem',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Beklemeye Al
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   ArrowLeft, Camera, MapPin, Link as LinkIcon, Calendar, 
   MessageCircle, Heart, Trash2, Home, Users, Film, FileText, 
-  Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX 
+  Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock 
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -44,7 +44,7 @@ function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isO
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.96rem' }}>{pd.displayName || pd.username}</span>
-            {(pd.isPsychologist || pd.role === 'psychologist') && (
+            {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && (
               <span
                 style={{
                   display: 'inline-flex',
@@ -539,7 +539,7 @@ export default function ProfilClient({ username }: { username: string }) {
           <div style={{ padding: '0 24px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{pd.displayName || pd.username}</h1>
-              {(pd.isPsychologist || pd.role === 'psychologist') && (
+              {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && (
                 <span
                   style={{
                     display: 'inline-flex',
@@ -561,6 +561,13 @@ export default function ProfilClient({ username }: { username: string }) {
                 </span>
               )}
             </div>
+
+            {pd.psychologistStatus === 'pending' && isOwn && (
+              <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 10, background: '#fefce8', border: '1px solid #fef08a', color: '#854d0e', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock size={16} color="#ca8a04" style={{ flexShrink: 0 }} />
+                <span>Psikolog diploma belgeniz inceleniyor. Yönetici onayının ardından onaylı uzman rozetiniz aktifleşecektir.</span>
+              </div>
+            )}
             <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 14px', fontWeight: 500 }}>@{((pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, ''))}</p>
             {pd.bio && <p style={{ fontSize: '1rem', color: '#334155', lineHeight: 1.6, marginBottom: 14 }}>{pd.bio}</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, color: '#64748b', fontSize: '0.88rem', marginBottom: 16 }}>

@@ -38,14 +38,14 @@ export default function AuthModal({ isOpen, onClose }: Props) {
         await signIn(identifier, form.password);
         toast.success('Giriş başarılı, hoş geldin!');
       } else {
-        await signUp(form.username.toLowerCase().replace(/\s+/g,''), form.email, form.password);
+        await signUp(form.username.toLowerCase().replace(/\s+/g,''), form.email.trim(), form.password);
         toast.success('Hesabın başarıyla oluşturuldu!');
       }
       onClose();
     } catch (err: any) {
       console.error("Firebase Auth Error:", err);
       const msg = err.message || 'Bir hata oluştu.';
-      toast.error(`Hata: ${msg}`);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

@@ -79,7 +79,7 @@ export default function PsychologistRegisterPage() {
         }
       );
 
-      toast.success('Psikolog kaydınız oluşturuldu! Uzman rozetiniz aktif edildi.');
+      toast.success('Psikolog başvurunuz başarıyla alındı! Belgeleriniz incelenip yönetici tarafından onaylandıktan sonra uzman rozetiniz aktifleşecektir.', { duration: 6000 });
       router.push('/forum');
     } catch (err: any) {
       toast.error('Kayıt oluşturulamadı: ' + (err.message || ''));

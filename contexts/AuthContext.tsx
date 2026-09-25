@@ -8,6 +8,7 @@ import { auth, db, googleProvider } from '@/lib/firebase';
 export interface PsychologistData {
   isPsychologist?: boolean;
   role?: string;
+  psychologistStatus?: 'pending' | 'approved' | 'rejected' | 'none';
   title?: string;
   university?: string;
   diplomaUrl?: string;
@@ -64,27 +65,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const ref = doc(db, 'users', u.uid);
     const snap = await getDoc(ref);
     if (!snap.exists()) {
-      await setDoc(ref, {
+      const isPsychSignup = Boolean(psychData?.isPsychologist);
+      const docData = {
         uid: u.uid,
         username: customUsername || u.displayName || u.email?.split('@')[0],
         displayName: psychData?.fullName || customUsername || u.displayName || '',
-        email: u.email,
+        email: u.email?.toLowerCase().trim() || '',
         photoURL: u.photoURL || '',
         createdAt: serverTimestamp(),
-        role: psychData?.isPsychologist ? 'psychologist' : 'member',
-        isPsychologist: Boolean(psychData?.isPsychologist),
-        title: psychData?.title || (psychData?.isPsychologist ? 'Psikolog' : ''),
+        role: isPsychSignup ? 'psychologist_pending' : 'member',
+        isPsychologist: false, // inactive until approved by admin
+        psychologistStatus: isPsychSignup ? 'pending' : 'none',
+        title: psychData?.title || (isPsychSignup ? 'Psikolog' : ''),
         university: psychData?.university || '',
         diplomaUrl: psychData?.diplomaUrl || '',
-      });
+        applicationDate: isPsychSignup ? serverTimestamp() : null,
+      };
+
+      await setDoc(ref, docData);
+
+      if (isPsychSignup) {
+        await setDoc(doc(db, 'psychologist_applications', u.uid), {
+          uid: u.uid,
+          fullName: psychData?.fullName || customUsername || u.displayName || '',
+          username: customUsername || '',
+          email: u.email?.toLowerCase().trim() || '',
+          title: psychData?.title || 'Psikolog',
+          university: psychData?.university || '',
+          diplomaUrl: psychData?.diplomaUrl || '',
+          status: 'pending',
+          createdAt: serverTimestamp(),
+        }, { merge: true });
+      }
     }
   };
 
   const signIn = async (usernameOrEmail: string, password: string) => {
-    let authEmail = usernameOrEmail;
+    let authEmail = usernameOrEmail.trim();
     // Check if it's not an email, assume it's a username
-    if (!usernameOrEmail.includes('@')) {
-      const q = query(collection(db, 'users'), where('username', '==', usernameOrEmail));
+    if (!authEmail.includes('@')) {
+      const q = query(collection(db, 'users'), where('username', '==', authEmail.toLowerCase()));
       const snap = await getDocs(q);
       if (snap.empty) throw new Error('Kullanıcı bulunamadı.');
       authEmail = snap.docs[0].data().email;
@@ -94,20 +114,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (username: string, email: string, password: string, psychologistData?: PsychologistData) => {
     const cleanUsername = username.toLowerCase().replace(/\s+/g, '');
-    const q = query(collection(db, 'users'), where('username', '==', cleanUsername));
-    const snap = await getDocs(q);
-    if (!snap.empty) throw new Error('Bu kullanıcı adı zaten alınmış!');
+    const cleanEmail = email.toLowerCase().trim();
 
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const displayName = psychologistData?.fullName || username;
-    await updateProfile(cred.user, { displayName });
-    await createUserDocument(cred.user, cleanUsername, psychologistData);
+    // 1. Kullanıcı adı kontrolü
+    const userQ = query(collection(db, 'users'), where('username', '==', cleanUsername));
+    const userSnap = await getDocs(userQ);
+    if (!userSnap.empty) throw new Error('Bu kullanıcı adı zaten alınmış!');
 
-    // Update state immediately
-    const userDocRef = doc(db, 'users', cred.user.uid);
-    const userSnap = await getDoc(userDocRef);
-    if (userSnap.exists()) {
-      setUserProfile(userSnap.data());
+    // 2. E-posta adresi kontrolü (Aynı maille 2. bir kayıt kesinlikle engellenir)
+    const emailQ = query(collection(db, 'users'), where('email', '==', cleanEmail));
+    const emailSnap = await getDocs(emailQ);
+    if (!emailSnap.empty) throw new Error('Bu e-posta adresi ile zaten kayıtlı bir hesap bulunmaktadır!');
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+      const displayName = psychologistData?.fullName || username;
+      await updateProfile(cred.user, { displayName });
+      await createUserDocument(cred.user, cleanUsername, psychologistData);
+
+      // Update state immediately
+      const userDocRef = doc(db, 'users', cred.user.uid);
+      const userSnap2 = await getDoc(userDocRef);
+      if (userSnap2.exists()) {
+        setUserProfile(userSnap2.data());
+      }
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        throw new Error('Bu e-posta adresi ile zaten kayıtlı bir hesap bulunmaktadır!');
+      }
+      throw err;
     }
   };
 
