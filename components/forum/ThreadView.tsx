@@ -186,6 +186,23 @@ export default function ThreadView({
       await updateDoc(postRef, { [`reactionsData.${currentUser.uid}`]: deleteField() });
     } else {
       await updateDoc(postRef, { [`reactionsData.${currentUser.uid}`]: 'like' });
+      if (p.uid && p.uid !== currentUser.uid) {
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            toUid: p.uid,
+            fromUid: currentUser.uid,
+            fromUser: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
+            fromUsername: userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+            fromPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
+            type: 'reaction',
+            message: 'gönderini beğendi.',
+            postId: p.originalPostId || p.id,
+            postTitle: p.body?.slice(0, 50) || '',
+            read: false,
+            createdAt: serverTimestamp()
+          });
+        } catch {}
+      }
     }
   };
 
@@ -258,6 +275,25 @@ export default function ThreadView({
       });
 
       await updateDoc(postRef, { [`repostsData.${currentUser.uid}`]: repostDoc.id });
+
+      if (p.uid && p.uid !== currentUser.uid) {
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            toUid: p.uid,
+            fromUid: currentUser.uid,
+            fromUser: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
+            fromUsername: userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+            fromPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
+            type: 'repost',
+            message: 'gönderini yeniden paylaştı.',
+            postId: targetPostId,
+            postTitle: p.body?.slice(0, 50) || '',
+            read: false,
+            createdAt: serverTimestamp()
+          });
+        } catch {}
+      }
+
       toast.success('Yeniden paylaşıldı');
     }
   };
@@ -360,6 +396,24 @@ export default function ThreadView({
       await updateDoc(doc(db, 'forum', p.id), {
         commentCount: increment(1)
       });
+
+      if (p.uid && p.uid !== currentUser.uid) {
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            toUid: p.uid,
+            fromUid: currentUser.uid,
+            fromUser: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
+            fromUsername: userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+            fromPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
+            type: 'comment',
+            message: 'gönderine yanıt verdi.',
+            postId: p.originalPostId || p.id,
+            postTitle: replyText.trim().slice(0, 50),
+            read: false,
+            createdAt: serverTimestamp()
+          });
+        } catch {}
+      }
 
       setReplyText('');
       setReplyImageUrl('');

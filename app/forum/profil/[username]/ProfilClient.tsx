@@ -561,10 +561,10 @@ export default function ProfilClient({ username }: { username: string }) {
             { label: 'Ana Akış', href: '/forum', active: false, icon: <Home size={20} /> },
             { label: 'Takip Ettiklerim', href: '/forum?feed=following', active: false, icon: <Users size={20} /> },
             { label: 'Yer İşaretleri', href: `/forum/profil/${myUsername || username}?tab=bookmarks`, active: tab === 'bookmarks', icon: <Bookmark size={20} /> },
-            { label: 'Videolarım', href: '/videolarim', active: false, icon: <Film size={20} /> },
-            { label: 'Yazılarım', href: '/yazilarim', active: false, icon: <FileText size={20} /> },
+            { label: 'Arama', href: '/forum?search=open', active: false, icon: <Search size={20} /> },
+            { label: 'Beğenilenler', href: `/forum/profil/${myUsername || username}?tab=likes`, active: tab === 'likes', icon: <Heart size={20} /> },
             { label: 'Bildirimler', href: '/bildirimler', active: false, icon: <Bell size={20} />, badge: unreadCount },
-            { label: 'Profilim', href: `/forum/profil/${myUsername || username}`, active: isOwn && tab !== 'bookmarks', icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> },
+            { label: 'Profilim', href: `/forum/profil/${myUsername || username}`, active: isOwn && tab !== 'bookmarks' && tab !== 'likes', icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: isOwn && tab !== 'bookmarks' && tab !== 'likes' ? '#334155' : '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> },
           ].map(item => (
             <Link key={item.label} href={item.href} style={{ textDecoration: 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? '#0f172a' : 'transparent', color: item.active ? 'white' : '#475569', fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', cursor: 'pointer' }}>

@@ -1,12 +1,12 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ThreadView from '@/components/forum/ThreadView';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -49,9 +49,10 @@ export default function ForumClient() {
   const { user, userProfile } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [threads, setThreads] = useState<Post[]>([]);
   const [filter, setFilter] = useState('Tümü');
-  const [feedTab, setFeedTab] = useState<'all' | 'following'>('all');
+  const [feedTab, setFeedTab] = useState<'all' | 'following' | 'bookmarks' | 'likes'>('all');
   const [followingUids, setFollowingUids] = useState<string[]>([]);
   const [form, setForm] = useState({ body: '', cat: 'Psikanaliz', imageUrl: '' });
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -73,15 +74,21 @@ export default function ForumClient() {
   useEffect(() => {
     const qParam = searchParams.get('search') || searchParams.get('q');
     if (qParam !== null && qParam !== undefined) {
-      setSearchQuery(qParam);
+      if (qParam === 'open' || qParam === '1') {
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 200);
+      } else {
+        setSearchQuery(qParam);
+      }
     }
     const catParam = searchParams.get('cat');
     if (catParam) {
       setFilter(catParam);
     }
     const feedParam = searchParams.get('feed');
-    if (feedParam === 'following') {
-      setFeedTab('following');
+    if (feedParam === 'following' || feedParam === 'bookmarks' || feedParam === 'likes') {
+      setFeedTab(feedParam as any);
     }
   }, [searchParams]);
 
@@ -89,6 +96,8 @@ export default function ForumClient() {
     let list = threads.filter(t => !t.isRepost);
     if (filter !== 'Tümü') list = list.filter(t => t.category === filter);
     if (feedTab === 'following') list = list.filter(t => followingUids.includes(t.uid));
+    if (feedTab === 'bookmarks') list = list.filter(t => Boolean(t.bookmarksData?.[user?.uid || '']));
+    if (feedTab === 'likes') list = list.filter(t => t.reactionsData?.[user?.uid || ''] === 'like' || t.reactionsData?.[user?.uid || ''] === 'heart');
     if (searchQuery.trim()) { 
       const q = searchQuery.toLowerCase(); 
       list = list.filter(t => 
@@ -169,6 +178,23 @@ export default function ForumClient() {
       await updateDoc(postRef, { [`reactionsData.${user.uid}`]: deleteField() });
     } else {
       await updateDoc(postRef, { [`reactionsData.${user.uid}`]: 'like' });
+      if (thread.uid && thread.uid !== user.uid) {
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            toUid: thread.uid,
+            fromUid: user.uid,
+            fromUser: userProfile?.displayName || user.displayName || 'Kullanıcı',
+            fromUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+            fromPhotoURL: userProfile?.photoURL || user.photoURL || '',
+            type: 'reaction',
+            message: 'gönderini beğendi.',
+            postId: thread.originalPostId || thread.id,
+            postTitle: thread.body?.slice(0, 50) || '',
+            read: false,
+            createdAt: serverTimestamp()
+          });
+        } catch {}
+      }
     }
   };
 
@@ -243,6 +269,25 @@ export default function ForumClient() {
       });
 
       await updateDoc(postRef, { [`repostsData.${user.uid}`]: repostDoc.id });
+
+      if (thread.uid && thread.uid !== user.uid) {
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            toUid: thread.uid,
+            fromUid: user.uid,
+            fromUser: userProfile?.displayName || user.displayName || 'Kullanıcı',
+            fromUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+            fromPhotoURL: userProfile?.photoURL || user.photoURL || '',
+            type: 'repost',
+            message: 'gönderini yeniden paylaştı.',
+            postId: targetPostId,
+            postTitle: thread.body?.slice(0, 50) || '',
+            read: false,
+            createdAt: serverTimestamp()
+          });
+        } catch {}
+      }
+
       toast.success('Yeniden paylaşıldı');
     }
   };
@@ -334,6 +379,25 @@ export default function ForumClient() {
       uid: user.uid
     });
     await updateDoc(doc(db, 'forum', activeThread.id), { commentCount: increment(1) });
+
+    if (activeThread.uid && activeThread.uid !== user.uid) {
+      try {
+        await addDoc(collection(db, 'notifications'), {
+          toUid: activeThread.uid,
+          fromUid: user.uid,
+          fromUser: userProfile?.displayName || user.displayName || 'Kullanıcı',
+          fromUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+          fromPhotoURL: userProfile?.photoURL || user.photoURL || '',
+          type: 'comment',
+          message: 'gönderine yanıt verdi.',
+          postId: activeThread.id,
+          postTitle: text.slice(0, 50),
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      } catch {}
+    }
+
     toast.success('Yorum eklendi.');
   };
 
@@ -365,13 +429,39 @@ export default function ForumClient() {
             </h1>
             <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 4 }}>Psikoloji forumu</p>
           </div>
-          {[{ label: 'Ana Akış', action: () => { setFeedTab('all'); setFilter('Tümü'); }, active: feedTab === 'all', icon: <Home size={20} /> },
-            { label: 'Takip Ettiklerim', action: () => !user?.uid ? setAuthOpen(true) : setFeedTab('following'), active: feedTab === 'following', icon: <Users size={20} /> },
+          {[
+            { label: 'Ana Akış', action: () => { setFeedTab('all'); setFilter('Tümü'); closeThread(); }, active: feedTab === 'all' && !activeThread, icon: <Home size={20} /> },
+            { label: 'Takip Ettiklerim', action: () => !user?.uid ? setAuthOpen(true) : setFeedTab('following'), active: feedTab === 'following' && !activeThread, icon: <Users size={20} /> },
             { label: 'Yer İşaretleri', action: () => !user?.uid ? setAuthOpen(true) : router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?tab=bookmarks` : '/forum'), active: false, icon: <Bookmark size={20} /> },
-            { label: 'Videolarım', action: () => router.push('/videolarim'), active: false, icon: <Film size={20} /> },
+            { 
+              label: 'Arama', 
+              action: () => {
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  setMobileSearchOpen(true);
+                } else {
+                  searchInputRef.current?.focus();
+                  searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, 
+              active: false, 
+              icon: <Search size={20} /> 
+            },
+            { label: 'Beğenilenler', action: () => !user?.uid ? setAuthOpen(true) : router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?tab=likes` : '/forum'), active: false, icon: <Heart size={20} /> },
+            { label: 'Bildirimler', action: () => !user?.uid ? setAuthOpen(true) : router.push('/bildirimler'), active: false, icon: <Bell size={20} />, badge: unreadCount },
+            { 
+              label: 'Profilim', 
+              action: () => !user?.uid ? setAuthOpen(true) : router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum'), 
+              active: false, 
+              icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> 
+            },
           ].map(item => (
-            <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', background: item.active ? '#0f172a' : 'transparent', color: item.active ? 'white' : '#475569', fontWeight: 600, fontSize: '0.95rem', transition: 'all 0.2s' }}>
-              {item.icon} {item.label}
+            <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', background: item.active ? '#0f172a' : 'transparent', color: item.active ? 'white' : '#475569', fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                {item.icon} <span>{item.label}</span>
+              </div>
+              {item.badge && item.badge > 0 ? (
+                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.68rem', fontWeight: 800, padding: '2px 7px', borderRadius: 999 }}>{item.badge}</span>
+              ) : null}
             </button>
           ))}
           <div style={{ margin: '16px 0 8px', padding: '0 8px', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Kategoriler</div>
@@ -556,6 +646,7 @@ export default function ForumClient() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f1f5f9', borderRadius: 12, padding: '12px 16px', border: '1px solid #e2e8f0' }}>
             <Search size={17} color="#94a3b8" />
             <input 
+              ref={searchInputRef}
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
               placeholder="Forumda ara..." 
