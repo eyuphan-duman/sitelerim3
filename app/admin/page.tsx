@@ -2,15 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -26,18 +27,25 @@ export default function AdminPage() {
   const [articles, setArticles] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'appointments' | 'posts' | 'videos' | 'messages'>('appointments');
+  const [activeTab, setActiveTab] = useState<'hero' | 'appointments' | 'posts' | 'videos' | 'messages'>('hero');
   const [subTab, setSubTab] = useState<'pending' | 'approved'>('pending');
   const [messages, setMessages] = useState<any[]>([]);
   const [editingMsg, setEditingMsg] = useState<string | null>(null);
   const [editMsgText, setEditMsgText] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Hero Slider Settings State
+  const [heroSettings, setHeroSettings] = useState<HeroSettings>(DEFAULT_HERO_SETTINGS);
+  const [heroSubTab, setHeroSubTab] = useState<'slide1' | 'slide2' | 'timing'>('slide1');
+  const [savingHero, setSavingHero] = useState(false);
+  const [uploadingSlide1Img, setUploadingSlide1Img] = useState(false);
+  const [uploadingSlide2Img, setUploadingSlide2Img] = useState(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
+      if (tabParam === 'hero' || tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
         setActiveTab(tabParam as any);
       }
     }
@@ -60,13 +68,76 @@ export default function AdminPage() {
     const u2 = onSnapshot(query(collection(db, 'articles'), orderBy('createdAt', 'desc')), snap => setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const u3 = onSnapshot(query(collection(db, 'reels'), orderBy('createdAt', 'desc')), snap => setVideos(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const u4 = onSnapshot(query(collection(db, 'messages'), orderBy('createdAt', 'desc')), snap => setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const u5 = onSnapshot(doc(db, 'settings', 'hero'), snap => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setHeroSettings(prev => ({
+          ...prev,
+          ...data,
+          slide1: { ...prev.slide1, ...(data.slide1 || {}) },
+          slide2: { ...prev.slide2, ...(data.slide2 || {}) },
+        }));
+      }
+    });
 
-    return () => { u1(); u2(); u3(); u4(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); };
   }, [user]);
 
   const updateAppointment = async (id: string, newStatus: string) => {
     try { await updateDoc(doc(db, 'appointments', id), { status: newStatus }); toast.success('Randevu ' + newStatus); }
     catch { toast.error('İşlem başarısız.'); }
+  };
+
+  const handleUploadHeroImage = async (file: File, slideKey: 'slide1' | 'slide2') => {
+    try {
+      if (slideKey === 'slide1') setUploadingSlide1Img(true);
+      else setUploadingSlide2Img(true);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'manav-platform/hero');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Görsel yüklenemedi');
+
+      setHeroSettings(prev => ({
+        ...prev,
+        [slideKey]: {
+          ...prev[slideKey],
+          bgImage: data.url
+        }
+      }));
+      toast.success(`${slideKey === 'slide1' ? '1. Slayt' : '2. Slayt'} görseli yüklendi!`);
+    } catch (err: any) {
+      toast.error('Görsel yüklenirken hata: ' + (err.message || ''));
+    } finally {
+      if (slideKey === 'slide1') setUploadingSlide1Img(false);
+      else setUploadingSlide2Img(false);
+    }
+  };
+
+  const handleSaveHeroSettings = async () => {
+    setSavingHero(true);
+    try {
+      await setDoc(doc(db, 'settings', 'hero'), heroSettings, { merge: true });
+      toast.success('Ana sayfa kapak ayarları başarıyla kaydedildi!');
+    } catch (err: any) {
+      toast.error('Kaydedilirken hata oluştu: ' + (err.message || ''));
+    } finally {
+      setSavingHero(false);
+    }
+  };
+
+  const handleResetHeroSettings = () => {
+    if (confirm('Kapak ayarlarını orijinal varsayılan ayarlara döndürmek istediğinize emin misiniz?')) {
+      setHeroSettings(DEFAULT_HERO_SETTINGS);
+      toast('Varsayılan ayarlar yüklendi. Kalıcı olması için "Değişiklikleri Kaydet" butonuna tıklayın.', { icon: 'ℹ️' });
+    }
   };
 
   const handleAddPost = async (e: React.FormEvent) => {
@@ -180,6 +251,7 @@ export default function AdminPage() {
   }
 
   const MENUS = [
+    { id: 'hero', label: 'Ana Sayfa Kapağı', icon: <Sliders size={18}/> },
     { id: 'appointments', label: 'Randevular', icon: <Calendar size={18}/> },
     { id: 'posts', label: 'Yazılarım', icon: <FileText size={18}/> },
     { id: 'videos', label: 'Videolarım', icon: <Video size={18}/> },
@@ -314,6 +386,621 @@ export default function AdminPage() {
         <h1 className="admin-page-title" style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.2rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 40, borderBottom: '2px solid #e2e8f0', paddingBottom: 24 }}>
           {MENUS.find(m => m.id === activeTab)?.label} Yönetimi
         </h1>
+
+        {/* HERO TAB */}
+        {activeTab === 'hero' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            {/* Sub-tab pills & Actions header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, background: 'white', padding: '16px 20px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setHeroSubTab('slide1')}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    border: heroSubTab === 'slide1' ? '1px solid var(--navy)' : '1px solid #cbd5e1',
+                    background: heroSubTab === 'slide1' ? 'var(--navy)' : '#f8fafc',
+                    color: heroSubTab === 'slide1' ? 'white' : '#334155',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <ImageIcon size={16} /> 1. Slayt (Ana Kapak & Psikolog)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHeroSubTab('slide2')}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    border: heroSubTab === 'slide2' ? '1px solid var(--navy)' : '1px solid #cbd5e1',
+                    background: heroSubTab === 'slide2' ? 'var(--navy)' : '#f8fafc',
+                    color: heroSubTab === 'slide2' ? 'white' : '#334155',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <MessageCircle size={16} /> 2. Slayt (Forum Tanıtımı)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHeroSubTab('timing')}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    border: heroSubTab === 'timing' ? '1px solid var(--navy)' : '1px solid #cbd5e1',
+                    background: heroSubTab === 'timing' ? 'var(--navy)' : '#f8fafc',
+                    color: heroSubTab === 'timing' ? 'white' : '#334155',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <Clock size={16} /> Geçiş & Zamanlama ({heroSettings.slideInterval || 20}sn)
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleResetHeroSettings}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: 6,
+                    border: '1px solid #cbd5e1',
+                    background: 'white',
+                    color: '#64748b',
+                    fontSize: '0.84rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <RotateCcw size={14} /> Varsayılana Sıfırla
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveHeroSettings}
+                  disabled={savingHero}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: 'var(--gold)',
+                    color: 'var(--navy)',
+                    fontSize: '0.88rem',
+                    fontWeight: 700,
+                    cursor: savingHero ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    boxShadow: '0 4px 14px rgba(212, 175, 55, 0.3)',
+                  }}
+                >
+                  <Save size={16} /> {savingHero ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+                </button>
+              </div>
+            </div>
+
+            {/* TAB: SLIDE 1 */}
+            {heroSubTab === 'slide1' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 28 }} className="admin-posts-grid">
+                {/* Form fields */}
+                <div style={{ background: 'white', padding: 28, borderRadius: 10, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--navy)', borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
+                    1. Slayt Metinleri ve Butonları
+                  </h3>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Üst Başlık (Eyebrow)</label>
+                    <input
+                      type="text"
+                      value={heroSettings.slide1.eyebrow}
+                      onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, eyebrow: e.target.value } }))}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                      placeholder="VAROLUŞÇU · PSİKANALİTİK · PSİKOTERAPİ"
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Ana Başlık (1. Kısım)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide1.titlePart1}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, titlePart1: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="Kendinizi"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--gold-dim)', marginBottom: 6 }}>Vurgulu Kelime (Altın İtalik)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide1.titlePart2}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, titlePart2: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid var(--gold)', fontSize: '0.92rem', outline: 'none', background: '#fffbeb' }}
+                        placeholder="Anlama"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Ana Başlık (3. Kısım)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide1.titlePart3}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, titlePart3: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="Yolculuğu"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Açıklama Metni (Paragraf)</label>
+                    <textarea
+                      rows={4}
+                      value={heroSettings.slide1.description}
+                      onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, description: e.target.value } }))}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none', resize: 'vertical' }}
+                      placeholder="Varoluşçu-psikanalitik yaklaşımla ilgili derinlemesine incelemeler..."
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Metni (Altın Buton)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide1.primaryBtnText}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, primaryBtnText: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="Foruma Katıl"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Linki</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide1.primaryBtnLink}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, primaryBtnLink: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="/forum"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Rozeti (Örn: BETA)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide1.primaryBtnBadge}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, primaryBtnBadge: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="BETA"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>2. Buton Metni (İletişim/Randevu)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide1.secondaryBtnText}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, secondaryBtnText: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="Randevular Hakkında Bilgi Almak İçin İletişime Geçin"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>2. Buton Linki</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide1.secondaryBtnLink}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, secondaryBtnLink: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="/iletisim"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Arama Çubuğu İpucu Metni</label>
+                    <input
+                      type="text"
+                      value={heroSettings.slide1.searchPlaceholder}
+                      onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, searchPlaceholder: e.target.value } }))}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                      placeholder="Site içinde ara — yazılar, forum, içerikler..."
+                    />
+                  </div>
+                </div>
+
+                {/* Image uploader card */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ background: 'white', padding: 24, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 14 }}>
+                      1. Slayt Kapak Fotoğrafı
+                    </h4>
+                    
+                    <div style={{ width: '100%', height: 210, borderRadius: 8, overflow: 'hidden', background: '#0a1628', position: 'relative', border: '2px solid rgba(212, 175, 55, 0.3)', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {heroSettings.slide1.bgImage ? (
+                        <img src={heroSettings.slide1.bgImage} alt="Kapak Önizleme" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Görsel Yok</span>
+                      )}
+                      {uploadingSlide1Img && (
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(10,22,40,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', gap: 8 }}>
+                          <Clock className="animate-spin" size={24} color="var(--gold)" />
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Fotoğraf Yükleniyor...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--navy)', color: 'white', padding: '10px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', marginBottom: 12 }}>
+                      <Upload size={16} /> Fotoğraf Seç ve Yükle
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadHeroImage(file, 'slide1');
+                        }}
+                      />
+                    </label>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Veya Doğrudan Görsel URL'si:</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide1.bgImage}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide1: { ...prev.slide1, bgImage: e.target.value } }))}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
+                        placeholder="/hero-bg.jpg veya https://..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: SLIDE 2 (FORUM PROMO) */}
+            {heroSubTab === 'slide2' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 28 }} className="admin-posts-grid">
+                {/* Form fields */}
+                <div style={{ background: 'white', padding: 28, borderRadius: 10, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--navy)', borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
+                    2. Slayt Metinleri ve Forum Tanıtımı
+                  </h3>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Üst Başlık (Eyebrow)</label>
+                    <input
+                      type="text"
+                      value={heroSettings.slide2.eyebrow}
+                      onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, eyebrow: e.target.value } }))}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                      placeholder="CANLI TOPLULUK & PSİKOLOJİ FORUMU"
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Ana Başlık (1. Kısım)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide2.titlePart1}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, titlePart1: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="Sorularınızı Sorun,"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--gold-dim)', marginBottom: 6 }}>Vurgulu Kelime (Altın İtalik)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide2.titlePart2}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, titlePart2: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid var(--gold)', fontSize: '0.92rem', outline: 'none', background: '#fffbeb' }}
+                        placeholder="Birlikte"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Ana Başlık (3. Kısım)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide2.titlePart3}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, titlePart3: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="Keşfedelim"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Forum Tanıtım Açıklaması</label>
+                    <textarea
+                      rows={4}
+                      value={heroSettings.slide2.description}
+                      onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, description: e.target.value } }))}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none', resize: 'vertical' }}
+                      placeholder="Psikolojiye, ilişkilere ve içsel dünyanıza dair merak ettiğiniz her şeyi foruma taşıyın. İster uzman psikoloğumuz ister deneyimli forum üyeleri yanıtlasın..."
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Metni (Hemen Katıl/Üye Ol)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide2.primaryBtnText}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, primaryBtnText: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="Hemen Üye Ol & Foruma Katıl"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Linki</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide2.primaryBtnLink}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, primaryBtnLink: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="/forum"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Rozeti</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide2.primaryBtnBadge}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, primaryBtnBadge: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="CANLI"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>2. Buton Metni (Konuları Gör)</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide2.secondaryBtnText}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, secondaryBtnText: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="Tartışmaları ve Konuları İncele"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>2. Buton Linki</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide2.secondaryBtnLink}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, secondaryBtnLink: e.target.value } }))}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                        placeholder="/forum"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 16 }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 14 }}>
+                      Forum Tanıtım Kutuları (3 Adet Öne Çıkan Özellik)
+                    </h4>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {/* Highlight 1 */}
+                      <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: 8 }}>1. Özellik Kartı</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 10 }}>
+                          <input
+                            type="text"
+                            value={heroSettings.slide2.highlight1Title}
+                            onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, highlight1Title: e.target.value } }))}
+                            placeholder="Başlık (örn: Uzman & Topluluk Rehberliği)"
+                            style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                          />
+                          <input
+                            type="text"
+                            value={heroSettings.slide2.highlight1Desc}
+                            onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, highlight1Desc: e.target.value } }))}
+                            placeholder="Kısa Açıklama"
+                            style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Highlight 2 */}
+                      <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: 8 }}>2. Özellik Kartı</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 10 }}>
+                          <input
+                            type="text"
+                            value={heroSettings.slide2.highlight2Title}
+                            onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, highlight2Title: e.target.value } }))}
+                            placeholder="Başlık (örn: Gizlilik ve Güvenli Alan)"
+                            style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                          />
+                          <input
+                            type="text"
+                            value={heroSettings.slide2.highlight2Desc}
+                            onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, highlight2Desc: e.target.value } }))}
+                            placeholder="Kısa Açıklama"
+                            style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Highlight 3 */}
+                      <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: 8 }}>3. Özellik Kartı</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 10 }}>
+                          <input
+                            type="text"
+                            value={heroSettings.slide2.highlight3Title}
+                            onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, highlight3Title: e.target.value } }))}
+                            placeholder="Başlık (örn: Aktif Tartışmalar & Paylaşım)"
+                            style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                          />
+                          <input
+                            type="text"
+                            value={heroSettings.slide2.highlight3Desc}
+                            onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, highlight3Desc: e.target.value } }))}
+                            placeholder="Kısa Açıklama"
+                            style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Optional Image for Slide 2 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ background: 'white', padding: 24, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 14 }}>
+                      2. Slayt Arka Plan Görseli
+                    </h4>
+                    
+                    <div style={{ width: '100%', height: 210, borderRadius: 8, overflow: 'hidden', background: '#0a1628', position: 'relative', border: '2px solid rgba(212, 175, 55, 0.3)', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {heroSettings.slide2.bgImage ? (
+                        <img src={heroSettings.slide2.bgImage} alt="Kapak Önizleme" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: 20, color: '#94a3b8' }}>
+                          <Sparkles size={28} color="var(--gold)" style={{ margin: '0 auto 8px' }} />
+                          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'white' }}>Varsayılan Lüks Tema Aktif</div>
+                          <div style={{ fontSize: '0.72rem', marginTop: 4 }}>Görsel yüklenmediğinde şık lacivert ve altın ışıltılı gradient kullanılır.</div>
+                        </div>
+                      )}
+                      {uploadingSlide2Img && (
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(10,22,40,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', gap: 8 }}>
+                          <Clock className="animate-spin" size={24} color="var(--gold)" />
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Fotoğraf Yükleniyor...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--navy)', color: 'white', padding: '10px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', marginBottom: 12 }}>
+                      <Upload size={16} /> Fotoğraf Seç ve Yükle
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadHeroImage(file, 'slide2');
+                        }}
+                      />
+                    </label>
+
+                    {heroSettings.slide2.bgImage && (
+                      <button
+                        type="button"
+                        onClick={() => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, bgImage: '' } }))}
+                        style={{ width: '100%', padding: '8px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}
+                      >
+                        Görseli Kaldır (Varsayılan Temaya Dön)
+                      </button>
+                    )}
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Veya Doğrudan Görsel URL'si:</label>
+                      <input
+                        type="text"
+                        value={heroSettings.slide2.bgImage}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slide2: { ...prev.slide2, bgImage: e.target.value } }))}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: TIMING & GENERAL */}
+            {heroSubTab === 'timing' && (
+              <div style={{ background: 'white', padding: 28, borderRadius: 10, border: '1px solid #e2e8f0', maxWidth: 640 }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--navy)', borderBottom: '1px solid #f1f5f9', paddingBottom: 12, marginBottom: 20 }}>
+                  Otomatik Geçiş ve Zamanlama Ayarları
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '0.95rem' }}>Otomatik Slayt Geçişi</div>
+                      <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 2 }}>Açık olduğunda slaytlar belirlenen süre sonunda otomatik sağa kayar.</div>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: 48, height: 26, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={heroSettings.autoSlide}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, autoSlide: e.target.checked }))}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span style={{
+                        position: 'absolute',
+                        inset: 0,
+                        backgroundColor: heroSettings.autoSlide ? 'var(--gold)' : '#cbd5e1',
+                        borderRadius: 34,
+                        transition: '0.3s'
+                      }}>
+                        <span style={{
+                          position: 'absolute',
+                          content: '""',
+                          height: 20,
+                          width: 20,
+                          left: heroSettings.autoSlide ? 24 : 3,
+                          bottom: 3,
+                          backgroundColor: 'white',
+                          borderRadius: '50%',
+                          transition: '0.3s'
+                        }} />
+                      </span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 8 }}>
+                      Slayt Bekleme Süresi (Saniye)
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <input
+                        type="number"
+                        min="5"
+                        max="120"
+                        value={heroSettings.slideInterval || 20}
+                        onChange={(e) => setHeroSettings(prev => ({ ...prev, slideInterval: Number(e.target.value) || 20 }))}
+                        style={{ width: 140, padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '1rem', fontWeight: 700, outline: 'none' }}
+                      />
+                      <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>saniye (Varsayılan: 20 saniye)</span>
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 8 }}>
+                      Her slayt bu süre boyunca ekranda kalır, dolduğunda yumuşak bir şekilde sonraki slayta geçer.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* APPOINTMENTS TAB */}
         {activeTab === 'appointments' && (

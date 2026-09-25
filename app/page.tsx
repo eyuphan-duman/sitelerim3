@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
-import { collection, query, orderBy, limit, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
+import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen, ShieldCheck, Users, CheckCircle2, Sparkles } from 'lucide-react';
+import { collection, query, orderBy, limit, getDocs, deleteDoc, doc, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
 import { QUOTES } from '@/data/quotes';
+import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
 
 const YOUTUBE_SHORTS = [
   { id: 'ABmIev4nIkg', title: "MİTOMANİ", youtubeId: 'ABmIev4nIkg' },
@@ -68,6 +69,52 @@ export default function HomePage() {
   const articlesCarouselRef = useRef<HTMLDivElement>(null);
   const [dailyQuote, setDailyQuote] = useState(QUOTES[0]);
   const [randomVideos, setRandomVideos] = useState<any[]>([]);
+
+  // Hero Slider states
+  const [heroSettings, setHeroSettings] = useState<HeroSettings>(DEFAULT_HERO_SETTINGS);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [slideProgress, setSlideProgress] = useState(0);
+  const [isHeroHovered, setIsHeroHovered] = useState(false);
+  const heroTouchStartX = useRef(0);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'hero'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setHeroSettings(prev => ({
+          ...prev,
+          ...data,
+          slide1: { ...prev.slide1, ...(data.slide1 || {}) },
+          slide2: { ...prev.slide2, ...(data.slide2 || {}) },
+        }));
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!heroSettings.autoSlide || isHeroHovered) return;
+    const intervalSec = heroSettings.slideInterval || 20;
+    const totalMs = intervalSec * 1000;
+    const stepMs = 100;
+
+    const timer = setInterval(() => {
+      setSlideProgress(prev => {
+        if (prev >= 100) {
+          setCurrentSlide(curr => (curr === 0 ? 1 : 0));
+          return 0;
+        }
+        return prev + (stepMs / totalMs) * 100;
+      });
+    }, stepMs);
+
+    return () => clearInterval(timer);
+  }, [heroSettings.autoSlide, heroSettings.slideInterval, currentSlide, isHeroHovered]);
+
+  const goToSlide = (idx: number) => {
+    setCurrentSlide(idx);
+    setSlideProgress(0);
+  };
 
   const scrollArticles = (direction: 'left' | 'right') => {
     if (articlesCarouselRef.current) {
@@ -187,135 +234,555 @@ export default function HomePage() {
 
   return (
     <>
-      {/* ══════════════════ HERO ══════════════════ */}
-      <section className="hero">
-        {/* Background image */}
-        <Image src="/hero-bg.jpg" alt="Psikolog Furkan Manav" fill priority quality={90} sizes="100vw" className="hero-image" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
-        <div className="hero-overlay" />
-        <div className="hero-grain" />
+      {/* ══════════════════ HERO CAROUSEL ══════════════════ */}
+      <section
+        className="hero-slider-section"
+        onMouseEnter={() => setIsHeroHovered(true)}
+        onMouseLeave={() => setIsHeroHovered(false)}
+        onTouchStart={(e) => { heroTouchStartX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          const diff = heroTouchStartX.current - e.changedTouches[0].clientX;
+          if (diff > 50) goToSlide(1);
+          else if (diff < -50) goToSlide(0);
+        }}
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          width: '100%',
+          minHeight: '100vh',
+          background: '#070e1b',
+        }}
+      >
+        <style>{`
+          @media (max-width: 1024px) {
+            .hero-forum-grid {
+              grid-template-columns: 1fr !important;
+              gap: 32px !important;
+            }
+          }
+        `}</style>
 
-        {/* Hero Float Badges (Desktop Only) */}
-        <div className="absolute top-[10%] right-[6%] hidden xl:flex flex-col gap-2.5 z-10">
-          {/* Badge 1 — Varoluşçu Psikoterapi */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <Image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=200&auto=format&fit=crop" alt="Varoluşçu Psikoterapi" width={200} height={200} className="w-full h-full object-cover" />
+        {/* 2-Slide Track */}
+        <div
+          style={{
+            display: 'flex',
+            width: '200%',
+            transform: `translateX(-${currentSlide * 50}%)`,
+            transition: 'transform 0.85s cubic-bezier(0.22, 1, 0.36, 1)',
+            minHeight: '100vh',
+          }}
+        >
+          {/* ────── SLIDE 1: ANA KAPAK & PSİKOLOG ────── */}
+          <div
+            style={{
+              width: '50%',
+              flex: '0 0 50%',
+              position: 'relative',
+              minHeight: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              paddingTop: 120,
+              paddingBottom: 90,
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Background image */}
+            <Image
+              src={heroSettings.slide1.bgImage || '/hero-bg.jpg'}
+              alt="Psikolog Furkan Manav"
+              fill
+              priority
+              quality={90}
+              sizes="100vw"
+              className="hero-image"
+              style={{ objectFit: 'cover', objectPosition: 'top center' }}
+            />
+            <div className="hero-overlay" />
+            <div className="hero-grain" />
+
+            {/* Hero Float Badges (Desktop Only) */}
+            <div className="absolute top-[10%] right-[6%] hidden xl:flex flex-col gap-2.5 z-10">
+              {/* Badge 1 — Varoluşçu Psikoterapi */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+                  <Image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=200&auto=format&fit=crop" alt="Varoluşçu Psikoterapi" width={200} height={200} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Anlam Arayışı</div>
+                  <div className="font-serif text-base font-bold leading-tight">Varoluşçu<br/>Psikoterapi</div>
+                </div>
+              </div>
+
+              {/* Badge 2 — Psikanalitik */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-10 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+                  <Image src="https://images.unsplash.com/photo-1580130601254-05fa235abeab?q=80&w=200&auto=format&fit=crop" alt="Psikanalitik" width={200} height={200} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bilinçdışı</div>
+                  <div className="font-serif text-base font-bold leading-tight">Psikanalitik<br/>Çalışmalar</div>
+                </div>
+              </div>
+
+              {/* Badge 3 — Rüya Analizi */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+                  <Image src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=200&auto=format&fit=crop" alt="Rüya Analizi" width={200} height={200} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Rüya Analizi</div>
+                  <div className="font-serif text-base font-bold leading-tight">Bilinçdışı<br/>Semboller</div>
+                </div>
+              </div>
+
+              {/* Badge 4 — Bağlanma */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-6 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+                  <Image src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=200&auto=format&fit=crop" alt="Bağlanma Kuramı" width={200} height={200} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bağlanma Kuramı</div>
+                  <div className="font-serif text-base font-bold leading-tight">İlişki<br/>Dinamikleri</div>
+                </div>
+              </div>
+
+              {/* Badge 5 — Travma */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+                  <Image src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=200&auto=format&fit=crop" alt="Travma" width={200} height={200} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Travma Psikolojisi</div>
+                  <div className="font-serif text-base font-bold leading-tight">İyileşme<br/>Süreci</div>
+                </div>
+              </div>
+
+              {/* Badge 6 — Kendilik */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-8 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
+                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
+                  <Image src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=200&auto=format&fit=crop" alt="Kendilik" width={200} height={200} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Kendilik Psikolojisi</div>
+                  <div className="font-serif text-base font-bold leading-tight">Narsisizm<br/>Araştırmaları</div>
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Anlam Arayışı</div>
-              <div className="font-serif text-base font-bold leading-tight">Varoluşçu<br/>Psikoterapi</div>
+
+            <div className="container-main" style={{ position: 'relative', zIndex: 2, width: '100%' }}>
+              <div style={{ maxWidth: 680 }}>
+                {/* Eyebrow (Desktop) */}
+                <div className="eyebrow fade-up fade-up-1 hidden md:block" style={{ marginBottom: 28 }}>
+                  {heroSettings.slide1.eyebrow}
+                </div>
+
+                {/* Main title */}
+                <h1 className="display-title fade-up fade-up-2" style={{ fontSize: 'clamp(2.8rem,6.5vw,5.5rem)', marginBottom: 28 }}>
+                  {heroSettings.slide1.titlePart1}
+                  <br />
+                  <em style={{ color: 'var(--gold)', fontStyle: 'italic' }}>{heroSettings.slide1.titlePart2}</em> {heroSettings.slide1.titlePart3}
+                </h1>
+
+                {/* Sub */}
+                <p className="crimson fade-up fade-up-3" style={{ color: 'rgba(255,255,255,0.76)', fontSize: 'clamp(1rem, 4vw, 1.22rem)', maxWidth: 540, marginBottom: 44, lineHeight: 1.7, overflowWrap: 'break-word', wordBreak: 'normal', hyphens: 'auto', WebkitHyphens: 'auto' }}>
+                  {heroSettings.slide1.description}
+                </p>
+
+                {/* CTA */}
+                <div className="fade-up fade-up-4" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
+                  <Link href={heroSettings.slide1.primaryBtnLink || '/forum'} className="btn-gold" style={{ position: 'relative' }}>
+                    {heroSettings.slide1.primaryBtnText}
+                    {heroSettings.slide1.primaryBtnBadge && (
+                      <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: 'var(--navy)', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+                        {heroSettings.slide1.primaryBtnBadge}
+                      </span>
+                    )}
+                  </Link>
+                  <Link href={heroSettings.slide1.secondaryBtnLink || '/iletisim'} className="btn-ghost">
+                    {heroSettings.slide1.secondaryBtnText} <ArrowRight size={14}/>
+                  </Link>
+                </div>
+
+                {/* Eyebrow (Mobile) */}
+                <div className="eyebrow fade-up fade-up-1 block md:hidden" style={{ marginBottom: 40, textAlign: 'center', opacity: 0.8 }}>
+                  {heroSettings.slide1.eyebrow}
+                </div>
+
+                {/* Search bar */}
+                <div className="fade-up fade-up-4" style={{ marginBottom: 40 }}>
+                  <button
+                    onClick={() => setSearchOpen(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: '14px 24px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', width: '100%', maxWidth: 420, transition: 'all 0.2s' }}
+                    onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = 'white'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+                  >
+                    <Search size={16} />
+                    <span>{heroSettings.slide1.searchPlaceholder}</span>
+                    <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', borderRadius: 6, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em' }}>⌘K</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-          {/* Badge 2 — Psikanalitik */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-10 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <Image src="https://images.unsplash.com/photo-1580130601254-05fa235abeab?q=80&w=200&auto=format&fit=crop" alt="Psikanalitik" width={200} height={200} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bilinçdışı</div>
-              <div className="font-serif text-base font-bold leading-tight">Psikanalitik<br/>Çalışmalar</div>
-            </div>
-          </div>
-          {/* Badge 3 — Rüya Analizi */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <Image src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=200&auto=format&fit=crop" alt="Rüya Analizi" width={200} height={200} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Rüya Analizi</div>
-              <div className="font-serif text-base font-bold leading-tight">Bilinçdışı<br/>Semboller</div>
-            </div>
-          </div>
-          {/* Badge 4 — Bağlanma */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-6 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <Image src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=200&auto=format&fit=crop" alt="Bağlanma Kuramı" width={200} height={200} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bağlanma Kuramı</div>
-              <div className="font-serif text-base font-bold leading-tight">İlişki<br/>Dinamikleri</div>
-            </div>
-          </div>
-          {/* Badge 5 — Travma */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <Image src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=200&auto=format&fit=crop" alt="Travma" width={200} height={200} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Travma Psikolojisi</div>
-              <div className="font-serif text-base font-bold leading-tight">İyileşme<br/>Süreci</div>
-            </div>
-          </div>
-          {/* Badge 6 — Kendilik */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-8 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-              <Image src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=200&auto=format&fit=crop" alt="Kendilik" width={200} height={200} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Kendilik Psikolojisi</div>
-              <div className="font-serif text-base font-bold leading-tight">Narsisizm<br/>Araştırmaları</div>
+
+          {/* ────── SLIDE 2: FORUM TANITIMI (CANLI TOPLULUK) ────── */}
+          <div
+            style={{
+              width: '50%',
+              flex: '0 0 50%',
+              position: 'relative',
+              minHeight: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              paddingTop: 120,
+              paddingBottom: 90,
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Background */}
+            {heroSettings.slide2.bgImage ? (
+              <>
+                <Image
+                  src={heroSettings.slide2.bgImage}
+                  alt="Psikoloji Forumu"
+                  fill
+                  priority
+                  quality={90}
+                  sizes="100vw"
+                  className="hero-image"
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
+                />
+                <div className="hero-overlay" style={{ background: 'linear-gradient(105deg, rgba(7,14,27,0.96) 0%, rgba(7,14,27,0.85) 50%, rgba(7,14,27,0.6) 100%)' }} />
+              </>
+            ) : (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'radial-gradient(circle at 80% 25%, rgba(201, 169, 110, 0.22) 0%, transparent 55%), radial-gradient(circle at 20% 75%, rgba(30, 58, 138, 0.45) 0%, transparent 60%), #070e1b',
+                }}
+              />
+            )}
+            <div className="hero-grain" />
+
+            <div className="container-main" style={{ position: 'relative', zIndex: 2, width: '100%' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 420px', gap: 48, alignItems: 'center' }} className="hero-forum-grid">
+                {/* Left Side: Content */}
+                <div>
+                  {/* Eyebrow with animated live badge */}
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      marginBottom: 24,
+                      background: 'rgba(201, 169, 110, 0.14)',
+                      border: '1px solid rgba(201, 169, 110, 0.35)',
+                      padding: '6px 16px',
+                      borderRadius: 999,
+                      color: 'var(--gold-light)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 10px #22c55e', display: 'inline-block' }} />
+                    <span>{heroSettings.slide2.eyebrow}</span>
+                  </div>
+
+                  {/* Main title */}
+                  <h1 className="display-title" style={{ fontSize: 'clamp(2.8rem,6.5vw,5.5rem)', marginBottom: 26, lineHeight: 1.08 }}>
+                    {heroSettings.slide2.titlePart1}
+                    <br />
+                    <em style={{ color: 'var(--gold)', fontStyle: 'italic' }}>{heroSettings.slide2.titlePart2}</em> {heroSettings.slide2.titlePart3}
+                  </h1>
+
+                  {/* Description */}
+                  <p className="crimson" style={{ color: 'rgba(255,255,255,0.85)', fontSize: 'clamp(1rem, 3.8vw, 1.22rem)', maxWidth: 580, marginBottom: 38, lineHeight: 1.75 }}>
+                    {heroSettings.slide2.description}
+                  </p>
+
+                  {/* CTAs */}
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
+                    <Link
+                      href={heroSettings.slide2.primaryBtnLink || '/forum'}
+                      className="btn-gold"
+                      style={{
+                        position: 'relative',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        boxShadow: '0 8px 30px rgba(201, 169, 110, 0.4)',
+                        padding: '16px 36px',
+                      }}
+                    >
+                      <MessageCircle size={18} />
+                      <span>{heroSettings.slide2.primaryBtnText || 'Hemen Üye Ol & Foruma Katıl'}</span>
+                      {heroSettings.slide2.primaryBtnBadge && (
+                        <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: '#16a34a', color: 'white', padding: '2px 7px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+                          {heroSettings.slide2.primaryBtnBadge}
+                        </span>
+                      )}
+                    </Link>
+
+                    <Link href={heroSettings.slide2.secondaryBtnLink || '/forum'} className="btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <span>{heroSettings.slide2.secondaryBtnText || 'Tartışmaları İncele'}</span> <ArrowRight size={14}/>
+                    </Link>
+                  </div>
+
+                  {/* Trust badges */}
+                  <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', color: 'rgba(255,255,255,0.75)', fontSize: '0.82rem', fontWeight: 500 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <CheckCircle2 size={16} color="var(--gold)" />
+                      <span>Ücretsiz Kayıt & Katılım</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <CheckCircle2 size={16} color="var(--gold)" />
+                      <span>Psikolog & Üye Yanıtları</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <CheckCircle2 size={16} color="var(--gold)" />
+                      <span>Saygılı & Güvenli Paylaşım</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side: Showcase Cards (Desktop/Tablet) */}
+                <div className="hero-forum-cards hidden lg:flex" style={{ flexDirection: 'column', gap: 16 }}>
+                  {/* Highlight Card 1 */}
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.07)',
+                      backdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderLeft: '4px solid var(--gold)',
+                      borderRadius: 14,
+                      padding: '18px 22px',
+                      color: 'white',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.3)',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <Sparkles size={18} color="var(--gold)" />
+                      <div style={{ fontWeight: 700, fontSize: '0.98rem' }}>{heroSettings.slide2.highlight1Title}</div>
+                    </div>
+                    <div style={{ fontSize: '0.86rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.55 }}>
+                      {heroSettings.slide2.highlight1Desc}
+                    </div>
+                  </div>
+
+                  {/* Highlight Card 2 */}
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.07)',
+                      backdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderLeft: '4px solid var(--gold)',
+                      borderRadius: 14,
+                      padding: '18px 22px',
+                      color: 'white',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.3)',
+                      transition: 'all 0.3s ease',
+                      transform: 'translateX(12px)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <ShieldCheck size={18} color="var(--gold)" />
+                      <div style={{ fontWeight: 700, fontSize: '0.98rem' }}>{heroSettings.slide2.highlight2Title}</div>
+                    </div>
+                    <div style={{ fontSize: '0.86rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.55 }}>
+                      {heroSettings.slide2.highlight2Desc}
+                    </div>
+                  </div>
+
+                  {/* Highlight Card 3 */}
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.07)',
+                      backdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderLeft: '4px solid var(--gold)',
+                      borderRadius: 14,
+                      padding: '18px 22px',
+                      color: 'white',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.3)',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <Users size={18} color="var(--gold)" />
+                      <div style={{ fontWeight: 700, fontSize: '0.98rem' }}>{heroSettings.slide2.highlight3Title}</div>
+                    </div>
+                    <div style={{ fontSize: '0.86rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.55 }}>
+                      {heroSettings.slide2.highlight3Desc}
+                    </div>
+                  </div>
+
+                  {/* Interactive Forum Link pill */}
+                  <Link
+                    href="/forum"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: 'rgba(201, 169, 110, 0.16)',
+                      border: '1px solid rgba(201, 169, 110, 0.4)',
+                      borderRadius: 12,
+                      padding: '14px 20px',
+                      color: 'white',
+                      textDecoration: 'none',
+                      transition: 'all 0.25s',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--gold-light)' }}>
+                      💬 Aklındaki soruyu şimdi sor & katıl
+                    </span>
+                    <ArrowRight size={16} color="var(--gold)" />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
+        {/* ────── NAVIGATION PILL BAR (BOTTOM CENTER) ────── */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 30,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 30,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            background: 'rgba(7, 14, 27, 0.82)',
+            backdropFilter: 'blur(16px)',
+            padding: '7px 16px',
+            borderRadius: 999,
+            border: '1px solid rgba(201, 169, 110, 0.35)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+          }}
+        >
+          {/* Prev Slide button */}
+          <button
+            type="button"
+            onClick={() => goToSlide(currentSlide === 0 ? 1 : 0)}
+            aria-label="Önceki Slayt"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255,255,255,0.7)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              padding: 4,
+              transition: 'color 0.2s',
+            }}
+            onMouseOver={e => e.currentTarget.style.color = 'var(--gold)'}
+            onMouseOut={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+          >
+            <ChevronLeft size={18} />
+          </button>
 
+          {/* Slide 1 Pill with 20s progress bar */}
+          <button
+            type="button"
+            onClick={() => goToSlide(0)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: currentSlide === 0 ? 'rgba(201, 169, 110, 0.22)' : 'transparent',
+              border: currentSlide === 0 ? '1px solid var(--gold)' : '1px solid transparent',
+              borderRadius: 999,
+              padding: '6px 14px',
+              color: currentSlide === 0 ? 'var(--gold-light)' : 'rgba(255,255,255,0.65)',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {currentSlide === 0 && heroSettings.autoSlide && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  height: '2.5px',
+                  background: 'var(--gold)',
+                  width: `${slideProgress}%`,
+                  transition: 'width 0.1s linear',
+                }}
+              />
+            )}
+            <span style={{ fontSize: '0.7rem', opacity: 0.75 }}>01</span>
+            <span>Kapak</span>
+          </button>
 
-        <div className="container-main" style={{ position: 'relative', zIndex: 2, width: '100%' }}>
-          <div style={{ maxWidth: 680 }}>
-            {/* Eyebrow (Desktop) */}
-            <div className="eyebrow fade-up fade-up-1 hidden md:block" style={{ marginBottom: 28 }}>
-              Varoluşçu · Psikanalitik · Psikoterapi
-            </div>
+          {/* Slide 2 Pill with 20s progress bar */}
+          <button
+            type="button"
+            onClick={() => goToSlide(1)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: currentSlide === 1 ? 'rgba(201, 169, 110, 0.22)' : 'transparent',
+              border: currentSlide === 1 ? '1px solid var(--gold)' : '1px solid transparent',
+              borderRadius: 999,
+              padding: '6px 14px',
+              color: currentSlide === 1 ? 'var(--gold-light)' : 'rgba(255,255,255,0.65)',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {currentSlide === 1 && heroSettings.autoSlide && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  height: '2.5px',
+                  background: 'var(--gold)',
+                  width: `${slideProgress}%`,
+                  transition: 'width 0.1s linear',
+                }}
+              />
+            )}
+            <span style={{ fontSize: '0.7rem', opacity: 0.75 }}>02</span>
+            <span>Forum Tanıtımı</span>
+          </button>
 
-            {/* Main title */}
-            <h1 className="display-title fade-up fade-up-2" style={{ fontSize: 'clamp(3rem,7vw,5.5rem)', marginBottom: 28 }}>
-              Kendinizi
-              <br />
-              <em style={{ color: 'var(--gold)', fontStyle: 'italic' }}>Anlama</em> Yolculuğu
-            </h1>
-
-            {/* Sub */}
-            <p className="crimson fade-up fade-up-3" style={{ color: 'rgba(255,255,255,0.72)', fontSize: 'clamp(1rem, 4vw, 1.22rem)', maxWidth: 540, marginBottom: 44, lineHeight: 1.7, overflowWrap: 'break-word', wordBreak: 'normal', hyphens: 'auto', WebkitHyphens: 'auto' }}>
-              Varoluşçu-psikanalitik yaklaşımla ilgili derinlemesine incelemeler, forum tartışmaları ve yazılar.
-              Bilinçdışının katmanlarını keşfederek özgün bir anlam inşa edin.
-            </p>
-
-            {/* CTA */}
-            <div className="fade-up fade-up-4" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
-              <Link href="/forum" className="btn-gold" style={{ position: 'relative' }}>
-                Foruma Katıl
-                <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: 'var(--navy)', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>BETA</span>
-              </Link>
-              <Link href="/iletisim" className="btn-ghost">Randevular Hakkında Bilgi Almak İçin İletişime Geçin <ArrowRight size={14}/></Link>
-            </div>
-
-            {/* Eyebrow (Mobile) */}
-            <div className="eyebrow fade-up fade-up-1 block md:hidden" style={{ marginBottom: 40, textAlign: 'center', opacity: 0.8 }}>
-              Varoluşçu · Psikanalitik · Psikoterapi
-            </div>
-
-            {/* Search bar */}
-            <div className="fade-up fade-up-4" style={{ marginBottom: 64 }}>
-              <button
-                onClick={() => setSearchOpen(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: '14px 24px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', width: '100%', maxWidth: 420, transition: 'all 0.2s' }}
-                onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = 'white'; }}
-                onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
-              >
-                <Search size={16} />
-                <span>Site içinde ara — yazılar, forum, içerikler...</span>
-                <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', borderRadius: 6, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em' }}>⌘K</span>
-              </button>
-            </div>
-
-
-          </div>
-        </div>
-
-        {/* Scroll hint */}
-        <div style={{ position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, animation: 'fadeIn 2s ease 1s both' }}>
-          <div style={{ width: 1, height: 48, background: 'linear-gradient(180deg,transparent,rgba(201,169,110,0.6))' }}/>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', animation: 'fadeIn 1s ease infinite alternate' }}/>
+          {/* Next Slide button */}
+          <button
+            type="button"
+            onClick={() => goToSlide(currentSlide === 0 ? 1 : 0)}
+            aria-label="Sonraki Slayt"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255,255,255,0.7)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              padding: 4,
+              transition: 'color 0.2s',
+            }}
+            onMouseOver={e => e.currentTarget.style.color = 'var(--gold)'}
+            onMouseOut={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
       </section>
 
