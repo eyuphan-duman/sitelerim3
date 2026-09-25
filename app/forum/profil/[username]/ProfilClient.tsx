@@ -86,12 +86,7 @@ function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isO
                   <span>{pd.title || 'Psikolog'}</span>
                 </span>
               )}
-              <span 
-                style={{ color: '#1d9bf0', fontSize: '0.85rem', fontWeight: 600 }}
-                onClick={(e) => { e.stopPropagation(); router.push(`/forum/profil/${encodeURIComponent(authorUsername)}`); }}
-              >
-                @{authorUsername}
-              </span>
+              <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{authorUsername}</span>
               <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>·</span>
               <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(p.createdAt)}</span>
               {p.category && <span style={{ background: '#f1f5f9', color: '#64748b', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.category}</span>}

@@ -190,15 +190,7 @@ export default function ForumPost({
                 </span>
               )}
 
-              <Link
-                href={`/forum/profil/${encodeURIComponent(displayAuthorUsername)}`}
-                onClick={e => e.stopPropagation()}
-                style={{ color: '#1d9bf0', fontSize: '0.84rem', textDecoration: 'none', fontWeight: 600 }}
-                onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
-                onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
-              >
-                @{displayAuthorUsername}
-              </Link>
+              <span style={{ color: '#64748b', fontSize: '0.84rem' }}>@{displayAuthorUsername}</span>
               <span style={{ color: '#cbd5e1', fontSize: '0.84rem' }}>·</span>
               <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(post.createdAt)}</span>
 

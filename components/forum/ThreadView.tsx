@@ -120,7 +120,13 @@ export default function ThreadView({
   const [replyImageUrl, setReplyImageUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submittingReply, setSubmittingReply] = useState(false);
+  const [replyToUser, setReplyToUser] = useState<string>('');
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const u = post?.authorUsername || post?.authorName?.toLowerCase().replace(/\s+/g, '') || 'kullanici';
+    setReplyToUser(u);
+  }, [post?.id, post?.authorUsername, post?.authorName]);
 
   // Listen to post updates in real-time
   useEffect(() => {
@@ -343,6 +349,7 @@ export default function ThreadView({
         authorPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
         text: replyText.trim(),
         imageUrl: replyImageUrl || '',
+        replyToUsername: replyToUser || username,
         createdAt: serverTimestamp(),
         reactionsData: {},
         repostsData: {},
@@ -356,6 +363,7 @@ export default function ThreadView({
 
       setReplyText('');
       setReplyImageUrl('');
+      setReplyToUser(username);
       toast.success('Yanıtınız paylaşıldı');
     } catch (err: any) {
       toast.error('Yanıt gönderilemedi: ' + (err.message || ''));
@@ -857,6 +865,36 @@ export default function ThreadView({
         </div>
 
         <div style={{ flex: 1 }}>
+          {/* Replying to indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontSize: '0.84rem', color: '#64748b' }}>
+            <span>Yanıt olarak</span>
+            <Link
+              href={`/forum/profil/${encodeURIComponent(replyToUser || username)}`}
+              style={{ color: '#1d9bf0', textDecoration: 'none', fontWeight: 600 }}
+            >
+              @{replyToUser || username}
+            </Link>
+            {replyToUser && replyToUser !== username && (
+              <button
+                type="button"
+                onClick={() => setReplyToUser(username)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: 2,
+                  marginLeft: 4,
+                  display: 'inline-flex',
+                  alignItems: 'center'
+                }}
+                title="İptal et"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
           <textarea
             ref={replyInputRef}
             rows={2}
@@ -1032,14 +1070,7 @@ export default function ThreadView({
                           <span>Psikolog</span>
                         </span>
                       )}
-                      <Link
-                        href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`}
-                        style={{ color: '#1d9bf0', fontSize: '0.82rem', textDecoration: 'none', fontWeight: 600 }}
-                        onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                        onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
-                      >
-                        @{commentAuthorUsername}
-                      </Link>
+                      <span style={{ color: '#64748b', fontSize: '0.82rem' }}>@{commentAuthorUsername}</span>
                       <span style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>·</span>
                       <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{formatTimeAgo(c.createdAt)}</span>
                     </div>
@@ -1064,6 +1095,19 @@ export default function ThreadView({
                         <Trash2 size={14} />
                       </button>
                     )}
+                  </div>
+
+                  {/* Replying to @user indicator in blue */}
+                  <div style={{ fontSize: '0.82rem', color: '#64748b', margin: '2px 0 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span>Yanıt olarak</span>
+                    <Link
+                      href={`/forum/profil/${encodeURIComponent(c.replyToUsername || username)}`}
+                      style={{ color: '#1d9bf0', textDecoration: 'none', fontWeight: 600 }}
+                      onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
+                      onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
+                    >
+                      @{c.replyToUsername || username}
+                    </Link>
                   </div>
 
                   {/* Comment text with blue @mentions */}
@@ -1119,7 +1163,7 @@ export default function ThreadView({
                         <button
                           type="button"
                           onClick={() => {
-                            setReplyText(`@${commentAuthorUsername} `);
+                            setReplyToUser(commentAuthorUsername);
                             replyInputRef.current?.focus();
                           }}
                           style={{
