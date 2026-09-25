@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Phone, Mail, X, MessageCircle } from 'lucide-react';
 
 const WhatsAppIcon = () => (
@@ -14,6 +14,12 @@ export default function QuickContact() {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Hide completely on forum pages as requested
+  if (pathname?.startsWith('/forum')) {
+    return null;
+  }
 
   const rawPhoneNumber = '5078751503';
   

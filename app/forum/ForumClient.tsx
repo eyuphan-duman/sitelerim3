@@ -1,20 +1,29 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, limit } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
-import ForumModal from '@/components/forum/ForumModal';
+import ThreadView from '@/components/forum/ThreadView';
 import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 interface Post {
-  id: string; title?: string; body: string; category: string;
-  authorName: string; authorUsername?: string; uid: string;
-  commentCount: number; createdAt: Date; reactionsData?: Record<string, string>;
+  id: string;
+  title?: string;
+  body: string;
+  category?: string;
+  authorName: string;
+  authorUsername?: string;
+  uid: string;
+  commentCount: number;
+  createdAt: any;
+  reactionsData?: Record<string, string>;
+  repostsData?: Record<string, boolean>;
+  bookmarksData?: Record<string, boolean>;
   authorPhotoURL?: string;
   authorIsPsychologist?: boolean;
   imageUrl?: string;
@@ -84,7 +93,12 @@ export default function ForumClient() {
     return list;
   })();
 
-  const catCounts = threads.reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + 1; return acc; }, {} as Record<string, number>);
+  const catCounts = threads.reduce((acc, t) => { 
+    if (t.category) { 
+      acc[t.category] = (acc[t.category] || 0) + 1; 
+    } 
+    return acc; 
+  }, {} as Record<string, number>);
   const trends = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,20 +153,62 @@ export default function ForumClient() {
     }
   };
 
-  const handleReact = async (e: React.MouseEvent, thread: Post, emoji: string) => {
+  const handleLike = async (e: React.MouseEvent, thread: Post) => {
     e.stopPropagation();
-    if (!user || user.isAnonymous) return toast.error('Tepki için giriş gerekli.');
-    const current = thread.reactionsData?.[user.uid];
-    if (current === emoji) { await updateDoc(doc(db, 'forum', thread.id), { [`reactionsData.${user.uid}`]: deleteField() }); }
-    else { await updateDoc(doc(db, 'forum', thread.id), { [`reactionsData.${user.uid}`]: emoji }); }
+    if (!user || user.isAnonymous) return setAuthOpen(true);
+    const postRef = doc(db, 'forum', thread.id);
+    const userReaction = thread.reactionsData?.[user.uid];
+    if (userReaction === 'like' || userReaction === 'heart') {
+      await updateDoc(postRef, { [`reactionsData.${user.uid}`]: deleteField() });
+    } else {
+      await updateDoc(postRef, { [`reactionsData.${user.uid}`]: 'like' });
+    }
+  };
+
+  const handleDislike = async (e: React.MouseEvent, thread: Post) => {
+    e.stopPropagation();
+    if (!user || user.isAnonymous) return setAuthOpen(true);
+    const postRef = doc(db, 'forum', thread.id);
+    const userReaction = thread.reactionsData?.[user.uid];
+    if (userReaction === 'dislike') {
+      await updateDoc(postRef, { [`reactionsData.${user.uid}`]: deleteField() });
+    } else {
+      await updateDoc(postRef, { [`reactionsData.${user.uid}`]: 'dislike' });
+    }
+  };
+
+  const handleRepost = async (e: React.MouseEvent, thread: Post) => {
+    e.stopPropagation();
+    if (!user || user.isAnonymous) return setAuthOpen(true);
+    const postRef = doc(db, 'forum', thread.id);
+    const hasReposted = Boolean(thread.repostsData?.[user.uid]);
+    if (hasReposted) {
+      await updateDoc(postRef, { [`repostsData.${user.uid}`]: deleteField() });
+      toast.success('Yeniden paylaşım geri alındı');
+    } else {
+      await updateDoc(postRef, { [`repostsData.${user.uid}`]: true });
+      toast.success('Yeniden paylaşıldı');
+    }
+  };
+
+  const handleBookmark = async (e: React.MouseEvent, thread: Post) => {
+    e.stopPropagation();
+    if (!user || user.isAnonymous) return setAuthOpen(true);
+    const postRef = doc(db, 'forum', thread.id);
+    const hasBookmarked = Boolean(thread.bookmarksData?.[user.uid]);
+    if (hasBookmarked) {
+      await updateDoc(postRef, { [`bookmarksData.${user.uid}`]: deleteField() });
+      toast.success('Yer işaretlerinden kaldırıldı');
+    } else {
+      await updateDoc(postRef, { [`bookmarksData.${user.uid}`]: true });
+      toast.success('Yer işaretlerine kaydedildi');
+    }
   };
 
   const openThread = (t: Post) => {
     setActiveThread(t);
     router.replace(`/forum?thread=${t.id}`, { scroll: false });
-    onSnapshot(query(collection(db, 'forum', t.id, 'comments'), orderBy('createdAt', 'asc')), snap => {
-      setComments(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Comment[]);
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const closeThread = () => {
@@ -161,16 +217,26 @@ export default function ForumClient() {
   };
 
   useEffect(() => {
-    if (threads.length > 0) {
-      const threadId = searchParams.get('thread');
-      if (threadId && !activeThread) {
-        const found = threads.find(t => t.id === threadId);
-        if (found) {
-          openThread(found);
-        }
-      }
+    const threadId = searchParams.get('thread');
+    if (!threadId) {
+      if (activeThread) setActiveThread(null);
+      return;
     }
-  }, [threads, searchParams, activeThread]);
+    if (activeThread?.id === threadId) return;
+
+    const found = threads.find(t => t.id === threadId);
+    if (found) {
+      setActiveThread(found);
+      return;
+    }
+
+    // Direct fetch fallback for direct links or shared post URLs
+    getDoc(doc(db, 'forum', threadId)).then(snap => {
+      if (snap.exists()) {
+        setActiveThread({ id: snap.id, ...snap.data() } as Post);
+      }
+    }).catch(console.error);
+  }, [searchParams, threads]);
 
   const submitComment = async (text: string, imageUrl?: string) => {
     if (!user || (!text.trim() && !imageUrl) || !activeThread) return;
@@ -248,133 +314,161 @@ export default function ForumClient() {
           )}
         </aside>
 
-        {/* MAIN FEED */}
+        {/* MAIN FEED / THREAD VIEW */}
         <main style={{ borderRight: '1px solid #e2e8f0', minHeight: 'calc(100vh - 72px)', background: 'white' }}>
-          {/* Tabs */}
-          <div style={{ position: 'relative', background: '#ffffff', borderBottom: '1px solid #e2e8f0', zIndex: 10 }}>
-            <div style={{ display: 'flex' }}>
-              {[{ key: 'all', label: 'Ana Akış' }, { key: 'following', label: 'Takip Ettiklerim' }].map(tab => (
-                <button key={tab.key} onClick={() => tab.key === 'following' && !user?.uid ? setAuthOpen(true) : setFeedTab(tab.key as any)}
-                  style={{ flex: 1, padding: '16px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', background: 'transparent', color: feedTab === tab.key ? '#0f172a' : '#94a3b8', borderBottom: feedTab === tab.key ? '3px solid #0f172a' : '3px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  {tab.label}
-                  {tab.key === 'all' && <span style={{ fontSize: '0.55rem', background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>v2.0</span>}
-                </button>
-              ))}
-            </div>
-            {filter !== 'Tümü' && (
-              <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.8rem', fontWeight: 700, padding: '4px 12px', borderRadius: 999 }}>#{filter}</span>
-                <button onClick={() => setFilter('Tümü')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={14} /></button>
-              </div>
-            )}
-          </div>
-
-          {/* Compose */}
-          {user && !user.isAnonymous && (
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 14 }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0, overflow: 'hidden' }}>
-                {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <textarea placeholder="Ne düşünüyorsunuz? Psikoloji topluluğuyla paylaşın..." value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} style={{ width: '100%', border: 'none', fontSize: '1.05rem', color: '#0f172a', minHeight: 72, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5 }} />
-                
-                {form.imageUrl && (
-                  <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: 12 }}>
-                    <img src={form.imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <button onClick={() => setForm({ ...form, imageUrl: '' })} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                      <X size={14} />
+          {activeThread ? (
+            <ThreadView
+              post={{
+                ...activeThread,
+                authorPhotoURL: usersMap[activeThread.uid]?.photoURL || activeThread.authorPhotoURL,
+                authorIsPsychologist: Boolean(
+                  activeThread.authorIsPsychologist ||
+                  usersMap[activeThread.uid]?.isPsychologist ||
+                  usersMap[activeThread.uid]?.role === 'psychologist'
+                )
+              }}
+              currentUser={user}
+              userProfile={userProfile}
+              adminEmails={ADMIN_EMAILS}
+              onBack={closeThread}
+              onOpenAuth={() => setAuthOpen(true)}
+              onPostDeleted={(deletedId) => {
+                setThreads(prev => prev.filter(t => t.id !== deletedId));
+                closeThread();
+              }}
+            />
+          ) : (
+            <>
+              {/* Tabs */}
+              <div style={{ position: 'relative', background: '#ffffff', borderBottom: '1px solid #e2e8f0', zIndex: 10 }}>
+                <div style={{ display: 'flex' }}>
+                  {[{ key: 'all', label: 'Ana Akış' }, { key: 'following', label: 'Takip Ettiklerim' }].map(tab => (
+                    <button key={tab.key} onClick={() => tab.key === 'following' && !user?.uid ? setAuthOpen(true) : setFeedTab(tab.key as any)}
+                      style={{ flex: 1, padding: '16px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', background: 'transparent', color: feedTab === tab.key ? '#0f172a' : '#94a3b8', borderBottom: feedTab === tab.key ? '3px solid #0f172a' : '3px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      {tab.label}
+                      {tab.key === 'all' && <span style={{ fontSize: '0.55rem', background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>v2.0</span>}
                     </button>
+                  ))}
+                </div>
+                {filter !== 'Tümü' && (
+                  <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.8rem', fontWeight: 700, padding: '4px 12px', borderRadius: 999 }}>#{filter}</span>
+                    <button onClick={() => setFilter('Tümü')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={14} /></button>
                   </div>
                 )}
+              </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <select value={form.cat} onChange={e => setForm({ ...form, cat: e.target.value })} style={{ border: 'none', background: '#f1f5f9', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
-                      {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', fontWeight: 600 }} title="Görsel ekle">
-                      {uploadingImage ? (
-                        <>
-                          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                          <span>Yükleniyor…</span>
-                        </>
-                      ) : (
-                        <>
-                          <Camera size={14} />
-                          <span>Görsel Ekle</span>
-                        </>
-                      )}
-                      <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage} />
-                    </label>
+              {/* Compose */}
+              {user && !user.isAnonymous && (
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0, overflow: 'hidden' }}>
+                    {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
                   </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <textarea placeholder="Ne düşünüyorsunuz? Psikoloji topluluğuyla paylaşın..." value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} style={{ width: '100%', border: 'none', fontSize: '1.05rem', color: '#0f172a', minHeight: 72, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5 }} />
+                    
+                    {form.imageUrl && (
+                      <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: 12 }}>
+                        <img src={form.imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button onClick={() => setForm({ ...form, imageUrl: '' })} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
 
-                  <button onClick={handlePost} disabled={posting || (!form.body.trim() && !form.imageUrl)} style={{ background: (form.body.trim() || form.imageUrl) ? '#0f172a' : '#e2e8f0', color: (form.body.trim() || form.imageUrl) ? 'white' : '#94a3b8', border: 'none', padding: '10px 22px', borderRadius: 999, fontWeight: 700, cursor: (form.body.trim() || form.imageUrl) ? 'pointer' : 'default', fontSize: '0.9rem', transition: 'all 0.2s' }}>Paylaş</button>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <select value={form.cat} onChange={e => setForm({ ...form, cat: e.target.value })} style={{ border: 'none', background: '#f1f5f9', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
+                          {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', fontWeight: 600 }} title="Görsel ekle">
+                          {uploadingImage ? (
+                            <>
+                              <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                              <span>Yükleniyor…</span>
+                            </>
+                          ) : (
+                            <>
+                              <Camera size={14} />
+                              <span>Görsel Ekle</span>
+                            </>
+                          )}
+                          <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage} />
+                        </label>
+                      </div>
+
+                      <button onClick={handlePost} disabled={posting || (!form.body.trim() && !form.imageUrl)} style={{ background: (form.body.trim() || form.imageUrl) ? '#0f172a' : '#e2e8f0', color: (form.body.trim() || form.imageUrl) ? 'white' : '#94a3b8', border: 'none', padding: '10px 22px', borderRadius: 999, fontWeight: 700, cursor: (form.body.trim() || form.imageUrl) ? 'pointer' : 'default', fontSize: '0.9rem', transition: 'all 0.2s' }}>Paylaş</button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {!user && (
-            <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', background: 'linear-gradient(135deg,#f8fafc,#eff6ff)' }}>
-              <Users size={32} color="#0f172a" style={{ margin: '0 auto 12px' }} />
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>Psikoloji topluluğuna katılın</h3>
-              <p style={{ color: '#64748b', marginBottom: 20, fontSize: '0.95rem' }}>Düşüncelerinizi paylaşın, tartışmalara katılın.</p>
-              <button onClick={() => setAuthOpen(true)} style={{ background: '#0f172a', color: 'white', border: 'none', padding: '12px 28px', borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}>Katıl</button>
-            </div>
-          )}
+              {!user && (
+                <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', background: 'linear-gradient(135deg,#f8fafc,#eff6ff)' }}>
+                  <Users size={32} color="#0f172a" style={{ margin: '0 auto 12px' }} />
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>Psikoloji topluluğuna katılın</h3>
+                  <p style={{ color: '#64748b', marginBottom: 20, fontSize: '0.95rem' }}>Düşüncelerinizi paylaşın, tartışmalara katılın.</p>
+                  <button onClick={() => setAuthOpen(true)} style={{ background: '#0f172a', color: 'white', border: 'none', padding: '12px 28px', borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}>Katıl</button>
+                </div>
+              )}
 
-          {/* Active Search Banner */}
-          {searchQuery.trim() && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#eff6ff', borderBottom: '1px solid #bfdbfe' }}>
-              <div style={{ color: '#1e3a8a', fontSize: '0.88rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Search size={15} />
-                <span><strong>"{searchQuery}"</strong> için arama sonuçları ({filtered.length} gönderi)</span>
-              </div>
-              <button 
-                onClick={() => {
-                  setSearchQuery('');
-                  router.replace('/forum', { scroll: false });
-                }} 
-                style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
-              >
-                Aramayı Temizle
-              </button>
-            </div>
-          )}
+              {/* Active Search Banner */}
+              {searchQuery.trim() && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#eff6ff', borderBottom: '1px solid #bfdbfe' }}>
+                  <div style={{ color: '#1e3a8a', fontSize: '0.88rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Search size={15} />
+                    <span><strong>"{searchQuery}"</strong> için arama sonuçları ({filtered.length} gönderi)</span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setSearchQuery('');
+                      router.replace('/forum', { scroll: false });
+                    }} 
+                    style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
+                  >
+                    Aramayı Temizle
+                  </button>
+                </div>
+              )}
 
-          {/* Posts */}
-          {filtered.length === 0 ? (
-            <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-              <MessageSquare size={36} color="#94a3b8" style={{ margin: '0 auto 16px' }} />
-              <h3 style={{ color: '#94a3b8', fontWeight: 700 }}>
-                {searchQuery.trim() ? `"${searchQuery}" ile eşleşen gönderi bulunamadı.` : (feedTab === 'following' ? 'Takip ettiğiniz kişi paylaşım yapmamış.' : 'Bu kategoride henüz gönderi yok.')}
-              </h3>
-            </div>
-          ) : (
-            filtered.map(t => {
-              const isAuthorPsych = Boolean(
-                t.authorIsPsychologist ||
-                (usersMap[t.uid]?.isPsychologist && usersMap[t.uid]?.psychologistStatus === 'approved') ||
-                (usersMap[t.uid]?.isPsychologist && !usersMap[t.uid]?.psychologistStatus)
-              );
-              return (
-                <ForumPost
-                  key={t.id}
-                  post={{
-                    ...t,
-                    authorPhotoURL: usersMap[t.uid]?.photoURL,
-                    authorIsPsychologist: isAuthorPsych
-                  }}
-                  currentUserUid={user?.uid}
-                  currentUserEmail={user?.email || ''}
-                  adminEmails={ADMIN_EMAILS}
-                  onOpen={openThread}
-                  onReact={handleReact}
-                  onDelete={deletePost}
-                />
-              );
-            })
+              {/* Posts */}
+              {filtered.length === 0 ? (
+                <div style={{ padding: '60px 24px', textAlign: 'center' }}>
+                  <MessageSquare size={36} color="#94a3b8" style={{ margin: '0 auto 16px' }} />
+                  <h3 style={{ color: '#94a3b8', fontWeight: 700 }}>
+                    {searchQuery.trim() ? `"${searchQuery}" ile eşleşen gönderi bulunamadı.` : (feedTab === 'following' ? 'Takip ettiğiniz kişi paylaşım yapmamış.' : 'Bu kategoride henüz gönderi yok.')}
+                  </h3>
+                </div>
+              ) : (
+                filtered.map(t => {
+                  const isAuthorPsych = Boolean(
+                    t.authorIsPsychologist ||
+                    (usersMap[t.uid]?.isPsychologist && usersMap[t.uid]?.psychologistStatus === 'approved') ||
+                    (usersMap[t.uid]?.isPsychologist && !usersMap[t.uid]?.psychologistStatus)
+                  );
+                  return (
+                    <ForumPost
+                      key={t.id}
+                      post={{
+                        ...t,
+                        authorPhotoURL: usersMap[t.uid]?.photoURL,
+                        authorIsPsychologist: isAuthorPsych
+                      }}
+                      currentUserUid={user?.uid}
+                      currentUserEmail={user?.email || ''}
+                      adminEmails={ADMIN_EMAILS}
+                      onOpen={openThread}
+                      onLike={handleLike}
+                      onDislike={handleDislike}
+                      onRepost={handleRepost}
+                      onBookmark={handleBookmark}
+                      onDelete={deletePost}
+                    />
+                  );
+                })
+              )}
+            </>
           )}
         </main>
 
@@ -441,29 +535,6 @@ export default function ForumClient() {
         </aside>
       </div>
 
-      {activeThread && (
-        <ForumModal
-          post={{
-            ...activeThread,
-            authorPhotoURL: usersMap[activeThread.uid]?.photoURL,
-            authorIsPsychologist: Boolean(activeThread.authorIsPsychologist || usersMap[activeThread.uid]?.isPsychologist || usersMap[activeThread.uid]?.role === 'psychologist')
-          }}
-          comments={comments.map(c => ({
-            ...c,
-            authorPhotoURL: usersMap[c.uid]?.photoURL,
-            authorIsPsychologist: Boolean(c.authorIsPsychologist || usersMap[c.uid]?.isPsychologist || usersMap[c.uid]?.role === 'psychologist')
-          }))}
-          currentUser={user}
-          userProfile={userProfile}
-          adminEmails={ADMIN_EMAILS}
-          onClose={closeThread}
-          onReact={handleReact}
-          onCommentReact={async () => {}}
-          onSubmitComment={submitComment}
-          onDeleteComment={deleteComment}
-          onOpenAuth={() => setAuthOpen(true)}
-        />
-      )}
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
 
       {/* Mobile Search Overlay */}

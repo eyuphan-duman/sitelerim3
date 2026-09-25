@@ -13,6 +13,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { formatTimeAgo } from '@/components/forum/ThreadView';
 
 interface Post { 
   id: string; body: string; authorName: string; uid: string; 
@@ -33,8 +34,11 @@ function Empty({ icon, text }: { icon?: React.ReactNode; text: string }) {
 }
 
 function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isOwn: boolean; userEmail: string; onDelete: (id: string) => void }) {
+  const router = useRouter();
   return (
-    <div style={{ display: 'flex', gap: 14, padding: '20px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', background: 'white' }}
+    <div 
+      style={{ display: 'flex', gap: 14, padding: '20px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', background: 'white', cursor: 'pointer' }}
+      onClick={() => router.push(`/forum?thread=${p.id}`)}
       onMouseOver={e => (e.currentTarget.style.background = '#fafbfc')}
       onMouseOut={e => (e.currentTarget.style.background = 'white')}
     >
@@ -67,11 +71,11 @@ function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isO
             )}
             <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{pd.username}</span>
             <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>·</span>
-            <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{p.createdAt?.toLocaleDateString?.('tr-TR')}</span>
+            <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(p.createdAt)}</span>
             {p.category && <span style={{ background: '#f1f5f9', color: '#64748b', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.category}</span>}
           </div>
           {(isOwn || ADMIN.includes(userEmail)) && (
-            <button onClick={() => onDelete(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, transition: 'all 0.15s' }} onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }} onMouseOut={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none'; }} title="Gönderiyi Sil">
+            <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, transition: 'all 0.15s' }} onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }} onMouseOut={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none'; }} title="Gönderiyi Sil">
               <Trash2 size={14} />
             </button>
           )}
@@ -660,7 +664,11 @@ export default function ProfilClient({ username }: { username: string }) {
           {/* Tab Content */}
           {tab === 'posts' && (posts.length === 0 ? <Empty icon={<FileText size={36} color="#cbd5e1" />} text="Henüz gönderi yok" /> : posts.map(p => <PostCard key={p.id} p={p} pd={pd} isOwn={isOwn} userEmail={user?.email || ''} onDelete={delPost} />))}
           {tab === 'replies' && (replies.length === 0 ? <Empty icon={<MessageCircle size={36} color="#cbd5e1" />} text="Henüz yanıt yok" /> : replies.map((r, i) => (
-            <div key={i} style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
+            <div 
+              key={i} 
+              onClick={() => r.postId && router.push(`/forum?thread=${r.postId}`)}
+              style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: r.postId ? 'pointer' : 'default' }}
+            >
               <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: 8 }}>Yanıtladı: <em>"{r.postBody}..."</em></p>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>
@@ -668,19 +676,23 @@ export default function ProfilClient({ username }: { username: string }) {
                 </div>
                 <div>
                   <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>{pd.displayName}</span>
-                  <span style={{ color: '#94a3b8', fontSize: '0.82rem', marginLeft: 8 }}>· {r.createdAt?.toLocaleDateString?.('tr-TR')}</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.82rem', marginLeft: 8 }}>· {formatTimeAgo(r.createdAt)}</span>
                   <p style={{ margin: '6px 0 0', fontSize: '0.95rem', color: '#334155', lineHeight: 1.6 }}>{r.text}</p>
                 </div>
               </div>
             </div>
           )))}
           {tab === 'likes' && (likes.length === 0 ? <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" /> : likes.map(p => (
-            <div key={p.id} style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
+            <div 
+              key={p.id} 
+              onClick={() => router.push(`/forum?thread=${p.id}`)}
+              style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+            >
               <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{(p.authorName || 'U')[0].toUpperCase()}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
                   <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem' }}>{p.authorName}</span>
-                  <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>· {p.createdAt?.toLocaleDateString?.('tr-TR')}</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>· {formatTimeAgo(p.createdAt)}</span>
                 </div>
                 <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, margin: 0, wordBreak: 'break-word' }}>{p.body}</p>
                 <div style={{ display: 'flex', gap: 16, marginTop: 8, color: '#94a3b8', fontSize: '0.82rem' }}>
