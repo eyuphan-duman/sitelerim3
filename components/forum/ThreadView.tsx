@@ -8,10 +8,38 @@ import {
 } from 'lucide-react';
 import { 
   doc, updateDoc, deleteField, increment, collection, 
-  addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc 
+  addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc,
+  getDocs, where, setDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import toast from 'react-hot-toast';
+
+export function renderTextWithMentions(text: string) {
+  if (!text) return null;
+  const parts = text.split(/(@[a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('@')) {
+      const cleanUsername = part.slice(1);
+      return (
+        <Link
+          key={i}
+          href={`/forum/profil/${encodeURIComponent(cleanUsername)}`}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            color: '#1d9bf0',
+            fontWeight: 600,
+            textDecoration: 'none'
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+          onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+        >
+          {part}
+        </Link>
+      );
+    }
+    return part;
+  });
+}
 
 export function formatPostDate(val: any): string {
   if (!val) return 'Az önce';
@@ -169,12 +197,61 @@ export default function ThreadView({
   const handleRepost = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
-    const postRef = doc(db, 'forum', p.id);
+    const targetPostId = p.originalPostId || p.id;
+    const postRef = doc(db, 'forum', targetPostId);
+    const existingRepostDocId = typeof p.repostsData?.[currentUser.uid] === 'string'
+      ? p.repostsData[currentUser.uid]
+      : null;
+
     if (hasReposted) {
       await updateDoc(postRef, { [`repostsData.${currentUser.uid}`]: deleteField() });
+      if (existingRepostDocId) {
+        try { await deleteDoc(doc(db, 'forum', existingRepostDocId)); } catch {}
+      } else {
+        try {
+          const qSnap = await getDocs(query(
+            collection(db, 'forum'),
+            where('originalPostId', '==', targetPostId),
+            where('uid', '==', currentUser.uid),
+            where('isRepost', '==', true)
+          ));
+          for (const d of qSnap.docs) {
+            await deleteDoc(d.ref);
+          }
+        } catch {}
+      }
       toast.success('Yeniden paylaşım geri alındı');
     } else {
-      await updateDoc(postRef, { [`repostsData.${currentUser.uid}`]: true });
+      const isPsychologist = Boolean(
+        (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+        (userProfile?.isPsychologist && !userProfile?.psychologistStatus) ||
+        userProfile?.role === 'psychologist'
+      );
+
+      const repostDoc = await addDoc(collection(db, 'forum'), {
+        body: p.body,
+        category: p.category || 'Genel',
+        imageUrl: p.imageUrl || '',
+        createdAt: serverTimestamp(),
+        uid: currentUser.uid,
+        authorName: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
+        authorUsername: userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+        authorPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
+        isPsychologist: isPsychologist,
+        commentCount: 0,
+        reactionsData: {},
+        repostsData: {},
+        bookmarksData: {},
+        isRepost: true,
+        originalPostId: targetPostId,
+        originalAuthorName: p.originalAuthorName || p.authorName,
+        originalAuthorUsername: p.originalAuthorUsername || username,
+        originalAuthorPhotoURL: p.originalAuthorPhotoURL || p.authorPhotoURL || '',
+        originalAuthorIsPsychologist: p.originalAuthorIsPsychologist ?? p.authorIsPsychologist ?? false,
+        originalCreatedAt: p.createdAt instanceof Date ? p.createdAt : new Date(),
+      });
+
+      await updateDoc(postRef, { [`repostsData.${currentUser.uid}`]: repostDoc.id });
       toast.success('Yeniden paylaşıldı');
     }
   };
@@ -182,12 +259,24 @@ export default function ThreadView({
   const handleBookmark = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
-    const postRef = doc(db, 'forum', p.id);
+    const targetPostId = p.originalPostId || p.id;
+    const postRef = doc(db, 'forum', targetPostId);
+    const userBookmarkRef = doc(db, 'users', currentUser.uid, 'bookmarks', targetPostId);
+
     if (hasBookmarked) {
       await updateDoc(postRef, { [`bookmarksData.${currentUser.uid}`]: deleteField() });
+      try { await deleteDoc(userBookmarkRef); } catch {}
       toast.success('Yer işaretlerinden kaldırıldı');
     } else {
       await updateDoc(postRef, { [`bookmarksData.${currentUser.uid}`]: true });
+      try {
+        await setDoc(userBookmarkRef, {
+          postId: targetPostId,
+          createdAt: serverTimestamp(),
+          postBody: p.body?.slice(0, 100) || '',
+          authorName: p.authorName || ''
+        });
+      } catch {}
       toast.success('Yer işaretlerine kaydedildi');
     }
   };
@@ -256,6 +345,8 @@ export default function ThreadView({
         imageUrl: replyImageUrl || '',
         createdAt: serverTimestamp(),
         reactionsData: {},
+        repostsData: {},
+        bookmarksData: {},
         uid: currentUser.uid
       });
 
@@ -286,7 +377,7 @@ export default function ThreadView({
     }
   };
 
-  const handleCommentReaction = async (commentId: string, currentReactionData: any) => {
+  const handleCommentLike = async (commentId: string, currentReactionData: any) => {
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
     const commentRef = doc(db, 'forum', p.id, 'comments', commentId);
     const userReaction = currentReactionData?.[currentUser.uid];
@@ -294,6 +385,75 @@ export default function ThreadView({
       await updateDoc(commentRef, { [`reactionsData.${currentUser.uid}`]: deleteField() });
     } else {
       await updateDoc(commentRef, { [`reactionsData.${currentUser.uid}`]: 'like' });
+    }
+  };
+
+  const handleCommentDislike = async (commentId: string, currentReactionData: any) => {
+    if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
+    const commentRef = doc(db, 'forum', p.id, 'comments', commentId);
+    const userReaction = currentReactionData?.[currentUser.uid];
+    if (userReaction === 'dislike') {
+      await updateDoc(commentRef, { [`reactionsData.${currentUser.uid}`]: deleteField() });
+    } else {
+      await updateDoc(commentRef, { [`reactionsData.${currentUser.uid}`]: 'dislike' });
+    }
+  };
+
+  const handleCommentRepost = async (c: any) => {
+    if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
+    const commentRef = doc(db, 'forum', p.id, 'comments', c.id);
+    const hasRepostedComment = Boolean(c.repostsData?.[currentUser.uid]);
+    const existingDocId = typeof c.repostsData?.[currentUser.uid] === 'string' ? c.repostsData[currentUser.uid] : null;
+
+    if (hasRepostedComment) {
+      await updateDoc(commentRef, { [`repostsData.${currentUser.uid}`]: deleteField() });
+      if (existingDocId) {
+        try { await deleteDoc(doc(db, 'forum', existingDocId)); } catch {}
+      }
+      toast.success('Yeniden paylaşım geri alındı');
+    } else {
+      const isPsychologist = Boolean(
+        (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+        (userProfile?.isPsychologist && !userProfile?.psychologistStatus) ||
+        userProfile?.role === 'psychologist'
+      );
+
+      const repostDoc = await addDoc(collection(db, 'forum'), {
+        body: c.text,
+        imageUrl: c.imageUrl || '',
+        category: p.category || 'Genel',
+        createdAt: serverTimestamp(),
+        uid: currentUser.uid,
+        authorName: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
+        authorUsername: userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+        authorPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
+        isPsychologist: isPsychologist,
+        commentCount: 0,
+        reactionsData: {},
+        repostsData: {},
+        bookmarksData: {},
+        isRepost: true,
+        originalPostId: p.id,
+        originalAuthorName: c.authorName,
+        originalAuthorUsername: c.authorUsername || (c.authorName || '').toLowerCase().replace(/\s+/g, ''),
+        originalAuthorPhotoURL: c.authorPhotoURL || '',
+        originalAuthorIsPsychologist: c.authorIsPsychologist || false
+      });
+      await updateDoc(commentRef, { [`repostsData.${currentUser.uid}`]: repostDoc.id });
+      toast.success('Yeniden paylaşıldı');
+    }
+  };
+
+  const handleCommentBookmark = async (commentId: string, currentBookmarks: any) => {
+    if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
+    const commentRef = doc(db, 'forum', p.id, 'comments', commentId);
+    const hasBookmarked = Boolean(currentBookmarks?.[currentUser.uid]);
+    if (hasBookmarked) {
+      await updateDoc(commentRef, { [`bookmarksData.${currentUser.uid}`]: deleteField() });
+      toast.success('Yer işaretlerinden kaldırıldı');
+    } else {
+      await updateDoc(commentRef, { [`bookmarksData.${currentUser.uid}`]: true });
+      toast.success('Yer işaretlerine kaydedildi');
     }
   };
 
@@ -463,7 +623,7 @@ export default function ThreadView({
           wordBreak: 'break-word',
           marginBottom: p.imageUrl ? 12 : 16
         }}>
-          {p.body}
+          {renderTextWithMentions(p.body)}
         </div>
 
         {/* Attached Image */}
@@ -872,7 +1032,14 @@ export default function ThreadView({
                           <span>Psikolog</span>
                         </span>
                       )}
-                      <span style={{ color: '#64748b', fontSize: '0.82rem' }}>@{commentAuthorUsername}</span>
+                      <Link
+                        href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`}
+                        style={{ color: '#1d9bf0', fontSize: '0.82rem', textDecoration: 'none', fontWeight: 600 }}
+                        onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                        onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                      >
+                        @{commentAuthorUsername}
+                      </Link>
                       <span style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>·</span>
                       <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{formatTimeAgo(c.createdAt)}</span>
                     </div>
@@ -899,7 +1066,7 @@ export default function ThreadView({
                     )}
                   </div>
 
-                  {/* Comment text */}
+                  {/* Comment text with blue @mentions */}
                   {c.text && (
                     <p style={{
                       color: '#0f172a',
@@ -909,7 +1076,7 @@ export default function ThreadView({
                       wordBreak: 'break-word',
                       whiteSpace: 'pre-wrap'
                     }}>
-                      {c.text}
+                      {renderTextWithMentions(c.text)}
                     </p>
                   )}
 
@@ -927,56 +1094,181 @@ export default function ThreadView({
                     </div>
                   )}
 
-                  {/* Comment Action Icons (Reply, Like, Bookmark) */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 20,
-                    marginTop: 8,
-                    color: '#64748b',
-                    fontSize: '0.78rem'
-                  }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReplyText(`@${commentAuthorUsername} `);
-                        replyInputRef.current?.focus();
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#64748b',
-                        padding: 0
-                      }}
-                      title="Yanıtla"
-                    >
-                      <MessageCircle size={15} />
-                    </button>
+                  {/* ── COMMENT ACTION BUTTONS: Yanıtla, Yeniden Paylaş, Like, Dislike, Kaydet, Paylaş ── */}
+                  {(() => {
+                    const commentLiked = c.reactionsData?.[currentUser?.uid || ''] === 'like';
+                    const commentDisliked = c.reactionsData?.[currentUser?.uid || ''] === 'dislike';
+                    const commentReposted = Boolean(c.repostsData?.[currentUser?.uid || '']);
+                    const commentBookmarked = Boolean(c.bookmarksData?.[currentUser?.uid || '']);
 
-                    <button
-                      type="button"
-                      onClick={() => handleCommentReaction(c.id, c.reactionsData)}
-                      style={{
+                    const commentLikesCount = Object.values(c.reactionsData || {}).filter(v => v === 'like').length;
+                    const commentDislikesCount = Object.values(c.reactionsData || {}).filter(v => v === 'dislike').length;
+                    const commentRepostsCount = Object.values(c.repostsData || {}).filter(Boolean).length;
+                    const commentBookmarksCount = Object.values(c.bookmarksData || {}).filter(Boolean).length;
+
+                    return (
+                      <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 4,
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: commentLiked ? '#ef4444' : '#64748b',
-                        fontWeight: commentLiked ? 700 : 500,
-                        padding: 0
-                      }}
-                      title="Beğen"
-                    >
-                      <Heart size={15} fill={commentLiked ? '#ef4444' : 'none'} />
-                      {commentLikesCount > 0 && <span>{commentLikesCount}</span>}
-                    </button>
-                  </div>
+                        justifyContent: 'space-between',
+                        maxWidth: 380,
+                        marginTop: 10,
+                        color: '#64748b'
+                      }}>
+                        {/* 1. Yanıtla */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReplyText(`@${commentAuthorUsername} `);
+                            replyInputRef.current?.focus();
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#64748b',
+                            fontSize: '0.8rem',
+                            padding: '4px 6px',
+                            borderRadius: 6
+                          }}
+                          onMouseOver={e => (e.currentTarget.style.color = '#1d9bf0')}
+                          onMouseOut={e => (e.currentTarget.style.color = '#64748b')}
+                          title="Yanıtla"
+                        >
+                          <MessageCircle size={15} strokeWidth={1.8} />
+                          <span>0</span>
+                        </button>
+
+                        {/* 2. Yeniden Paylaş (Repost) */}
+                        <button
+                          type="button"
+                          onClick={() => handleCommentRepost(c)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: commentReposted ? '#16a34a' : '#64748b',
+                            fontWeight: commentReposted ? 700 : 500,
+                            fontSize: '0.8rem',
+                            padding: '4px 6px',
+                            borderRadius: 6
+                          }}
+                          onMouseOver={e => !commentReposted && (e.currentTarget.style.color = '#16a34a')}
+                          onMouseOut={e => !commentReposted && (e.currentTarget.style.color = '#64748b')}
+                          title="Yeniden Paylaş"
+                        >
+                          <Repeat2 size={16} strokeWidth={commentReposted ? 2.4 : 1.8} />
+                          <span>{commentRepostsCount}</span>
+                        </button>
+
+                        {/* 3. Beğen (Like) */}
+                        <button
+                          type="button"
+                          onClick={() => handleCommentLike(c.id, c.reactionsData)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: commentLiked ? '#ef4444' : '#64748b',
+                            fontWeight: commentLiked ? 700 : 500,
+                            fontSize: '0.8rem',
+                            padding: '4px 6px',
+                            borderRadius: 6
+                          }}
+                          onMouseOver={e => !commentLiked && (e.currentTarget.style.color = '#ef4444')}
+                          onMouseOut={e => !commentLiked && (e.currentTarget.style.color = '#64748b')}
+                          title="Beğen"
+                        >
+                          <Heart size={15} strokeWidth={commentLiked ? 2.4 : 1.8} fill={commentLiked ? '#ef4444' : 'none'} />
+                          <span>{commentLikesCount}</span>
+                        </button>
+
+                        {/* 4. Beğenme (Dislike) */}
+                        <button
+                          type="button"
+                          onClick={() => handleCommentDislike(c.id, c.reactionsData)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: commentDisliked ? '#3b82f6' : '#64748b',
+                            fontWeight: commentDisliked ? 700 : 500,
+                            fontSize: '0.8rem',
+                            padding: '4px 6px',
+                            borderRadius: 6
+                          }}
+                          onMouseOver={e => !commentDisliked && (e.currentTarget.style.color = '#3b82f6')}
+                          onMouseOut={e => !commentDisliked && (e.currentTarget.style.color = '#64748b')}
+                          title="Beğenme"
+                        >
+                          <ThumbsDown size={15} strokeWidth={commentDisliked ? 2.4 : 1.8} fill={commentDisliked ? '#3b82f6' : 'none'} />
+                          <span>{commentDislikesCount}</span>
+                        </button>
+
+                        {/* 5. Kaydet (Bookmark) */}
+                        <button
+                          type="button"
+                          onClick={() => handleCommentBookmark(c.id, c.bookmarksData)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: commentBookmarked ? '#d97706' : '#64748b',
+                            fontWeight: commentBookmarked ? 700 : 500,
+                            fontSize: '0.8rem',
+                            padding: '4px 6px',
+                            borderRadius: 6
+                          }}
+                          onMouseOver={e => !commentBookmarked && (e.currentTarget.style.color = '#d97706')}
+                          onMouseOut={e => !commentBookmarked && (e.currentTarget.style.color = '#64748b')}
+                          title="Kaydet"
+                        >
+                          <Bookmark size={15} strokeWidth={commentBookmarked ? 2.4 : 1.8} fill={commentBookmarked ? '#d97706' : 'none'} />
+                          <span>{commentBookmarksCount}</span>
+                        </button>
+
+                        {/* 6. Paylaş */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${window.location.origin}/forum?thread=${p.id}`;
+                            navigator.clipboard.writeText(url);
+                            toast.success('Bağlantı kopyalandı');
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#64748b',
+                            padding: '4px 6px',
+                            borderRadius: 6,
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                          onMouseOver={e => (e.currentTarget.style.color = '#0f172a')}
+                          onMouseOut={e => (e.currentTarget.style.color = '#64748b')}
+                          title="Paylaş"
+                        >
+                          <Share2 size={15} strokeWidth={1.8} />
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );

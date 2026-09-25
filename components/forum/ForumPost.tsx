@@ -6,7 +6,7 @@ import {
   MessageCircle, Trash2, Heart, ThumbsDown, Repeat2, 
   Bookmark, Share2, CheckCircle 
 } from 'lucide-react';
-import { formatPostDate, formatTimeAgo } from './ThreadView';
+import { formatPostDate, formatTimeAgo, renderTextWithMentions } from './ThreadView';
 import toast from 'react-hot-toast';
 
 interface Post {
@@ -20,11 +20,17 @@ interface Post {
   commentCount: number;
   createdAt: any;
   reactionsData?: Record<string, string>;
-  repostsData?: Record<string, boolean>;
-  bookmarksData?: Record<string, boolean>;
+  repostsData?: Record<string, any>;
+  bookmarksData?: Record<string, any>;
   authorPhotoURL?: string;
   imageUrl?: string;
   authorIsPsychologist?: boolean;
+  isRepost?: boolean;
+  originalPostId?: string;
+  originalAuthorName?: string;
+  originalAuthorUsername?: string;
+  originalAuthorPhotoURL?: string;
+  originalAuthorIsPsychologist?: boolean;
 }
 
 interface Props {
@@ -54,9 +60,12 @@ export default function ForumPost({
   onBookmark,
   onDelete
 }: Props) {
-  const username = post.authorUsername || post.authorName?.toLowerCase().replace(/\s+/g, '') || 'kullanici';
+  const isRepost = Boolean(post.isRepost);
+  const displayAuthorName = isRepost && post.originalAuthorName ? post.originalAuthorName : post.authorName;
+  const displayAuthorUsername = isRepost && post.originalAuthorUsername ? post.originalAuthorUsername : (post.authorUsername || displayAuthorName?.toLowerCase().replace(/\s+/g, '') || 'kullanici');
+  const displayAuthorPhoto = isRepost && post.originalAuthorPhotoURL ? post.originalAuthorPhotoURL : post.authorPhotoURL;
   const canDelete = (currentUserUid && currentUserUid === post.uid) || adminEmails.includes(currentUserEmail || '');
-  const hasPsychBadge = Boolean(isPsychologist || post.authorIsPsychologist);
+  const hasPsychBadge = Boolean(isPsychologist || post.authorIsPsychologist || (isRepost && post.originalAuthorIsPsychologist));
 
   // Reaction & state flags
   const userReaction = post.reactionsData?.[currentUserUid || ''];
@@ -75,7 +84,7 @@ export default function ForumPost({
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const url = `${window.location.origin}/forum?thread=${post.id}`;
+      const url = `${window.location.origin}/forum?thread=${post.originalPostId || post.id}`;
       navigator.clipboard.writeText(url);
       toast.success('Gönderi bağlantısı kopyalandı');
     } catch {
@@ -96,10 +105,35 @@ export default function ForumPost({
       onMouseOver={e => (e.currentTarget.style.background = '#fafbfc')}
       onMouseOut={e => (e.currentTarget.style.background = 'white')}
     >
+      {/* Repost Header Badge */}
+      {isRepost && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          color: '#16a34a',
+          fontSize: '0.8rem',
+          fontWeight: 700,
+          marginBottom: 8,
+          paddingLeft: 46
+        }}>
+          <Repeat2 size={15} strokeWidth={2.4} />
+          <Link
+            href={`/forum/profil/${encodeURIComponent(post.authorUsername || '')}`}
+            onClick={e => e.stopPropagation()}
+            style={{ color: '#16a34a', textDecoration: 'none' }}
+            onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
+            onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
+          >
+            {post.authorName} yeniden paylaştı
+          </Link>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 14 }}>
         
         {/* User avatar */}
-        <Link href={`/forum/profil/${encodeURIComponent(username)}`} onClick={e => e.stopPropagation()}>
+        <Link href={`/forum/profil/${encodeURIComponent(displayAuthorUsername)}`} onClick={e => e.stopPropagation()}>
           <div style={{
             width: 44,
             height: 44,
@@ -115,10 +149,10 @@ export default function ForumPost({
             cursor: 'pointer',
             overflow: 'hidden'
           }}>
-            {post.authorPhotoURL ? (
-              <img src={post.authorPhotoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {displayAuthorPhoto ? (
+              <img src={displayAuthorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              (post.authorName || 'U')[0].toUpperCase()
+              (displayAuthorName || 'U')[0].toUpperCase()
             )}
           </div>
         </Link>
@@ -130,11 +164,11 @@ export default function ForumPost({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <Link
-                href={`/forum/profil/${encodeURIComponent(username)}`}
+                href={`/forum/profil/${encodeURIComponent(displayAuthorUsername)}`}
                 onClick={e => e.stopPropagation()}
                 style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.94rem', textDecoration: 'none' }}
               >
-                {post.authorName}
+                {displayAuthorName}
               </Link>
 
               {hasPsychBadge && (
@@ -156,7 +190,15 @@ export default function ForumPost({
                 </span>
               )}
 
-              <span style={{ color: '#64748b', fontSize: '0.84rem' }}>@{username}</span>
+              <Link
+                href={`/forum/profil/${encodeURIComponent(displayAuthorUsername)}`}
+                onClick={e => e.stopPropagation()}
+                style={{ color: '#1d9bf0', fontSize: '0.84rem', textDecoration: 'none', fontWeight: 600 }}
+                onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
+                onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
+              >
+                @{displayAuthorUsername}
+              </Link>
               <span style={{ color: '#cbd5e1', fontSize: '0.84rem' }}>·</span>
               <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(post.createdAt)}</span>
 
@@ -222,7 +264,7 @@ export default function ForumPost({
               wordBreak: 'break-word',
               margin: '0 0 10px'
             }}>
-              {post.body}
+              {renderTextWithMentions(post.body)}
             </p>
 
             {post.imageUrl && (

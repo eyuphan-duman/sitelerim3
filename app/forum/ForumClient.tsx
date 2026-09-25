@@ -1,12 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ThreadView from '@/components/forum/ThreadView';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -22,11 +22,17 @@ interface Post {
   commentCount: number;
   createdAt: any;
   reactionsData?: Record<string, string>;
-  repostsData?: Record<string, boolean>;
-  bookmarksData?: Record<string, boolean>;
+  repostsData?: Record<string, any>;
+  bookmarksData?: Record<string, any>;
   authorPhotoURL?: string;
   authorIsPsychologist?: boolean;
   imageUrl?: string;
+  isRepost?: boolean;
+  originalPostId?: string;
+  originalAuthorName?: string;
+  originalAuthorUsername?: string;
+  originalAuthorPhotoURL?: string;
+  originalAuthorIsPsychologist?: boolean;
 }
 interface Comment {
   id: string; authorName: string; authorUsername?: string;
@@ -180,13 +186,62 @@ export default function ForumClient() {
   const handleRepost = async (e: React.MouseEvent, thread: Post) => {
     e.stopPropagation();
     if (!user || user.isAnonymous) return setAuthOpen(true);
-    const postRef = doc(db, 'forum', thread.id);
+    const targetPostId = thread.originalPostId || thread.id;
+    const postRef = doc(db, 'forum', targetPostId);
     const hasReposted = Boolean(thread.repostsData?.[user.uid]);
+    const existingRepostDocId = typeof thread.repostsData?.[user.uid] === 'string'
+      ? thread.repostsData[user.uid]
+      : null;
+
     if (hasReposted) {
       await updateDoc(postRef, { [`repostsData.${user.uid}`]: deleteField() });
+      if (existingRepostDocId) {
+        try { await deleteDoc(doc(db, 'forum', existingRepostDocId)); } catch {}
+      } else {
+        try {
+          const qSnap = await getDocs(query(
+            collection(db, 'forum'),
+            where('originalPostId', '==', targetPostId),
+            where('uid', '==', user.uid),
+            where('isRepost', '==', true)
+          ));
+          for (const d of qSnap.docs) {
+            await deleteDoc(d.ref);
+          }
+        } catch {}
+      }
       toast.success('Yeniden paylaşım geri alındı');
     } else {
-      await updateDoc(postRef, { [`repostsData.${user.uid}`]: true });
+      const isPsychologist = Boolean(
+        (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+        (userProfile?.isPsychologist && !userProfile?.psychologistStatus) ||
+        userProfile?.role === 'psychologist'
+      );
+
+      const repostDoc = await addDoc(collection(db, 'forum'), {
+        body: thread.body,
+        category: thread.category || 'Genel',
+        imageUrl: thread.imageUrl || '',
+        createdAt: serverTimestamp(),
+        uid: user.uid,
+        authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
+        authorUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+        authorPhotoURL: userProfile?.photoURL || user.photoURL || '',
+        isPsychologist: isPsychologist,
+        commentCount: 0,
+        reactionsData: {},
+        repostsData: {},
+        bookmarksData: {},
+        isRepost: true,
+        originalPostId: targetPostId,
+        originalAuthorName: thread.originalAuthorName || thread.authorName,
+        originalAuthorUsername: thread.originalAuthorUsername || thread.authorUsername || (thread.authorName || '').toLowerCase().replace(/\s+/g, ''),
+        originalAuthorPhotoURL: thread.originalAuthorPhotoURL || thread.authorPhotoURL || '',
+        originalAuthorIsPsychologist: thread.originalAuthorIsPsychologist ?? thread.authorIsPsychologist ?? false,
+        originalCreatedAt: thread.createdAt instanceof Date ? thread.createdAt : new Date(),
+      });
+
+      await updateDoc(postRef, { [`repostsData.${user.uid}`]: repostDoc.id });
       toast.success('Yeniden paylaşıldı');
     }
   };
@@ -194,20 +249,42 @@ export default function ForumClient() {
   const handleBookmark = async (e: React.MouseEvent, thread: Post) => {
     e.stopPropagation();
     if (!user || user.isAnonymous) return setAuthOpen(true);
-    const postRef = doc(db, 'forum', thread.id);
+    const targetPostId = thread.originalPostId || thread.id;
+    const postRef = doc(db, 'forum', targetPostId);
+    const userBookmarkRef = doc(db, 'users', user.uid, 'bookmarks', targetPostId);
     const hasBookmarked = Boolean(thread.bookmarksData?.[user.uid]);
+
     if (hasBookmarked) {
       await updateDoc(postRef, { [`bookmarksData.${user.uid}`]: deleteField() });
+      try { await deleteDoc(userBookmarkRef); } catch {}
       toast.success('Yer işaretlerinden kaldırıldı');
     } else {
       await updateDoc(postRef, { [`bookmarksData.${user.uid}`]: true });
+      try {
+        await setDoc(userBookmarkRef, {
+          postId: targetPostId,
+          createdAt: serverTimestamp(),
+          postBody: thread.body?.slice(0, 100) || '',
+          authorName: thread.authorName || ''
+        });
+      } catch {}
       toast.success('Yer işaretlerine kaydedildi');
     }
   };
 
   const openThread = (t: Post) => {
+    const targetId = t.originalPostId || t.id;
+    if (t.originalPostId) {
+      const original = threads.find(x => x.id === t.originalPostId);
+      if (original) {
+        setActiveThread(original);
+        router.replace(`/forum?thread=${targetId}`, { scroll: false });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
     setActiveThread(t);
-    router.replace(`/forum?thread=${t.id}`, { scroll: false });
+    router.replace(`/forum?thread=${targetId}`, { scroll: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -289,6 +366,7 @@ export default function ForumClient() {
           </div>
           {[{ label: 'Ana Akış', action: () => { setFeedTab('all'); setFilter('Tümü'); }, active: feedTab === 'all', icon: <Home size={20} /> },
             { label: 'Takip Ettiklerim', action: () => !user?.uid ? setAuthOpen(true) : setFeedTab('following'), active: feedTab === 'following', icon: <Users size={20} /> },
+            { label: 'Yer İşaretleri', action: () => !user?.uid ? setAuthOpen(true) : router.push(`/forum/profil/${myUsername}?tab=bookmarks`), active: false, icon: <Bookmark size={20} /> },
             { label: 'Videolarım', action: () => router.push('/videolarim'), active: false, icon: <Film size={20} /> },
           ].map(item => (
             <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', background: item.active ? '#0f172a' : 'transparent', color: item.active ? 'white' : '#475569', fontWeight: 600, fontSize: '0.95rem', transition: 'all 0.2s' }}>

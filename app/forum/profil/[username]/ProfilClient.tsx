@@ -8,17 +8,20 @@ import {
   ArrowLeft, Camera, MapPin, Link as LinkIcon, Calendar, 
   MessageCircle, Heart, Trash2, Home, Users, Film, FileText, 
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
-  Upload, ExternalLink, ShieldCheck, Loader
+  Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { formatTimeAgo } from '@/components/forum/ThreadView';
+import { formatTimeAgo, renderTextWithMentions } from '@/components/forum/ThreadView';
 
 interface Post { 
-  id: string; body: string; authorName: string; uid: string; 
+  id: string; body: string; authorName: string; authorUsername?: string; uid: string; 
   createdAt: any; commentCount: number; reactionsData?: Record<string, string>; 
+  repostsData?: Record<string, any>; bookmarksData?: Record<string, any>;
   category?: string; imageUrl?: string; authorPhotoURL?: string;
+  isRepost?: boolean; originalPostId?: string; originalAuthorName?: string;
+  originalAuthorUsername?: string; originalAuthorPhotoURL?: string; originalAuthorIsPsychologist?: boolean;
 }
 
 const CATEGORIES = ['Tümü','Psikanaliz','Varoluş & Anlam','Kaygı & Depresyon','İlişkiler','Çocukluk & Travma','Rüyalar','Kimlik & Benlik','Kişisel Gelişim'];
@@ -35,62 +38,84 @@ function Empty({ icon, text }: { icon?: React.ReactNode; text: string }) {
 
 function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isOwn: boolean; userEmail: string; onDelete: (id: string) => void }) {
   const router = useRouter();
+  const isRepost = Boolean(p.isRepost);
+  const authorName = isRepost && p.originalAuthorName ? p.originalAuthorName : (p.authorName || pd.displayName || pd.username);
+  const authorUsername = isRepost && p.originalAuthorUsername ? p.originalAuthorUsername : (p.authorUsername || (p.uid === pd.uid ? pd.username : '') || authorName?.toLowerCase().replace(/\s+/g, '') || 'kullanici');
+  const authorPhoto = isRepost && p.originalAuthorPhotoURL ? p.originalAuthorPhotoURL : (p.authorPhotoURL || (p.uid === pd.uid ? pd.photoURL : ''));
+
   return (
     <div 
-      style={{ display: 'flex', gap: 14, padding: '20px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', background: 'white', cursor: 'pointer' }}
-      onClick={() => router.push(`/forum?thread=${p.id}`)}
+      style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', background: 'white', cursor: 'pointer' }}
+      onClick={() => router.push(`/forum?thread=${p.originalPostId || p.id}`)}
       onMouseOver={e => (e.currentTarget.style.background = '#fafbfc')}
       onMouseOut={e => (e.currentTarget.style.background = 'white')}
     >
-      <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '1.05rem' }}>
-        {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (pd.displayName || 'U')[0].toUpperCase()}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.96rem' }}>{pd.displayName || pd.username}</span>
-            {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && (
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 3,
-                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                  border: '1px solid rgba(201,169,110,0.4)',
-                  color: '#facc15',
-                  fontSize: '0.65rem',
-                  fontWeight: 800,
-                  padding: '2px 7px',
-                  borderRadius: 999
-                }}
-                title="Doğrulanmış Lisanslı Psikolog"
-              >
-                <CheckCircle size={11} color="#facc15" />
-                <span>{pd.title || 'Psikolog'}</span>
-              </span>
-            )}
-            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{pd.username}</span>
-            <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>·</span>
-            <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(p.createdAt)}</span>
-            {p.category && <span style={{ background: '#f1f5f9', color: '#64748b', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.category}</span>}
-          </div>
-          {(isOwn || ADMIN.includes(userEmail)) && (
-            <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, transition: 'all 0.15s' }} onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }} onMouseOut={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none'; }} title="Gönderiyi Sil">
-              <Trash2 size={14} />
-            </button>
-          )}
+      {/* Repost banner */}
+      {isRepost && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#16a34a', fontSize: '0.78rem', fontWeight: 700, marginBottom: 8, paddingLeft: 46 }}>
+          <Repeat2 size={13} strokeWidth={2.4} />
+          <span>{pd.displayName || pd.username} yeniden paylaştı</span>
         </div>
-        <p style={{ color: '#334155', fontSize: '0.97rem', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>{p.body}</p>
-        
-        {p.imageUrl && (
-          <div style={{ marginTop: 12, borderRadius: 14, overflow: 'hidden', maxHeight: 380, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
-            <img src={p.imageUrl} alt="" style={{ width: '100%', maxHeight: 380, objectFit: 'cover', display: 'block' }} />
-          </div>
-        )}
+      )}
 
-        <div style={{ display: 'flex', gap: 20, marginTop: 12, color: '#94a3b8', fontSize: '0.85rem' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><MessageCircle size={15} />{p.commentCount || 0}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><Heart size={15} />{Object.keys(p.reactionsData || {}).length}</span>
+      <div style={{ display: 'flex', gap: 14 }}>
+        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '1.05rem' }}>
+          {authorPhoto ? <img key={authorPhoto} src={authorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (authorName || 'U')[0].toUpperCase()}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.96rem' }}>{authorName}</span>
+              {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                    border: '1px solid rgba(201,169,110,0.4)',
+                    color: '#facc15',
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    padding: '2px 7px',
+                    borderRadius: 999
+                  }}
+                  title="Doğrulanmış Lisanslı Psikolog"
+                >
+                  <CheckCircle size={11} color="#facc15" />
+                  <span>{pd.title || 'Psikolog'}</span>
+                </span>
+              )}
+              <span 
+                style={{ color: '#1d9bf0', fontSize: '0.85rem', fontWeight: 600 }}
+                onClick={(e) => { e.stopPropagation(); router.push(`/forum/profil/${encodeURIComponent(authorUsername)}`); }}
+              >
+                @{authorUsername}
+              </span>
+              <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>·</span>
+              <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(p.createdAt)}</span>
+              {p.category && <span style={{ background: '#f1f5f9', color: '#64748b', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.category}</span>}
+            </div>
+            {(isOwn || ADMIN.includes(userEmail)) && (
+              <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, transition: 'all 0.15s' }} onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }} onMouseOut={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none'; }} title="Gönderiyi Sil">
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
+          <p style={{ color: '#334155', fontSize: '0.97rem', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
+            {renderTextWithMentions(p.body)}
+          </p>
+          
+          {p.imageUrl && (
+            <div style={{ marginTop: 12, borderRadius: 14, overflow: 'hidden', maxHeight: 380, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+              <img src={p.imageUrl} alt="" style={{ width: '100%', maxHeight: 380, objectFit: 'cover', display: 'block' }} />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 20, marginTop: 12, color: '#94a3b8', fontSize: '0.85rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><MessageCircle size={15} />{p.commentCount || 0}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><Heart size={15} />{Object.keys(p.reactionsData || {}).length}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -100,11 +125,13 @@ function PostCard({ p, pd, isOwn, userEmail, onDelete }: { p: Post; pd: any; isO
 export default function ProfilClient({ username }: { username: string }) {
   const { user, userProfile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pd, setPd] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [replies, setReplies] = useState<any[]>([]);
   const [likes, setLikes] = useState<Post[]>([]);
-  const [tab, setTab] = useState<'posts'|'replies'|'likes'>('posts');
+  const [bookmarks, setBookmarks] = useState<Post[]>([]);
+  const [tab, setTab] = useState<'posts'|'replies'|'likes'|'bookmarks'>('posts');
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(false);
   const [followers, setFollowers] = useState(0);
@@ -246,6 +273,19 @@ export default function ProfilClient({ username }: { username: string }) {
           try {
             const all = await getDocs(collection(db,'forum'));
             setLikes(all.docs.filter(d => d.data().reactionsData?.[data.uid]).map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[]);
+            
+            // Bookmarks for this user
+            let bookmarkedIds: string[] = [];
+            try {
+              const bSnap = await getDocs(collection(db, 'users', data.uid, 'bookmarks'));
+              bookmarkedIds = bSnap.docs.map(d => d.id);
+            } catch {}
+
+            const bPosts = all.docs
+              .filter(d => d.data().bookmarksData?.[data.uid] || bookmarkedIds.includes(d.id))
+              .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
+            setBookmarks(bPosts.sort((a, b) => b.createdAt - a.createdAt));
+
             const rList: any[] = [];
             for (const p of all.docs) {
               try {
@@ -254,7 +294,7 @@ export default function ProfilClient({ username }: { username: string }) {
               } catch {}
             }
             setReplies(rList.sort((a,b) => b.createdAt - a.createdAt));
-          } catch (e) { console.error('Likes/replies fetch error:', e); }
+          } catch (e) { console.error('Likes/replies/bookmarks fetch error:', e); }
         }
       } catch (e) {
         console.error('Profile fetch error:', e);
@@ -263,6 +303,13 @@ export default function ProfilClient({ username }: { username: string }) {
       }
     })();
   }, [username]);
+
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t === 'bookmarks' || t === 'posts' || t === 'replies' || t === 'likes') {
+      setTab(t as any);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!pd) return;
@@ -489,10 +536,11 @@ export default function ProfilClient({ username }: { username: string }) {
           {[
             { label: 'Ana Akış', href: '/forum', active: false, icon: <Home size={20} /> },
             { label: 'Takip Ettiklerim', href: '/forum?feed=following', active: false, icon: <Users size={20} /> },
+            { label: 'Yer İşaretleri', href: `/forum/profil/${myUsername || username}?tab=bookmarks`, active: tab === 'bookmarks', icon: <Bookmark size={20} /> },
             { label: 'Videolarım', href: '/videolarim', active: false, icon: <Film size={20} /> },
             { label: 'Yazılarım', href: '/yazilarim', active: false, icon: <FileText size={20} /> },
             { label: 'Bildirimler', href: '/bildirimler', active: false, icon: <Bell size={20} />, badge: unreadCount },
-            { label: 'Profilim', href: `/forum/profil/${myUsername || username}`, active: isOwn, icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> },
+            { label: 'Profilim', href: `/forum/profil/${myUsername || username}`, active: isOwn && tab !== 'bookmarks', icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> },
           ].map(item => (
             <Link key={item.label} href={item.href} style={{ textDecoration: 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? '#0f172a' : 'transparent', color: item.active ? 'white' : '#475569', fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', cursor: 'pointer' }}>
@@ -654,7 +702,7 @@ export default function ProfilClient({ username }: { username: string }) {
 
           {/* Profile Tabs */}
           <div className="profil-tabs" style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', borderTop: '1px solid #f1f5f9', background: 'white' }}>
-            {[['posts','Gönderiler'],['replies','Yanıtlar'],['likes','Beğeniler']].map(([k,l]) => (
+            {[['posts','Gönderiler'],['replies','Yanıtlar'],['likes','Beğeniler'],['bookmarks','Yer İşaretleri']].map(([k,l]) => (
               <button key={k} onClick={() => setTab(k as any)} className="profil-tab-btn" style={{ flex: 1, padding: '16px 12px', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 800, fontSize: '0.92rem', color: tab === k ? '#0f172a' : '#94a3b8', borderBottom: tab === k ? '3px solid #0f172a' : '3px solid transparent', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
                 {l}
               </button>
@@ -685,7 +733,7 @@ export default function ProfilClient({ username }: { username: string }) {
           {tab === 'likes' && (likes.length === 0 ? <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" /> : likes.map(p => (
             <div 
               key={p.id} 
-              onClick={() => router.push(`/forum?thread=${p.id}`)}
+              onClick={() => router.push(`/forum?thread=${p.originalPostId || p.id}`)}
               style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
             >
               <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{(p.authorName || 'U')[0].toUpperCase()}</div>
@@ -694,13 +742,25 @@ export default function ProfilClient({ username }: { username: string }) {
                   <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem' }}>{p.authorName}</span>
                   <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>· {formatTimeAgo(p.createdAt)}</span>
                 </div>
-                <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, margin: 0, wordBreak: 'break-word' }}>{p.body}</p>
+                <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, margin: 0, wordBreak: 'break-word' }}>
+                  {renderTextWithMentions(p.body)}
+                </p>
                 <div style={{ display: 'flex', gap: 16, marginTop: 8, color: '#94a3b8', fontSize: '0.82rem' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={14} />{p.commentCount}</span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ef4444' }}><Heart size={14} fill="#ef4444" />{Object.keys(p.reactionsData || {}).length}</span>
                 </div>
               </div>
             </div>
+          )))}
+          {tab === 'bookmarks' && (bookmarks.length === 0 ? <Empty icon={<Bookmark size={36} color="#cbd5e1" />} text="Henüz kaydedilen yer işareti yok" /> : bookmarks.map(p => (
+            <PostCard 
+              key={p.id} 
+              p={p} 
+              pd={pd} 
+              isOwn={isOwn} 
+              userEmail={user?.email || ''} 
+              onDelete={delPost} 
+            />
           )))}
         </main>
 
