@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { Suspense } from 'react';
 import ForumClient from './ForumClient';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Forum',
   description: 'Psikoloji, psikanaliz ve varoluşçu felsefe üzerine tartışmaların yapıldığı topluluk forumu. Deneyimlerinizi paylaşın ve diğer üyelerle etkileşime geçin.',

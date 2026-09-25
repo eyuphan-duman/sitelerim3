@@ -92,8 +92,8 @@ export default function ForumClient() {
     if (searchQuery.trim()) { 
       const q = searchQuery.toLowerCase(); 
       list = list.filter(t => 
-        t.body.toLowerCase().includes(q) || 
-        t.authorName.toLowerCase().includes(q) || 
+        (t.body || '').toLowerCase().includes(q) || 
+        (t.authorName || '').toLowerCase().includes(q) || 
         (t.category && t.category.toLowerCase().includes(q))
       ); 
     }
@@ -340,7 +340,7 @@ export default function ForumClient() {
   const deletePost = async (id: string) => { if (confirm('Emin misin?')) { await deleteDoc(doc(db, 'forum', id)); toast.success('Kaldırıldı.'); } };
   const deleteComment = async (id: string) => { if (!activeThread) return; if (confirm('Emin misin?')) { await deleteDoc(doc(db, 'forum', activeThread.id, 'comments', id)); await updateDoc(doc(db, 'forum', activeThread.id), { commentCount: increment(-1) }); toast.success('Kaldırıldı.'); } };
 
-  const myUsername = userProfile?.username || user?.displayName?.toLowerCase().replace(/\s+/g, '') || '';
+  const myUsername = userProfile?.username || (user?.displayName || '').toLowerCase().replace(/\s+/g, '') || (user?.email ? user.email.split('@')[0].toLowerCase().replace(/\s+/g, '') : '') || user?.uid || '';
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -367,7 +367,7 @@ export default function ForumClient() {
           </div>
           {[{ label: 'Ana Akış', action: () => { setFeedTab('all'); setFilter('Tümü'); }, active: feedTab === 'all', icon: <Home size={20} /> },
             { label: 'Takip Ettiklerim', action: () => !user?.uid ? setAuthOpen(true) : setFeedTab('following'), active: feedTab === 'following', icon: <Users size={20} /> },
-            { label: 'Yer İşaretleri', action: () => !user?.uid ? setAuthOpen(true) : router.push(`/forum/profil/${myUsername}?tab=bookmarks`), active: false, icon: <Bookmark size={20} /> },
+            { label: 'Yer İşaretleri', action: () => !user?.uid ? setAuthOpen(true) : router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?tab=bookmarks` : '/forum'), active: false, icon: <Bookmark size={20} /> },
             { label: 'Videolarım', action: () => router.push('/videolarim'), active: false, icon: <Film size={20} /> },
           ].map(item => (
             <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', background: item.active ? '#0f172a' : 'transparent', color: item.active ? 'white' : '#475569', fontWeight: 600, fontSize: '0.95rem', transition: 'all 0.2s' }}>
@@ -381,7 +381,7 @@ export default function ForumClient() {
             </button>
           ))}
           {user && !user.isAnonymous && (
-            <Link href={`/forum/profil/${myUsername}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 12, textDecoration: 'none', marginTop: 'auto', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Link href={myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum'} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 12, textDecoration: 'none', marginTop: 'auto', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, overflow: 'hidden' }}>
                 {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
               </div>
@@ -749,7 +749,7 @@ export default function ForumClient() {
 
         {/* 4. Profile */}
         <Link
-          href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername)}` : '#'}
+          href={user && !user.isAnonymous ? (myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum/profil') : '#'}
           onClick={!user || user.isAnonymous ? (e) => { e.preventDefault(); setAuthOpen(true); } : undefined}
           style={{
             display: 'flex',

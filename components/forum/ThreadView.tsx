@@ -124,7 +124,7 @@ export default function ThreadView({
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    const u = post?.authorUsername || post?.authorName?.toLowerCase().replace(/\s+/g, '') || 'kullanici';
+    const u = post?.authorUsername || (post?.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
     setReplyToUser(u);
   }, [post?.id, post?.authorUsername, post?.authorName]);
 
@@ -158,7 +158,7 @@ export default function ThreadView({
   }, [post?.id]);
 
   const p = currentPost || post;
-  const username = p.authorUsername || p.authorName?.toLowerCase().replace(/\s+/g, '') || 'kullanici';
+  const username = p.authorUsername || (p.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
   const isAdmin = adminEmails.includes(currentUser?.email || '');
   const canDeletePost = (currentUser?.uid && currentUser.uid === p.uid) || isAdmin;
 
@@ -1003,7 +1003,7 @@ export default function ThreadView({
           </div>
         ) : (
           comments.map(c => {
-            const commentAuthorUsername = c.authorUsername || c.authorName?.toLowerCase().replace(/\s+/g, '') || 'kullanici';
+            const commentAuthorUsername = c.authorUsername || (c.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
             const canDeleteComment = (currentUser?.uid && currentUser.uid === c.uid) || isAdmin;
             const commentLiked = c.reactionsData?.[currentUser?.uid || ''] === 'like';
             const commentLikesCount = Object.values(c.reactionsData || {}).filter(v => v === 'like').length;
