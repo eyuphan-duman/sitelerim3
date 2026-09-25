@@ -37,6 +37,14 @@ export async function POST(request: Request) {
       });
     }
 
+    // In production (e.g. Vercel), serverless filesystem is read-only.
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      return NextResponse.json({
+        success: false,
+        error: 'Cloudinary anahtarları tanımlanmamış. Lütfen Vercel Environment Variables ayarlarını kontrol edin.'
+      }, { status: 500 });
+    }
+
     // Fallback for local development when Cloudinary env is not set
     console.warn('Cloudinary bilgileri eksik, yerel dosya sistemine kaydediliyor.');
     const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
@@ -54,6 +62,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, url, fallback: true });
   } catch (error: any) {
     console.error('Yükleme hatası:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Yükleme sırasında hata oluştu' }, { status: 500 });
   }
 }
