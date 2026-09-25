@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play } from 'lucide-react';
+import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { collection, query, orderBy, limit, getDocs, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
@@ -65,8 +65,19 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const articlesCarouselRef = useRef<HTMLDivElement>(null);
   const [dailyQuote, setDailyQuote] = useState(QUOTES[0]);
   const [randomVideos, setRandomVideos] = useState<any[]>([]);
+
+  const scrollArticles = (direction: 'left' | 'right') => {
+    if (articlesCarouselRef.current) {
+      const scrollAmount = articlesCarouselRef.current.clientWidth * 0.75;
+      articlesCarouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   useEffect(() => {
     // Shuffle and pick 4 random videos on client mount to avoid hydration mismatch
@@ -96,15 +107,15 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchLatest() {
       try {
-        const snap = await getDocs(query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(10)));
+        const snap = await getDocs(query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(15)));
         const fbArticles = snap.docs.map(d => {
           const data = d.data();
           return { id: d.id, ...data, createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || null) };
         });
 
         const combined = [...fbArticles, ...LOCAL_ARTICLES]
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 2);
+          .sort((a: any, b: any) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime())
+          .slice(0, 8);
 
         setLatestArticles(combined);
       } catch (e) {
@@ -350,38 +361,171 @@ export default function HomePage() {
 
 
 
-      {/* ══════════════════ LATEST ARTICLES ══════════════════ */}
+      {/* ══════════════════ LATEST ARTICLES (HORIZONTAL CAROUSEL) ══════════════════ */}
       {latestArticles.length > 0 && (
-        <section style={{ padding: '80px 0', background: '#f8fafc' }}>
+        <section style={{ padding: '80px 0', background: '#f8fafc', overflow: 'hidden' }}>
+          <style>{`
+            .articles-carousel-container::-webkit-scrollbar {
+              display: none;
+            }
+            .article-carousel-card {
+              flex: 0 0 360px;
+              scroll-snap-align: start;
+              background: white;
+              border-radius: 20px;
+              overflow: hidden;
+              border: 1.5px solid rgba(212, 175, 55, 0.38);
+              box-shadow: 0 6px 24px rgba(10, 22, 40, 0.05), 0 0 0 1px rgba(212, 175, 55, 0.12);
+              transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+              display: flex;
+              flex-direction: column;
+              text-decoration: none;
+              position: relative;
+            }
+            .article-carousel-card:hover {
+              border-color: var(--gold);
+              transform: translateY(-6px);
+              box-shadow: 0 20px 42px -10px rgba(10, 22, 40, 0.14), 0 0 22px rgba(212, 175, 55, 0.28);
+            }
+            .article-carousel-card:hover .article-img-zoom {
+              transform: scale(1.06);
+            }
+            .article-carousel-card:hover .article-card-arrow-icon {
+              transform: translateX(4px);
+            }
+            @media (max-width: 768px) {
+              .article-carousel-card {
+                flex: 0 0 85vw !important;
+                max-width: 330px !important;
+                border-radius: 16px !important;
+              }
+              .articles-carousel-container {
+                gap: 16px !important;
+                padding-left: 20px !important;
+                padding-right: 20px !important;
+                padding-bottom: 18px !important;
+              }
+            }
+          `}</style>
           <div className="container-main">
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 48, flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36, flexWrap: 'wrap', gap: 16 }}>
               <div>
-                <div className="eyebrow" style={{ marginBottom: 12, color: 'var(--gold-dim)' }}>Güncel İçerikler</div>
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,2.6rem)', fontWeight: 700, color: 'var(--navy)' }}>Son Makaleler</h2>
+                <div className="eyebrow" style={{ marginBottom: 10, color: 'var(--gold-dim)' }}>Güncel İçerikler</div>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.9rem,3.2vw,2.5rem)', fontWeight: 700, color: 'var(--navy)', margin: 0 }}>
+                  Son Makaleler
+                </h2>
               </div>
-              <Link href="/yazilarim" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--navy)', fontWeight: 700, fontSize: '0.8rem', textDecoration: 'none', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                Tümünü Gör <ArrowRight size={14}/>
-              </Link>
-            </div>
-            <div className="yz-grid">
-              {latestArticles.map(a => (
-                <Link href={`/yazilarim/${a.id}`} key={a.id} className="article-card" style={{ textDecoration: 'none' }}>
-                  {a.featuredImage && (
-                    <div className="article-card-image">
-                      <Image src={a.featuredImage} alt={a.title} width={400} height={250} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-                    </div>
-                  )}
-                  <div className="article-card-body">
-                    <div className="article-card-meta">
-                      {a.category && <span className="article-card-category">{a.category}</span>}
-                      {a.createdAt && <span className="article-card-date">{format(new Date(a.createdAt), 'd MMM yyyy', { locale: tr })}</span>}
-                    </div>
-                    <h3 className="article-card-title">{a.title}</h3>
-                    {a.excerpt && <p className="article-card-excerpt">{a.excerpt}</p>}
-                    <span className="article-card-btn">Makaleyi Oku <ArrowRight size={14} className="article-card-btn-arrow" /></span>
-                  </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                {/* Arrow navigation buttons */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button 
+                    onClick={() => scrollArticles('left')} 
+                    style={{ width: 40, height: 40, borderRadius: '50%', border: '1.5px solid rgba(212, 175, 55, 0.4)', background: 'white', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                    onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.background = 'var(--navy)'; e.currentTarget.style.color = 'white'; }}
+                    onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.4)'; e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--navy)'; }}
+                    title="Önceki"
+                    aria-label="Önceki makaleler"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button 
+                    onClick={() => scrollArticles('right')} 
+                    style={{ width: 40, height: 40, borderRadius: '50%', border: '1.5px solid rgba(212, 175, 55, 0.4)', background: 'white', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                    onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.background = 'var(--navy)'; e.currentTarget.style.color = 'white'; }}
+                    onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.4)'; e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--navy)'; }}
+                    title="Sonraki"
+                    aria-label="Sonraki makaleler"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+
+                <Link href="/yazilarim" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--navy)', fontWeight: 700, fontSize: '0.82rem', textDecoration: 'none', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '10px 18px', borderRadius: 999, background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)', transition: 'all 0.2s' }}>
+                  Tümünü Gör <ArrowRight size={14}/>
                 </Link>
-              ))}
+              </div>
+            </div>
+
+            {/* Horizontal sliding track */}
+            <div 
+              ref={articlesCarouselRef} 
+              className="articles-carousel-container"
+              style={{
+                display: 'flex',
+                gap: 24,
+                overflowX: 'auto',
+                scrollSnapType: 'x mandatory',
+                scrollBehavior: 'smooth',
+                padding: '12px 4px 28px',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+            >
+              {latestArticles.map(a => {
+                const articleDate = a.createdAt || a.date;
+                let formattedDate = '';
+                if (articleDate) {
+                  try {
+                    formattedDate = format(new Date(articleDate), 'd MMM yyyy', { locale: tr });
+                  } catch {}
+                }
+
+                return (
+                  <Link href={`/yazilarim/${a.id}`} key={a.id} className="article-carousel-card">
+                    {/* Image / Header banner */}
+                    {a.featuredImage ? (
+                      <div style={{ height: 190, width: '100%', position: 'relative', overflow: 'hidden', background: '#f1f5f9' }}>
+                        <img 
+                          src={a.featuredImage} 
+                          alt={a.title} 
+                          className="article-img-zoom"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease', display: 'block' }} 
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ height: 130, width: '100%', background: 'linear-gradient(135deg, #0a1628 0%, #1e293b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, opacity: 0.15, background: 'radial-gradient(circle at center, var(--gold) 0%, transparent 70%)' }} />
+                        <BookOpen size={34} color="var(--gold)" style={{ opacity: 0.85 }} />
+                      </div>
+                    )}
+
+                    {/* Card Content */}
+                    <div style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                        {a.category && (
+                          <span style={{ background: '#fef3c7', color: '#b45309', padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            {a.category}
+                          </span>
+                        )}
+                        {formattedDate && (
+                          <span style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 500 }}>
+                            {formattedDate}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.4, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {a.title}
+                      </h3>
+
+                      {a.excerpt && (
+                        <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {a.excerpt}
+                        </p>
+                      )}
+
+                      <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          Makaleyi Oku 
+                          <ArrowRight size={14} className="article-card-arrow-icon" style={{ transition: 'transform 0.2s ease', color: 'var(--gold)' }} />
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>5 dk okuma</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
