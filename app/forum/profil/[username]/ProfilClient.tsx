@@ -111,11 +111,23 @@ export default function ProfilClient({ username }: { username: string }) {
     return () => { u1(); u2(); };
   }, [pd, user]);
 
-  const uploadImg = (file: File, path: string): Promise<string> => new Promise((res, rej) => {
+  const uploadImg = async (file: File, path: string): Promise<string> => {
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', `manav-platform/${path.split('/')[0]}`);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success && data.url) return data.url;
+    } catch (e) {
+      console.warn('Cloudinary upload fallback to Firebase storage:', e);
+    }
     const r = storageRef(storage, path);
     const t = uploadBytesResumable(r, file);
-    t.on('state_changed', null, rej, async () => res(await getDownloadURL(t.snapshot.ref)));
-  });
+    return new Promise((res, rej) => {
+      t.on('state_changed', null, rej, async () => res(await getDownloadURL(t.snapshot.ref)));
+    });
+  };
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f || !user) return;

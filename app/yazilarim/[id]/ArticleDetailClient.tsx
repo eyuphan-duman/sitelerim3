@@ -178,19 +178,43 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
             onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
             placeholder="Makale başlığı…"
           />
-          <div className="yz-editor-row">
+          <div className="yz-editor-row" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <input
               className="yz-editor-field"
+              style={{ flex: 1 }}
               value={editForm.category}
               onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
               placeholder="Kategori"
             />
-            <input
-              className="yz-editor-field"
-              value={editForm.featuredImage}
-              onChange={e => setEditForm(f => ({ ...f, featuredImage: e.target.value }))}
-              placeholder="Kapak görseli URL (opsiyonel)"
-            />
+            <div style={{ flex: 2, display: 'flex', gap: 8 }}>
+              <input
+                className="yz-editor-field"
+                style={{ flex: 1 }}
+                value={editForm.featuredImage}
+                onChange={e => setEditForm(f => ({ ...f, featuredImage: e.target.value }))}
+                placeholder="Kapak görseli URL veya dosya yükleyin"
+              />
+              <label style={{ background: '#2563eb', color: 'white', padding: '10px 14px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap' }} title="Cloudinary'ye görsel yükle">
+                ☁️ Yükle
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const t = toast.loading('Kapak görseli Cloudinary\'ye yükleniyor...');
+                  try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    fd.append('folder', 'manav-platform/covers');
+                    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.error);
+                    setEditForm(prev => ({ ...prev, featuredImage: data.url }));
+                    toast.success('Kapak görseli yüklendi!', { id: t });
+                  } catch (err: any) {
+                    toast.error('Hata: ' + err.message, { id: t });
+                  }
+                }} />
+              </label>
+            </div>
           </div>
           <div className="editor-container" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
             <RichTextEditor

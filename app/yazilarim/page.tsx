@@ -114,7 +114,7 @@ export default function YazilarimPage() {
             İnsan ruhunun derinliklerine dair makaleler, analizler ve düşünceler.
           </p>
           {isAdmin && (
-            <Link href="/admin" className="yz-new-btn">
+            <Link href="/admin?tab=posts" className="yz-new-btn">
               <Plus size={18} /> Yeni Makale Yayımla
             </Link>
           )}

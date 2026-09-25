@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -21,12 +21,19 @@ const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
 export default function AdminPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [appointments, setAppointments] = useState<any[]>([]);
 
   const [articles, setArticles] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'appointments' | 'posts' | 'videos' | 'messages'>('appointments');
+  const [activeTab, setActiveTab] = useState<'appointments' | 'posts' | 'videos' | 'messages'>(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
+      return tabParam;
+    }
+    return 'appointments';
+  });
   const [subTab, setSubTab] = useState<'pending' | 'approved'>('pending');
   const [messages, setMessages] = useState<any[]>([]);
   const [editingMsg, setEditingMsg] = useState<string | null>(null);
@@ -35,6 +42,7 @@ export default function AdminPage() {
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
   // Forms
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
   const [postForm, setPostForm] = useState({ title: '', category: '', featuredImage: '', content: '' });
   const [videoForm, setVideoForm] = useState({ title: '', category: '', desc: '', dur: '', views: '1', link: '' });
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -67,11 +75,47 @@ export default function AdminPage() {
       const strip = (h: string) => h.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
       const raw = strip(postForm.content);
       const excerpt = raw.length > 220 ? raw.slice(0, 220) + '…' : raw;
-      await addDoc(collection(db, 'articles'), { ...postForm, excerpt, createdAt: serverTimestamp() });
+
+      if (editingArticleId) {
+        await updateDoc(doc(db, 'articles', editingArticleId), {
+          ...postForm,
+          excerpt,
+          updatedAt: serverTimestamp()
+        });
+        toast.success('Makale güncellendi!');
+        setEditingArticleId(null);
+      } else {
+        await addDoc(collection(db, 'articles'), {
+          ...postForm,
+          excerpt,
+          createdAt: serverTimestamp()
+        });
+        toast.success('Makale yayımlandı!');
+      }
+
       setPostForm({ title: '', category: '', featuredImage: '', content: '' });
-      toast.success('Makale yayımlandı!');
-    } catch { toast.error('Hata oluştu.'); }
+    } catch (e: any) {
+      toast.error('Hata oluştu: ' + (e?.message || ''));
+    }
     finally { setSubmitting(false); }
+  };
+
+  const handleStartEdit = (a: any) => {
+    setPostForm({
+      title: a.title || '',
+      category: a.category || '',
+      featuredImage: a.featuredImage || '',
+      content: a.content || ''
+    });
+    setEditingArticleId(a.id);
+    setActiveTab('posts');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast('Makale düzenleme moduna alındı.', { icon: '✏️' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingArticleId(null);
+    setPostForm({ title: '', category: '', featuredImage: '', content: '' });
   };
 
   const deletePost = async (id: string) => {
@@ -81,6 +125,7 @@ export default function AdminPage() {
         deleteDoc(doc(db, 'articles', id)),
         deleteDoc(doc(db, 'posts', id)).catch(() => {})
       ]);
+      if (editingArticleId === id) handleCancelEdit();
       toast.success('Silindi.');
     } catch {
       toast.error('Hata oluştu.');
@@ -95,6 +140,7 @@ export default function AdminPage() {
     try {
       const formData = new FormData();
       formData.append('file', videoFile);
+      formData.append('folder', 'manav-platform/videos');
 
       setUploadProgress(50); // Yükleniyor hissi için sahte progress
       
@@ -110,7 +156,7 @@ export default function AdminPage() {
       setVideoForm({ title: '', category: '', desc: '', dur: '', views: '1', link: '' });
       setVideoFile(null);
       setUploadProgress(0);
-      toast.success('Video eklendi!');
+      toast.success('Video Cloudinary\'ye yüklendi ve eklendi!');
     } catch (error: any) { 
       toast.error('Hata oluştu: ' + error.message); 
       setUploadProgress(0);
@@ -246,14 +292,46 @@ export default function AdminPage() {
             <div style={{ background: 'white', padding: 32, borderRadius: 12, border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
                 <PenTool size={20} color="var(--gold-dim)"/>
-                <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>Yeni Makale Yayımla</h2>
+                <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>
+                  {editingArticleId ? 'Makaleyi Güncelle' : 'Yeni Makale Yayımla'}
+                </h2>
+                {editingArticleId && (
+                  <button type="button" onClick={handleCancelEdit} style={{ marginLeft: 'auto', background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <X size={14}/> İptal Et
+                  </button>
+                )}
               </div>
               <form onSubmit={handleAddPost} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
                   <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Başlık</label><input required className="input-field" value={postForm.title} onChange={e=>setPostForm({...postForm, title: e.target.value})} placeholder="Makale başlığı…"/></div>
                   <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kategori</label><input className="input-field" value={postForm.category} onChange={e=>setPostForm({...postForm, category: e.target.value})} placeholder="Örn: Psikoloji"/></div>
                 </div>
-                <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kapak Görseli URL (opsiyonel)</label><input className="input-field" value={postForm.featuredImage} onChange={e=>setPostForm({...postForm, featuredImage: e.target.value})} placeholder="https://…"/></div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kapak Görseli (Cloudinary / URL)</label>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <input className="input-field" style={{ flex: 1 }} value={postForm.featuredImage} onChange={e=>setPostForm({...postForm, featuredImage: e.target.value})} placeholder="https://… veya dosya seçip yükleyin"/>
+                    <label style={{ background: '#2563eb', color: 'white', padding: '10px 16px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap' }} title="Cloudinary'ye görsel yükle">
+                      ☁️ Yükle
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const t = toast.loading('Görsel Cloudinary\'ye yükleniyor...');
+                        try {
+                          const fd = new FormData();
+                          fd.append('file', file);
+                          fd.append('folder', 'manav-platform/covers');
+                          const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                          const data = await res.json();
+                          if (!data.success) throw new Error(data.error);
+                          setPostForm(prev => ({ ...prev, featuredImage: data.url }));
+                          toast.success('Görsel yüklendi!', { id: t });
+                        } catch (err: any) {
+                          toast.error('Hata: ' + err.message, { id: t });
+                        }
+                      }} />
+                    </label>
+                  </div>
+                </div>
                 <div>
                   <div className="editor-container" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
                     <RichTextEditor 
@@ -263,7 +341,10 @@ export default function AdminPage() {
                     />
                   </div>
                 </div>
-                <button disabled={submitting} type="submit" className="btn-gold justify-center mt-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={16}/> {submitting ? 'Yayımlanıyor…' : 'Makaleyi Yayımla'}</button>
+                <button disabled={submitting} type="submit" className="btn-gold justify-center mt-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {editingArticleId ? <Save size={16}/> : <Plus size={16}/>}
+                  {submitting ? 'Kaydediliyor…' : (editingArticleId ? 'Makaleyi Güncelle' : 'Makaleyi Yayımla')}
+                </button>
               </form>
             </div>
 
@@ -278,8 +359,11 @@ export default function AdminPage() {
                       {a.category && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--gold-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{a.category}</span>}
                       <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.35 }}>{a.title}</h3>
                       <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 12 }}>
-                        <a href={`/yazilarim/${a.id}`} target="_blank" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, color: '#64748b', textDecoration: 'none', cursor: 'pointer' }}>
+                        <button onClick={()=>handleStartEdit(a)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, color: '#2563eb', cursor: 'pointer' }}>
                           <Edit3 size={13}/> Düzenle
+                        </button>
+                        <a href={`/yazilarim/${a.id}`} target="_blank" style={{ padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, color: '#64748b', display: 'flex', alignItems: 'center', textDecoration: 'none' }} title="Sitede Gör">
+                          <Eye size={14}/>
                         </a>
                         <button onClick={()=>deletePost(a.id)} style={{ padding: '8px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                           <Trash2 size={14}/>

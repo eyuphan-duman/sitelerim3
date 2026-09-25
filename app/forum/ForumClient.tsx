@@ -17,11 +17,13 @@ interface Post {
   authorName: string; authorUsername?: string; uid: string;
   commentCount: number; createdAt: Date; reactionsData?: Record<string, string>;
   authorPhotoURL?: string;
+  imageUrl?: string;
 }
 interface Comment {
   id: string; authorName: string; authorUsername?: string;
   text: string; createdAt: Date; reactionsData?: Record<string, string>; uid: string;
   authorPhotoURL?: string;
+  imageUrl?: string;
 }
 
 const CATEGORIES = ['Tümü','Psikanaliz','Varoluş & Anlam','Kaygı & Depresyon','İlişkiler','Çocukluk & Travma','Rüyalar','Kimlik & Benlik','Kişisel Gelişim'];
@@ -35,7 +37,8 @@ export default function ForumClient() {
   const [filter, setFilter] = useState('Tümü');
   const [feedTab, setFeedTab] = useState<'all' | 'following'>('all');
   const [followingUids, setFollowingUids] = useState<string[]>([]);
-  const [form, setForm] = useState({ body: '', cat: 'Psikanaliz' });
+  const [form, setForm] = useState({ body: '', cat: 'Psikanaliz', imageUrl: '' });
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [posting, setPosting] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [activeThread, setActiveThread] = useState<Post | null>(null);
@@ -60,14 +63,51 @@ export default function ForumClient() {
   const catCounts = threads.reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + 1; return acc; }, {} as Record<string, number>);
   const trends = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    const toastId = toast.loading('Görsel Cloudinary\'ye yükleniyor...');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', 'manav-platform/forum');
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      setForm(prev => ({ ...prev, imageUrl: data.url }));
+      toast.success('Görsel eklendi!', { id: toastId });
+    } catch (err: any) {
+      toast.error('Hata: ' + err.message, { id: toastId });
+    } finally {
+      setUploadingImage(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const handlePost = async () => {
-    if (!user || !form.body.trim()) return toast.error('Yazı boş olamaz.');
+    if (!user || (!form.body.trim() && !form.imageUrl)) return toast.error('Yazı veya görsel eklemelisiniz.');
     if (user.isAnonymous) return setAuthOpen(true);
     setPosting(true);
     try {
-      await addDoc(collection(db, 'forum'), { body: form.body, category: form.cat, authorName: userProfile?.displayName || user.displayName || 'Kullanıcı', authorUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici', uid: user.uid, commentCount: 0, createdAt: serverTimestamp(), reactionsData: {} });
-      setForm({ body: '', cat: 'Psikanaliz' }); toast.success('Paylaşıldı!');
-    } catch { toast.error('Hata oluştu.'); } finally { setPosting(false); }
+      await addDoc(collection(db, 'forum'), {
+        body: form.body,
+        category: form.cat,
+        imageUrl: form.imageUrl || '',
+        authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
+        authorUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
+        uid: user.uid,
+        commentCount: 0,
+        createdAt: serverTimestamp(),
+        reactionsData: {}
+      });
+      setForm({ body: '', cat: 'Psikanaliz', imageUrl: '' });
+      toast.success('Paylaşıldı!');
+    } catch {
+      toast.error('Hata oluştu.');
+    } finally {
+      setPosting(false);
+    }
   };
 
   const handleReact = async (e: React.MouseEvent, thread: Post, emoji: string) => {
@@ -103,10 +143,18 @@ export default function ForumClient() {
     }
   }, [threads, searchParams, activeThread]);
 
-  const submitComment = async (text: string) => {
-    if (!user || !text.trim() || !activeThread) return;
+  const submitComment = async (text: string, imageUrl?: string) => {
+    if (!user || (!text.trim() && !imageUrl) || !activeThread) return;
     if (user.isAnonymous) return setAuthOpen(true);
-    await addDoc(collection(db, 'forum', activeThread.id, 'comments'), { authorName: userProfile?.displayName || user.displayName || 'Kullanıcı', authorUsername: userProfile?.username || '', text, createdAt: serverTimestamp(), reactionsData: {}, uid: user.uid });
+    await addDoc(collection(db, 'forum', activeThread.id, 'comments'), {
+      authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
+      authorUsername: userProfile?.username || '',
+      text,
+      imageUrl: imageUrl || '',
+      createdAt: serverTimestamp(),
+      reactionsData: {},
+      uid: user.uid
+    });
     await updateDoc(doc(db, 'forum', activeThread.id), { commentCount: increment(1) });
     toast.success('Yorum eklendi.');
   };
@@ -195,11 +243,29 @@ export default function ForumClient() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <textarea placeholder="Ne düşünüyorsunuz? Psikoloji topluluğuyla paylaşın..." value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} style={{ width: '100%', border: 'none', fontSize: '1.05rem', color: '#0f172a', minHeight: 72, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5 }} />
+                
+                {form.imageUrl && (
+                  <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: 12 }}>
+                    <img src={form.imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button onClick={() => setForm({ ...form, imageUrl: '' })} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13 }}>
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 8 }}>
-                  <select value={form.cat} onChange={e => setForm({ ...form, cat: e.target.value })} style={{ border: 'none', background: '#f1f5f9', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
-                    {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <button onClick={handlePost} disabled={posting || !form.body.trim()} style={{ background: form.body.trim() ? '#0f172a' : '#e2e8f0', color: form.body.trim() ? 'white' : '#94a3b8', border: 'none', padding: '10px 22px', borderRadius: 999, fontWeight: 700, cursor: form.body.trim() ? 'pointer' : 'default', fontSize: '0.9rem', transition: 'all 0.2s' }}>Paylaş</button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <select value={form.cat} onChange={e => setForm({ ...form, cat: e.target.value })} style={{ border: 'none', background: '#f1f5f9', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
+                      {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', fontWeight: 600 }} title="Görsel ekle (Cloudinary)">
+                      {uploadingImage ? '⏳ Yükleniyor…' : '📷 Görsel Ekle'}
+                      <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage} />
+                    </label>
+                  </div>
+
+                  <button onClick={handlePost} disabled={posting || (!form.body.trim() && !form.imageUrl)} style={{ background: (form.body.trim() || form.imageUrl) ? '#0f172a' : '#e2e8f0', color: (form.body.trim() || form.imageUrl) ? 'white' : '#94a3b8', border: 'none', padding: '10px 22px', borderRadius: 999, fontWeight: 700, cursor: (form.body.trim() || form.imageUrl) ? 'pointer' : 'default', fontSize: '0.9rem', transition: 'all 0.2s' }}>Paylaş</button>
                 </div>
               </div>
             </div>

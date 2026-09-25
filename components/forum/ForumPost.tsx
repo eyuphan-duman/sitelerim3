@@ -8,6 +8,7 @@ interface Post {
   authorName: string; authorUsername?: string; uid: string;
   commentCount: number; createdAt: Date; reactionsData?: Record<string, string>;
   authorPhotoURL?: string;
+  imageUrl?: string;
 }
 
 interface Props {
@@ -83,7 +84,12 @@ export default function ForumPost({ post, currentUserUid, currentUserEmail, admi
           </div>
           <div onClick={() => onOpen(post)} style={{ cursor: 'pointer' }}>
             {post.title && <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: 6, lineHeight: 1.3, overflowWrap: 'break-word', wordBreak: 'normal' }}>{post.title}</h3>}
-            <p style={{ fontSize: '0.97rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 14, overflowWrap: 'break-word', wordBreak: 'normal' }}>{post.body}</p>
+            <p style={{ fontSize: '0.97rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: post.imageUrl ? 10 : 14, overflowWrap: 'break-word', wordBreak: 'normal' }}>{post.body}</p>
+            {post.imageUrl && (
+              <div style={{ marginTop: 8, marginBottom: 14, borderRadius: 12, overflow: 'hidden', maxHeight: 380, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <img src={post.imageUrl} alt="" style={{ width: '100%', maxHeight: 380, objectFit: 'cover', display: 'block' }} />
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             {EMOJIS.map(({ key, emoji, color }) => {

@@ -8,11 +8,13 @@ interface Post {
   authorName: string; authorUsername?: string; uid: string;
   commentCount: number; createdAt: Date; reactionsData?: Record<string, string>;
   authorPhotoURL?: string;
+  imageUrl?: string;
 }
 interface Comment {
   id: string; authorName: string; authorUsername?: string;
   text: string; createdAt: Date; reactionsData?: Record<string, string>; uid: string;
   authorPhotoURL?: string;
+  imageUrl?: string;
 }
 interface Props {
   post: Post; comments: Comment[];
@@ -20,7 +22,7 @@ interface Props {
   onClose: () => void;
   onReact: (e: React.MouseEvent, post: Post, emoji: string) => void;
   onCommentReact: (e: React.MouseEvent, comment: Comment, emoji: string) => void;
-  onSubmitComment: (text: string) => void;
+  onSubmitComment: (text: string, imageUrl?: string) => void;
   onDeleteComment: (id: string) => void;
   onOpenAuth: () => void;
 }
@@ -34,12 +36,35 @@ const EMOJIS = [
 
 export default function ForumModal({ post, comments, currentUser, userProfile, adminEmails, onClose, onReact, onCommentReact, onSubmitComment, onDeleteComment, onOpenAuth }: Props) {
   const [text, setText] = useState('');
+  const [commentImageUrl, setCommentImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const username = post.authorUsername || post.authorName.toLowerCase().replace(/\s+/g, '');
 
   const handleSubmit = () => {
-    if (!text.trim()) return;
-    onSubmitComment(text);
+    if (!text.trim() && !commentImageUrl) return;
+    onSubmitComment(text, commentImageUrl);
     setText('');
+    setCommentImageUrl('');
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', 'manav-platform/forum');
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      setCommentImageUrl(data.url);
+    } catch (err: any) {
+      alert('Görsel yüklenemedi: ' + err.message);
+    } finally {
+      setUploadingImage(false);
+      if (e.target) e.target.value = '';
+    }
   };
 
   const isAdmin = adminEmails.includes(currentUser?.email || '');
@@ -83,7 +108,12 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
               </div>
             </div>
             {post.title && <h1 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: 12, lineHeight: 1.3 }}>{post.title}</h1>}
-            <p style={{ fontSize: '1.05rem', color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap', marginBottom: 20 }}>{post.body}</p>
+            <p style={{ fontSize: '1.05rem', color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap', marginBottom: post.imageUrl ? 12 : 20 }}>{post.body}</p>
+            {post.imageUrl && (
+              <div style={{ marginBottom: 20, borderRadius: 14, overflow: 'hidden', maxHeight: 450, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <img src={post.imageUrl} alt="" style={{ width: '100%', maxHeight: 450, objectFit: 'cover', display: 'block' }} />
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8, paddingTop: 16, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
               {EMOJIS.map(({ key, emoji, color }) => {
                 const count = Object.values(post.reactionsData || {}).filter(v => v === key).length;
@@ -101,19 +131,33 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
           </div>
 
           {currentUser && !currentUser.isAnonymous ? (
-            <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0, overflow: 'hidden' }}>
-                {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="pp" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || currentUser.displayName || 'U')[0].toUpperCase()}
-              </div>
-              <div style={{ flex: 1, display: 'flex', gap: 8 }}>
-                <input
-                  placeholder="Yanıtla..." value={text} onChange={e => setText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
-                  style={{ flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '10px 14px', fontSize: '0.95rem', outline: 'none', color: '#0f172a' }}
-                />
-                <button onClick={handleSubmit} style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: 12, padding: '10px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                  <Send size={16} />
-                </button>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {commentImageUrl && (
+                <div style={{ position: 'relative', width: 80, height: 80, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                  <img src={commentImageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button onClick={() => setCommentImageUrl('')} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 12 }}>
+                    ✕
+                  </button>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0, overflow: 'hidden' }}>
+                  {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="pp" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || currentUser.displayName || 'U')[0].toUpperCase()}
+                </div>
+                <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    placeholder="Yanıtla..." value={text} onChange={e => setText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
+                    style={{ flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '10px 14px', fontSize: '0.95rem', outline: 'none', color: '#0f172a' }}
+                  />
+                  <label style={{ background: '#f1f5f9', padding: '10px 12px', borderRadius: 12, cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }} title="Görsel ekle (Cloudinary)">
+                    {uploadingImage ? '⏳' : '📷'}
+                    <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage} />
+                  </label>
+                  <button onClick={handleSubmit} disabled={uploadingImage || (!text.trim() && !commentImageUrl)} style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: 12, padding: '10px 16px', cursor: (text.trim() || commentImageUrl) ? 'pointer' : 'default', display: 'flex', alignItems: 'center', opacity: (!text.trim() && !commentImageUrl) ? 0.5 : 1 }}>
+                    <Send size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -156,7 +200,12 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
                         </button>
                       )}
                     </div>
-                    <p style={{ color: '#334155', fontSize: '0.93rem', lineHeight: 1.5, margin: 0 }}>{c.text}</p>
+                    {c.text && <p style={{ color: '#334155', fontSize: '0.93rem', lineHeight: 1.5, margin: 0 }}>{c.text}</p>}
+                    {c.imageUrl && (
+                      <div style={{ marginTop: 8, borderRadius: 10, overflow: 'hidden', maxHeight: 250, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                        <img src={c.imageUrl} alt="" style={{ width: '100%', maxHeight: 250, objectFit: 'cover', display: 'block' }} />
+                      </div>
+                    )}
                     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                       {[{ key: 'heart', emoji: '❤️' }, { key: 'lightbulb', emoji: '💡' }].map(({ key, emoji }) => {
                         const count = Object.values(c.reactionsData || {}).filter(v => v === key).length;

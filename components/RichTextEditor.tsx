@@ -84,15 +84,53 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     }
   };
 
-  const imageHandler = () => {
-    const url = window.prompt("Görselin internet adresini (URL) buraya yapıştırın:");
-    if (url && url.trim()) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const loadingToast = toast.loading('Görsel Cloudinary\'ye yükleniyor...');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'manav-platform/articles');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Yükleme başarısız');
+
       const quill = quillRef.current?.getEditor();
       if (quill) {
         const range = quill.getSelection();
         const index = range ? range.index : quill.getLength();
-        quill.insertEmbed(index, 'image', { url: url.trim(), width: '100%' });
+        quill.insertEmbed(index, 'image', { url: data.url, width: '100%' });
         quill.setSelection(index + 1);
+      }
+      toast.success('Görsel eklendi!', { id: loadingToast });
+    } catch (err: any) {
+      toast.error('Görsel yüklenemedi: ' + err.message, { id: loadingToast });
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const imageHandler = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      const url = window.prompt("Görselin internet adresini (URL) buraya yapıştırın:");
+      if (url && url.trim()) {
+        const quill = quillRef.current?.getEditor();
+        if (quill) {
+          const range = quill.getSelection();
+          const index = range ? range.index : quill.getLength();
+          quill.insertEmbed(index, 'image', { url: url.trim(), width: '100%' });
+          quill.setSelection(index + 1);
+        }
       }
     }
   };
@@ -137,6 +175,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
 
   return (
     <div className="rich-text-editor">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
       <QuillEditor
         ref={quillRef}
         theme="snow"
