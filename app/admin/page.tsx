@@ -80,15 +80,81 @@ export default function AdminPage() {
         }));
       }
     });
+    let usersList: any[] = [];
+    let appsList: any[] = [];
+
+    const mergeAndSet = () => {
+      const mergedMap = new Map();
+      usersList.forEach(u => mergedMap.set(u.id, { ...u }));
+      appsList.forEach(a => {
+        const existing = mergedMap.get(a.id) || {};
+        mergedMap.set(a.id, {
+          ...existing,
+          ...a,
+          id: a.id,
+          diplomaUrl: a.diplomaUrl || existing.diplomaUrl || '',
+          university: a.university || existing.university || '',
+          title: a.title || existing.title || '',
+        });
+      });
+      const allPsychs = Array.from(mergedMap.values()).filter(
+        (u: any) => u.psychologistStatus || u.diplomaUrl || u.role === 'psychologist' || u.role === 'psychologist_pending'
+      );
+      setPsychApplications(allPsychs);
+    };
+
     const u6 = onSnapshot(collection(db, 'users'), snap => {
-      const psychs = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter((u: any) => u.psychologistStatus || u.diplomaUrl || u.role === 'psychologist' || u.role === 'psychologist_pending');
-      setPsychApplications(psychs);
+      usersList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      mergeAndSet();
     });
 
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); };
+    const u7 = onSnapshot(collection(db, 'psychologist_applications'), snap => {
+      appsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      mergeAndSet();
+    });
+
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); };
   }, [user]);
+
+  const [adminUploadingDiploma, setAdminUploadingDiploma] = useState<string | null>(null);
+
+  const handleAdminUploadDiploma = async (applicantId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAdminUploadingDiploma(applicantId);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'manav-platform/diplomas');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Yükleme başarısız');
+
+      await updateDoc(doc(db, 'users', applicantId), {
+        diplomaUrl: data.url,
+      });
+
+      try {
+        await setDoc(doc(db, 'psychologist_applications', applicantId), {
+          uid: applicantId,
+          diplomaUrl: data.url,
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      } catch {}
+
+      toast.success('Diploma belgesi başarıyla yüklendi!');
+    } catch (err: any) {
+      toast.error('Belge yüklenirken hata: ' + (err.message || ''));
+    } finally {
+      setAdminUploadingDiploma(null);
+    }
+  };
 
   const handleApprovePsychologist = async (applicant: any) => {
     try {
@@ -1254,41 +1320,88 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        {/* Diploma Belgesi Preview & Link */}
-                        <div style={{ background: '#f8fafc', borderRadius: 8, padding: '14px 18px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <Award size={18} color="#b45309" />
-                            <div>
-                              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1e293b' }}>Yüklenen Diploma / Mezuniyet Belgesi</div>
-                              <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                                {app.diplomaUrl ? 'Aday tarafından onay için yüklenen resmi belge' : 'Belge henüz yüklenmedi'}
+                        {/* Diploma Belgesi Preview & Link & Direct Upload */}
+                        <div style={{ background: '#f8fafc', borderRadius: 10, padding: '16px 18px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <Award size={20} color="#b45309" />
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>Yüklenen Diploma / Mezuniyet Belgesi</div>
+                                <div style={{ fontSize: '0.78rem', color: app.diplomaUrl ? '#166534' : '#b45309', fontWeight: 600 }}>
+                                  {app.diplomaUrl ? 'Aday onay belgesi sistemde mevcut' : 'Belge henüz yüklenmedi (Buradan belge yükleyebilirsiniz)'}
+                                </div>
                               </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              {app.diplomaUrl && (
+                                <a
+                                  href={app.diplomaUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    background: '#0f172a',
+                                    color: 'white',
+                                    padding: '8px 16px',
+                                    borderRadius: 6,
+                                    fontSize: '0.82rem',
+                                    fontWeight: 700,
+                                    textDecoration: 'none',
+                                    transition: 'background 0.15s'
+                                  }}
+                                >
+                                  <ExternalLink size={14} /> Diplomayı Görüntüle
+                                </a>
+                              )}
+
+                              <label
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  background: app.diplomaUrl ? '#ffffff' : '#b45309',
+                                  color: app.diplomaUrl ? '#334155' : '#ffffff',
+                                  border: `1px solid ${app.diplomaUrl ? '#cbd5e1' : '#b45309'}`,
+                                  padding: '8px 14px',
+                                  borderRadius: 6,
+                                  fontSize: '0.82rem',
+                                  fontWeight: 700,
+                                  cursor: adminUploadingDiploma === app.id ? 'wait' : 'pointer',
+                                  boxShadow: app.diplomaUrl ? 'none' : '0 2px 6px rgba(180,83,9,0.25)',
+                                }}
+                              >
+                                <Upload size={14} />
+                                <span>{adminUploadingDiploma === app.id ? 'Yükleniyor...' : (app.diplomaUrl ? 'Belgeyi Değiştir' : 'Diploma Belgesi Yükle')}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*,application/pdf"
+                                  disabled={adminUploadingDiploma === app.id}
+                                  style={{ display: 'none' }}
+                                  onChange={(e) => handleAdminUploadDiploma(app.id, e)}
+                                />
+                              </label>
                             </div>
                           </div>
 
-                          {app.diplomaUrl ? (
-                            <a
-                              href={app.diplomaUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                background: '#0f172a',
-                                color: 'white',
-                                padding: '8px 16px',
-                                borderRadius: 6,
-                                fontSize: '0.82rem',
-                                fontWeight: 700,
-                                textDecoration: 'none',
-                                transition: 'background 0.15s'
-                              }}
-                            >
-                              <ExternalLink size={14} /> Diplomayı Görüntüle
-                            </a>
-                          ) : (
-                            <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Belge yok</span>
+                          {/* Inline preview if document exists */}
+                          {app.diplomaUrl && (
+                            <div style={{ marginTop: 4, paddingTop: 10, borderTop: '1px dashed #e2e8f0' }}>
+                              {app.diplomaUrl.match(/\.(jpg|jpeg|png|webp)($|\?)/i) || (app.diplomaUrl.includes('cloudinary.com') && !app.diplomaUrl.endsWith('.pdf')) ? (
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                  <a href={app.diplomaUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', borderRadius: 8, overflow: 'hidden', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
+                                    <img src={app.diplomaUrl} alt="Diploma Belgesi" style={{ maxHeight: 160, maxWidth: 260, objectFit: 'contain', display: 'block', background: '#ffffff' }} />
+                                  </a>
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Büyük boyutta incelemek için görselin veya &quot;Diplomayı Görüntüle&quot; butonunun üzerine tıklayabilirsiniz.</span>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1e40af', fontSize: '0.82rem', fontWeight: 600 }}>
+                                  <FileText size={16} /> PDF Mezuniyet / Diploma Dosyası
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
 

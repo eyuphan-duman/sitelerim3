@@ -7,7 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   ArrowLeft, Camera, MapPin, Link as LinkIcon, Calendar, 
   MessageCircle, Heart, Trash2, Home, Users, Film, FileText, 
-  Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock 
+  Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
+  Upload, ExternalLink, ShieldCheck, Loader
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -116,6 +117,45 @@ export default function ProfilClient({ username }: { username: string }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const photoRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
+  const [uploadingDiploma, setUploadingDiploma] = useState(false);
+
+  const handleUploadDiploma = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingDiploma(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'manav-platform/diplomas');
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Yükleme başarısız');
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        diplomaUrl: data.url,
+      });
+      try {
+        await setDoc(doc(db, 'psychologist_applications', user.uid), {
+          uid: user.uid,
+          diplomaUrl: data.url,
+          username: pd?.username || user.displayName || '',
+          email: user.email || '',
+          fullName: pd?.displayName || user.displayName || '',
+          title: pd?.title || 'Psikolog',
+          university: pd?.university || '',
+          status: pd?.psychologistStatus || 'pending',
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      } catch {}
+
+      setPd((prev: any) => ({ ...prev, diplomaUrl: data.url }));
+      toast.success('Diploma belgeniz başarıyla yüklendi!');
+    } catch (err: any) {
+      toast.error('Belge yüklenirken hata oluştu: ' + (err.message || ''));
+    } finally {
+      setUploadingDiploma(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -562,10 +602,33 @@ export default function ProfilClient({ username }: { username: string }) {
               )}
             </div>
 
-            {pd.psychologistStatus === 'pending' && isOwn && (
-              <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 10, background: '#fefce8', border: '1px solid #fef08a', color: '#854d0e', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Clock size={16} color="#ca8a04" style={{ flexShrink: 0 }} />
-                <span>Psikolog diploma belgeniz inceleniyor. Yönetici onayının ardından onaylı uzman rozetiniz aktifleşecektir.</span>
+            {isOwn && (pd.isPsychologist || pd.role === 'psychologist' || pd.role === 'psychologist_pending' || pd.psychologistStatus === 'pending') && (
+              <div style={{ marginTop: 12, padding: '12px 16px', borderRadius: 10, background: pd.diplomaUrl ? '#f0fdf4' : '#fefce8', border: `1px solid ${pd.diplomaUrl ? '#bbf7d0' : '#fef08a'}`, color: pd.diplomaUrl ? '#166534' : '#854d0e', fontSize: '0.86rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ShieldCheck size={18} color={pd.diplomaUrl ? '#16a34a' : '#ca8a04'} style={{ flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700 }}>
+                      {pd.diplomaUrl ? 'Diploma Belgeniz Sistemde Kayıtlı' : 'Diploma Belgeniz Henüz Yüklenmedi'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {pd.diplomaUrl && (
+                      <a href={pd.diplomaUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#166534', color: 'white', padding: '6px 12px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none' }}>
+                        <ExternalLink size={13} /> Belgeyi Aç
+                      </a>
+                    )}
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: pd.diplomaUrl ? '#ffffff' : '#ca8a04', color: pd.diplomaUrl ? '#166534' : '#ffffff', border: `1px solid ${pd.diplomaUrl ? '#bbf7d0' : '#ca8a04'}`, padding: '6px 12px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, cursor: uploadingDiploma ? 'wait' : 'pointer' }}>
+                      {uploadingDiploma ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
+                      <span>{uploadingDiploma ? 'Yükleniyor...' : (pd.diplomaUrl ? 'Belgeyi Güncelle' : 'Diploma Yükle')}</span>
+                      <input type="file" accept="image/*,application/pdf" disabled={uploadingDiploma} style={{ display: 'none' }} onChange={handleUploadDiploma} />
+                    </label>
+                  </div>
+                </div>
+                {pd.psychologistStatus === 'pending' && (
+                  <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#a16207' }}>
+                    Belgeniz yönetici incelemesindedir. Onayın ardından profilinizde onaylı psikolog rozeti aktifleşecektir.
+                  </p>
+                )}
               </div>
             )}
             <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 14px', fontWeight: 500 }}>@{((pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, ''))}</p>

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Award, Upload, CheckCircle2, ShieldCheck, ArrowLeft, ArrowRight, Loader } from 'lucide-react';
+import { Award, Upload, CheckCircle2, ShieldCheck, ArrowLeft, ArrowRight, Loader, FileText, ExternalLink, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function PsychologistRegisterPage() {
@@ -21,6 +21,7 @@ export default function PsychologistRegisterPage() {
     diplomaUrl: '',
   });
 
+  const [diplomaFileName, setDiplomaFileName] = useState('');
   const [uploadingDiploma, setUploadingDiploma] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -28,6 +29,7 @@ export default function PsychologistRegisterPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setDiplomaFileName(file.name);
     setUploadingDiploma(true);
     try {
       const formData = new FormData();
@@ -46,6 +48,7 @@ export default function PsychologistRegisterPage() {
       toast.success('Diploma belgesi yüklendi');
     } catch (err: any) {
       toast.error('Belge yüklenirken hata: ' + (err.message || ''));
+      setDiplomaFileName('');
     } finally {
       setUploadingDiploma(false);
     }
@@ -341,8 +344,60 @@ export default function PsychologistRegisterPage() {
             </div>
 
             {form.diplomaUrl ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#166534', color: '#bbf7d0', padding: '8px 16px', borderRadius: 999, fontSize: '0.85rem', fontWeight: 700 }}>
-                <CheckCircle2 size={16} /> Belge Başarıyla Yüklendi
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#166534', color: '#bbf7d0', padding: '8px 18px', borderRadius: 999, fontSize: '0.85rem', fontWeight: 700 }}>
+                  <CheckCircle2 size={16} /> Belge Başarıyla Yüklendi
+                </div>
+                {diplomaFileName && (
+                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileText size={14} color="var(--gold)" />
+                    <span>{diplomaFileName}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                  <a
+                    href={form.diplomaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: 'var(--gold)',
+                      background: 'rgba(212, 175, 55, 0.15)',
+                      padding: '6px 14px',
+                      borderRadius: 6,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <ExternalLink size={13} /> Belgeyi Görüntüle
+                  </a>
+                  <label
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: 'white',
+                      background: 'rgba(255,255,255,0.1)',
+                      padding: '6px 14px',
+                      borderRadius: 6,
+                      cursor: uploadingDiploma ? 'wait' : 'pointer',
+                    }}
+                  >
+                    <RefreshCw size={13} /> Farklı Dosya Yükle
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      disabled={uploadingDiploma}
+                      style={{ display: 'none' }}
+                      onChange={handleDiplomaUpload}
+                    />
+                  </label>
+                </div>
               </div>
             ) : (
               <label

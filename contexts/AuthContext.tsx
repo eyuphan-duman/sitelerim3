@@ -64,39 +64,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const createUserDocument = async (u: User, customUsername?: string, psychData?: PsychologistData) => {
     const ref = doc(db, 'users', u.uid);
     const snap = await getDoc(ref);
+    const isPsychSignup = Boolean(psychData?.isPsychologist);
+
+    const docData: any = {
+      uid: u.uid,
+      username: customUsername || u.displayName || u.email?.split('@')[0],
+      displayName: psychData?.fullName || customUsername || u.displayName || '',
+      email: u.email?.toLowerCase().trim() || '',
+      photoURL: u.photoURL || '',
+      role: isPsychSignup ? 'psychologist_pending' : (snap.exists() ? (snap.data().role || 'member') : 'member'),
+      isPsychologist: false, // inactive until approved by admin
+      psychologistStatus: isPsychSignup ? 'pending' : (snap.exists() ? (snap.data().psychologistStatus || 'none') : 'none'),
+      title: psychData?.title || (isPsychSignup ? 'Psikolog' : ''),
+      university: psychData?.university || '',
+      diplomaUrl: psychData?.diplomaUrl || '',
+    };
+
     if (!snap.exists()) {
-      const isPsychSignup = Boolean(psychData?.isPsychologist);
-      const docData = {
+      docData.createdAt = serverTimestamp();
+      if (isPsychSignup) {
+        docData.applicationDate = serverTimestamp();
+      }
+      await setDoc(ref, docData);
+    } else {
+      // Document already exists (e.g. created by onAuthStateChanged race condition)
+      const updatePayload: any = {};
+      if (customUsername && !snap.data().username) updatePayload.username = customUsername;
+      if (psychData?.fullName) updatePayload.displayName = psychData.fullName;
+      if (psychData?.diplomaUrl) updatePayload.diplomaUrl = psychData.diplomaUrl;
+      if (psychData?.university) updatePayload.university = psychData.university;
+      if (psychData?.title) updatePayload.title = psychData.title;
+      if (isPsychSignup) {
+        updatePayload.role = 'psychologist_pending';
+        updatePayload.psychologistStatus = 'pending';
+        updatePayload.applicationDate = serverTimestamp();
+      }
+      if (Object.keys(updatePayload).length > 0) {
+        await updateDoc(ref, updatePayload);
+      }
+    }
+
+    if (isPsychSignup) {
+      await setDoc(doc(db, 'psychologist_applications', u.uid), {
         uid: u.uid,
-        username: customUsername || u.displayName || u.email?.split('@')[0],
-        displayName: psychData?.fullName || customUsername || u.displayName || '',
+        fullName: psychData?.fullName || customUsername || u.displayName || '',
+        username: customUsername || '',
         email: u.email?.toLowerCase().trim() || '',
-        photoURL: u.photoURL || '',
-        createdAt: serverTimestamp(),
-        role: isPsychSignup ? 'psychologist_pending' : 'member',
-        isPsychologist: false, // inactive until approved by admin
-        psychologistStatus: isPsychSignup ? 'pending' : 'none',
-        title: psychData?.title || (isPsychSignup ? 'Psikolog' : ''),
+        title: psychData?.title || 'Psikolog',
         university: psychData?.university || '',
         diplomaUrl: psychData?.diplomaUrl || '',
-        applicationDate: isPsychSignup ? serverTimestamp() : null,
-      };
-
-      await setDoc(ref, docData);
-
-      if (isPsychSignup) {
-        await setDoc(doc(db, 'psychologist_applications', u.uid), {
-          uid: u.uid,
-          fullName: psychData?.fullName || customUsername || u.displayName || '',
-          username: customUsername || '',
-          email: u.email?.toLowerCase().trim() || '',
-          title: psychData?.title || 'Psikolog',
-          university: psychData?.university || '',
-          diplomaUrl: psychData?.diplomaUrl || '',
-          status: 'pending',
-          createdAt: serverTimestamp(),
-        }, { merge: true });
-      }
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      }, { merge: true });
     }
   };
 
@@ -131,6 +150,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const displayName = psychologistData?.fullName || username;
       await updateProfile(cred.user, { displayName });
       await createUserDocument(cred.user, cleanUsername, psychologistData);
+
+      // Explicit write to guarantee psychologist application and diplomaUrl persist
+      if (psychologistData?.isPsychologist) {
+        const userDocRef = doc(db, 'users', cred.user.uid);
+        await updateDoc(userDocRef, {
+          diplomaUrl: psychologistData.diplomaUrl || '',
+          university: psychologistData.university || '',
+          title: psychologistData.title || 'Psikolog',
+          role: 'psychologist_pending',
+          psychologistStatus: 'pending',
+          applicationDate: serverTimestamp(),
+        });
+
+        await setDoc(doc(db, 'psychologist_applications', cred.user.uid), {
+          uid: cred.user.uid,
+          fullName: displayName,
+          username: cleanUsername,
+          email: cleanEmail,
+          title: psychologistData.title || 'Psikolog',
+          university: psychologistData.university || '',
+          diplomaUrl: psychologistData.diplomaUrl || '',
+          status: 'pending',
+          createdAt: serverTimestamp(),
+        }, { merge: true });
+      }
 
       // Update state immediately
       const userDocRef = doc(db, 'users', cred.user.uid);
