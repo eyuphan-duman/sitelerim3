@@ -22,7 +22,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
       const Image = Quill.import('formats/image') as any;
       class ImageBlot extends Image {
         static create(value: any) {
-          const node = super.create(typeof value === 'string' ? value : value.url);
+          const src = typeof value === 'string' ? value : (value?.url || '');
+          const node = super.create(src);
+          if (src) {
+            node.setAttribute('src', src);
+          }
           const width = typeof value === 'object' ? value.width : null;
           if (width) {
             node.setAttribute('width', width);
@@ -42,10 +46,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
           }
         }
         static value(node: any) {
-          return {
-            url: node.getAttribute('src'),
-            width: node.getAttribute('width')
-          };
+          return node.getAttribute('src') || '';
         }
       }
       ImageBlot.blotName = 'image';
@@ -105,9 +106,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
 
       const quill = quillRef.current?.getEditor();
       if (quill) {
-        const range = quill.getSelection();
-        const index = range ? range.index : quill.getLength();
-        quill.insertEmbed(index, 'image', { url: data.url, width: '100%' });
+        const range = quill.getSelection(true);
+        const index = range ? range.index : Math.max(0, quill.getLength() - 1);
+        quill.insertEmbed(index, 'image', data.url);
         quill.setSelection(index + 1);
       }
       toast.success('Görsel eklendi!', { id: loadingToast });
@@ -126,9 +127,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
       if (url && url.trim()) {
         const quill = quillRef.current?.getEditor();
         if (quill) {
-          const range = quill.getSelection();
-          const index = range ? range.index : quill.getLength();
-          quill.insertEmbed(index, 'image', { url: url.trim(), width: '100%' });
+          const range = quill.getSelection(true);
+          const index = range ? range.index : Math.max(0, quill.getLength() - 1);
+          quill.insertEmbed(index, 'image', url.trim());
           quill.setSelection(index + 1);
         }
       }
@@ -230,6 +231,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
         }
         .rich-text-editor .ql-editor img:hover {
           outline: 2px solid var(--gold);
+        }
+        @media (max-width: 768px) {
+          .rich-text-editor .ql-editor {
+            min-height: 300px;
+            padding: 16px;
+            font-size: 1rem;
+            line-height: 1.7;
+          }
+          .rich-text-editor .ql-toolbar {
+            padding: 8px;
+          }
         }
       `}</style>
     </div>

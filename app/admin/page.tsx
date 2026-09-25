@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -31,6 +31,7 @@ export default function AdminPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [editingMsg, setEditingMsg] = useState<string | null>(null);
   const [editMsgText, setEditMsgText] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -187,9 +188,88 @@ export default function AdminPage() {
 
   return (
     <div className="admin-layout" style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex' }}>
+      <style>{`
+        @media (max-width: 900px) {
+          .admin-layout {
+            flex-direction: column !important;
+          }
+          .admin-sidebar {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            z-index: 1000 !important;
+            transform: translateX(-100%) !important;
+            transition: transform 0.28s ease !important;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.3) !important;
+          }
+          .admin-sidebar.open {
+            transform: translateX(0) !important;
+          }
+          .admin-sidebar-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            background: rgba(10,22,40,0.6) !important;
+            backdrop-filter: blur(4px) !important;
+            z-index: 999 !important;
+          }
+          .admin-mobile-topbar {
+            display: flex !important;
+          }
+          .admin-main {
+            padding: 20px 16px !important;
+          }
+          .admin-page-title {
+            font-size: 1.4rem !important;
+            margin-bottom: 20px !important;
+            padding-bottom: 14px !important;
+          }
+          .admin-post-form-row {
+            grid-template-columns: 1fr !important;
+          }
+          .admin-posts-grid {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+          }
+          .admin-card-inner {
+            padding: 18px 16px !important;
+          }
+        }
+        @media (min-width: 901px) {
+          .admin-mobile-topbar {
+            display: none !important;
+          }
+          .admin-sidebar-overlay {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* MOBILE TOPBAR */}
+      <header className="admin-mobile-topbar" style={{ display: 'none', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: 'var(--navy)', color: 'white', position: 'sticky', top: 0, zIndex: 900, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--gold)', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem' }}>F</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.95rem', fontFamily: 'Playfair Display, serif' }}>Furkan Manav</div>
+            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)' }}>Yönetim Paneli</div>
+          </div>
+        </div>
+        <button 
+          onClick={() => setMobileMenuOpen(prev => !prev)} 
+          style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: 'white', borderRadius: 8, padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          aria-label="Menüyü aç/kapat"
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </header>
+
+      {/* MOBILE BACKDROP OVERLAY */}
+      {mobileMenuOpen && (
+        <div className="admin-sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />
+      )}
       
-      {/* 20% SIDEBAR */}
-      <aside className="admin-sidebar" style={{ width: 280, background: 'var(--navy)', color: 'white', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'sticky', top: 0, height: '100vh' }}>
+      {/* SIDEBAR (Desktop sticky, Mobile slide-in drawer) */}
+      <aside className={`admin-sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ width: 280, background: 'var(--navy)', color: 'white', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'sticky', top: 0, height: '100vh' }}>
         <div style={{ padding: '32px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--gold)', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.2rem' }}>F</div>
@@ -203,7 +283,7 @@ export default function AdminPage() {
         <nav style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', paddingLeft: 12, marginBottom: 8 }}>Kontrol Paneli</div>
           {MENUS.map(m => (
-            <button key={m.id} onClick={() => setActiveTab(m.id as any)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 0.2s', width: '100%', textAlign: 'left',
+            <button key={m.id} onClick={() => { setActiveTab(m.id as any); setMobileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 0.2s', width: '100%', textAlign: 'left',
               background: activeTab === m.id ? 'var(--gold)' : 'transparent',
               color: activeTab === m.id ? 'var(--navy)' : 'rgba(255,255,255,0.7)',
               fontWeight: activeTab === m.id ? 700 : 500,
@@ -220,7 +300,7 @@ export default function AdminPage() {
         </nav>
 
         <div style={{ padding: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <button onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'rgba(255,255,255,0.7)', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, padding: '10px 16px', transition: 'all 0.2s', width: '100%' }}>
+          <button onClick={() => { setMobileMenuOpen(false); router.push('/'); }} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'rgba(255,255,255,0.7)', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, padding: '10px 16px', transition: 'all 0.2s', width: '100%' }}>
             <Home size={16}/> Ana Sayfa
           </button>
           <button onClick={() => { logout(); router.push('/'); }} style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
@@ -229,16 +309,16 @@ export default function AdminPage() {
         </div>
       </aside>
 
-      {/* 80% MAIN CONTENT */}
-      <main className="admin-main" style={{ flex: 1, padding: '48px 64px', overflowY: 'auto' }}>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.2rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 40, borderBottom: '2px solid #e2e8f0', paddingBottom: 24 }}>
+      {/* MAIN CONTENT */}
+      <main className="admin-main" style={{ flex: 1, padding: '48px 64px', overflowY: 'auto', minWidth: 0 }}>
+        <h1 className="admin-page-title" style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.2rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 40, borderBottom: '2px solid #e2e8f0', paddingBottom: 24 }}>
           {MENUS.find(m => m.id === activeTab)?.label} Yönetimi
         </h1>
 
         {/* APPOINTMENTS TAB */}
         {activeTab === 'appointments' && (
           <div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
               <button onClick={() => setSubTab('pending')} style={{ padding: '8px 20px', borderRadius: 4, fontWeight: 600, cursor: 'pointer', border: subTab === 'pending' ? '1px solid var(--navy)' : '1px solid transparent', background: subTab === 'pending' ? 'var(--navy)' : '#e2e8f0', color: subTab === 'pending' ? 'white' : '#475569' }}>
                 Onay Bekleyenler ({appointments.filter(a => a.status === 'pending').length})
               </button>
@@ -246,8 +326,8 @@ export default function AdminPage() {
                 Onaylanmış Seanslar
               </button>
             </div>
-            <div style={{ background: 'white', borderRadius: 6, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div style={{ background: 'white', borderRadius: 8, border: '1px solid #e2e8f0', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                     <th style={{ padding: '16px 24px', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Danışan Bilgisi</th>
@@ -292,7 +372,7 @@ export default function AdminPage() {
         {activeTab === 'posts' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
             {/* New Article Form */}
-            <div style={{ background: 'white', padding: 32, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+            <div className="admin-card-inner" style={{ background: 'white', padding: 32, borderRadius: 12, border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
                 <PenTool size={20} color="var(--gold-dim)"/>
                 <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>
@@ -305,7 +385,7 @@ export default function AdminPage() {
                 )}
               </div>
               <form onSubmit={handleAddPost} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+                <div className="admin-post-form-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
                   <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Başlık</label><input required className="input-field" value={postForm.title} onChange={e=>setPostForm({...postForm, title: e.target.value})} placeholder="Makale başlığı…"/></div>
                   <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kategori</label><input className="input-field" value={postForm.category} onChange={e=>setPostForm({...postForm, category: e.target.value})} placeholder="Örn: Psikoloji"/></div>
                 </div>
@@ -334,6 +414,20 @@ export default function AdminPage() {
                       }} />
                     </label>
                   </div>
+                  {/* Live Preview of Uploaded Cover Image */}
+                  {postForm.featuredImage && (
+                    <div style={{ marginTop: 12, position: 'relative', width: '100%', maxWidth: 360, height: 180, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                      <img src={postForm.featuredImage} alt="Kapak Görseli Önizleme" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button 
+                        type="button" 
+                        onClick={() => setPostForm(prev => ({ ...prev, featuredImage: '' }))}
+                        style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.65)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        title="Görseli kaldır"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="editor-container" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
@@ -354,7 +448,7 @@ export default function AdminPage() {
             {/* Published Articles */}
             <div>
               <h2 style={{ fontSize: '1.2rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)', marginBottom: 20 }}>Yayımlanan Makaleler</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
                 {articles.map(a => (
                   <div key={a.id} style={{ background: 'white', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     {a.featuredImage && <img src={a.featuredImage} alt={a.title} style={{ width: '100%', height: 140, objectFit: 'cover' }}/>}
@@ -385,7 +479,7 @@ export default function AdminPage() {
         {activeTab === 'videos' && (
           <div className="admin-posts-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr)', gap: 40, alignItems: 'start' }}>
             {/* New Video Form */}
-            <div style={{ background: 'white', padding: 32, borderRadius: 6, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(10,22,40,0.02)' }}>
+            <div className="admin-card-inner" style={{ background: 'white', padding: 32, borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(10,22,40,0.02)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
                 <Video size={20} color="var(--gold-dim)"/> <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>Yeni Video Ekle</h2>
               </div>
@@ -393,9 +487,9 @@ export default function AdminPage() {
                 <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Başlık</label><input required className="input-field" value={videoForm.title} onChange={e=>setVideoForm({...videoForm, title: e.target.value})} placeholder="Video Başlığı"/></div>
                 <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kategori</label><input className="input-field" value={videoForm.category} onChange={e=>setVideoForm({...videoForm, category: e.target.value})} placeholder="Örn: Soru-Cevap"/></div>
                 <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Video Dosyası (Yerel)</label><input type="file" accept="video/*" required className="input-field" onChange={e => setVideoFile(e.target.files?.[0] || null)} /></div>
-                <div style={{ display: 'flex', gap: 16 }}>
-                  <div style={{ flex: 1 }}><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Süre (Örn: 12:40)</label><input className="input-field" value={videoForm.dur} onChange={e=>setVideoForm({...videoForm, dur: e.target.value})}/></div>
-                  <div style={{ flex: 1 }}><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Yaklaşık Görüntülenme</label><input className="input-field" value={videoForm.views} onChange={e=>setVideoForm({...videoForm, views: e.target.value})} placeholder="1.2B"/></div>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 120 }}><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Süre (Örn: 12:40)</label><input className="input-field" value={videoForm.dur} onChange={e=>setVideoForm({...videoForm, dur: e.target.value})}/></div>
+                  <div style={{ flex: 1, minWidth: 120 }}><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Yaklaşık Görüntülenme</label><input className="input-field" value={videoForm.views} onChange={e=>setVideoForm({...videoForm, views: e.target.value})} placeholder="1.2B"/></div>
                 </div>
                 <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Açıklama</label><textarea className="input-field" style={{ minHeight: 80 }} value={videoForm.desc} onChange={e=>setVideoForm({...videoForm, desc: e.target.value})} placeholder="Kısaca videodan bahsedin"/></div>
                 {uploadProgress > 0 && <div style={{ height: 4, background: '#e2e8f0', borderRadius: 2, marginTop: 8 }}><div style={{ width: `${uploadProgress}%`, height: '100%', background: 'var(--gold)', transition: 'width 0.2s' }}/></div>}
