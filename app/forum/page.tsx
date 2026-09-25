@@ -1,19 +1,16 @@
-import { Metadata } from 'next';
-import { Suspense } from 'react';
-import ForumClient from './ForumClient';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import dynamic from 'next/dynamic';
 
-export const metadata: Metadata = {
-  title: 'Forum',
-  description: 'Psikoloji, psikanaliz ve varoluşçu felsefe üzerine tartışmaların yapıldığı topluluk forumu. Deneyimlerinizi paylaşın ve diğer üyelerle etkileşime geçin.',
-  keywords: ['psikoloji forumu', 'psikanaliz tartışmaları', 'varoluşçu topluluk', 'psikoterapi forum', 'furkan manav forum'],
-};
+const ForumClient = dynamic(() => import('./ForumClient'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '0.95rem' }}>
+      Yükleniyor...
+    </div>
+  )
+});
 
 export default function ForumPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">Yükleniyor...</div>}>
-      <ForumClient />
-    </Suspense>
-  );
+  return <ForumClient />;
 }
