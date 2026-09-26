@@ -8,7 +8,7 @@ import {
   ArrowLeft, Camera, MapPin, Link as LinkIcon, Calendar, 
   MessageCircle, Heart, Trash2, Home, Users, Film, FileText, 
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
-  Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2
+  Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -60,7 +60,8 @@ function PostCard({
 
   return (
     <div 
-      style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', background: 'white', cursor: 'pointer' }}
+      className="profile-card-item"
+      style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', background: 'white', cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
       onClick={() => router.push(`/forum?thread=${p.id}`)}
       onMouseOver={e => (e.currentTarget.style.background = '#fafbfc')}
       onMouseOut={e => (e.currentTarget.style.background = 'white')}
@@ -528,7 +529,7 @@ export default function ProfilClient({ username }: { username: string }) {
   const joined = pd.createdAt?.toDate?.().toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) || '';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', overflowX: 'hidden' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @media (max-width: 1024px) {
@@ -537,13 +538,74 @@ export default function ProfilClient({ username }: { username: string }) {
         }
         @media (max-width: 768px) {
           .profile-sidebar-left { display: none !important; }
-          .profile-grid-3col { grid-template-columns: 1fr !important; padding-top: 56px !important; }
+          .profile-sidebar-right { display: none !important; }
+          .profile-grid-3col { 
+            grid-template-columns: 100% !important; 
+            padding-top: 56px !important; 
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
+          }
+          .profile-main-col {
+            width: 100% !important;
+            max-width: 100vw !important;
+            min-width: 0 !important;
+            overflow-x: hidden !important;
+            border-right: none !important;
+            padding-bottom: 76px !important;
+          }
+          .profile-cover {
+            height: 140px !important;
+          }
+          .profile-avatar-wrap {
+            margin-top: -42px !important;
+            padding: 0 16px !important;
+            margin-bottom: 12px !important;
+          }
+          .profile-avatar {
+            width: 82px !important;
+            height: 82px !important;
+            font-size: 1.8rem !important;
+            border-width: 3px !important;
+          }
+          .profile-btn-action {
+            padding: 7px 16px !important;
+            font-size: 0.84rem !important;
+          }
+          .profile-bio-wrap {
+            padding: 0 16px 16px !important;
+          }
+          .profile-bio-name {
+            font-size: 1.25rem !important;
+          }
+          .profile-card-item {
+            padding: 14px 16px !important;
+          }
+          .profil-tabs {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: none !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+          }
+          .profil-tabs::-webkit-scrollbar {
+            display: none !important;
+          }
+          .profil-tab-btn {
+            flex: none !important;
+            padding: 14px 16px !important;
+            font-size: 0.88rem !important;
+            white-space: nowrap !important;
+          }
+          .forum-mobile-bottom-nav { 
+            display: grid !important; 
+          }
         }
         .profil-tab-btn:hover { background: #f8fafc; }
       `}</style>
 
       {/* 3-COLUMN X (TWITTER) LAYOUT */}
-      <div className="profile-grid-3col" style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '260px 1fr 320px', gap: 0, paddingTop: 72 }}>
+      <div className="profile-grid-3col" style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '260px 1fr 320px', gap: 0, paddingTop: 72, minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
 
         {/* ── LEFT SIDEBAR ── */}
         <aside className="profile-sidebar-left" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: '1px solid #e2e8f0' }}>
@@ -602,7 +664,7 @@ export default function ProfilClient({ username }: { username: string }) {
         </aside>
 
         {/* ── CENTER COLUMN (PROFILE) ── */}
-        <main style={{ borderRight: '1px solid #e2e8f0', minHeight: 'calc(100vh - 72px)', background: 'white' }}>
+        <main className="profile-main-col" style={{ borderRight: '1px solid #e2e8f0', minHeight: 'calc(100vh - 72px)', background: 'white', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
           
           {/* Header (normal scroll, non-sticky) */}
           <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -610,13 +672,13 @@ export default function ProfilClient({ username }: { username: string }) {
               <ArrowLeft size={18} />
             </Link>
             <div>
-              <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>{pd.displayName || pd.username}</div>
+              <div className="profile-bio-name" style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>{pd.displayName || pd.username}</div>
               <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{posts.length} gönderi</div>
             </div>
           </div>
 
           {/* Cover Photo */}
-          <div style={{ height: 220, position: 'relative', background: pd.coverURL ? 'transparent' : 'linear-gradient(135deg,#667eea,#764ba2)', backgroundImage: pd.coverURL ? `url(${pd.coverURL})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          <div className="profile-cover" style={{ height: 220, position: 'relative', background: pd.coverURL ? 'transparent' : 'linear-gradient(135deg,#667eea,#764ba2)', backgroundImage: pd.coverURL ? `url(${pd.coverURL})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', width: '100%' }}>
             <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCover} />
             {isOwn && (
               <button onClick={() => coverRef.current?.click()} disabled={upCover} style={{ position: 'absolute', inset: 0, border: 'none', background: 'rgba(0,0,0,0)', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: '0.9rem', fontWeight: 700, transition: 'background 0.2s' }} onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.4)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,0,0,0)'; }}>
@@ -626,10 +688,10 @@ export default function ProfilClient({ username }: { username: string }) {
           </div>
 
           {/* Avatar + Action Row */}
-          <div style={{ padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -60, marginBottom: 16 }}>
+          <div className="profile-avatar-wrap" style={{ padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -60, marginBottom: 16 }}>
             <div style={{ position: 'relative' }}>
               <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhoto} />
-              <div style={{ width: 110, height: 110, borderRadius: '50%', border: '4px solid white', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '2.4rem', boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
+              <div className="profile-avatar" style={{ width: 110, height: 110, borderRadius: '50%', border: '4px solid white', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '2.4rem', boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
                 {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (pd.displayName || 'U')[0].toUpperCase()}
               </div>
               {isOwn && (
@@ -640,11 +702,11 @@ export default function ProfilClient({ username }: { username: string }) {
             </div>
             <div>
               {isOwn ? (
-                <button onClick={() => setEditOpen(true)} style={{ border: '1.5px solid #e2e8f0', background: 'white', color: '#0f172a', borderRadius: 999, padding: '9px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' }}>
+                <button className="profile-btn-action" onClick={() => setEditOpen(true)} style={{ border: '1.5px solid #e2e8f0', background: 'white', color: '#0f172a', borderRadius: 999, padding: '9px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' }}>
                   Profili Düzenle
                 </button>
               ) : (
-                <button onClick={toggleFollow} style={{ background: following ? 'white' : '#0f172a', color: following ? '#0f172a' : 'white', border: following ? '1.5px solid #e2e8f0' : 'none', borderRadius: 999, padding: '9px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' }}>
+                <button className="profile-btn-action" onClick={toggleFollow} style={{ background: following ? 'white' : '#0f172a', color: following ? '#0f172a' : 'white', border: following ? '1.5px solid #e2e8f0' : 'none', borderRadius: 999, padding: '9px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' }}>
                   {following ? 'Takip Ediliyor' : 'Takip Et'}
                 </button>
               )}
@@ -652,7 +714,7 @@ export default function ProfilClient({ username }: { username: string }) {
           </div>
 
           {/* Profile Bio Details */}
-          <div style={{ padding: '0 24px 24px' }}>
+          <div className="profile-bio-wrap" style={{ padding: '0 24px 24px', minWidth: 0, boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{pd.displayName || pd.username}</h1>
               {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && (
@@ -777,18 +839,19 @@ export default function ProfilClient({ username }: { username: string }) {
           {tab === 'replies' && (replies.length === 0 ? <Empty icon={<MessageCircle size={36} color="#cbd5e1" />} text="Henüz yanıt yok" /> : replies.map((r, i) => (
             <div 
               key={i} 
+              className="profile-card-item"
               onClick={() => r.postId && router.push(`/forum?thread=${r.postId}`)}
-              style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: r.postId ? 'pointer' : 'default' }}
+              style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: r.postId ? 'pointer' : 'default', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
             >
               <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: 8 }}>Yanıtladı: <em>"{r.postBody}..."</em></p>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>
                   {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (pd.displayName || 'U')[0].toUpperCase()}
                 </div>
-                <div>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>{pd.displayName}</span>
                   <span style={{ color: '#94a3b8', fontSize: '0.82rem', marginLeft: 8 }}>· {formatTimeAgo(r.createdAt)}</span>
-                  <p style={{ margin: '6px 0 0', fontSize: '0.95rem', color: '#334155', lineHeight: 1.6 }}>{r.text}</p>
+                  <p style={{ margin: '6px 0 0', fontSize: '0.95rem', color: '#334155', lineHeight: 1.6, wordBreak: 'break-word' }}>{r.text}</p>
                 </div>
               </div>
             </div>
@@ -807,8 +870,9 @@ export default function ProfilClient({ username }: { username: string }) {
           {tab === 'likes' && (likes.length === 0 ? <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" /> : likes.map(p => (
             <div 
               key={p.id} 
+              className="profile-card-item"
               onClick={() => router.push(`/forum?thread=${p.originalPostId || p.id}`)}
-              style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+              style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
             >
               <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{(p.authorName || 'U')[0].toUpperCase()}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -953,6 +1017,123 @@ export default function ProfilClient({ username }: { username: string }) {
           </div>
         </div>
       )}
+      {/* Mobile Bottom Navigation Bar (Symmetric 4-Item Grid) */}
+      <nav className="forum-mobile-bottom-nav" style={{
+        display: 'none',
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 60,
+        background: 'rgba(255,255,255,0.98)',
+        backdropFilter: 'blur(20px)',
+        borderTop: '1px solid #e2e8f0',
+        zIndex: 2100,
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        alignItems: 'center',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        boxShadow: '0 -2px 16px rgba(15,23,42,0.06)',
+      }}>
+        {/* 1. Home */}
+        <Link
+          href="/forum"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: '#64748b',
+            transition: 'color 0.15s ease',
+            padding: 0,
+            textDecoration: 'none'
+          }}
+        >
+          <Home size={22} strokeWidth={1.9} />
+          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Anasayfa</span>
+        </Link>
+
+        {/* 2. Search */}
+        <Link
+          href="/forum?search=open"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: '#64748b',
+            transition: 'color 0.15s ease',
+            padding: 0,
+            textDecoration: 'none'
+          }}
+        >
+          <Search size={22} strokeWidth={1.9} />
+          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Ara</span>
+        </Link>
+
+        {/* 3. Notifications */}
+        <Link
+          href="/bildirimler"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            color: '#64748b',
+            padding: 0,
+            textDecoration: 'none',
+            position: 'relative'
+          }}
+        >
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Bell size={22} strokeWidth={1.9} />
+            {unreadCount > 0 && (
+              <span style={{ position: 'absolute', top: -4, right: -6, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, minWidth: 16, height: 16, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </div>
+          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Bildirim</span>
+        </Link>
+
+        {/* 4. Profile (Active) */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            height: '100%',
+            color: '#0f172a',
+            padding: 0,
+            position: 'relative'
+          }}
+        >
+          <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: '#0f172a', borderRadius: '0 0 4px 4px' }} />
+          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
+            {userProfile?.photoURL ? (
+              <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : user && !user.isAnonymous ? (
+              (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()
+            ) : (
+              <User size={13} color="white" />
+            )}
+          </div>
+          <span style={{ fontSize: '0.68rem', fontWeight: 700 }}>Profilim</span>
+        </div>
+      </nav>
     </div>
   );
 }
