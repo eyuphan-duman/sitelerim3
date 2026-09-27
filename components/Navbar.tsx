@@ -30,7 +30,7 @@ export default function Navbar() {
     const q = query(collection(db, 'notifications'), where('toUid', '==', user.uid), where('read', '==', false));
     return onSnapshot(q, snap => setUnreadCount(snap.size));
   }, [user]);
-  const isProfilePage = pathname?.startsWith('/forum/profil');
+  const isForumPage = pathname === '/forum' || pathname?.startsWith('/forum/') || pathname === '/bildirimler';
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 50);
@@ -38,11 +38,11 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const forceSolid = pathname === '/forum' || pathname === '/videolarim' || pathname?.startsWith('/yazilarim');
+  const forceSolid = pathname === '/videolarim' || pathname?.startsWith('/yazilarim');
 
   return (
     <>
-      {!isProfilePage && (
+      {!isForumPage && (
         <nav className={`navbar ${scrolled || forceSolid ? 'navbar-scrolled' : 'navbar-transparent'}`}>
           <div className="container-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, paddingBottom: 20 }}>
 
@@ -124,7 +124,7 @@ export default function Navbar() {
       )}
 
       {/* Mobile menu (Moved outside nav to guarantee top-level stacking) */}
-      {!isProfilePage && open && (
+      {!isForumPage && open && (
         <div style={{ position: 'fixed', top: 64, left: 0, right: 0, background: '#0a1628', borderTop: '1px solid var(--border)', padding: '24px 28px 32px', zIndex: 999999 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {links.map(l => (

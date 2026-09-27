@@ -29,11 +29,11 @@ interface Post {
 const CATEGORIES = ['Tümü','Psikanaliz','Varoluş & Anlam','Kaygı & Depresyon','İlişkiler','Çocukluk & Travma','Rüyalar','Kimlik & Benlik','Kişisel Gelişim'];
 const ADMIN = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
-function Empty({ icon, text }: { icon?: React.ReactNode; text: string }) {
+function Empty({ icon, text, isDark }: { icon?: React.ReactNode; text: string; isDark?: boolean }) {
   return (
-    <div style={{ padding: '80px 20px', textAlign: 'center', color: '#94a3b8' }}>
+    <div style={{ padding: '80px 20px', textAlign: 'center', color: isDark ? '#71767b' : '#94a3b8' }}>
       {icon && <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>{icon}</div>}
-      <p style={{ fontWeight: 700, fontSize: '1rem', color: '#64748b' }}>{text}</p>
+      <p style={{ fontWeight: 700, fontSize: '1rem', color: isDark ? '#94a3b8' : '#64748b' }}>{text}</p>
     </div>
   );
 }
@@ -44,7 +44,8 @@ function PostCard({
   isOwn, 
   userEmail, 
   onDelete,
-  repostedBy
+  repostedBy,
+  isDark = false
 }: { 
   p: Post; 
   pd: any; 
@@ -52,6 +53,7 @@ function PostCard({
   userEmail: string; 
   onDelete: (id: string) => void;
   repostedBy?: string;
+  isDark?: boolean;
 }) {
   const router = useRouter();
   const authorName = p.authorName || 'Kullanıcı';
@@ -62,10 +64,10 @@ function PostCard({
   return (
     <div 
       className="profile-card-item"
-      style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', background: 'white', cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
+      style={{ padding: '20px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, transition: 'background 0.15s', background: isDark ? '#000000' : 'white', cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
       onClick={() => router.push(`/forum?thread=${p.id}`)}
-      onMouseOver={e => (e.currentTarget.style.background = '#fafbfc')}
-      onMouseOut={e => (e.currentTarget.style.background = 'white')}
+      onMouseOver={e => (e.currentTarget.style.background = isDark ? '#080808' : '#fafbfc')}
+      onMouseOut={e => (e.currentTarget.style.background = isDark ? '#000000' : 'white')}
     >
       {/* Repost banner */}
       {repostedBy && (
@@ -82,7 +84,7 @@ function PostCard({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.96rem' }}>{authorName}</span>
+              <span style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.96rem' }}>{authorName}</span>
               {isPsych && (
                 <span
                   style={{
@@ -103,31 +105,31 @@ function PostCard({
                   <span>Psikolog</span>
                 </span>
               )}
-              <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{authorUsername}</span>
-              <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>·</span>
-              <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(p.createdAt)}</span>
-              {p.category && <span style={{ background: '#f1f5f9', color: '#64748b', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.category}</span>}
+              <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.85rem' }}>@{authorUsername}</span>
+              <span style={{ color: isDark ? '#333639' : '#cbd5e1', fontSize: '0.85rem' }}>·</span>
+              <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(p.createdAt)}</span>
+              {p.category && <span style={{ background: isDark ? '#16181c' : '#f1f5f9', color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em', border: isDark ? '1px solid #2f3336' : 'none' }}>{p.category}</span>}
             </div>
             {(isOwn && !repostedBy) && (
-              <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, transition: 'all 0.15s' }} onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }} onMouseOut={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none'; }} title="Gönderiyi Sil">
+              <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDark ? '#71767b' : '#94a3b8', display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, transition: 'all 0.15s' }} onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = isDark ? '#1f1315' : '#fef2f2'; }} onMouseOut={e => { e.currentTarget.style.color = isDark ? '#71767b' : '#94a3b8'; e.currentTarget.style.background = 'none'; }} title="Gönderiyi Sil">
                 <Trash2 size={14} />
               </button>
             )}
           </div>
-          <p style={{ color: '#334155', fontSize: '0.97rem', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
+          <p style={{ color: isDark ? '#d1d5db' : '#334155', fontSize: '0.97rem', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
             {renderTextWithMentions(p.body)}
           </p>
           
           {p.imageUrl && (
-            <div style={{ marginTop: 12, borderRadius: 14, overflow: 'hidden', maxHeight: 380, border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+            <div style={{ marginTop: 12, borderRadius: 14, overflow: 'hidden', maxHeight: 380, border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#05070a' : '#f8fafc' }}>
               <img src={p.imageUrl} alt="" style={{ width: '100%', maxHeight: 380, objectFit: 'cover', display: 'block' }} />
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 20, marginTop: 12, color: '#94a3b8', fontSize: '0.85rem' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><MessageCircle size={15} />{p.commentCount || 0}</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><Heart size={15} />{Object.keys(p.reactionsData || {}).length}</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontWeight: 500 }}><Repeat2 size={15} />{Object.keys(p.repostsData || {}).length}</span>
+          <div style={{ display: 'flex', gap: 20, marginTop: 12, color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.85rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? '#94a3b8' : '#64748b', fontWeight: 500 }}><MessageCircle size={15} />{p.commentCount || 0}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? '#94a3b8' : '#64748b', fontWeight: 500 }}><Heart size={15} />{Object.keys(p.reactionsData || {}).length}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? '#94a3b8' : '#64748b', fontWeight: 500 }}><Repeat2 size={15} />{Object.keys(p.repostsData || {}).length}</span>
           </div>
         </div>
       </div>
@@ -768,18 +770,23 @@ export default function ProfilClient({ username }: { username: string }) {
       `}</style>
 
       {/* 3-COLUMN X (TWITTER) LAYOUT */}
-      <div className="profile-grid-3col" style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '260px 1fr 320px', gap: 0, paddingTop: 72, minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+      <div className="profile-grid-3col" style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '260px 1fr 320px', gap: 0, paddingTop: 0, minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
 
         {/* ── LEFT SIDEBAR ── */}
-        <aside className="profile-sidebar-left" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: '1px solid #e2e8f0' }}>
+        <aside className="profile-sidebar-left" style={{ position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#000000' : 'transparent' }}>
           <div style={{ padding: '0 8px 16px', marginBottom: 8 }}>
-            <Link href="/forum" style={{ textDecoration: 'none' }}>
-              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                Topluluk
-                <span style={{ fontSize: '0.6rem', background: '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
+            <Link href="/" style={{ textDecoration: 'none' }} title="Ana Sayfaya Dön">
+              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.45rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                MANAV FORUM
+                <span style={{ fontSize: '0.58rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
               </h1>
             </Link>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 4 }}>Psikoloji forumu</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+              <p style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8', margin: 0 }}>Psikoloji Topluluğu</p>
+              <Link href="/" style={{ fontSize: '0.74rem', color: isDark ? '#38bdf8' : '#2563eb', textDecoration: 'none', fontWeight: 700 }}>
+                ← Ana Site
+              </Link>
+            </div>
           </div>
 
           {[
@@ -789,10 +796,10 @@ export default function ProfilClient({ username }: { username: string }) {
             { label: 'Arama', href: '/forum?search=open', active: false, icon: <Search size={20} /> },
             { label: 'Beğenilenler', href: `/forum/profil/${myUsername || username}?tab=likes`, active: tab === 'likes', icon: <Heart size={20} /> },
             { label: 'Bildirimler', href: '/bildirimler', active: false, icon: <Bell size={20} />, badge: unreadCount },
-            { label: 'Profilim', href: `/forum/profil/${myUsername || username}`, active: isOwn && tab !== 'bookmarks' && tab !== 'likes', icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: isOwn && tab !== 'bookmarks' && tab !== 'likes' ? '#334155' : '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> },
+            { label: 'Profilim', href: `/forum/profil/${myUsername || username}`, active: isOwn && tab !== 'bookmarks' && tab !== 'likes', icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: isOwn && tab !== 'bookmarks' && tab !== 'likes' ? (isDark ? '#38bdf8' : '#334155') : (isDark ? '#1d9bf0' : '#0f172a'), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> },
           ].map(item => (
             <Link key={item.label} href={item.href} style={{ textDecoration: 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? '#0f172a' : 'transparent', color: item.active ? 'white' : '#475569', fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? (isDark ? '#e7e9ea' : '#0f172a') : 'transparent', color: item.active ? (isDark ? '#000000' : 'white') : (isDark ? '#e7e9ea' : '#475569'), fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   {item.icon}
                   <span>{item.label}</span>
@@ -804,39 +811,39 @@ export default function ProfilClient({ username }: { username: string }) {
             </Link>
           ))}
 
-          <div style={{ margin: '16px 0 8px', padding: '0 8px', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Kategoriler</div>
+          <div style={{ margin: '16px 0 8px', padding: '0 8px', fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Kategoriler</div>
           {CATEGORIES.filter(c => c !== 'Tümü').slice(0, 6).map(c => (
             <Link key={c} href={`/forum?cat=${encodeURIComponent(c)}`} style={{ textDecoration: 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', borderRadius: 10, color: '#64748b', fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.15s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', borderRadius: 10, color: isDark ? '#71767b' : '#64748b', fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.15s' }}>
                 <Hash size={14} /> {c}
               </div>
             </Link>
           ))}
 
           {user && !user.isAnonymous && (
-            <Link href={`/forum/profil/${myUsername}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 12, textDecoration: 'none', marginTop: 'auto', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Link href={`/forum/profil/${myUsername}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 12, textDecoration: 'none', marginTop: 'auto', background: isDark ? '#16181c' : '#f8fafc', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, overflow: 'hidden', flexShrink: 0 }}>
                 {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.displayName || user.displayName}</div>
-                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>@{myUsername}</div>
+                <div style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.displayName || user.displayName}</div>
+                <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.8rem' }}>@{myUsername}</div>
               </div>
             </Link>
           )}
         </aside>
 
         {/* ── CENTER COLUMN (PROFILE) ── */}
-        <main className="profile-main-col" style={{ borderRight: '1px solid #e2e8f0', minHeight: 'calc(100vh - 72px)', background: 'white', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+        <main className="profile-main-col" style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: '100vh', background: isDark ? '#000000' : 'white', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
           
           {/* Header (normal scroll, non-sticky) */}
-          <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 20 }}>
-            <Link href="/forum" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: '#f1f5f9', textDecoration: 'none', color: '#0f172a' }}>
+          <div style={{ background: isDark ? '#000000' : 'white', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 20 }}>
+            <Link href="/forum" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: isDark ? '#16181c' : '#f1f5f9', textDecoration: 'none', color: isDark ? '#e7e9ea' : '#0f172a' }}>
               <ArrowLeft size={18} />
             </Link>
             <div>
-              <div className="profile-bio-name" style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>{pd.displayName || pd.username}</div>
-              <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{posts.length} gönderi</div>
+              <div className="profile-bio-name" style={{ fontWeight: 800, fontSize: '1.1rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>{pd.displayName || pd.username}</div>
+              <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.78rem' }}>{posts.length} gönderi</div>
             </div>
           </div>
 
@@ -854,11 +861,11 @@ export default function ProfilClient({ username }: { username: string }) {
           <div className="profile-avatar-wrap" style={{ padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -60, marginBottom: 16 }}>
             <div style={{ position: 'relative' }}>
               <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhoto} />
-              <div className="profile-avatar" style={{ width: 110, height: 110, borderRadius: '50%', border: '4px solid white', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '2.4rem', boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
+              <div className="profile-avatar" style={{ width: 110, height: 110, borderRadius: '50%', border: `4px solid ${isDark ? '#000000' : 'white'}`, background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '2.4rem', boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
                 {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (pd.displayName || 'U')[0].toUpperCase()}
               </div>
               {isOwn && (
-                <button onClick={() => photoRef.current?.click()} disabled={upPhoto} style={{ position: 'absolute', bottom: 4, right: 4, width: 34, height: 34, borderRadius: '50%', border: '2px solid white', background: upPhoto ? '#64748b' : '#0f172a', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }} title="Profil Resmini Değiştir">
+                <button onClick={() => photoRef.current?.click()} disabled={upPhoto} style={{ position: 'absolute', bottom: 4, right: 4, width: 34, height: 34, borderRadius: '50%', border: `2px solid ${isDark ? '#000000' : 'white'}`, background: upPhoto ? '#64748b' : (isDark ? '#1d9bf0' : '#0f172a'), color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }} title="Profil Resmini Değiştir">
                   <Camera size={15} />
                 </button>
               )}
@@ -873,9 +880,9 @@ export default function ProfilClient({ username }: { username: string }) {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 6,
-                      border: '1.5px solid #e2e8f0', 
-                      background: 'white', 
-                      color: '#0f172a', 
+                      border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, 
+                      background: isDark ? '#16181c' : 'white', 
+                      color: isDark ? '#e7e9ea' : '#0f172a', 
                       borderRadius: 999, 
                       padding: '8px 18px', 
                       fontWeight: 800, 
@@ -891,9 +898,9 @@ export default function ProfilClient({ username }: { username: string }) {
                     className="profile-btn-action" 
                     onClick={() => setEditOpen(true)} 
                     style={{ 
-                      border: '1.5px solid #e2e8f0', 
-                      background: 'white', 
-                      color: '#0f172a', 
+                      border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, 
+                      background: isDark ? '#16181c' : 'white', 
+                      color: isDark ? '#e7e9ea' : '#0f172a', 
                       borderRadius: 999, 
                       padding: '8px 18px', 
                       fontWeight: 800, 
@@ -906,7 +913,7 @@ export default function ProfilClient({ username }: { username: string }) {
                   </button>
                 </div>
               ) : (
-                <button className="profile-btn-action" onClick={toggleFollow} style={{ background: following ? 'white' : '#0f172a', color: following ? '#0f172a' : 'white', border: following ? '1.5px solid #e2e8f0' : 'none', borderRadius: 999, padding: '9px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' }}>
+                <button className="profile-btn-action" onClick={toggleFollow} style={{ background: following ? (isDark ? '#16181c' : 'white') : (isDark ? '#e7e9ea' : '#0f172a'), color: following ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#000000' : 'white'), border: following ? `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}` : 'none', borderRadius: 999, padding: '9px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' }}>
                   {following ? 'Takip Ediliyor' : 'Takip Et'}
                 </button>
               )}
@@ -916,7 +923,7 @@ export default function ProfilClient({ username }: { username: string }) {
           {/* Profile Bio Details */}
           <div className="profile-bio-wrap" style={{ padding: '0 24px 24px', minWidth: 0, boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{pd.displayName || pd.username}</h1>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{pd.displayName || pd.username}</h1>
               {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && (
                 <span
                   style={{
@@ -941,7 +948,7 @@ export default function ProfilClient({ username }: { username: string }) {
             </div>
 
             {isOwn && (pd.isPsychologist || pd.role === 'psychologist' || pd.role === 'psychologist_pending' || pd.psychologistStatus === 'pending') && (
-              <div style={{ marginTop: 12, padding: '12px 16px', borderRadius: 10, background: pd.diplomaUrl ? '#f0fdf4' : '#fefce8', border: `1px solid ${pd.diplomaUrl ? '#bbf7d0' : '#fef08a'}`, color: pd.diplomaUrl ? '#166534' : '#854d0e', fontSize: '0.86rem' }}>
+              <div style={{ marginTop: 12, padding: '12px 16px', borderRadius: 10, background: pd.diplomaUrl ? (isDark ? '#064e3b' : '#f0fdf4') : (isDark ? '#422006' : '#fefce8'), border: `1px solid ${pd.diplomaUrl ? (isDark ? '#047857' : '#bbf7d0') : (isDark ? '#854d0e' : '#fef08a')}`, color: pd.diplomaUrl ? (isDark ? '#a7f3d0' : '#166534') : (isDark ? '#fde047' : '#854d0e'), fontSize: '0.86rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <ShieldCheck size={18} color={pd.diplomaUrl ? '#16a34a' : '#ca8a04'} style={{ flexShrink: 0 }} />
@@ -963,31 +970,31 @@ export default function ProfilClient({ username }: { username: string }) {
                   </div>
                 </div>
                 {pd.psychologistStatus === 'pending' && (
-                  <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#a16207' }}>
+                  <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: isDark ? '#fde047' : '#a16207' }}>
                     Belgeniz yönetici incelemesindedir. Onayın ardından profilinizde onaylı psikolog rozeti aktifleşecektir.
                   </p>
                 )}
               </div>
             )}
             <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 14px', fontWeight: 500 }}>@{((pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, ''))}</p>
-            {pd.bio && <p style={{ fontSize: '1rem', color: '#334155', lineHeight: 1.6, marginBottom: 14 }}>{pd.bio}</p>}
+            {pd.bio && <p style={{ fontSize: '1rem', color: isDark ? '#cbd5e1' : '#334155', lineHeight: 1.6, marginBottom: 14 }}>{pd.bio}</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, color: '#64748b', fontSize: '0.88rem', marginBottom: 16 }}>
               {pd.location && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={15} />{pd.location}</span>}
               {pd.website && (
-                <a href={pd.website.startsWith('http') ? pd.website : `https://${pd.website}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>
+                <a href={pd.website.startsWith('http') ? pd.website : `https://${pd.website}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#38bdf8', textDecoration: 'none', fontWeight: 600 }}>
                   <LinkIcon size={15} />{pd.website}
                 </a>
               )}
               {joined && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={15} />Katıldı: {joined}</span>}
             </div>
             <div style={{ display: 'flex', gap: 24, fontSize: '0.92rem' }}>
-              <span><strong style={{ color: '#0f172a' }}>{followings}</strong> <span style={{ color: '#94a3b8' }}>Takip edilen</span></span>
-              <span><strong style={{ color: '#0f172a' }}>{followers}</strong> <span style={{ color: '#94a3b8' }}>Takipçi</span></span>
+              <span><strong style={{ color: isDark ? '#e7e9ea' : '#0f172a' }}>{followings}</strong> <span style={{ color: '#94a3b8' }}>Takip edilen</span></span>
+              <span><strong style={{ color: isDark ? '#e7e9ea' : '#0f172a' }}>{followers}</strong> <span style={{ color: '#94a3b8' }}>Takipçi</span></span>
             </div>
           </div>
 
           {/* Profile Tabs */}
-          <div className="profil-tabs" style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', borderTop: '1px solid #f1f5f9', background: 'white' }}>
+          <div className="profil-tabs" style={{ display: 'flex', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderTop: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, background: isDark ? '#000000' : 'white' }}>
             {profileTabs.map(t => (
               <button
                 key={t.id}
@@ -1001,7 +1008,7 @@ export default function ProfilClient({ username }: { username: string }) {
                   cursor: 'pointer',
                   fontWeight: tab === t.id ? 800 : 600,
                   fontSize: '0.92rem',
-                  color: tab === t.id ? '#0f172a' : '#64748b',
+                  color: tab === t.id ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#71767b' : '#64748b'),
                   position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
@@ -1029,30 +1036,32 @@ export default function ProfilClient({ username }: { username: string }) {
           </div>
 
           {/* Tab Content */}
-          {tab === 'posts' && (posts.length === 0 ? <Empty icon={<FileText size={36} color="#cbd5e1" />} text="Henüz gönderi yok" /> : posts.map(p => <PostCard key={p.id} p={p} pd={pd} isOwn={isOwn} userEmail={user?.email || ''} onDelete={delPost} />))}
+          {tab === 'posts' && (posts.length === 0 ? <Empty icon={<FileText size={36} color="#cbd5e1" />} text="Henüz gönderi yok" isDark={isDark} /> : posts.map(p => <PostCard key={p.id} p={p} pd={pd} isOwn={isOwn} userEmail={user?.email || ''} onDelete={delPost} isDark={isDark} />))}
 
           {tab === 'replies' && (
             !isOwn && pd?.hideReplies ? (
-              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Bu kullanıcı yanıtlarını gizlemiştir." />
+              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Bu kullanıcı yanıtlarını gizlemiştir." isDark={isDark} />
             ) : replies.length === 0 ? (
-              <Empty icon={<MessageCircle size={36} color="#cbd5e1" />} text="Henüz yanıt yok" />
+              <Empty icon={<MessageCircle size={36} color="#cbd5e1" />} text="Henüz yanıt yok" isDark={isDark} />
             ) : (
               replies.map((r, i) => (
                 <div 
                   key={i} 
                   className="profile-card-item"
                   onClick={() => r.postId && router.push(`/forum?thread=${r.postId}`)}
-                  style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: r.postId ? 'pointer' : 'default', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
+                  onMouseOver={e => (e.currentTarget.style.background = isDark ? '#080808' : '#fafbfc')}
+                  onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+                  style={{ padding: '16px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, cursor: r.postId ? 'pointer' : 'default', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
                 >
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: 8 }}>Yanıtladı: <em>"{r.postBody}..."</em></p>
+                  <p style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#94a3b8', marginBottom: 8 }}>Yanıtladı: <em>"{r.postBody}..."</em></p>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>
                       {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (pd.displayName || 'U')[0].toUpperCase()}
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>{pd.displayName}</span>
-                      <span style={{ color: '#94a3b8', fontSize: '0.82rem', marginLeft: 8 }}>· {formatTimeAgo(r.createdAt)}</span>
-                      <p style={{ margin: '6px 0 0', fontSize: '0.95rem', color: '#334155', lineHeight: 1.6, wordBreak: 'break-word' }}>{r.text}</p>
+                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>{pd.displayName}</span>
+                      <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem', marginLeft: 8 }}>· {formatTimeAgo(r.createdAt)}</span>
+                      <p style={{ margin: '6px 0 0', fontSize: '0.95rem', color: isDark ? '#cbd5e1' : '#334155', lineHeight: 1.6, wordBreak: 'break-word' }}>{r.text}</p>
                     </div>
                   </div>
                 </div>
@@ -1060,7 +1069,7 @@ export default function ProfilClient({ username }: { username: string }) {
             )
           )}
 
-          {tab === 'reposts' && (reposts.length === 0 ? <Empty icon={<Repeat2 size={36} color="#cbd5e1" />} text="Henüz yeniden gönderi yok" /> : reposts.map(p => (
+          {tab === 'reposts' && (reposts.length === 0 ? <Empty icon={<Repeat2 size={36} color="#cbd5e1" />} text="Henüz yeniden gönderi yok" isDark={isDark} /> : reposts.map(p => (
             <PostCard 
               key={p.id} 
               p={p} 
@@ -1069,32 +1078,35 @@ export default function ProfilClient({ username }: { username: string }) {
               userEmail={user?.email || ''} 
               onDelete={delPost} 
               repostedBy={pd.displayName || pd.username}
+              isDark={isDark}
             />
           )))}
 
           {tab === 'likes' && (
             !isOwn && pd?.hideLikes ? (
-              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Bu kullanıcı beğenilerini gizlemiştir." />
+              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Bu kullanıcı beğenilerini gizlemiştir." isDark={isDark} />
             ) : likes.length === 0 ? (
-              <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" />
+              <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" isDark={isDark} />
             ) : (
               likes.map(p => (
                 <div 
                   key={p.id} 
                   className="profile-card-item"
                   onClick={() => router.push(`/forum?thread=${p.originalPostId || p.id}`)}
-                  style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
+                  onMouseOver={e => (e.currentTarget.style.background = isDark ? '#080808' : '#fafbfc')}
+                  onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+                  style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
                 >
                   <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{(p.authorName || 'U')[0].toUpperCase()}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                      <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem' }}>{p.authorName}</span>
-                      <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>· {formatTimeAgo(p.createdAt)}</span>
+                      <span style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.92rem' }}>{p.authorName}</span>
+                      <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem' }}>· {formatTimeAgo(p.createdAt)}</span>
                     </div>
-                    <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, margin: 0, wordBreak: 'break-word' }}>
+                    <p style={{ color: isDark ? '#cbd5e1' : '#334155', fontSize: '0.95rem', lineHeight: 1.6, margin: 0, wordBreak: 'break-word' }}>
                       {renderTextWithMentions(p.body)}
                     </p>
-                    <div style={{ display: 'flex', gap: 16, marginTop: 8, color: '#94a3b8', fontSize: '0.82rem' }}>
+                    <div style={{ display: 'flex', gap: 16, marginTop: 8, color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={14} />{p.commentCount}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ef4444' }}><Heart size={14} fill="#ef4444" />{Object.keys(p.reactionsData || {}).length}</span>
                     </div>
@@ -1106,9 +1118,9 @@ export default function ProfilClient({ username }: { username: string }) {
 
           {tab === 'bookmarks' && (
             !isOwn ? (
-              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Yer işaretleri yalnızca hesap sahibi tarafından görüntülenebilir." />
+              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Yer işaretleri yalnızca hesap sahibi tarafından görüntülenebilir." isDark={isDark} />
             ) : bookmarks.length === 0 ? (
-              <Empty icon={<Bookmark size={36} color="#cbd5e1" />} text="Henüz kaydedilen yer işareti yok" />
+              <Empty icon={<Bookmark size={36} color="#cbd5e1" />} text="Henüz kaydedilen yer işareti yok" isDark={isDark} />
             ) : (
               bookmarks.map(p => (
                 <PostCard 
@@ -1118,6 +1130,7 @@ export default function ProfilClient({ username }: { username: string }) {
                   isOwn={isOwn} 
                   userEmail={user?.email || ''} 
                   onDelete={delPost} 
+                  isDark={isDark}
                 />
               ))
             )
@@ -1125,73 +1138,73 @@ export default function ProfilClient({ username }: { username: string }) {
         </main>
 
         {/* ── RIGHT SIDEBAR ── */}
-        <aside className="profile-sidebar-right" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <aside className="profile-sidebar-right" style={{ position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20, background: isDark ? '#000000' : 'transparent' }}>
           {/* Search box - strictly searches forum */}
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f1f5f9', borderRadius: 12, padding: '10px 14px', border: '1px solid #e2e8f0' }}>
-            <Search size={17} color="#94a3b8" />
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: 8, background: isDark ? '#16181c' : '#f1f5f9', borderRadius: 12, padding: '10px 14px', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+            <Search size={17} color={isDark ? '#71767b' : '#94a3b8'} />
             <input 
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
               placeholder="Forumda ara..." 
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', color: '#0f172a', width: '100%' }} 
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', color: isDark ? '#e7e9ea' : '#0f172a', width: '100%' }} 
             />
             <button 
               type="submit" 
-              style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+              style={{ background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
             >
               Ara
             </button>
           </form>
 
           {/* Trending Topics Widget - Real tags & categories from forum posts */}
-          <div style={{ background: '#f8fafc', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-            <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #e2e8f0' }}>
-              <TrendingUp size={18} color="#64748b" />
-              <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Gündemdekiler</h3>
+          <div style={{ background: isDark ? '#16181c' : '#f8fafc', borderRadius: 16, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+            <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+              <TrendingUp size={18} color={isDark ? '#71767b' : '#64748b'} />
+              <h3 style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '1rem', margin: 0 }}>Gündemdekiler</h3>
             </div>
             {trends.length > 0 ? (
               trends.map(t => (
                 <Link key={t.tag} href={`/forum?tag=${encodeURIComponent(t.tag.replace(/^#/, ''))}`} style={{ textDecoration: 'none' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 18px', borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f1f5f9')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 18px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : '#f1f5f9')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
                     <div>
-                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Gündemdekiler · Türkiye</div>
-                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>#{t.tag.replace(/^#/, '').replace(/\s+/g, '')}</div>
-                      <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 2 }}>{t.count} gönderi</div>
+                      <div style={{ fontSize: '0.72rem', color: isDark ? '#71767b' : '#94a3b8', marginBottom: 2 }}>Gündemdekiler · Türkiye</div>
+                      <div style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.92rem' }}>#{t.tag.replace(/^#/, '').replace(/\s+/g, '')}</div>
+                      <div style={{ fontSize: '0.74rem', color: isDark ? '#71767b' : '#64748b', marginTop: 2 }}>{t.count} gönderi</div>
                     </div>
-                    <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999 }}>#{t.tag.replace(/^#/, '')}</span>
+                    <span style={{ background: isDark ? 'rgba(56, 189, 248, 0.15)' : '#eff6ff', color: isDark ? '#38bdf8' : '#1d4ed8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999 }}>#{t.tag.replace(/^#/, '')}</span>
                   </div>
                 </Link>
               ))
             ) : (
-              <div style={{ padding: '20px 18px', color: '#94a3b8', fontSize: '0.84rem', textAlign: 'center' }}>
+              <div style={{ padding: '20px 18px', color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.84rem', textAlign: 'center' }}>
                 Henüz etiket veya konu yok
               </div>
             )}
           </div>
 
           {/* Suggested Users (Kimi Takip Etmeli) - Real active members with follow action */}
-          <div style={{ background: '#f8fafc', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-            <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #e2e8f0' }}>
-              <Users size={18} color="#64748b" />
-              <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Kimi Takip Etmeli</h3>
+          <div style={{ background: isDark ? '#16181c' : '#f8fafc', borderRadius: 16, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+            <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+              <Users size={18} color={isDark ? '#71767b' : '#64748b'} />
+              <h3 style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '1rem', margin: 0 }}>Kimi Takip Etmeli</h3>
             </div>
             {suggestedUsers.length > 0 ? (
               suggestedUsers.map((su: any) => {
                 const suUsername = (su.username || su.displayName || 'kullanici').toLowerCase().replace(/\s+/g, '');
                 return (
-                  <div key={su.uid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderBottom: '1px solid #f1f5f9' }}>
+                  <div key={su.uid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}` }}>
                     <Link href={`/forum/profil/${encodeURIComponent(suUsername)}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', minWidth: 0, flex: 1 }}>
                       <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>
                         {su.photoURL ? <img src={su.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (su.displayName || 'U')[0].toUpperCase()}
                       </div>
                       <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{su.displayName || su.username}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.78rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{suUsername}</div>
+                        <div style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{su.displayName || su.username}</div>
+                        <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.78rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{suUsername}</div>
                       </div>
                     </Link>
                     <button 
                       onClick={(e) => handleFollowSuggested(e, su.uid)}
-                      style={{ padding: '6px 14px', borderRadius: 999, background: '#0f172a', color: 'white', fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0, marginLeft: 8, transition: 'all 0.15s' }}
+                      style={{ padding: '6px 14px', borderRadius: 999, background: isDark ? '#e7e9ea' : '#0f172a', color: isDark ? '#000000' : 'white', fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0, marginLeft: 8, transition: 'all 0.15s' }}
                     >
                       Takip Et
                     </button>
@@ -1199,18 +1212,18 @@ export default function ProfilClient({ username }: { username: string }) {
                 );
               })
             ) : (
-              <div style={{ padding: '20px 18px', color: '#94a3b8', fontSize: '0.84rem', textAlign: 'center' }}>
+              <div style={{ padding: '20px 18px', color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.84rem', textAlign: 'center' }}>
                 Şu an için yeni öneri yok
               </div>
             )}
           </div>
 
           {/* Footer & Copyright */}
-          <div style={{ padding: '0 8px', fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.6 }}>
+          <div style={{ padding: '0 8px', fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8', lineHeight: 1.6 }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 12px', marginBottom: 8 }}>
-              <Link href="/gizlilik" style={{ color: '#94a3b8', textDecoration: 'none' }}>Gizlilik Politikası</Link>
-              <Link href="/iletisim" style={{ color: '#94a3b8', textDecoration: 'none' }}>İletişim</Link>
-              <Link href="/ben-kimim" style={{ color: '#94a3b8', textDecoration: 'none' }}>Hakkında</Link>
+              <Link href="/gizlilik" style={{ color: isDark ? '#71767b' : '#94a3b8', textDecoration: 'none' }}>Gizlilik Politikası</Link>
+              <Link href="/iletisim" style={{ color: isDark ? '#71767b' : '#94a3b8', textDecoration: 'none' }}>İletişim</Link>
+              <Link href="/ben-kimim" style={{ color: isDark ? '#71767b' : '#94a3b8', textDecoration: 'none' }}>Hakkında</Link>
             </div>
             <div>© 2026 Furkan Manav · Psikoloji Platformu</div>
           </div>
@@ -1220,18 +1233,18 @@ export default function ProfilClient({ username }: { username: string }) {
 
       {/* Edit Profile & Settings Modal */}
       {(editOpen || settingsOpen) && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => { setEditOpen(false); setSettingsOpen(false); }}>
-          <div style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: 520, padding: 28, boxShadow: '0 25px 50px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => { setEditOpen(false); setSettingsOpen(false); }}>
+          <div style={{ background: isDark ? '#16181c' : 'white', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderRadius: 20, width: '100%', maxWidth: 520, padding: 28, boxShadow: '0 25px 50px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {settingsOpen && !editOpen ? <Settings size={22} color="#0f172a" /> : <SlidersHorizontal size={22} color="#0f172a" />}
-                <h2 style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a', margin: 0 }}>
+                {settingsOpen && !editOpen ? <Settings size={22} color={isDark ? '#e7e9ea' : '#0f172a'} /> : <SlidersHorizontal size={22} color={isDark ? '#e7e9ea' : '#0f172a'} />}
+                <h2 style={{ fontWeight: 800, fontSize: '1.25rem', color: isDark ? '#e7e9ea' : '#0f172a', margin: 0 }}>
                   {settingsOpen && !editOpen ? 'Ayarlar ve Gizlilik' : 'Profili Düzenle & Ayarlar'}
                 </h2>
               </div>
               <button 
                 onClick={() => { setEditOpen(false); setSettingsOpen(false); }} 
-                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}
+                style={{ background: isDark ? '#2f3336' : '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDark ? '#e7e9ea' : '#64748b' }}
                 aria-label="Kapat"
               >
                 <X size={16} />
@@ -1240,82 +1253,82 @@ export default function ProfilClient({ username }: { username: string }) {
 
             {/* Section 1: Profil Bilgileri */}
             <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
                 Profil Bilgileri
               </div>
               
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Ad Soyad</label>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Ad Soyad</label>
                 <input 
                   type="text" 
                   placeholder="Adınız ve soyadınız" 
                   value={ed.displayName} 
                   onChange={e => setEd({ ...ed, displayName: e.target.value })} 
-                  style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
+                  style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
                 />
               </div>
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Kullanıcı Adı</label>
-                <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 14px', background: '#f8fafc' }}>
-                  <span style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.93rem' }}>@</span>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Kullanıcı Adı</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderRadius: 10, padding: '0 14px', background: isDark ? '#000000' : '#f8fafc' }}>
+                  <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontWeight: 700, fontSize: '0.93rem' }}>@</span>
                   <input 
                     type="text" 
                     placeholder="kullaniciadi" 
                     value={ed.username} 
                     onChange={e => setEd({ ...ed, username: e.target.value.toLowerCase().replace(/[^a-z0-9_\.]/g, '') })} 
-                    style={{ width: '100%', border: 'none', background: 'transparent', padding: '11px 6px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
+                    style={{ width: '100%', border: 'none', background: 'transparent', padding: '11px 6px', fontSize: '0.93rem', outline: 'none', color: isDark ? '#e7e9ea' : '#0f172a', boxSizing: 'border-box' }} 
                   />
                 </div>
               </div>
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Hakkımda</label>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Hakkımda</label>
                 <textarea 
                   rows={3} 
                   placeholder="Kendinizden bahsedin..." 
                   value={ed.bio} 
                   onChange={e => setEd({ ...ed, bio: e.target.value })} 
-                  style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} 
+                  style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} 
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Konum</label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Konum</label>
                   <input 
                     type="text" 
                     placeholder="Şehir, Ülke" 
                     value={ed.location} 
                     onChange={e => setEd({ ...ed, location: e.target.value })} 
-                    style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
+                    style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Web Sitesi</label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Web Sitesi</label>
                   <input 
                     type="text" 
                     placeholder="ornek.com" 
                     value={ed.website} 
                     onChange={e => setEd({ ...ed, website: e.target.value })} 
-                    style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
+                    style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
                   />
                 </div>
               </div>
             </div>
 
             {/* Section 2: Gizlilik ve Görünürlük Ayarları */}
-            <div style={{ marginBottom: 24, paddingTop: 18, borderTop: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-                <Shield size={14} color="#64748b" />
+            <div style={{ marginBottom: 24, paddingTop: 18, borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 800, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                <Shield size={14} color={isDark ? '#71767b' : '#64748b'} />
                 <span>Gizlilik Ayarları</span>
               </div>
 
               {/* Toggle: Beğenileri Gizle */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, marginBottom: 12 }}>
                 <div style={{ paddingRight: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>Beğenilerimi herkese gizle</div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>Diğer kullanıcılar profilinizde beğendiğiniz gönderileri göremez.</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>Beğenilerimi herkese gizle</div>
+                  <div style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#64748b', marginTop: 2 }}>Diğer kullanıcılar profilinizde beğendiğiniz gönderileri göremez.</div>
                 </div>
                 <button
                   type="button"
@@ -1326,7 +1339,7 @@ export default function ProfilClient({ username }: { username: string }) {
                     width: 46,
                     height: 26,
                     borderRadius: 999,
-                    background: ed.hideLikes ? '#0f172a' : '#cbd5e1',
+                    background: ed.hideLikes ? (isDark ? '#1d9bf0' : '#0f172a') : (isDark ? '#2f3336' : '#cbd5e1'),
                     border: 'none',
                     cursor: 'pointer',
                     position: 'relative',
@@ -1351,10 +1364,10 @@ export default function ProfilClient({ username }: { username: string }) {
               </div>
 
               {/* Toggle: Yanıtları Gizle */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
                 <div style={{ paddingRight: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>Yanıtlarımı herkese gizle</div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>Diğer kullanıcılar profilinizde yaptığınız yorum ve yanıtları göremez.</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>Yanıtlarımı herkese gizle</div>
+                  <div style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#64748b', marginTop: 2 }}>Diğer kullanıcılar profilinizde yaptığınız yorum ve yanıtları göremez.</div>
                 </div>
                 <button
                   type="button"
@@ -1365,7 +1378,7 @@ export default function ProfilClient({ username }: { username: string }) {
                     width: 46,
                     height: 26,
                     borderRadius: 999,
-                    background: ed.hideReplies ? '#0f172a' : '#cbd5e1',
+                    background: ed.hideReplies ? (isDark ? '#1d9bf0' : '#0f172a') : (isDark ? '#2f3336' : '#cbd5e1'),
                     border: 'none',
                     cursor: 'pointer',
                     position: 'relative',
@@ -1394,14 +1407,14 @@ export default function ProfilClient({ username }: { username: string }) {
             <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
               <button 
                 onClick={() => { setEditOpen(false); setSettingsOpen(false); }} 
-                style={{ flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#0f172a' }}
+                style={{ flex: 1, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', background: isDark ? '#16181c' : 'white', color: isDark ? '#e7e9ea' : '#0f172a' }}
               >
                 İptal
               </button>
               <button 
                 onClick={saveProfile} 
                 disabled={saving} 
-                style={{ flex: 1, background: '#0f172a', color: 'white', border: 'none', borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}
+                style={{ flex: 1, background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', border: 'none', borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}
               >
                 {saving ? 'Kaydediliyor...' : 'Kaydet'}
               </button>
@@ -1418,14 +1431,14 @@ export default function ProfilClient({ username }: { username: string }) {
         left: 0,
         right: 0,
         height: 60,
-        background: 'rgba(255,255,255,0.98)',
+        background: isDark ? 'rgba(16, 18, 22, 0.95)' : 'rgba(255,255,255,0.98)',
         backdropFilter: 'blur(20px)',
-        borderTop: '1px solid #e2e8f0',
+        borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
         zIndex: 2100,
         gridTemplateColumns: 'repeat(4, 1fr)',
         alignItems: 'center',
         paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: '0 -2px 16px rgba(15,23,42,0.06)',
+        boxShadow: isDark ? '0 -2px 16px rgba(0,0,0,0.6)' : '0 -2px 16px rgba(15,23,42,0.06)',
       }}>
         {/* 1. Home */}
         <Link
@@ -1440,7 +1453,7 @@ export default function ProfilClient({ username }: { username: string }) {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: '#64748b',
+            color: isDark ? '#71767b' : '#64748b',
             transition: 'color 0.15s ease',
             padding: 0,
             textDecoration: 'none'
@@ -1463,7 +1476,7 @@ export default function ProfilClient({ username }: { username: string }) {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: '#64748b',
+            color: isDark ? '#71767b' : '#64748b',
             transition: 'color 0.15s ease',
             padding: 0,
             textDecoration: 'none'
@@ -1483,7 +1496,7 @@ export default function ProfilClient({ username }: { username: string }) {
             justifyContent: 'center',
             gap: 4,
             height: '100%',
-            color: '#64748b',
+            color: isDark ? '#71767b' : '#64748b',
             padding: 0,
             textDecoration: 'none',
             position: 'relative'
@@ -1524,15 +1537,15 @@ export default function ProfilClient({ username }: { username: string }) {
             justifyContent: 'center',
             gap: 4,
             height: '100%',
-            color: isOwn ? '#0f172a' : '#64748b',
+            color: isOwn ? (isDark ? '#38bdf8' : '#0f172a') : (isDark ? '#71767b' : '#64748b'),
             padding: 0,
             position: 'relative',
             textDecoration: 'none',
             cursor: 'pointer'
           }}
         >
-          {isOwn && <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: '#0f172a', borderRadius: '0 0 4px 4px' }} />}
-          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
+          {isOwn && <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: isDark ? '#38bdf8' : '#0f172a', borderRadius: '0 0 4px 4px' }} />}
+          <div style={{ width: 22, height: 22, borderRadius: '50%', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : user && !user.isAnonymous ? (

@@ -730,16 +730,129 @@ body {
   }
 }
 
-/* Forum sayfalarında sağ alttaki iletişim pop-up butonunu ve Footer'ı kesinlikle gizle (Tam Ekran Forum) */
+/* Forum sayfalarında sağ alttaki iletişim pop-up butonunu, site üst Navbar'ını ve Footer'ı kesinlikle gizle (Tam Ekran Forum) */
 body:has(.forum-grid-3col) .quick-contact-container,
 body:has(.profile-grid-3col) .quick-contact-container,
 body:has([data-forum-page]) .quick-contact-container,
 body:has(.forum-grid-3col) footer,
 body:has(.profile-grid-3col) footer,
-body:has([data-forum-page]) footer {
+body:has([data-forum-page]) footer,
+body:has(.forum-grid-3col) .navbar,
+body:has(.profile-grid-3col) .navbar,
+body:has([data-forum-page]) .navbar {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+/* ─── MANAV FORUM ANIMATED SPLASH / LOADING SCREEN ─── */
+.manav-splash-glow {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 169, 110, 0.5) 0%, rgba(56, 189, 248, 0.25) 50%, transparent 75%);
+  filter: blur(32px);
+  animation: manavPulseAura 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.manav-splash-badge {
+  width: 88px;
+  height: 88px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  border: 1.5px solid rgba(201, 169, 110, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 25px rgba(201, 169, 110, 0.4);
+  animation: manavBadgeGlow 2.2s ease-in-out infinite;
+}
+
+.manav-splash-m {
+  font-family: 'Playfair Display', serif;
+  font-size: 3rem;
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, #ffffff 0%, #facc15 60%, #c9a96e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transform: translateY(-1px);
+}
+
+.manav-splash-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.65rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: #ffffff;
+  text-transform: uppercase;
+  animation: manavTextShimmer 2.2s ease-in-out infinite;
+}
+
+.manav-splash-subtitle {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: #94a3b8;
+  margin-top: 6px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.manav-splash-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c9a96e;
+  animation: manavDotPulse 1.4s ease-in-out infinite;
+}
+.manav-splash-dot.dot-1 { animation-delay: 0s; }
+.manav-splash-dot.dot-2 { animation-delay: 0.2s; }
+.manav-splash-dot.dot-3 { animation-delay: 0.4s; }
+
+@keyframes manavPulseAura {
+  0%, 100% { transform: scale(1); opacity: 0.45; }
+  50% { transform: scale(1.45); opacity: 0.95; }
+}
+
+@keyframes manavBadgeGlow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(201,169,110,0.3);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.6), 0 0 45px rgba(250,204,21,0.65), 0 0 75px rgba(56,189,248,0.4);
+  }
+}
+
+@keyframes manavTextShimmer {
+  0%, 100% {
+    opacity: 0.88;
+    filter: drop-shadow(0 0 10px rgba(201,169,110,0.35));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 24px rgba(250,204,21,0.9));
+  }
+}
+
+@keyframes manavDotPulse {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+    background: #64748b;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+    background: #facc15;
+    box-shadow: 0 0 12px #facc15;
+  }
 }
 
 /* ─── THREADS-STYLE MOBILE FORUM DOCK & HEADER ─── */

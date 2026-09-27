@@ -69,6 +69,18 @@ export default function ForumClient() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [composeModalOpen, setComposeModalOpen] = useState(false);
 
+  // Animated "MANAV FORUM" Splash / Loading screen state
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashFading, setSplashFading] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSplashFading(true);
+      setTimeout(() => setShowSplash(false), 450);
+    }, 900);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Dark Mode State with localStorage persistence
   const [isDark, setIsDark] = useState<boolean>(false);
 
@@ -500,6 +512,53 @@ export default function ForumClient() {
   return (
     <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', background: isDark ? '#000000' : '#f8fafc', transition: 'background-color 0.2s ease' }}>
 
+      {/* ─── ANIMATED "MANAV FORUM" SPLASH / LOADING SCREEN ─── */}
+      {showSplash && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            background: isDark ? '#000000' : '#080c14',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s ease',
+            opacity: splashFading ? 0 : 1,
+            transform: splashFading ? 'scale(1.05)' : 'scale(1)',
+            pointerEvents: splashFading ? 'none' : 'auto',
+          }}
+        >
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {/* Glowing outer aura */}
+            <div className="manav-splash-glow" />
+
+            {/* Emblem / Monogram */}
+            <div className="manav-splash-badge">
+              <span className="manav-splash-m">M</span>
+            </div>
+
+            {/* Brand text */}
+            <div style={{ marginTop: 22, textAlign: 'center' }}>
+              <div className="manav-splash-title">
+                MANAV FORUM
+              </div>
+              <div className="manav-splash-subtitle">
+                Psikoloji &amp; Farkındalık Topluluğu
+              </div>
+            </div>
+
+            {/* Glowing animated dots */}
+            <div style={{ display: 'flex', gap: 8, marginTop: 28, alignItems: 'center' }}>
+              <span className="manav-splash-dot dot-1" />
+              <span className="manav-splash-dot dot-2" />
+              <span className="manav-splash-dot dot-3" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── THREADS-STYLE MOBILE TOP HEADER ─── */}
       <header className="forum-mobile-header" style={{
         position: 'sticky',
@@ -542,8 +601,8 @@ export default function ForumClient() {
           onClick={() => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); closeThread(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
         >
-          <span style={{ fontSize: '1.25rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.03em' }}>
-            @topluluk
+          <span style={{ fontSize: '1.2rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', fontFamily: 'Playfair Display, serif', letterSpacing: '0.04em' }}>
+            MANAV FORUM
           </span>
           <span style={{ fontSize: '0.62rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>v2.0</span>
         </div>
@@ -624,16 +683,23 @@ export default function ForumClient() {
         ))}
       </div>
 
-      <div className="forum-grid-3col" style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: 0, paddingTop: 72 }}>
+      <div className="forum-grid-3col" style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: 0, paddingTop: 0 }}>
 
         {/* LEFT SIDEBAR */}
-        <aside className="forum-sidebar-left" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#000000' : 'transparent' }}>
+        <aside className="forum-sidebar-left" style={{ position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#000000' : 'transparent' }}>
           <div style={{ padding: '0 8px 16px', marginBottom: 8 }}>
-            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
-              Topluluk
-              <span style={{ fontSize: '0.6rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
-            </h1>
-            <p style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#94a3b8', marginTop: 4 }}>Psikoloji forumu</p>
+            <Link href="/" style={{ textDecoration: 'none' }} title="Ana Sayfaya Dön">
+              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.45rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                MANAV FORUM
+                <span style={{ fontSize: '0.58rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
+              </h1>
+            </Link>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+              <p style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8', margin: 0 }}>Psikoloji Topluluğu</p>
+              <Link href="/" style={{ fontSize: '0.74rem', color: isDark ? '#38bdf8' : '#2563eb', textDecoration: 'none', fontWeight: 700 }}>
+                ← Ana Site
+              </Link>
+            </div>
           </div>
           {[
             { label: 'Ana Akış', action: () => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); closeThread(); }, active: feedTab === 'all' && !searchQuery && !activeThread, icon: <Home size={20} /> },
@@ -696,7 +762,7 @@ export default function ForumClient() {
         </aside>
 
         {/* MAIN FEED / THREAD VIEW */}
-        <main style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: 'calc(100vh - 72px)', background: isDark ? '#000000' : 'white', paddingBottom: 80 }}>
+        <main style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: '100vh', background: isDark ? '#000000' : 'white', paddingBottom: 80 }}>
           {activeThread ? (
             <ThreadView
               post={{
@@ -1000,7 +1066,7 @@ export default function ForumClient() {
         </main>
 
         {/* RIGHT SIDEBAR */}
-        <aside className="forum-sidebar-right" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20, background: isDark ? '#000000' : 'transparent' }}>
+        <aside className="forum-sidebar-right" style={{ position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20, background: isDark ? '#000000' : 'transparent' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: isDark ? '#16181c' : '#f1f5f9', borderRadius: 999, padding: '11px 16px', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
             <Search size={17} color={isDark ? '#71767b' : '#94a3b8'} />
             <input 
