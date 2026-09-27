@@ -9,14 +9,27 @@ import toast from 'react-hot-toast';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  isDark?: boolean;
 }
 
-export default function AuthModal({ isOpen, onClose }: Props) {
+export default function AuthModal({ isOpen, onClose, isDark }: Props) {
   const { signIn, signUp, signInWithGoogle, signInAsGuest } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [show, setShow] = useState(false);
+  const [detectedDark, setDetectedDark] = useState(false);
+
+  useEffect(() => {
+    if (typeof isDark === 'boolean') {
+      setDetectedDark(isDark);
+    } else if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('forum_theme');
+      setDetectedDark(saved === 'dark' || document.documentElement.classList.contains('forum-dark'));
+    }
+  }, [isDark, isOpen]);
+
+  const dark = isDark ?? detectedDark;
 
   // Modal fade animation
   useEffect(() => {
@@ -81,7 +94,7 @@ export default function AuthModal({ isOpen, onClose }: Props) {
   return (
     <div 
       className={`fixed inset-0 z-[3000] flex items-center justify-center sm:p-4 transition-all duration-200 ${
-        show ? 'bg-black/40' : 'bg-transparent'
+        show ? 'bg-black/60' : 'bg-transparent'
       }`} 
       onClick={onClose}
     >
@@ -89,23 +102,41 @@ export default function AuthModal({ isOpen, onClose }: Props) {
       {/* Container simulating X's rigid strict modal shape */}
       <div 
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full h-full sm:w-[600px] sm:h-auto sm:min-h-[650px] bg-white sm:rounded-2xl shadow-xl flex flex-col transition-all duration-300 ease-out overflow-y-auto ${
+        style={{
+          background: dark ? '#000000' : '#ffffff',
+          color: dark ? '#e7e9ea' : '#0f172a',
+          border: dark ? '1px solid #2f3336' : 'none',
+        }}
+        className={`relative w-full h-full sm:w-[600px] sm:h-auto sm:min-h-[650px] sm:rounded-2xl shadow-2xl flex flex-col transition-all duration-300 ease-out overflow-y-auto ${
           show ? 'scale-100 opacity-100 translate-y-0' : 'scale-[0.98] opacity-0 translate-y-4'
         }`}
       >
         
         {/* Header - Perfect Symmetry */}
-        <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-white/95 backdrop-blur-sm z-20">
+        <div 
+          style={{
+            background: dark ? 'rgba(0, 0, 0, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+            borderBottom: `1px solid ${dark ? '#2f3336' : '#f1f5f9'}`
+          }}
+          className="flex items-center justify-between px-4 py-3 sticky top-0 backdrop-blur-sm z-20"
+        >
           <button 
             onClick={onClose} 
-            className="p-2 rounded-full hover:bg-gray-200/60 transition-colors text-black"
+            style={{ color: dark ? '#e7e9ea' : '#000000' }}
+            className="p-2 rounded-full hover:bg-gray-200/20 transition-colors"
             aria-label="Kapat"
           >
             <CloseIcon size={20} strokeWidth={2}/>
           </button>
           
           <div className="absolute left-1/2 -translate-x-1/2">
-            <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-white font-serif font-bold text-lg select-none">
+            <div 
+              style={{
+                background: dark ? '#ffffff' : '#000000',
+                color: dark ? '#000000' : '#ffffff'
+              }}
+              className="w-8 h-8 rounded-full flex items-center justify-center font-serif font-bold text-lg select-none"
+            >
               M
             </div>
           </div>
@@ -118,19 +149,36 @@ export default function AuthModal({ isOpen, onClose }: Props) {
           
           <div className="w-full max-w-[340px] flex flex-col">
             
-            <h1 className="text-[31px] font-bold text-black mt-2 mb-6 tracking-[-0.03em] leading-snug">
+            <h1 
+              style={{ color: dark ? '#e7e9ea' : '#0f172a' }}
+              className="text-[31px] font-bold mt-2 mb-6 tracking-[-0.03em] leading-snug"
+            >
               {mode === 'signin' ? "Manavplatform'a giriş yap" : "Manavplatform'a katıl"}
             </h1>
 
             {/* Psychologist Registration Prompt */}
             {mode === 'signup' && (
-              <div className="mb-6 p-3.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50 to-amber-100/60 flex items-center justify-between gap-3 shadow-sm">
+              <div 
+                style={{
+                  background: dark ? '#16181c' : undefined,
+                  borderColor: dark ? 'rgba(212, 175, 55, 0.35)' : undefined
+                }}
+                className="mb-6 p-3.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50 to-amber-100/60 flex items-center justify-between gap-3 shadow-sm"
+              >
                 <div>
-                  <div className="text-[14px] font-bold text-slate-900 flex items-center gap-1.5">
-                    <Award size={15} className="text-amber-600" />
+                  <div 
+                    style={{ color: dark ? '#fbbf24' : '#0f172a' }}
+                    className="text-[14px] font-bold flex items-center gap-1.5"
+                  >
+                    <Award size={15} className="text-amber-500" />
                     <span>Psikolog musunuz?</span>
                   </div>
-                  <div className="text-[12px] text-slate-600 mt-0.5">Diploma ile uzman rozetli kayıt olun.</div>
+                  <div 
+                    style={{ color: dark ? '#94a3b8' : '#475569' }}
+                    className="text-[12px] mt-0.5"
+                  >
+                    Diploma ile uzman rozetli kayıt olun.
+                  </div>
                 </div>
                 <Link
                   href="/kayit/psikolog"
@@ -148,7 +196,12 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                 type="button"
                 onClick={handleGoogle}
                 disabled={loading}
-                className="w-full h-[40px] flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50 focus:bg-[#E6E6E6] transition-colors text-[15px] font-semibold text-black outline-none relative"
+                style={{
+                  background: dark ? '#16181c' : '#ffffff',
+                  borderColor: dark ? '#2f3336' : '#d1d5db',
+                  color: dark ? '#e7e9ea' : '#000000'
+                }}
+                className="w-full h-[40px] flex items-center justify-center gap-2 rounded-full border transition-colors text-[15px] font-semibold outline-none relative"
               >
                 <div className="absolute left-4">
                   <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
@@ -165,27 +218,39 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                 type="button"
                 onClick={handleGuest}
                 disabled={loading}
-                className="w-full h-[40px] flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 focus:bg-[#E6E6E6] transition-colors text-[15px] font-semibold text-black outline-none"
+                style={{
+                  background: dark ? '#16181c' : '#ffffff',
+                  borderColor: dark ? '#2f3336' : '#d1d5db',
+                  color: dark ? '#e7e9ea' : '#000000'
+                }}
+                className="w-full h-[40px] flex items-center justify-center rounded-full border transition-colors text-[15px] font-semibold outline-none"
               >
                 Misafir olarak göz at
               </button>
             </div>
 
             <div className="flex items-center gap-2 my-2 mt-4">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-[15px] text-gray-800 font-normal">veya</span>
-              <div className="flex-1 h-px bg-gray-200" />
+              <div style={{ background: dark ? '#2f3336' : '#e5e7eb' }} className="flex-1 h-px" />
+              <span style={{ color: dark ? '#71767b' : '#6b7280' }} className="text-[15px] font-normal">veya</span>
+              <div style={{ background: dark ? '#2f3336' : '#e5e7eb' }} className="flex-1 h-px" />
             </div>
 
             {/* Inputs aligned exactly like X floating inputs */}
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
               
               {/* --- USERNAME FIELD --- (Always shown) */}
-              <div className="relative group rounded border border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-colors h-[56px] bg-white">
+              <div 
+                style={{
+                  background: dark ? '#16181c' : '#ffffff',
+                  borderColor: dark ? '#2f3336' : '#d1d5db'
+                }}
+                className="relative group rounded border focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-colors h-[56px]"
+              >
                 <input
                   type="text"
                   id="x_username"
-                  className="block px-2 pt-6 w-full h-full text-[17px] text-black bg-transparent border-0 appearance-none focus:outline-none focus:ring-0 peer"
+                  style={{ color: dark ? '#e7e9ea' : '#000000' }}
+                  className="block px-2 pt-6 w-full h-full text-[17px] bg-transparent border-0 appearance-none focus:outline-none focus:ring-0 peer"
                   placeholder=" "
                   required
                   value={form.username}
@@ -193,7 +258,8 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                 />
                 <label
                   htmlFor="x_username"
-                  className="absolute text-gray-500 text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
+                  style={{ color: dark ? '#71767b' : '#6b7280' }}
+                  className="absolute text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
                 >
                   {mode === 'signin' ? 'Kullanıcı Adı veya E-posta' : 'Kullanıcı Adı belirle'}
                 </label>
@@ -201,11 +267,18 @@ export default function AuthModal({ isOpen, onClose }: Props) {
 
               {/* --- EMAIL FIELD --- (Only for signup) */}
               {mode === 'signup' && (
-                <div className="relative group rounded border border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-colors h-[56px] bg-white">
+                <div 
+                  style={{
+                    background: dark ? '#16181c' : '#ffffff',
+                    borderColor: dark ? '#2f3336' : '#d1d5db'
+                  }}
+                  className="relative group rounded border focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-colors h-[56px]"
+                >
                   <input
                     type="email"
                     id="x_email"
-                    className="block px-2 pt-6 w-full h-full text-[17px] text-black bg-transparent border-0 appearance-none focus:outline-none focus:ring-0 peer"
+                    style={{ color: dark ? '#e7e9ea' : '#000000' }}
+                    className="block px-2 pt-6 w-full h-full text-[17px] bg-transparent border-0 appearance-none focus:outline-none focus:ring-0 peer"
                     placeholder=" "
                     required
                     value={form.email}
@@ -213,18 +286,26 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                   />
                   <label
                     htmlFor="x_email"
-                    className="absolute text-gray-500 text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
+                    style={{ color: dark ? '#71767b' : '#6b7280' }}
+                    className="absolute text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
                   >
                     E-posta bağla
                   </label>
                 </div>
               )}
               
-              <div className="relative group rounded border border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-colors h-[56px] bg-white">
+              <div 
+                style={{
+                  background: dark ? '#16181c' : '#ffffff',
+                  borderColor: dark ? '#2f3336' : '#d1d5db'
+                }}
+                className="relative group rounded border focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-colors h-[56px]"
+              >
                 <input
                   type="password"
                   id="x_password"
-                  className="block px-2 pt-6 w-full h-full text-[17px] text-black bg-transparent border-0 appearance-none focus:outline-none focus:ring-0 peer"
+                  style={{ color: dark ? '#e7e9ea' : '#000000' }}
+                  className="block px-2 pt-6 w-full h-full text-[17px] bg-transparent border-0 appearance-none focus:outline-none focus:ring-0 peer"
                   placeholder=" "
                   required
                   minLength={6}
@@ -233,7 +314,8 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                 />
                 <label
                   htmlFor="x_password"
-                  className="absolute text-gray-500 text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
+                  style={{ color: dark ? '#71767b' : '#6b7280' }}
+                  className="absolute text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
                 >
                   Şifre gir
                 </label>
@@ -243,20 +325,24 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-[52px] rounded-full bg-black hover:bg-gray-800 disabled:opacity-70 text-white font-bold text-[17px] transition-colors flex items-center justify-center gap-2"
+                  style={{
+                    background: dark ? '#ffffff' : '#000000',
+                    color: dark ? '#000000' : '#ffffff'
+                  }}
+                  className="w-full h-[52px] rounded-full disabled:opacity-70 font-bold text-[17px] transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {loading && <Loader size={18} className="animate-spin text-white/80" />}
+                  {loading && <Loader size={18} className="animate-spin" />}
                   {mode === 'signin' ? 'İleri' : 'Kaydol'}
                 </button>
               </div>
             </form>
 
-            <div className="mt-8 text-[15px] font-normal text-gray-500">
+            <div style={{ color: dark ? '#71767b' : '#6b7280' }} className="mt-8 text-[15px] font-normal">
               {mode === 'signin' ? 'Hesabın yok mu?' : 'Zaten hesabın var mı?'}
               {' '}
               <button
                 type="button"
-                className="text-[#1d9bf0] hover:underline"
+                className="text-[#1d9bf0] hover:underline cursor-pointer"
                 onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
               >
                 {mode === 'signin' ? 'Kaydol' : 'Giriş yap'}

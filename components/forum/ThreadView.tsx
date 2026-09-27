@@ -541,7 +541,7 @@ export default function ThreadView({
   };
 
   return (
-    <div style={{ background: '#ffffff', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: isDark ? '#000000' : '#ffffff', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
       
       {/* ── TOP HEADER (← Gönderi) ── */}
       <div style={{
@@ -617,7 +617,7 @@ export default function ThreadView({
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <Link
                   href={`/forum/profil/${encodeURIComponent(username)}`}
-                  style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.98rem', textDecoration: 'none' }}
+                  style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.98rem', textDecoration: 'none' }}
                 >
                   {p.authorName}
                 </Link>
@@ -626,20 +626,20 @@ export default function ThreadView({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 3,
-                    background: 'rgba(212, 175, 55, 0.12)',
-                    color: '#926100',
-                    border: '1px solid rgba(212, 175, 55, 0.45)',
+                    background: isDark ? 'rgba(212, 175, 55, 0.18)' : 'rgba(212, 175, 55, 0.12)',
+                    color: isDark ? '#fbbf24' : '#926100',
+                    border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.5)' : 'rgba(212, 175, 55, 0.45)'}`,
                     padding: '1px 8px',
                     borderRadius: 999,
                     fontSize: '0.68rem',
                     fontWeight: 800,
                   }}>
-                    <CheckCircle size={10} color="#926100" />
+                    <CheckCircle size={10} color={isDark ? '#fbbf24' : '#926100'} />
                     <span>Psikolog</span>
                   </span>
                 )}
               </div>
-              <div style={{ color: '#64748b', fontSize: '0.86rem' }}>
+              <div style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.86rem' }}>
                 @{username}
               </div>
             </div>
@@ -648,8 +648,9 @@ export default function ThreadView({
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {p.category && (
               <span style={{
-                background: '#f1f5f9',
-                color: '#64748b',
+                background: isDark ? '#16181c' : '#f1f5f9',
+                color: isDark ? '#94a3b8' : '#64748b',
+                border: isDark ? '1px solid #2f3336' : 'none',
                 fontSize: '0.72rem',
                 fontWeight: 700,
                 padding: '3px 10px',
@@ -667,7 +668,7 @@ export default function ThreadView({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: isDark ? '#71767b' : '#94a3b8',
                   cursor: 'pointer',
                   padding: 6,
                   borderRadius: 6,
@@ -675,7 +676,7 @@ export default function ThreadView({
                   alignItems: 'center'
                 }}
                 onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
-                onMouseOut={e => (e.currentTarget.style.color = '#94a3b8')}
+                onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#94a3b8')}
                 title="Gönderiyi Sil"
               >
                 <Trash2 size={16} />
@@ -689,7 +690,7 @@ export default function ThreadView({
           <h1 style={{
             fontSize: '1.25rem',
             fontWeight: 800,
-            color: '#0f172a',
+            color: isDark ? '#e7e9ea' : '#0f172a',
             marginBottom: 10,
             lineHeight: 1.35,
             wordBreak: 'break-word'
@@ -701,7 +702,7 @@ export default function ThreadView({
         <div style={{
           fontSize: '1.05rem',
           lineHeight: 1.6,
-          color: '#0f172a',
+          color: isDark ? '#e7e9ea' : '#0f172a',
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
           marginBottom: p.imageUrl ? 12 : 16
@@ -716,8 +717,8 @@ export default function ThreadView({
             borderRadius: 16,
             overflow: 'hidden',
             maxHeight: 480,
-            border: '1px solid #e2e8f0',
-            background: '#f8fafc'
+            border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+            background: isDark ? '#0f1012' : '#f8fafc'
           }}>
             <img
               src={p.imageUrl}
@@ -730,8 +731,8 @@ export default function ThreadView({
         {/* Timestamp & Views */}
         <div style={{
           padding: '12px 0',
-          borderBottom: '1px solid #f1f5f9',
-          color: '#64748b',
+          borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
+          color: isDark ? '#71767b' : '#64748b',
           fontSize: '0.86rem',
           display: 'flex',
           alignItems: 'center',
@@ -752,7 +753,7 @@ export default function ThreadView({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '10px 4px 6px',
-          color: '#64748b'
+          color: isDark ? '#71767b' : '#64748b'
         }}>
           {/* 1. Reply */}
           <button
@@ -765,7 +766,7 @@ export default function ThreadView({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#64748b',
+              color: isDark ? '#71767b' : '#64748b',
               fontSize: '0.84rem',
               fontWeight: 500,
               padding: '6px 8px',
@@ -773,7 +774,7 @@ export default function ThreadView({
               transition: 'color 0.15s'
             }}
             onMouseOver={e => (e.currentTarget.style.color = '#1d9bf0')}
-            onMouseOut={e => (e.currentTarget.style.color = '#64748b')}
+            onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
             title="Yanıtla"
           >
             <MessageCircle size={18} strokeWidth={1.8} />
@@ -791,7 +792,7 @@ export default function ThreadView({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: hasReposted ? '#16a34a' : '#64748b',
+              color: hasReposted ? '#16a34a' : (isDark ? '#71767b' : '#64748b'),
               fontSize: '0.84rem',
               fontWeight: hasReposted ? 700 : 500,
               padding: '6px 8px',
@@ -799,7 +800,7 @@ export default function ThreadView({
               transition: 'color 0.15s'
             }}
             onMouseOver={e => !hasReposted && (e.currentTarget.style.color = '#16a34a')}
-            onMouseOut={e => !hasReposted && (e.currentTarget.style.color = '#64748b')}
+            onMouseOut={e => !hasReposted && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
             title="Yeniden Paylaş"
           >
             <Repeat2 size={19} strokeWidth={hasReposted ? 2.4 : 1.8} />
@@ -817,7 +818,7 @@ export default function ThreadView({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: hasLiked ? '#ef4444' : '#64748b',
+              color: hasLiked ? '#ef4444' : (isDark ? '#71767b' : '#64748b'),
               fontSize: '0.84rem',
               fontWeight: hasLiked ? 700 : 500,
               padding: '6px 8px',
@@ -825,7 +826,7 @@ export default function ThreadView({
               transition: 'color 0.15s'
             }}
             onMouseOver={e => !hasLiked && (e.currentTarget.style.color = '#ef4444')}
-            onMouseOut={e => !hasLiked && (e.currentTarget.style.color = '#64748b')}
+            onMouseOut={e => !hasLiked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
             title="Beğen"
           >
             <Heart size={18} strokeWidth={hasLiked ? 2.4 : 1.8} fill={hasLiked ? '#ef4444' : 'none'} />
@@ -843,7 +844,7 @@ export default function ThreadView({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: hasDisliked ? '#3b82f6' : '#64748b',
+              color: hasDisliked ? '#3b82f6' : (isDark ? '#71767b' : '#64748b'),
               fontSize: '0.84rem',
               fontWeight: hasDisliked ? 700 : 500,
               padding: '6px 8px',
@@ -851,7 +852,7 @@ export default function ThreadView({
               transition: 'color 0.15s'
             }}
             onMouseOver={e => !hasDisliked && (e.currentTarget.style.color = '#3b82f6')}
-            onMouseOut={e => !hasDisliked && (e.currentTarget.style.color = '#64748b')}
+            onMouseOut={e => !hasDisliked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
             title="Beğenme"
           >
             <ThumbsDown size={18} strokeWidth={hasDisliked ? 2.4 : 1.8} fill={hasDisliked ? '#3b82f6' : 'none'} />
@@ -869,7 +870,7 @@ export default function ThreadView({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: hasBookmarked ? '#d97706' : '#64748b',
+              color: hasBookmarked ? '#d97706' : (isDark ? '#71767b' : '#64748b'),
               fontSize: '0.84rem',
               fontWeight: hasBookmarked ? 700 : 500,
               padding: '6px 8px',
@@ -877,7 +878,7 @@ export default function ThreadView({
               transition: 'color 0.15s'
             }}
             onMouseOver={e => !hasBookmarked && (e.currentTarget.style.color = '#d97706')}
-            onMouseOut={e => !hasBookmarked && (e.currentTarget.style.color = '#64748b')}
+            onMouseOut={e => !hasBookmarked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
             title="Kaydet"
           >
             <Bookmark size={18} strokeWidth={hasBookmarked ? 2.4 : 1.8} fill={hasBookmarked ? '#d97706' : 'none'} />
@@ -892,15 +893,15 @@ export default function ThreadView({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#64748b',
+              color: isDark ? '#71767b' : '#64748b',
               padding: '6px 8px',
               borderRadius: 999,
               display: 'flex',
               alignItems: 'center',
               transition: 'color 0.15s'
             }}
-            onMouseOver={e => (e.currentTarget.style.color = '#0f172a')}
-            onMouseOut={e => (e.currentTarget.style.color = '#64748b')}
+            onMouseOver={e => (e.currentTarget.style.color = isDark ? '#e7e9ea' : '#0f172a')}
+            onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
             title="Paylaş"
           >
             <Share2 size={18} strokeWidth={1.8} />
@@ -911,11 +912,11 @@ export default function ThreadView({
       {/* ── REPLY BOX (Yanıtını gönder) ── */}
       <div style={{
         padding: '16px 20px',
-        borderBottom: '1px solid #f1f5f9',
+        borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
         display: 'flex',
         gap: 12,
         alignItems: 'flex-start',
-        background: '#fafafa'
+        background: isDark ? '#080808' : '#fafafa'
       }}>
         <div style={{
           width: 40,
@@ -941,7 +942,7 @@ export default function ThreadView({
 
         <div style={{ flex: 1 }}>
           {/* Replying to indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontSize: '0.84rem', color: '#64748b' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontSize: '0.84rem', color: isDark ? '#71767b' : '#64748b' }}>
             <span>Yanıt olarak</span>
             <Link
               href={`/forum/profil/${encodeURIComponent(replyToUser || username)}`}
@@ -956,7 +957,7 @@ export default function ThreadView({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: isDark ? '#71767b' : '#94a3b8',
                   cursor: 'pointer',
                   padding: 2,
                   marginLeft: 4,
@@ -982,7 +983,7 @@ export default function ThreadView({
               background: 'transparent',
               outline: 'none',
               fontSize: '1rem',
-              color: '#0f172a',
+              color: isDark ? '#e7e9ea' : '#0f172a',
               resize: 'none',
               fontFamily: 'inherit',
               lineHeight: 1.5,
@@ -991,7 +992,7 @@ export default function ThreadView({
           />
 
           {replyImageUrl && (
-            <div style={{ position: 'relative', width: 90, height: 90, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', margin: '8px 0' }}>
+            <div style={{ position: 'relative', width: 90, height: 90, borderRadius: 10, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, margin: '8px 0' }}>
               <img src={replyImageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <button
                 type="button"
@@ -1022,14 +1023,14 @@ export default function ThreadView({
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingTop: 8,
-            borderTop: '1px solid #f1f5f9'
+            borderTop: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`
           }}>
             <label
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
-                color: '#64748b',
+                color: isDark ? '#71767b' : '#64748b',
                 cursor: uploadingImage ? 'wait' : 'pointer',
                 fontSize: '0.82rem',
                 fontWeight: 600,
@@ -1053,8 +1054,12 @@ export default function ThreadView({
               disabled={submittingReply || uploadingImage || (!replyText.trim() && !replyImageUrl)}
               onClick={handleSubmitReply}
               style={{
-                background: (replyText.trim() || replyImageUrl) ? '#0f172a' : '#94a3b8',
-                color: 'white',
+                background: (replyText.trim() || replyImageUrl) 
+                  ? (isDark ? '#ffffff' : '#0f172a') 
+                  : (isDark ? '#262a30' : '#e2e8f0'),
+                color: (replyText.trim() || replyImageUrl) 
+                  ? (isDark ? '#000000' : '#ffffff') 
+                  : (isDark ? '#71767b' : '#94a3b8'),
                 border: 'none',
                 padding: '8px 20px',
                 borderRadius: 999,
@@ -1071,9 +1076,9 @@ export default function ThreadView({
       </div>
 
       {/* ── THREADED REPLIES LIST ── */}
-      <div style={{ flex: 1, paddingBottom: 100 }}>
+      <div style={{ flex: 1, paddingBottom: 100, background: isDark ? '#000000' : 'white' }}>
         {comments.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: isDark ? '#71767b' : '#94a3b8' }}>
             <p style={{ margin: 0, fontSize: '0.92rem' }}>Henüz yanıt yok. İlk yanıtı sen gönder!</p>
           </div>
         ) : (
@@ -1090,8 +1095,8 @@ export default function ThreadView({
                   display: 'flex',
                   gap: 12,
                   padding: '16px 20px',
-                  borderBottom: '1px solid #f1f5f9',
-                  background: 'white'
+                  borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
+                  background: isDark ? '#000000' : 'white'
                 }}
               >
                 {/* Comment author avatar */}
@@ -1124,7 +1129,7 @@ export default function ThreadView({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <Link
                         href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`}
-                        style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem', textDecoration: 'none' }}
+                        style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.92rem', textDecoration: 'none' }}
                       >
                         {c.authorName}
                       </Link>
@@ -1133,21 +1138,21 @@ export default function ThreadView({
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: 2,
-                          background: 'rgba(212, 175, 55, 0.12)',
-                          color: '#926100',
-                          border: '1px solid rgba(212, 175, 55, 0.45)',
+                          background: isDark ? 'rgba(212, 175, 55, 0.18)' : 'rgba(212, 175, 55, 0.12)',
+                          color: isDark ? '#fbbf24' : '#926100',
+                          border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.5)' : 'rgba(212, 175, 55, 0.45)'}`,
                           padding: '1px 6px',
                           borderRadius: 999,
                           fontSize: '0.64rem',
                           fontWeight: 800,
                         }}>
-                          <CheckCircle size={9} color="#926100" />
+                          <CheckCircle size={9} color={isDark ? '#fbbf24' : '#926100'} />
                           <span>Psikolog</span>
                         </span>
                       )}
-                      <span style={{ color: '#64748b', fontSize: '0.82rem' }}>@{commentAuthorUsername}</span>
-                      <span style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>·</span>
-                      <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{formatTimeAgo(c.createdAt)}</span>
+                      <span style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.82rem' }}>@{commentAuthorUsername}</span>
+                      <span style={{ color: isDark ? '#3e4144' : '#cbd5e1', fontSize: '0.82rem' }}>·</span>
+                      <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.8rem' }}>{formatTimeAgo(c.createdAt)}</span>
                     </div>
 
                     {canDeleteComment && (
@@ -1157,14 +1162,14 @@ export default function ThreadView({
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#94a3b8',
+                          color: isDark ? '#71767b' : '#94a3b8',
                           cursor: 'pointer',
                           padding: 4,
                           display: 'flex',
                           alignItems: 'center'
                         }}
                         onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
-                        onMouseOut={e => (e.currentTarget.style.color = '#94a3b8')}
+                        onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#94a3b8')}
                         title="Yanıtı Sil"
                       >
                         <Trash2 size={14} />
@@ -1173,7 +1178,7 @@ export default function ThreadView({
                   </div>
 
                   {/* Replying to @user indicator in blue */}
-                  <div style={{ fontSize: '0.82rem', color: '#64748b', margin: '2px 0 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ fontSize: '0.82rem', color: isDark ? '#71767b' : '#64748b', margin: '2px 0 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span>Yanıt olarak</span>
                     <Link
                       href={`/forum/profil/${encodeURIComponent(c.replyToUsername || username)}`}
@@ -1188,7 +1193,7 @@ export default function ThreadView({
                   {/* Comment text with blue @mentions */}
                   {c.text && (
                     <p style={{
-                      color: '#0f172a',
+                      color: isDark ? '#e7e9ea' : '#0f172a',
                       fontSize: '0.95rem',
                       lineHeight: 1.55,
                       margin: '4px 0 0',
@@ -1206,8 +1211,8 @@ export default function ThreadView({
                       borderRadius: 12,
                       overflow: 'hidden',
                       maxHeight: 260,
-                      border: '1px solid #e2e8f0',
-                      background: '#f8fafc'
+                      border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                      background: isDark ? '#0f1012' : '#f8fafc'
                     }}>
                       <img src={c.imageUrl} alt="" style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }} />
                     </div>
@@ -1232,7 +1237,7 @@ export default function ThreadView({
                         justifyContent: 'space-between',
                         maxWidth: 380,
                         marginTop: 10,
-                        color: '#64748b'
+                        color: isDark ? '#71767b' : '#64748b'
                       }}>
                         {/* 1. Yanıtla */}
                         <button
@@ -1248,13 +1253,13 @@ export default function ThreadView({
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            color: '#64748b',
+                            color: isDark ? '#71767b' : '#64748b',
                             fontSize: '0.8rem',
                             padding: '4px 6px',
                             borderRadius: 6
                           }}
                           onMouseOver={e => (e.currentTarget.style.color = '#1d9bf0')}
-                          onMouseOut={e => (e.currentTarget.style.color = '#64748b')}
+                          onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
                           title="Yanıtla"
                         >
                           <MessageCircle size={15} strokeWidth={1.8} />
@@ -1272,14 +1277,14 @@ export default function ThreadView({
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            color: commentReposted ? '#16a34a' : '#64748b',
+                            color: commentReposted ? '#16a34a' : (isDark ? '#71767b' : '#64748b'),
                             fontWeight: commentReposted ? 700 : 500,
                             fontSize: '0.8rem',
                             padding: '4px 6px',
                             borderRadius: 6
                           }}
                           onMouseOver={e => !commentReposted && (e.currentTarget.style.color = '#16a34a')}
-                          onMouseOut={e => !commentReposted && (e.currentTarget.style.color = '#64748b')}
+                          onMouseOut={e => !commentReposted && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
                           title="Yeniden Paylaş"
                         >
                           <Repeat2 size={16} strokeWidth={commentReposted ? 2.4 : 1.8} />
@@ -1297,14 +1302,14 @@ export default function ThreadView({
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            color: commentLiked ? '#ef4444' : '#64748b',
+                            color: commentLiked ? '#ef4444' : (isDark ? '#71767b' : '#64748b'),
                             fontWeight: commentLiked ? 700 : 500,
                             fontSize: '0.8rem',
                             padding: '4px 6px',
                             borderRadius: 6
                           }}
                           onMouseOver={e => !commentLiked && (e.currentTarget.style.color = '#ef4444')}
-                          onMouseOut={e => !commentLiked && (e.currentTarget.style.color = '#64748b')}
+                          onMouseOut={e => !commentLiked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
                           title="Beğen"
                         >
                           <Heart size={15} strokeWidth={commentLiked ? 2.4 : 1.8} fill={commentLiked ? '#ef4444' : 'none'} />
@@ -1322,14 +1327,14 @@ export default function ThreadView({
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            color: commentDisliked ? '#3b82f6' : '#64748b',
+                            color: commentDisliked ? '#3b82f6' : (isDark ? '#71767b' : '#64748b'),
                             fontWeight: commentDisliked ? 700 : 500,
                             fontSize: '0.8rem',
                             padding: '4px 6px',
                             borderRadius: 6
                           }}
                           onMouseOver={e => !commentDisliked && (e.currentTarget.style.color = '#3b82f6')}
-                          onMouseOut={e => !commentDisliked && (e.currentTarget.style.color = '#64748b')}
+                          onMouseOut={e => !commentDisliked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
                           title="Beğenme"
                         >
                           <ThumbsDown size={15} strokeWidth={commentDisliked ? 2.4 : 1.8} fill={commentDisliked ? '#3b82f6' : 'none'} />
@@ -1347,14 +1352,14 @@ export default function ThreadView({
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            color: commentBookmarked ? '#d97706' : '#64748b',
+                            color: commentBookmarked ? '#d97706' : (isDark ? '#71767b' : '#64748b'),
                             fontWeight: commentBookmarked ? 700 : 500,
                             fontSize: '0.8rem',
                             padding: '4px 6px',
                             borderRadius: 6
                           }}
                           onMouseOver={e => !commentBookmarked && (e.currentTarget.style.color = '#d97706')}
-                          onMouseOut={e => !commentBookmarked && (e.currentTarget.style.color = '#64748b')}
+                          onMouseOut={e => !commentBookmarked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
                           title="Kaydet"
                         >
                           <Bookmark size={15} strokeWidth={commentBookmarked ? 2.4 : 1.8} fill={commentBookmarked ? '#d97706' : 'none'} />
@@ -1373,14 +1378,14 @@ export default function ThreadView({
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            color: '#64748b',
+                            color: isDark ? '#71767b' : '#64748b',
                             padding: '4px 6px',
                             borderRadius: 6,
                             display: 'flex',
                             alignItems: 'center'
                           }}
-                          onMouseOver={e => (e.currentTarget.style.color = '#0f172a')}
-                          onMouseOut={e => (e.currentTarget.style.color = '#64748b')}
+                          onMouseOver={e => (e.currentTarget.style.color = isDark ? '#e7e9ea' : '#0f172a')}
+                          onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
                           title="Paylaş"
                         >
                           <Share2 size={15} strokeWidth={1.8} />

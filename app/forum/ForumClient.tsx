@@ -1143,7 +1143,7 @@ export default function ForumClient() {
         </aside>
       </div>
 
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} isDark={isDark} />
 
       {/* Mobile Search Overlay */}
       {mobileSearchOpen && (
@@ -1471,41 +1471,79 @@ export default function ForumClient() {
               </button>
             </div>
 
-            {/* Main Navigation */}
-            <div style={{ fontSize: '0.74rem', fontWeight: 800, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, paddingLeft: 6 }}>
-              Menü
+            {/* Forum Categories Navigation */}
+            <div style={{ fontSize: '0.74rem', fontWeight: 800, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, paddingLeft: 6 }}>
+              Forum Kategorileri
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 24 }}>
-              {[
-                { label: 'Anasayfa', href: '/', icon: Home },
-                { label: 'Hakkımda', href: '/ben-kimim', icon: User },
-                { label: 'Yazılarım', href: '/yazilarim', icon: FileText },
-                { label: 'Videolarım', href: '/videolarim', icon: Film },
-                { label: 'İletişim & Randevu', href: '/iletisim', icon: MessageCircle },
-              ].map(item => {
-                const IconC = item.icon;
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+              {CATEGORIES.map(cat => {
+                const isActive = filter === cat;
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileDrawerOpen(false)}
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      setFilter(cat);
+                      setFeedTab('all');
+                      setSearchQuery('');
+                      if (activeThread) closeThread();
+                      setMobileDrawerOpen(false);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 12,
-                      padding: '11px 12px',
-                      borderRadius: 10,
-                      textDecoration: 'none',
-                      color: isDark ? '#e7e9ea' : '#1e293b',
+                      justifyContent: 'space-between',
+                      padding: '11px 14px',
+                      borderRadius: 12,
+                      background: isActive 
+                        ? (isDark ? 'rgba(29, 155, 240, 0.15)' : 'rgba(29, 155, 240, 0.08)') 
+                        : (isDark ? 'transparent' : 'transparent'),
+                      border: isActive 
+                        ? `1.5px solid ${isDark ? '#1d9bf0' : '#0284c7'}` 
+                        : `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`,
+                      color: isActive 
+                        ? (isDark ? '#38bdf8' : '#0284c7') 
+                        : (isDark ? '#e7e9ea' : '#1e293b'),
                       fontSize: '0.92rem',
-                      fontWeight: 600,
+                      fontWeight: isActive ? 800 : 600,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease'
                     }}
                   >
-                    <IconC size={18} color="var(--gold)" />
-                    <span>{item.label}</span>
-                  </Link>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Hash size={17} color={isActive ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#71767b' : '#94a3b8')} />
+                      <span>{cat}</span>
+                    </div>
+                    {isActive && (
+                      <span style={{ fontSize: '0.7rem', background: isDark ? '#1d9bf0' : '#0284c7', color: 'white', padding: '2px 8px', borderRadius: 999, fontWeight: 700 }}>
+                        Aktif
+                      </span>
+                    )}
+                  </button>
                 );
               })}
+            </div>
+
+            {/* Link to main website */}
+            <div style={{ padding: '14px 6px', borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, marginBottom: 16 }}>
+              <Link
+                href="/"
+                onClick={() => setMobileDrawerOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  fontSize: '0.86rem',
+                  color: isDark ? '#71767b' : '#64748b',
+                  textDecoration: 'none',
+                  fontWeight: 600
+                }}
+              >
+                <ArrowRight size={15} color="var(--gold)" />
+                <span>Web Sitesine Dön</span>
+              </Link>
             </div>
 
             {/* Auth button at bottom */}
