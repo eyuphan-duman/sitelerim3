@@ -730,10 +730,13 @@ body {
   }
 }
 
-/* Forum sayfalarında sağ alttaki iletişim pop-up butonunu kesinlikle gizle */
+/* Forum sayfalarında sağ alttaki iletişim pop-up butonunu ve Footer'ı kesinlikle gizle (Tam Ekran Forum) */
 body:has(.forum-grid-3col) .quick-contact-container,
 body:has(.profile-grid-3col) .quick-contact-container,
-body:has([data-forum-page]) .quick-contact-container {
+body:has([data-forum-page]) .quick-contact-container,
+body:has(.forum-grid-3col) footer,
+body:has(.profile-grid-3col) footer,
+body:has([data-forum-page]) footer {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;

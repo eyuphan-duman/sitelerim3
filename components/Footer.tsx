@@ -1,4 +1,6 @@
+'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { MapPin, Phone, Mail, ArrowUpRight } from 'lucide-react';
 
 const InstagramIcon = () => (
@@ -22,6 +24,21 @@ const LinkedInIcon = () => (
 );
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Hide completely on forum and notification pages for a clean, full-screen forum experience
+  const isForumRoute = 
+    Boolean(pathname?.startsWith('/forum')) || 
+    Boolean(pathname?.startsWith('/bildirimler')) ||
+    (typeof window !== 'undefined' && (
+      window.location.pathname.startsWith('/forum') || 
+      window.location.pathname.startsWith('/bildirimler')
+    ));
+
+  if (isForumRoute) {
+    return null;
+  }
+
   return (
     <footer style={{ background: '#0b1633' }} className="text-white border-t border-white/10">
       <div className="max-w-7xl mx-auto px-6 py-16">

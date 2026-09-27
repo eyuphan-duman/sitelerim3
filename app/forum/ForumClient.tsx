@@ -579,7 +579,7 @@ export default function ForumClient() {
         </aside>
 
         {/* MAIN FEED / THREAD VIEW */}
-        <main style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: 'calc(100vh - 72px)', background: isDark ? '#000000' : 'white' }}>
+        <main style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: 'calc(100vh - 72px)', background: isDark ? '#000000' : 'white', paddingBottom: 80 }}>
           {activeThread ? (
             <ThreadView
               post={{
@@ -872,6 +872,11 @@ export default function ForumClient() {
                     />
                   );
                 })
+              )}
+              {filtered.length > 0 && (
+                <div style={{ padding: '36px 16px 48px', textAlign: 'center', color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.84rem' }}>
+                  ✓ Akışın sonundasınız
+                </div>
               )}
             </>
           )}
