@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ThreadView from '@/components/forum/ThreadView';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark, Heart, Sun, Moon } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark, Heart, Sun, Moon, Plus, Menu, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -46,7 +46,7 @@ const CATEGORIES = ['Tümü','Psikanaliz','Varoluş & Anlam','Kaygı & Depresyon
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
 export default function ForumClient() {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, logout } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +66,8 @@ export default function ForumClient() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [usersMap, setUsersMap] = useState<Record<string, any>>({});
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [composeModalOpen, setComposeModalOpen] = useState(false);
 
   // Dark Mode State with localStorage persistence
   const [isDark, setIsDark] = useState<boolean>(false);
@@ -497,6 +499,121 @@ export default function ForumClient() {
 
   return (
     <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', background: isDark ? '#000000' : '#f8fafc', transition: 'background-color 0.2s ease' }}>
+
+      {/* ─── THREADS-STYLE MOBILE TOP HEADER ─── */}
+      <header className="forum-mobile-header" style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        height: 54,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 16px',
+        background: isDark ? 'rgba(0, 0, 0, 0.88)' : 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+      }}>
+        {/* Left: Menu Drawer button (two horizontal lines like Threads) */}
+        <button
+          type="button"
+          onClick={() => setMobileDrawerOpen(true)}
+          aria-label="Menüyü Aç"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '10px 4px',
+            color: isDark ? '#e7e9ea' : '#0f172a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width: 20 }}>
+            <span style={{ height: 2.2, background: 'currentColor', borderRadius: 2, width: 20 }} />
+            <span style={{ height: 2.2, background: 'currentColor', borderRadius: 2, width: 13 }} />
+          </div>
+        </button>
+
+        {/* Center: Brand / Logo (@threads style) */}
+        <div 
+          onClick={() => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); closeThread(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+        >
+          <span style={{ fontSize: '1.25rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.03em' }}>
+            @topluluk
+          </span>
+          <span style={{ fontSize: '0.62rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>v2.0</span>
+        </div>
+
+        {/* Right: Search button */}
+        <button
+          type="button"
+          onClick={() => setMobileSearchOpen(true)}
+          aria-label="Arama"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 8,
+            color: isDark ? '#e7e9ea' : '#0f172a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Search size={22} strokeWidth={2.2} />
+        </button>
+      </header>
+
+      {/* ─── THREADS-STYLE QUICK COMPOSE ROW (MOBILE ONLY) ─── */}
+      <div 
+        className="forum-mobile-compose-bar"
+        onClick={() => {
+          if (!user?.uid) setAuthOpen(true);
+          else setComposeModalOpen(true);
+        }}
+        style={{
+          padding: '12px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
+          background: isDark ? '#000000' : 'white',
+          cursor: 'pointer',
+        }}
+      >
+        <div style={{
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg,#0f172a,#1e293b)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 800,
+          fontSize: '0.9rem',
+          flexShrink: 0,
+          overflow: 'hidden'
+        }}>
+          {userProfile?.photoURL ? (
+            <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            (userProfile?.displayName || user?.displayName || 'U')[0].toUpperCase()
+          )}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 2 }}>
+            {userProfile?.displayName || user?.displayName || 'Misafir'}
+          </div>
+          <div style={{ fontSize: '0.84rem', color: isDark ? '#71767b' : '#94a3b8' }}>
+            Ne yenilikler var?
+          </div>
+        </div>
+      </div>
 
       {/* Mobile category pills */}
       <div className="forum-mobile-cats" style={{ display: 'none', overflowX: 'auto', padding: '8px 12px', gap: 8, background: isDark ? '#000000' : 'white', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, position: 'relative', zIndex: 10, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
@@ -993,153 +1110,392 @@ export default function ForumClient() {
         </div>
       )}
 
-      {/* Mobile Bottom Navigation Bar (Symmetric 4-Item Grid) */}
-      <nav className="forum-mobile-bottom-nav" style={{
-        display: 'none',
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 60,
-        background: isDark ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.98)',
-        backdropFilter: 'blur(20px)',
-        borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-        zIndex: 2100,
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        alignItems: 'center',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: isDark ? '0 -2px 16px rgba(0,0,0,0.7)' : '0 -2px 16px rgba(15,23,42,0.06)',
-      }}>
-        {/* 1. Home */}
-        <button
-          type="button"
-          onClick={() => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); if (activeThread) closeThread(); }}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: feedTab === 'all' && filter === 'Tümü' && !searchQuery ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#71767b' : '#64748b'),
-            transition: 'color 0.15s ease',
-            padding: 0,
-            position: 'relative'
-          }}
-        >
-          {feedTab === 'all' && filter === 'Tümü' && !searchQuery && (
-            <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: isDark ? '#1d9bf0' : '#0f172a', borderRadius: '0 0 4px 4px' }} />
-          )}
-          <Home size={22} strokeWidth={feedTab === 'all' && filter === 'Tümü' && !searchQuery ? 2.4 : 1.9} />
-          <span style={{ fontSize: '0.68rem', fontWeight: feedTab === 'all' && filter === 'Tümü' && !searchQuery ? 700 : 500 }}>Anasayfa</span>
-        </button>
-
-        {/* 2. Search */}
+      {/* ─── THREADS-STYLE FLOATING BOTTOM DOCK (MOBILE ONLY) ─── */}
+      <nav className="forum-floating-dock" aria-label="Mobil Forum Navigasyonu">
+        {/* 1. Home button */}
         <button
           type="button"
           onClick={() => {
             if (activeThread) closeThread();
+            setFeedTab('all');
+            setFilter('Tümü');
+            setSearchQuery('');
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            setTimeout(() => {
-              topSearchInputRef.current?.focus();
-            }, 100);
           }}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: isSearchFocused || searchQuery ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#71767b' : '#64748b'),
-            transition: 'color 0.15s ease',
-            padding: 0,
-            position: 'relative'
-          }}
+          className={`dock-btn ${feedTab === 'all' && !searchQuery && !activeThread ? 'active' : ''}`}
+          aria-label="Ana Akış"
         >
-          {(isSearchFocused || searchQuery) && (
-            <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: isDark ? '#1d9bf0' : '#0f172a', borderRadius: '0 0 4px 4px' }} />
-          )}
-          <Search size={22} strokeWidth={isSearchFocused || searchQuery ? 2.4 : 1.9} />
-          <span style={{ fontSize: '0.68rem', fontWeight: isSearchFocused || searchQuery ? 700 : 500 }}>Ara</span>
+          <Home size={24} strokeWidth={feedTab === 'all' && !searchQuery && !activeThread ? 2.5 : 1.9} />
         </button>
 
-        {/* 3. Notifications */}
+        {/* 2. Search button */}
+        <button
+          type="button"
+          onClick={() => setMobileSearchOpen(true)}
+          className={`dock-btn ${isSearchFocused || Boolean(searchQuery) || mobileSearchOpen ? 'active' : ''}`}
+          aria-label="Arama"
+        >
+          <Search size={24} strokeWidth={isSearchFocused || Boolean(searchQuery) || mobileSearchOpen ? 2.5 : 1.9} />
+        </button>
+
+        {/* 3. Center Create (+) button (Threads style prominent pill) */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!user || user.isAnonymous) setAuthOpen(true);
+            else setComposeModalOpen(true);
+          }}
+          className="dock-create-btn"
+          aria-label="Yeni Gönderi Paylaş"
+        >
+          <Plus size={22} strokeWidth={2.6} />
+        </button>
+
+        {/* 4. Heart / Activity button */}
         <Link
           href={user && !user.isAnonymous ? '/bildirimler' : '#'}
           onClick={!user || user.isAnonymous ? (e) => { e.preventDefault(); setAuthOpen(true); } : undefined}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            color: isDark ? '#71767b' : '#64748b',
-            textDecoration: 'none',
-            padding: 0,
-            position: 'relative',
-            transition: 'color 0.15s ease'
-          }}
+          className="dock-btn"
+          aria-label="Bildirimler"
+          style={{ position: 'relative', textDecoration: 'none' }}
         >
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Bell size={22} strokeWidth={1.9} />
-            {unreadCount > 0 && (
-              <span style={{ position: 'absolute', top: -4, right: -6, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, minWidth: 16, height: 16, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </div>
-          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Bildirim</span>
+          <Heart size={24} strokeWidth={1.9} />
+          {unreadCount > 0 && (
+            <span style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#ef4444',
+            }} />
+          )}
         </Link>
 
-        {/* 4. Profile */}
+        {/* 5. User Profile button */}
         <Link
           href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername || user.uid)}` : '#'}
           onClick={(e) => {
             if (!user || user.isAnonymous) {
               e.preventDefault();
               setAuthOpen(true);
-            } else {
-              const target = myUsername || user.uid;
-              if (target) {
-                e.preventDefault();
-                router.push(`/forum/profil/${encodeURIComponent(target)}`);
-              }
             }
           }}
-          style={{
+          className="dock-btn"
+          aria-label="Profilim"
+          style={{ textDecoration: 'none' }}
+        >
+          <div style={{
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            background: isDark ? '#2f3336' : '#0f172a',
+            overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            color: isDark ? '#71767b' : '#64748b',
-            textDecoration: 'none',
-            padding: 0,
-            position: 'relative',
-            transition: 'color 0.15s ease'
-          }}
-        >
-          <div style={{ width: 22, height: 22, borderRadius: '50%', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            color: '#ffffff',
+            border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.3)'}`,
+          }}>
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : user && !user.isAnonymous ? (
               (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()
             ) : (
-              <User size={13} color="white" />
+              <User size={15} color="white" />
             )}
           </div>
-          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Profilim</span>
         </Link>
       </nav>
+
+      {/* ─── THREADS-STYLE QUICK COMPOSE MODAL ─── */}
+      {composeModalOpen && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            zIndex: 3000, 
+            background: 'rgba(0,0,0,0.72)', 
+            backdropFilter: 'blur(8px)', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'flex-end',
+          }} 
+          onClick={() => setComposeModalOpen(false)}
+        >
+          <div 
+            style={{ 
+              background: isDark ? '#121212' : '#ffffff', 
+              borderTopLeftRadius: 24, 
+              borderTopRightRadius: 24, 
+              padding: '20px 20px 36px', 
+              maxHeight: '90vh', 
+              overflowY: 'auto',
+              border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <button 
+                type="button" 
+                onClick={() => setComposeModalOpen(false)} 
+                style={{ background: 'none', border: 'none', color: isDark ? '#71767b' : '#64748b', fontSize: '0.95rem', cursor: 'pointer', padding: 4 }}
+              >
+                Vazgeç
+              </button>
+              <div style={{ fontWeight: 800, fontSize: '1rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
+                Yeni Gönderi
+              </div>
+              <button 
+                type="button"
+                onClick={async () => {
+                  await handlePost();
+                  setComposeModalOpen(false);
+                }}
+                disabled={posting || (!form.body.trim() && !form.imageUrl)}
+                style={{
+                  background: (form.body.trim() || form.imageUrl) ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#262a30' : '#e2e8f0'),
+                  color: (form.body.trim() || form.imageUrl) ? (isDark ? '#000000' : '#ffffff') : (isDark ? '#71767b' : '#94a3b8'),
+                  border: 'none',
+                  padding: '8px 18px',
+                  borderRadius: 999,
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  cursor: (form.body.trim() || form.imageUrl) ? 'pointer' : 'default',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {posting ? 'Paylaşılıyor...' : 'Paylaş'}
+              </button>
+            </div>
+
+            {/* Author info & Textarea */}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#0f172a,#1e293b)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.95rem', flexShrink: 0, overflow: 'hidden' }}>
+                {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user?.displayName || 'U')[0].toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
+                  {userProfile?.displayName || user?.displayName || 'Kullanıcı'}
+                </div>
+                <textarea 
+                  autoFocus
+                  placeholder="Ne yenilikler var? Düşüncelerini paylaş..." 
+                  value={form.body} 
+                  onChange={e => setForm({ ...form, body: e.target.value })} 
+                  style={{ width: '100%', border: 'none', fontSize: '1rem', color: isDark ? '#e7e9ea' : '#0f172a', minHeight: 120, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5, marginTop: 8 }} 
+                />
+
+                {form.imageUrl && (
+                  <div style={{ position: 'relative', width: 140, height: 140, borderRadius: 16, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, marginBottom: 14 }}>
+                    <img src={form.imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button onClick={() => setForm({ ...form, imageUrl: '' })} style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.65)', color: 'white', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 12, borderTop: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, flexWrap: 'wrap' }}>
+                  <select value={form.cat} onChange={e => setForm({ ...form, cat: e.target.value })} style={{ border: isDark ? '1px solid #2f3336' : 'none', background: isDark ? '#16181c' : '#f1f5f9', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: isDark ? '#e7e9ea' : '#475569', cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
+                    {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c} style={{ background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a' }}>{c}</option>)}
+                  </select>
+
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isDark ? '#16181c' : '#f1f5f9', border: isDark ? '1px solid #2f3336' : 'none', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: isDark ? '#e7e9ea' : '#475569', cursor: 'pointer', fontWeight: 600 }}>
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                        <span>Yükleniyor…</span>
+                      </>
+                    ) : (
+                      <>
+                        <Camera size={14} />
+                        <span>Görsel Ekle</span>
+                      </>
+                    )}
+                    <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage} />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── THREADS-STYLE MOBILE DRAWER MENU ─── */}
+      {mobileDrawerOpen && (
+        <div 
+          style={{ position: 'fixed', inset: 0, zIndex: 3001, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setMobileDrawerOpen(false)}
+        >
+          <div 
+            style={{ 
+              position: 'absolute', 
+              top: 0, 
+              bottom: 0, 
+              left: 0, 
+              width: '82%', 
+              maxWidth: 320, 
+              background: isDark ? '#0f1012' : '#ffffff', 
+              borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+              display: 'flex', 
+              flexDirection: 'column', 
+              padding: '24px 20px', 
+              boxShadow: '10px 0 40px rgba(0,0,0,0.4)',
+              overflowY: 'auto'
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Drawer top */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 42, height: 42, borderRadius: '50%', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem', overflow: 'hidden' }}>
+                  {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user?.displayName || 'U')[0].toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
+                    {userProfile?.displayName || user?.displayName || 'Misafir'}
+                  </div>
+                  {user && (
+                    <div style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8' }}>
+                      @{myUsername}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setMobileDrawerOpen(false)} 
+                style={{ background: 'none', border: 'none', color: isDark ? '#71767b' : '#64748b', cursor: 'pointer', padding: 6 }}
+                aria-label="Kapat"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Quick theme switch */}
+            <div style={{ marginBottom: 20 }}>
+              <button 
+                type="button" 
+                onClick={toggleDarkMode}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 14px',
+                  borderRadius: 12,
+                  background: isDark ? '#16181c' : '#f8fafc',
+                  border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                  color: isDark ? '#e7e9ea' : '#0f172a',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '0.88rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {isDark ? <Sun size={18} color="#fbbf24" /> : <Moon size={18} color="#64748b" />}
+                  <span>{isDark ? 'Açık Mod' : 'Karanlık Mod'}</span>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: isDark ? '#71767b' : '#94a3b8' }}>Değiştir</span>
+              </button>
+            </div>
+
+            {/* Main Navigation */}
+            <div style={{ fontSize: '0.74rem', fontWeight: 800, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, paddingLeft: 6 }}>
+              Menü
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 24 }}>
+              {[
+                { label: 'Anasayfa', href: '/', icon: Home },
+                { label: 'Hakkımda', href: '/ben-kimim', icon: User },
+                { label: 'Yazılarım', href: '/yazilarim', icon: FileText },
+                { label: 'Videolarım', href: '/videolarim', icon: Film },
+                { label: 'İletişim & Randevu', href: '/iletisim', icon: MessageCircle },
+              ].map(item => {
+                const IconC = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileDrawerOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '11px 12px',
+                      borderRadius: 10,
+                      textDecoration: 'none',
+                      color: isDark ? '#e7e9ea' : '#1e293b',
+                      fontSize: '0.92rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <IconC size={18} color="var(--gold)" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Auth button at bottom */}
+            <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    logout();
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '12px',
+                    borderRadius: 12,
+                    background: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    color: '#ef4444',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <LogOut size={16} />
+                  <span>Çıkış Yap</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    setAuthOpen(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: 999,
+                    background: isDark ? '#ffffff' : '#0f172a',
+                    color: isDark ? '#000000' : '#ffffff',
+                    border: 'none',
+                    fontWeight: 800,
+                    fontSize: '0.92rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Giriş Yap / Kayıt Ol
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

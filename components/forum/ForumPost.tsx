@@ -264,18 +264,19 @@ export default function ForumPost({
 
             {post.imageUrl && (
               <div style={{
-                marginTop: 8,
+                marginTop: 10,
                 marginBottom: 12,
-                borderRadius: 14,
+                borderRadius: 18,
                 overflow: 'hidden',
-                maxHeight: 400,
+                maxHeight: 480,
                 background: isDark ? '#16181c' : '#f8fafc',
-                border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`,
+                boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.06)'
               }}>
                 <img
                   src={post.imageUrl}
                   alt=""
-                  style={{ width: '100%', maxHeight: 400, objectFit: 'cover', display: 'block' }}
+                  style={{ width: '100%', maxHeight: 480, objectFit: 'cover', display: 'block' }}
                 />
               </div>
             )}
