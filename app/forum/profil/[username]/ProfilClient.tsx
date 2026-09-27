@@ -173,6 +173,27 @@ export default function ProfilClient({ username }: { username: string }) {
   const coverRef = useRef<HTMLInputElement>(null);
   const [uploadingDiploma, setUploadingDiploma] = useState(false);
 
+  // Dark Mode State
+  const [isDark, setIsDark] = useState<boolean>(false);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('forum_theme');
+      if (saved) setIsDark(saved === 'dark');
+      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setIsDark(true);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('forum-dark-body');
+    } else {
+      document.documentElement.classList.remove('forum-dark-body');
+    }
+    return () => {
+      document.documentElement.classList.remove('forum-dark-body');
+    };
+  }, [isDark]);
+
   const handleUploadDiploma = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -641,8 +662,8 @@ export default function ProfilClient({ username }: { username: string }) {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-        <div style={{ width: 40, height: 40, border: '3px solid #e2e8f0', borderTopColor: '#0f172a', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isDark ? '#000000' : '#f8fafc' }}>
+        <div style={{ width: 40, height: 40, border: `3px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderTopColor: isDark ? '#1d9bf0' : '#0f172a', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
@@ -650,10 +671,10 @@ export default function ProfilClient({ username }: { username: string }) {
 
   if (!pd) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: 20 }}>
+      <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: isDark ? '#000000' : '#f8fafc', padding: 20 }}>
         <UserX size={44} color="#94a3b8" style={{ marginBottom: 14 }} />
-        <p style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: 16 }}>Hesap bulunamadı</p>
-        <Link href="/forum" style={{ color: '#2563eb', fontWeight: 700, textDecoration: 'none' }}>← Topluluğa Dön</Link>
+        <p style={{ fontSize: '1.3rem', fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 16 }}>Hesap bulunamadı</p>
+        <Link href="/forum" style={{ color: isDark ? '#38bdf8' : '#2563eb', fontWeight: 700, textDecoration: 'none' }}>← Topluluğa Dön</Link>
       </div>
     );
   }
@@ -669,15 +690,6 @@ export default function ProfilClient({ username }: { username: string }) {
     ...((isOwn || !pd?.hideLikes) ? [{ id: 'likes', label: 'Beğeniler' }] : []),
     ...(isOwn ? [{ id: 'bookmarks', label: 'Yer İşaretleri' }] : []),
   ];
-
-  const [isDark, setIsDark] = useState<boolean>(false);
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('forum_theme');
-      if (saved) setIsDark(saved === 'dark');
-      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setIsDark(true);
-    } catch {}
-  }, []);
 
   return (
     <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', background: isDark ? '#000000' : '#f8fafc', overflowX: 'hidden' }}>
