@@ -39,6 +39,7 @@ interface Props {
   currentUserEmail?: string;
   adminEmails: string[];
   isPsychologist?: boolean;
+  isDark?: boolean;
   onOpen: (p: Post) => void;
   onLike?: (e: React.MouseEvent, p: Post) => void;
   onDislike?: (e: React.MouseEvent, p: Post) => void;
@@ -53,6 +54,7 @@ export default function ForumPost({
   currentUserEmail,
   adminEmails,
   isPsychologist,
+  isDark,
   onOpen,
   onLike,
   onDislike,
@@ -96,14 +98,14 @@ export default function ForumPost({
     <article
       style={{
         padding: '18px 20px',
-        borderBottom: '1px solid #f1f5f9',
+        borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
         transition: 'background 0.15s ease',
-        background: 'white',
+        background: isDark ? '#000000' : 'white',
         cursor: 'pointer'
       }}
       onClick={() => onOpen(post)}
-      onMouseOver={e => (e.currentTarget.style.background = '#fafbfc')}
-      onMouseOut={e => (e.currentTarget.style.background = 'white')}
+      onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.03)' : '#fafbfc')}
+      onMouseOut={e => (e.currentTarget.style.background = isDark ? '#000000' : 'white')}
     >
       {/* Repost Header Badge */}
       {isRepost && (
@@ -166,7 +168,7 @@ export default function ForumPost({
               <Link
                 href={`/forum/profil/${encodeURIComponent(displayAuthorUsername)}`}
                 onClick={e => e.stopPropagation()}
-                style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.94rem', textDecoration: 'none' }}
+                style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.94rem', textDecoration: 'none' }}
               >
                 {displayAuthorName}
               </Link>
@@ -176,28 +178,29 @@ export default function ForumPost({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 3,
-                  background: 'rgba(212, 175, 55, 0.12)',
-                  color: '#926100',
-                  border: '1px solid rgba(212, 175, 55, 0.45)',
+                  background: isDark ? 'rgba(212, 175, 55, 0.18)' : 'rgba(212, 175, 55, 0.12)',
+                  color: isDark ? '#fbbf24' : '#926100',
+                  border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.5)' : 'rgba(212, 175, 55, 0.45)'}`,
                   padding: '1px 7px',
                   borderRadius: 999,
                   fontSize: '0.66rem',
                   fontWeight: 800,
                   letterSpacing: '0.02em',
                 }}>
-                  <CheckCircle size={10} color="#926100" />
+                  <CheckCircle size={10} color={isDark ? '#fbbf24' : '#926100'} />
                   <span>Psikolog</span>
                 </span>
               )}
 
-              <span style={{ color: '#64748b', fontSize: '0.84rem' }}>@{displayAuthorUsername}</span>
-              <span style={{ color: '#cbd5e1', fontSize: '0.84rem' }}>·</span>
-              <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(post.createdAt)}</span>
+              <span style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.84rem' }}>@{displayAuthorUsername}</span>
+              <span style={{ color: isDark ? '#3e4144' : '#cbd5e1', fontSize: '0.84rem' }}>·</span>
+              <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(post.createdAt)}</span>
 
               {post.category && (
                 <span style={{
-                  background: '#f1f5f9',
-                  color: '#64748b',
+                  background: isDark ? '#16181c' : '#f1f5f9',
+                  color: isDark ? '#94a3b8' : '#64748b',
+                  border: isDark ? '1px solid #2f3336' : 'none',
                   fontSize: '0.68rem',
                   fontWeight: 700,
                   padding: '2px 8px',
@@ -218,15 +221,15 @@ export default function ForumPost({
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#94a3b8',
+                  color: isDark ? '#71767b' : '#94a3b8',
                   padding: '4px 6px',
                   borderRadius: 6,
                   display: 'flex',
                   alignItems: 'center',
                   transition: 'all 0.15s'
                 }}
-                onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }}
-                onMouseOut={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none'; }}
+                onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2'; }}
+                onMouseOut={e => { e.currentTarget.style.color = isDark ? '#71767b' : '#94a3b8'; e.currentTarget.style.background = 'none'; }}
                 title="Gönderiyi Sil"
               >
                 <Trash2 size={15} />
@@ -240,7 +243,7 @@ export default function ForumPost({
               <h3 style={{
                 fontSize: '1rem',
                 fontWeight: 800,
-                color: '#0f172a',
+                color: isDark ? '#e7e9ea' : '#0f172a',
                 marginBottom: 6,
                 lineHeight: 1.35,
                 wordBreak: 'break-word'
@@ -250,7 +253,7 @@ export default function ForumPost({
             )}
             <p style={{
               fontSize: '0.96rem',
-              color: '#1e293b',
+              color: isDark ? '#e7e9ea' : '#1e293b',
               lineHeight: 1.6,
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
@@ -266,8 +269,8 @@ export default function ForumPost({
                 borderRadius: 14,
                 overflow: 'hidden',
                 maxHeight: 400,
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0'
+                background: isDark ? '#16181c' : '#f8fafc',
+                border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`
               }}>
                 <img
                   src={post.imageUrl}
@@ -285,7 +288,7 @@ export default function ForumPost({
             justifyContent: 'space-between',
             maxWidth: 450,
             marginTop: 6,
-            color: '#64748b'
+            color: isDark ? '#71767b' : '#64748b'
           }}>
             
             {/* 1. Reply */}

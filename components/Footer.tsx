@@ -82,7 +82,7 @@ export default function Footer() {
 
           {/* Sayfalar - 2 columns */}
           <div className="lg:col-span-2">
-            <h4 className="text-xs uppercase tracking-[0.16em] text-[#d4aa70] font-semibold mb-5 pb-1 border-b border-white/5 inline-block">
+            <h4 className="text-xs uppercase tracking-[0.16em] text-[#e8c187] font-semibold mb-5 pb-1 border-b border-white/5 inline-block">
               Hızlı Erişim
             </h4>
             <ul className="space-y-3">
@@ -95,7 +95,7 @@ export default function Footer() {
                 <li key={l.href}>
                   <Link
                     href={l.href}
-                    className="text-white/60 hover:text-[#d4aa70] hover:translate-x-1 inline-block transition-all text-sm"
+                    className="text-white/80 hover:text-[#e8c187] hover:translate-x-1 inline-block transition-all text-sm"
                   >
                     {l.label}
                   </Link>
@@ -106,7 +106,7 @@ export default function Footer() {
 
           {/* Topluluk & Hizmetler - 3 columns */}
           <div className="lg:col-span-3">
-            <h4 className="text-xs uppercase tracking-[0.16em] text-[#d4aa70] font-semibold mb-5 pb-1 border-b border-white/5 inline-block">
+            <h4 className="text-xs uppercase tracking-[0.16em] text-[#e8c187] font-semibold mb-5 pb-1 border-b border-white/5 inline-block">
               Topluluk & Destek
             </h4>
             <ul className="space-y-3">
@@ -119,7 +119,7 @@ export default function Footer() {
                 <li key={l.href}>
                   <Link
                     href={l.href}
-                    className="text-white/60 hover:text-[#d4aa70] hover:translate-x-1 inline-flex items-center gap-1.5 transition-all text-sm"
+                    className="text-white/80 hover:text-[#e8c187] hover:translate-x-1 inline-flex items-center gap-1.5 transition-all text-sm"
                   >
                     <span>{l.label}</span>
                   </Link>
@@ -130,32 +130,32 @@ export default function Footer() {
 
           {/* İletişim - 3 columns */}
           <div className="lg:col-span-3">
-            <h4 className="text-xs uppercase tracking-[0.16em] text-[#d4aa70] font-semibold mb-5 pb-1 border-b border-white/5 inline-block">
+            <h4 className="text-xs uppercase tracking-[0.16em] text-[#e8c187] font-semibold mb-5 pb-1 border-b border-white/5 inline-block">
               İletişim & Konum
             </h4>
             <ul className="space-y-3.5">
-              <li className="flex items-start gap-3 text-sm text-white/60 group">
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#d4aa70] group-hover:bg-[#b8965a]/15 transition-colors mt-0.5">
+              <li className="flex items-start gap-3 text-sm text-white/80 group">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#e8c187] group-hover:bg-[#b8965a]/15 transition-colors mt-0.5">
                   <MapPin size={15} />
                 </div>
                 <div className="leading-snug">
-                  <span className="text-white/85 font-medium block">Çankaya & Polatlı</span>
-                  <span className="text-xs text-white/45">Ankara / Türkiye</span>
+                  <span className="text-white font-medium block">Çankaya & Polatlı</span>
+                  <span className="text-xs text-white/70">Ankara / Türkiye</span>
                 </div>
               </li>
-              <li className="flex items-center gap-3 text-sm text-white/60 group">
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#d4aa70] group-hover:bg-[#b8965a]/15 transition-colors">
+              <li className="flex items-center gap-3 text-sm text-white/80 group">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#e8c187] group-hover:bg-[#b8965a]/15 transition-colors">
                   <Phone size={15} />
                 </div>
-                <a href="tel:+905078751503" className="hover:text-[#d4aa70] text-white/80 transition-colors">
+                <a href="tel:+905078751503" className="hover:text-[#e8c187] text-white/90 transition-colors">
                   +90 507 875 15 03
                 </a>
               </li>
-              <li className="flex items-center gap-3 text-sm text-white/60 group">
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#d4aa70] group-hover:bg-[#b8965a]/15 transition-colors">
+              <li className="flex items-center gap-3 text-sm text-white/80 group">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#e8c187] group-hover:bg-[#b8965a]/15 transition-colors">
                   <Mail size={15} />
                 </div>
-                <a href="mailto:pskfurkan.manav@gmail.com" className="hover:text-[#d4aa70] text-white/80 transition-colors break-all">
+                <a href="mailto:pskfurkan.manav@gmail.com" className="hover:text-[#e8c187] text-white/90 transition-colors break-all">
                   pskfurkan.manav@gmail.com
                 </a>
               </li>
@@ -165,13 +165,13 @@ export default function Footer() {
 
         {/* Bottom copyright line */}
         <div className="mt-14 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/40 text-xs text-center md:text-left">
+          <p className="text-white/70 text-xs text-center md:text-left">
             © {new Date().getFullYear()} Psikolog Furkan Manav. Tüm hakları saklıdır.
           </p>
-          <div className="flex items-center gap-4 text-xs text-white/40 flex-wrap justify-center">
-            <Link href="/gizlilik" className="hover:text-[#d4aa70] transition-colors">Gizlilik Politikası</Link>
+          <div className="flex items-center gap-4 text-xs text-white/70 flex-wrap justify-center">
+            <Link href="/gizlilik" className="hover:text-[#e8c187] transition-colors">Gizlilik Politikası</Link>
             <span>·</span>
-            <Link href="/iletisim" className="hover:text-[#d4aa70] transition-colors">İletişim</Link>
+            <Link href="/iletisim" className="hover:text-[#e8c187] transition-colors">İletişim</Link>
             <span>·</span>
             <span>Varoluşçu-Psikanalitik Düşünce</span>
           </div>

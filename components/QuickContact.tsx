@@ -27,8 +27,16 @@ export default function QuickContact() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Hide completely on forum pages as requested
-  if (pathname?.startsWith('/forum')) {
+  // Hide completely on forum and notification pages as requested
+  const isForumRoute = 
+    Boolean(pathname?.startsWith('/forum')) || 
+    Boolean(pathname?.startsWith('/bildirimler')) ||
+    (typeof window !== 'undefined' && (
+      window.location.pathname.startsWith('/forum') || 
+      window.location.pathname.startsWith('/bildirimler')
+    ));
+
+  if (isForumRoute) {
     return null;
   }
 
@@ -67,7 +75,8 @@ export default function QuickContact() {
           opacity: 0;
           transform: translateY(20px);
           pointer-events: none;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+          will-change: transform, opacity;
         }
         .quick-contact-menu.open {
           opacity: 1;
@@ -96,7 +105,8 @@ export default function QuickContact() {
           box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
           opacity: 0;
           transform: translateX(10px);
-          transition: all 0.25s ease;
+          transition: transform 0.25s ease, opacity 0.25s ease;
+          will-change: transform, opacity;
           white-space: nowrap;
           pointer-events: none;
         }
@@ -110,16 +120,16 @@ export default function QuickContact() {
           border-radius: 50%;
           display: flex;
           align-items: center;
-          justify-content: center;
+          justifyContent: center;
           border: none;
           cursor: pointer;
           box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-          transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          will-change: transform;
           color: white;
         }
         .quick-contact-btn:hover {
           transform: scale(1.1);
-          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
         }
         .quick-contact-main-btn {
           width: 58px;
@@ -129,16 +139,16 @@ export default function QuickContact() {
           color: var(--navy);
           display: flex;
           align-items: center;
-          justify-content: center;
+          justifyContent: center;
           border: 1px solid rgba(255, 255, 255, 0.1);
           cursor: pointer;
           box-shadow: 0 6px 22px rgba(201, 169, 110, 0.35);
-          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          will-change: transform;
           position: relative;
         }
         .quick-contact-main-btn:hover {
           transform: scale(1.06);
-          box-shadow: 0 8px 26px rgba(201, 169, 110, 0.55);
         }
         .quick-contact-main-pulse {
           position: absolute;
@@ -183,6 +193,7 @@ export default function QuickContact() {
           rel="noopener noreferrer" 
           className="quick-contact-item"
           onClick={handleConversionClick}
+          aria-label="WhatsApp İle İletişime Geçin"
         >
           <span className="quick-contact-label">WhatsApp'tan Yazın</span>
           <div className="quick-contact-btn" style={{ background: 'white' }}>
@@ -195,6 +206,7 @@ export default function QuickContact() {
           href={callUrl} 
           className="quick-contact-item"
           onClick={handleConversionClick}
+          aria-label="Telefonla Arayın"
         >
           <span className="quick-contact-label">Hemen Arayın</span>
           <div className="quick-contact-btn" style={{ background: '#0070f3' }}>
@@ -204,11 +216,13 @@ export default function QuickContact() {
 
         {/* Contact Page Option */}
         <button 
+          type="button"
           className="quick-contact-item" 
           onClick={() => {
             router.push('/iletisim');
             setIsOpen(false);
           }}
+          aria-label="İletişim Formuna Git"
         >
           <span className="quick-contact-label">İletişim Formu</span>
           <div className="quick-contact-btn" style={{ background: '#0a1628', border: '1.5px solid var(--gold)', color: 'var(--gold)' }}>
@@ -220,6 +234,7 @@ export default function QuickContact() {
 
       {/* Main Floating Action Button */}
       <button 
+        type="button"
         className="quick-contact-main-btn" 
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Hızlı İletişim Seçenekleri"

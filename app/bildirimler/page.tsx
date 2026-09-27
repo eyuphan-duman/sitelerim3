@@ -213,7 +213,7 @@ export default function BildirimlerPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#0f172a' }}>
+    <div data-forum-page="true" style={{ minHeight: '100vh', background: '#f8fafc', color: '#0f172a' }}>
       <style>{`
         @media (max-width: 1024px) {
           .forum-sidebar-right { display: none !important; }
@@ -655,7 +655,19 @@ export default function BildirimlerPage() {
 
         {/* 4. Profile */}
         <Link
-          href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum'}
+          href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername || user.uid)}` : '#'}
+          onClick={(e) => {
+            if (!user || user.isAnonymous) {
+              e.preventDefault();
+              router.push('/forum');
+            } else {
+              const target = myUsername || user.uid;
+              if (target) {
+                e.preventDefault();
+                router.push(`/forum/profil/${encodeURIComponent(target)}`);
+              }
+            }
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',

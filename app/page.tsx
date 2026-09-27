@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen, ShieldCheck, Users, CheckCircle2, Sparkles, Mail } from 'lucide-react';
-import { collection, query, orderBy, limit, getDocs, deleteDoc, doc, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, getDoc, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -78,18 +78,23 @@ export default function HomePage() {
   const heroTouchStartX = useRef(0);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'hero'), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setHeroSettings(prev => ({
-          ...prev,
-          ...data,
-          slide1: { ...prev.slide1, ...(data.slide1 || {}) },
-          slide2: { ...prev.slide2, ...(data.slide2 || {}) },
-        }));
+    async function loadHeroSettings() {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'hero'));
+        if (snap.exists()) {
+          const data = snap.data();
+          setHeroSettings(prev => ({
+            ...prev,
+            ...data,
+            slide1: { ...prev.slide1, ...(data.slide1 || {}) },
+            slide2: { ...prev.slide2, ...(data.slide2 || {}) },
+          }));
+        }
+      } catch (err) {
+        console.warn('Hero settings fetch notice:', err);
       }
-    });
-    return () => unsub();
+    }
+    loadHeroSettings();
   }, []);
 
   useEffect(() => {
@@ -412,6 +417,7 @@ export default function HomePage() {
                 <div className="fade-up fade-up-4" style={{ marginBottom: 40 }}>
                   <button
                     onClick={() => setSearchOpen(true)}
+                    aria-label="Arama Yap"
                     style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: '14px 24px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', width: '100%', maxWidth: 420, transition: 'all 0.2s' }}
                     onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = 'white'; }}
                     onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
@@ -661,7 +667,7 @@ export default function HomePage() {
             gap: 10,
             background: 'rgba(7, 14, 27, 0.85)',
             backdropFilter: 'blur(16px)',
-            padding: '8px 14px',
+            padding: '6px 10px',
             borderRadius: 999,
             border: '1px solid rgba(201, 169, 110, 0.35)',
             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
@@ -676,14 +682,14 @@ export default function HomePage() {
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.15)',
               borderRadius: '50%',
-              width: 36,
-              height: 36,
+              width: 44,
+              height: 44,
               color: 'rgba(255,255,255,0.85)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'all 0.2s ease',
+              transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease',
             }}
             onMouseOver={e => {
               e.currentTarget.style.color = 'var(--gold)';
@@ -700,37 +706,67 @@ export default function HomePage() {
           </button>
 
           {/* Minimal Slide Indicator Dots */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '0 2px' }}>
             <button
               type="button"
               onClick={() => goToSlide(0)}
               aria-label="1. Slayt"
               style={{
-                width: currentSlide === 0 ? 20 : 8,
-                height: 8,
-                borderRadius: 999,
-                background: currentSlide === 0 ? 'var(--gold)' : 'rgba(255,255,255,0.25)',
+                width: 44,
+                height: 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease',
                 padding: 0,
               }}
-            />
+            >
+              <span
+                style={{
+                  width: 22,
+                  height: 8,
+                  borderRadius: 999,
+                  background: currentSlide === 0 ? 'var(--gold)' : 'rgba(255,255,255,0.3)',
+                  transform: currentSlide === 0 ? 'scaleX(1)' : 'scaleX(0.4)',
+                  transformOrigin: 'center',
+                  transition: 'transform 0.3s ease, background-color 0.3s ease, opacity 0.3s ease',
+                  willChange: 'transform, opacity',
+                  display: 'inline-block',
+                }}
+              />
+            </button>
             <button
               type="button"
               onClick={() => goToSlide(1)}
               aria-label="2. Slayt"
               style={{
-                width: currentSlide === 1 ? 20 : 8,
-                height: 8,
-                borderRadius: 999,
-                background: currentSlide === 1 ? 'var(--gold)' : 'rgba(255,255,255,0.25)',
+                width: 44,
+                height: 44,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease',
                 padding: 0,
               }}
-            />
+            >
+              <span
+                style={{
+                  width: 22,
+                  height: 8,
+                  borderRadius: 999,
+                  background: currentSlide === 1 ? 'var(--gold)' : 'rgba(255,255,255,0.3)',
+                  transform: currentSlide === 1 ? 'scaleX(1)' : 'scaleX(0.4)',
+                  transformOrigin: 'center',
+                  transition: 'transform 0.3s ease, background-color 0.3s ease, opacity 0.3s ease',
+                  willChange: 'transform, opacity',
+                  display: 'inline-block',
+                }}
+              />
+            </button>
           </div>
 
           {/* Next Slide Arrow */}
@@ -742,14 +778,14 @@ export default function HomePage() {
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.15)',
               borderRadius: '50%',
-              width: 36,
-              height: 36,
+              width: 44,
+              height: 44,
               color: 'rgba(255,255,255,0.85)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'all 0.2s ease',
+              transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease',
             }}
             onMouseOver={e => {
               e.currentTarget.style.color = 'var(--gold)';
@@ -771,11 +807,11 @@ export default function HomePage() {
       <section style={{ padding: '112px 0', background: 'white' }}>
         <div className="container-main">
           <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-            <div className="eyebrow" style={{ color: 'var(--gold)', marginBottom: 20 }}>Hakkımda</div>
+            <div className="eyebrow" style={{ color: '#8a5814', marginBottom: 20 }}>Hakkımda</div>
             <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,3rem)', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.1, marginBottom: 28 }}>
               Furkan Manav,
               <br/>
-              <em style={{ color: 'var(--gold)', fontStyle: 'italic' }}>Psikolog</em>
+              <em style={{ color: '#8a5814', fontStyle: 'italic' }}>Psikolog</em>
             </h2>
             <div className="gold-line" style={{ marginBottom: 32, margin: '0 auto' }}/>
 
@@ -858,7 +894,7 @@ export default function HomePage() {
           <div className="container-main">
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36, flexWrap: 'wrap', gap: 16 }}>
               <div>
-                <div className="eyebrow" style={{ marginBottom: 10, color: 'var(--gold-dim)' }}>Güncel İçerikler</div>
+                <div className="eyebrow" style={{ marginBottom: 10, color: '#8a5814' }}>Güncel İçerikler</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.9rem,3.2vw,2.5rem)', fontWeight: 700, color: 'var(--navy)', margin: 0 }}>
                   Son Makaleler
                 </h2>
@@ -869,7 +905,7 @@ export default function HomePage() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button 
                     onClick={() => scrollArticles('left')} 
-                    style={{ width: 40, height: 40, borderRadius: '50%', border: '1.5px solid rgba(212, 175, 55, 0.4)', background: 'white', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                    style={{ width: 44, height: 44, borderRadius: '50%', border: '1.5px solid rgba(212, 175, 55, 0.4)', background: 'white', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background-color 0.2s, border-color 0.2s, color 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
                     onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.background = 'var(--navy)'; e.currentTarget.style.color = 'white'; }}
                     onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.4)'; e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--navy)'; }}
                     title="Önceki"
@@ -879,7 +915,7 @@ export default function HomePage() {
                   </button>
                   <button 
                     onClick={() => scrollArticles('right')} 
-                    style={{ width: 40, height: 40, borderRadius: '50%', border: '1.5px solid rgba(212, 175, 55, 0.4)', background: 'white', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                    style={{ width: 44, height: 44, borderRadius: '50%', border: '1.5px solid rgba(212, 175, 55, 0.4)', background: 'white', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background-color 0.2s, border-color 0.2s, color 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
                     onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.background = 'var(--navy)'; e.currentTarget.style.color = 'white'; }}
                     onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.4)'; e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--navy)'; }}
                     title="Sonraki"
@@ -947,7 +983,7 @@ export default function HomePage() {
                           </span>
                         )}
                         {formattedDate && (
-                          <span style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 500 }}>
+                          <span style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 600 }}>
                             {formattedDate}
                           </span>
                         )}
@@ -958,7 +994,7 @@ export default function HomePage() {
                       </h3>
 
                       {a.excerpt && (
-                        <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {a.excerpt}
                         </p>
                       )}
@@ -966,9 +1002,9 @@ export default function HomePage() {
                       <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                           Makaleyi Oku 
-                          <ArrowRight size={14} className="article-card-arrow-icon" style={{ transition: 'transform 0.2s ease', color: 'var(--gold)' }} />
+                          <ArrowRight size={14} className="article-card-arrow-icon" style={{ transition: 'transform 0.2s ease', color: '#8a5814' }} />
                         </span>
-                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>5 dk okuma</span>
+                        <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 500 }}>5 dk okuma</span>
                       </div>
                     </div>
                   </Link>
@@ -985,9 +1021,9 @@ export default function HomePage() {
           <div className="container-main">
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 48, flexWrap: 'wrap', gap: 16 }}>
               <div>
-                <div className="eyebrow" style={{ marginBottom: 12, color: 'var(--gold-dim)' }}>Video Paylaşımları</div>
+                <div className="eyebrow" style={{ marginBottom: 12, color: '#8a5814' }}>Video Paylaşımları</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,2.6rem)', fontWeight: 700, color: 'var(--navy)' }}>
-                  Öne Çıkan <em style={{ color: 'var(--gold)', fontStyle: 'italic' }}>Videolarım</em>
+                  Öne Çıkan <em style={{ color: '#8a5814', fontStyle: 'italic' }}>Videolarım</em>
                 </h2>
               </div>
               <Link href="/videolarim" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--navy)', fontWeight: 700, fontSize: '0.8rem', textDecoration: 'none', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -1083,7 +1119,7 @@ export default function HomePage() {
           <div style={{ width: '100%', maxWidth: 640, background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
             {/* Search input */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
-              <Search size={20} color="#94a3b8" />
+              <Search size={20} color="#64748b" />
               <input
                 ref={searchRef}
                 value={searchQ}
@@ -1092,7 +1128,14 @@ export default function HomePage() {
                 style={{ flex: 1, border: 'none', outline: 'none', fontSize: '1.05rem', color: '#0f172a', background: 'transparent' }}
               />
               {searching && <div style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#0f172a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />}
-              <button onClick={() => setSearchOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex' }}><X size={20} /></button>
+              <button 
+                type="button"
+                onClick={() => setSearchOpen(false)} 
+                aria-label="Aramayı Kapat"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={20} />
+              </button>
             </div>
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
@@ -1109,7 +1152,7 @@ export default function HomePage() {
                         <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
                         <span style={{ background: r.type === 'profile' ? '#fef3c7' : r.type === 'post' ? '#f1f5f9' : r.type === 'page' ? '#e0f2fe' : '#ede9fe', color: r.type === 'profile' ? '#b45309' : r.type === 'post' ? '#475569' : r.type === 'page' ? '#0369a1' : '#7c3aed', fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', flexShrink: 0 }}>{r.type === 'profile' ? 'Kullanıcı' : r.type === 'post' ? 'Yazı' : r.type === 'page' ? 'Sayfa' : (r.category || 'Forum')}</span>
                       </div>
-                      <p style={{ fontSize: '0.83rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{r.excerpt}</p>
+                      <p style={{ fontSize: '0.83rem', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{r.excerpt}</p>
                     </div>
                   </Link>
                 ))}
@@ -1117,15 +1160,15 @@ export default function HomePage() {
             )}
 
             {searchQ && !searching && searchResults.length === 0 && (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
-                <Search size={36} style={{ margin: '0 auto 12px', opacity: 0.35 }} />
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b' }}>
+                <Search size={36} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
                 <p style={{ fontWeight: 700 }}>"<em>{searchQ}</em>" için sonuç bulunamadı</p>
               </div>
             )}
 
             {!searchQ && (
               <div style={{ padding: '24px 20px' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
+                <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {[
                     { label: 'Videolarım', href: '/videolarim', icon: Film },

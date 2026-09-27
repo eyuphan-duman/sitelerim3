@@ -119,6 +119,7 @@ interface ThreadViewProps {
   currentUser: any;
   userProfile?: any;
   adminEmails: string[];
+  isDark?: boolean;
   onBack: () => void;
   onOpenAuth: () => void;
   onPostDeleted?: (postId: string) => void;
@@ -129,6 +130,7 @@ export default function ThreadView({
   currentUser,
   userProfile,
   adminEmails,
+  isDark,
   onBack,
   onOpenAuth,
   onPostDeleted,
@@ -546,9 +548,9 @@ export default function ThreadView({
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        background: 'rgba(255, 255, 255, 0.95)',
+        background: isDark ? 'rgba(0, 0, 0, 0.88)' : 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid #f1f5f9',
+        borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
         height: 54,
         display: 'flex',
         alignItems: 'center',
@@ -567,23 +569,23 @@ export default function ThreadView({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#0f172a',
+            color: isDark ? '#e7e9ea' : '#0f172a',
             transition: 'background 0.15s'
           }}
-          onMouseOver={e => (e.currentTarget.style.background = '#f1f5f9')}
+          onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9')}
           onMouseOut={e => (e.currentTarget.style.background = 'none')}
           title="Geri"
           aria-label="Geri"
         >
           <ArrowLeft size={20} strokeWidth={2.4} />
         </button>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
           Gönderi
         </h2>
       </div>
 
       {/* ── MAIN POST CONTAINER ── */}
-      <article style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
+      <article style={{ padding: '16px 20px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, background: isDark ? '#000000' : 'white' }}>
         
         {/* Author Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>

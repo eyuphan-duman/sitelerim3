@@ -109,7 +109,13 @@ export default function Navbar() {
           </div>
 
           {/* Mobile toggle */}
-          <button className="lg:hidden" onClick={() => setOpen(!open)} style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button 
+            type="button"
+            className="lg:hidden" 
+            onClick={() => setOpen(!open)} 
+            style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer', padding: 10, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            aria-label={open ? "Menüyü Kapat" : "Menüyü Aç"}
+          >
             {open ? <X size={22}/> : <Menu size={22}/>}
           </button>
         </div>

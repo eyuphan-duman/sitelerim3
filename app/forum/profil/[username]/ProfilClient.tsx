@@ -8,7 +8,8 @@ import {
   ArrowLeft, Camera, MapPin, Link as LinkIcon, Calendar, 
   MessageCircle, Heart, Trash2, Home, Users, Film, FileText, 
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
-  Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User
+  Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User,
+  Settings, Lock, EyeOff, Shield, SlidersHorizontal
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -150,7 +151,16 @@ export default function ProfilClient({ username }: { username: string }) {
   const [followers, setFollowers] = useState(0);
   const [followings, setFollowings] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
-  const [ed, setEd] = useState({ displayName:'', bio:'', location:'', website:'' });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [ed, setEd] = useState({ 
+    displayName: '', 
+    username: '', 
+    bio: '', 
+    location: '', 
+    website: '',
+    hideLikes: false,
+    hideReplies: false
+  });
   const [saving, setSaving] = useState(false);
   const [upPhoto, setUpPhoto] = useState(false);
   const [upCover, setUpCover] = useState(false);
@@ -202,28 +212,51 @@ export default function ProfilClient({ username }: { username: string }) {
   };
 
   useEffect(() => {
+    let isCancelled = false;
+
     (async () => {
       setLoading(true);
       try {
         let data: any = null;
         const decoded = decodeURIComponent(username).trim();
 
-        // 1. Direct UID check (doc id or uid field)
-        try {
-          const directDoc = await getDoc(doc(db, 'users', decoded));
-          if (directDoc.exists()) {
-            data = directDoc.data();
-          }
-        } catch {}
+        // 1. Fast-path: Check if viewing self
+        const isSelfMatch = Boolean(
+          user && (
+            decoded === user.uid ||
+            (userProfile?.username && decoded.toLowerCase() === userProfile.username.toLowerCase()) ||
+            (user.displayName && decoded.toLowerCase() === user.displayName.toLowerCase().replace(/\s+/g, '')) ||
+            (user.email && decoded.toLowerCase() === user.email.split('@')[0].toLowerCase().replace(/\s+/g, '')) ||
+            decoded === 'me'
+          )
+        );
+
+        if (isSelfMatch && userProfile && user) {
+          data = { ...userProfile, uid: user.uid };
+        }
+
+        // 2. Direct UID check (doc id or uid field)
+        if (!data) {
+          try {
+            const directDoc = await getDoc(doc(db, 'users', decoded));
+            if (directDoc.exists()) {
+              const dData = directDoc.data();
+              data = { ...dData, uid: dData.uid || directDoc.id };
+            }
+          } catch {}
+        }
 
         if (!data) {
           try {
             const uidSnap = await getDocs(query(collection(db, 'users'), where('uid', '==', decoded)));
-            if (!uidSnap.empty) data = uidSnap.docs[0].data();
+            if (!uidSnap.empty) {
+              const docSnap = uidSnap.docs[0];
+              data = { ...docSnap.data(), uid: docSnap.data().uid || docSnap.id };
+            }
           } catch {}
         }
 
-        // 2. Exact match strategies on username and displayName
+        // 3. Exact match strategies on username and displayName
         if (!data) {
           const strats = [
             () => getDocs(query(collection(db, 'users'), where('username', '==', decoded))),
@@ -235,14 +268,15 @@ export default function ProfilClient({ username }: { username: string }) {
             try {
               const snap = await s();
               if (!snap.empty) {
-                data = snap.docs[0].data();
+                const docSnap = snap.docs[0];
+                data = { ...docSnap.data(), uid: docSnap.data().uid || docSnap.id };
                 break;
               }
             } catch {}
           }
         }
 
-        // 3. Resilient fuzzy scan (handles spaces, casing, Turkish characters, email prefixes)
+        // 4. Resilient fuzzy scan (handles spaces, casing, Turkish characters, email prefixes)
         if (!data) {
           try {
             const allUsersSnap = await getDocs(collection(db, 'users'));
@@ -275,66 +309,135 @@ export default function ProfilClient({ username }: { username: string }) {
           }
         }
 
+        if (isCancelled) return;
+
         if (data) {
           setPd(data);
-          setEd({ displayName: data.displayName||'', bio: data.bio||'', location: data.location||'', website: data.website||'' });
+          setEd({ 
+            displayName: data.displayName || '', 
+            username: data.username || '', 
+            bio: data.bio || '', 
+            location: data.location || '', 
+            website: data.website || '',
+            hideLikes: Boolean(data.hideLikes),
+            hideReplies: Boolean(data.hideReplies)
+          });
+
+          // Fetch primary user posts first
           try {
-            const ps = await getDocs(query(collection(db,'forum'), where('uid','==',data.uid)));
+            const ps = await getDocs(query(collection(db, 'forum'), where('uid', '==', data.uid)));
             const pList = (ps.docs
-              .map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[])
+              .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[])
               .filter(p => !p.isRepost);
-            setPosts(pList.sort((a,b) => b.createdAt - a.createdAt));
-          } catch (e) { console.error('Posts fetch error:', e); }
+            if (!isCancelled) {
+              setPosts(pList.sort((a, b) => b.createdAt - a.createdAt));
+            }
+          } catch (e) { 
+            console.error('Posts fetch error:', e); 
+          }
+
+          // Unblock loading immediately so user sees profile without waiting
+          if (!isCancelled) {
+            setLoading(false);
+          }
+
+          // Asynchronously fetch remaining tabs in background
           try {
-            const all = await getDocs(collection(db,'forum'));
+            const all = await getDocs(collection(db, 'forum'));
+            if (isCancelled) return;
             
-            // 1. Reposts (Yeniden gönderiler): original posts that this user reposted
+            // 1. Reposts
             const repostList = all.docs
               .filter(d => !d.data().isRepost && d.data().repostsData?.[data.uid])
               .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
-            setReposts(repostList.sort((a, b) => b.createdAt - a.createdAt));
+            if (!isCancelled) setReposts(repostList.sort((a, b) => b.createdAt - a.createdAt));
 
-            // 2. Likes
-            setLikes(all.docs.filter(d => !d.data().isRepost && d.data().reactionsData?.[data.uid]).map(d => ({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate()||new Date() })) as Post[]);
-            
-            // 3. Bookmarks
-            let bookmarkedIds: string[] = [];
-            try {
-              const bSnap = await getDocs(collection(db, 'users', data.uid, 'bookmarks'));
-              bookmarkedIds = bSnap.docs.map(d => d.id);
-            } catch {}
-
-            const bPosts = all.docs
-              .filter(d => !d.data().isRepost && (d.data().bookmarksData?.[data.uid] || bookmarkedIds.includes(d.id)))
-              .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
-            setBookmarks(bPosts.sort((a, b) => b.createdAt - a.createdAt));
-
-            // 4. Replies
-            const rList: any[] = [];
-            for (const p of all.docs) {
-              if (p.data().isRepost) continue;
-              try {
-                const cs = await getDocs(query(collection(db,'forum',p.id,'comments'), where('uid','==',data.uid)));
-                cs.docs.forEach(c => rList.push({ ...c.data(), id:c.id, postId:p.id, postBody:p.data().body?.slice(0,60), createdAt:c.data().createdAt?.toDate()||new Date() }));
-              } catch {}
+            // 2. Likes (only if viewer is owner or owner allows public likes)
+            const isViewerOwn = Boolean(user && user.uid === data.uid);
+            if (isViewerOwn || !data.hideLikes) {
+              const likeList = all.docs
+                .filter(d => !d.data().isRepost && d.data().reactionsData?.[data.uid])
+                .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
+              if (!isCancelled) setLikes(likeList.sort((a, b) => b.createdAt - a.createdAt));
             }
-            setReplies(rList.sort((a,b) => b.createdAt - a.createdAt));
-          } catch (e) { console.error('Likes/replies/bookmarks fetch error:', e); }
+
+            // 3. Bookmarks (STRICTLY OWNER ONLY: never queried or displayed to other users)
+            if (isViewerOwn) {
+              let bookmarkedIds: string[] = [];
+              try {
+                const bSnap = await getDocs(collection(db, 'users', data.uid, 'bookmarks'));
+                bookmarkedIds = bSnap.docs.map(d => d.id);
+              } catch {}
+
+              const bPosts = all.docs
+                .filter(d => !d.data().isRepost && (d.data().bookmarksData?.[data.uid] || bookmarkedIds.includes(d.id)))
+                .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
+              if (!isCancelled) setBookmarks(bPosts.sort((a, b) => b.createdAt - a.createdAt));
+            }
+
+            // 4. Replies (run concurrently with Promise.all over recent posts)
+            if (isViewerOwn || !data.hideReplies) {
+              const candidatePosts = all.docs.filter(d => !d.data().isRepost).slice(0, 30);
+              const replyPromises = candidatePosts.map(p =>
+                getDocs(query(collection(db, 'forum', p.id, 'comments'), where('uid', '==', data.uid)))
+                  .then(cs => cs.docs.map(c => ({
+                    ...c.data(),
+                    id: c.id,
+                    postId: p.id,
+                    postBody: p.data().body?.slice(0, 60),
+                    createdAt: c.data().createdAt?.toDate() || new Date()
+                  })))
+                  .catch(() => [])
+              );
+              const results = await Promise.all(replyPromises);
+              const rList = results.flat();
+              if (!isCancelled) {
+                setReplies(rList.sort((a, b) => b.createdAt - a.createdAt));
+              }
+            }
+          } catch (e) { 
+            console.error('Secondary profile data fetch error:', e); 
+          }
         }
       } catch (e) {
         console.error('Profile fetch error:', e);
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     })();
-  }, [username]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [username, user, userProfile]);
 
   useEffect(() => {
+    const isViewerOwn = Boolean(user && pd && user.uid === pd.uid);
     const t = searchParams.get('tab');
-    if (t === 'bookmarks' || t === 'posts' || t === 'replies' || t === 'reposts' || t === 'likes') {
+    if (t === 'bookmarks') {
+      if (isViewerOwn) {
+        setTab('bookmarks');
+      } else {
+        setTab('posts');
+      }
+    } else if (t === 'likes') {
+      if (isViewerOwn || !pd?.hideLikes) {
+        setTab('likes');
+      } else {
+        setTab('posts');
+      }
+    } else if (t === 'replies') {
+      if (isViewerOwn || !pd?.hideReplies) {
+        setTab('replies');
+      } else {
+        setTab('posts');
+      }
+    } else if (t === 'reposts' || t === 'posts') {
       setTab(t as any);
     }
-  }, [searchParams]);
+  }, [searchParams, user, pd]);
 
   useEffect(() => {
     if (!pd) return;
@@ -469,9 +572,40 @@ export default function ProfilClient({ username }: { username: string }) {
   };
 
   const saveProfile = async () => {
-    if (!user || !pd) return; setSaving(true);
-    try { await updateDoc(doc(db,'users',user.uid), ed); setPd((p: any) => ({ ...p, ...ed })); setEditOpen(false); toast.success('Profil güncellendi!'); }
-    catch { toast.error('Hata.'); } finally { setSaving(false); }
+    if (!user || !pd) return; 
+    setSaving(true);
+    try { 
+      const cleanUsername = (ed.username || pd.username || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9_\.]/g, '');
+
+      const payload = {
+        displayName: ed.displayName.trim() || pd.displayName || 'Kullanıcı',
+        username: cleanUsername,
+        bio: ed.bio.trim(),
+        location: ed.location.trim(),
+        website: ed.website.trim(),
+        hideLikes: Boolean(ed.hideLikes),
+        hideReplies: Boolean(ed.hideReplies)
+      };
+
+      await updateDoc(doc(db, 'users', user.uid), payload);
+      try { 
+        await updateProfile(user, { displayName: payload.displayName }); 
+      } catch {}
+
+      setPd((p: any) => ({ ...p, ...payload })); 
+      setEditOpen(false); 
+      setSettingsOpen(false);
+      toast.success('Profil ve ayarlar kaydedildi!'); 
+    }
+    catch (err: any) { 
+      console.error('saveProfile error:', err);
+      toast.error('Hata: ' + (err.message || 'Kaydedilemedi')); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const delPost = async (id: string) => {
@@ -524,12 +658,29 @@ export default function ProfilClient({ username }: { username: string }) {
     );
   }
 
-  const isOwn = user?.uid === pd.uid;
+  const isOwn = Boolean(user && pd && user.uid === pd.uid);
   const myUsername = userProfile?.username || (user?.displayName || '').toLowerCase().replace(/\s+/g, '') || (user?.email ? user.email.split('@')[0].toLowerCase().replace(/\s+/g, '') : '') || user?.uid || '';
   const joined = pd.createdAt?.toDate?.().toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) || '';
 
+  const profileTabs = [
+    { id: 'posts', label: 'Gönderiler' },
+    ...((isOwn || !pd?.hideReplies) ? [{ id: 'replies', label: 'Yanıtlar' }] : []),
+    { id: 'reposts', label: 'Yeniden gönderiler' },
+    ...((isOwn || !pd?.hideLikes) ? [{ id: 'likes', label: 'Beğeniler' }] : []),
+    ...(isOwn ? [{ id: 'bookmarks', label: 'Yer İşaretleri' }] : []),
+  ];
+
+  const [isDark, setIsDark] = useState<boolean>(false);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('forum_theme');
+      if (saved) setIsDark(saved === 'dark');
+      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setIsDark(true);
+    } catch {}
+  }, []);
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', overflowX: 'hidden' }}>
+    <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', background: isDark ? '#000000' : '#f8fafc', overflowX: 'hidden' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @media (max-width: 1024px) {
@@ -702,9 +853,46 @@ export default function ProfilClient({ username }: { username: string }) {
             </div>
             <div>
               {isOwn ? (
-                <button className="profile-btn-action" onClick={() => setEditOpen(true)} style={{ border: '1.5px solid #e2e8f0', background: 'white', color: '#0f172a', borderRadius: 999, padding: '9px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' }}>
-                  Profili Düzenle
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <button 
+                    className="profile-btn-action" 
+                    onClick={() => setSettingsOpen(true)} 
+                    style={{ 
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      border: '1.5px solid #e2e8f0', 
+                      background: 'white', 
+                      color: '#0f172a', 
+                      borderRadius: 999, 
+                      padding: '8px 18px', 
+                      fontWeight: 800, 
+                      cursor: 'pointer', 
+                      fontSize: '0.88rem', 
+                      transition: 'all 0.15s' 
+                    }}
+                  >
+                    <Settings size={15} />
+                    <span>Ayarlar</span>
+                  </button>
+                  <button 
+                    className="profile-btn-action" 
+                    onClick={() => setEditOpen(true)} 
+                    style={{ 
+                      border: '1.5px solid #e2e8f0', 
+                      background: 'white', 
+                      color: '#0f172a', 
+                      borderRadius: 999, 
+                      padding: '8px 18px', 
+                      fontWeight: 800, 
+                      cursor: 'pointer', 
+                      fontSize: '0.88rem', 
+                      transition: 'all 0.15s' 
+                    }}
+                  >
+                    Profili Düzenle
+                  </button>
+                </div>
               ) : (
                 <button className="profile-btn-action" onClick={toggleFollow} style={{ background: following ? 'white' : '#0f172a', color: following ? '#0f172a' : 'white', border: following ? '1.5px solid #e2e8f0' : 'none', borderRadius: 999, padding: '9px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' }}>
                   {following ? 'Takip Ediliyor' : 'Takip Et'}
@@ -788,16 +976,10 @@ export default function ProfilClient({ username }: { username: string }) {
 
           {/* Profile Tabs */}
           <div className="profil-tabs" style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', borderTop: '1px solid #f1f5f9', background: 'white' }}>
-            {[
-              ['posts', 'Gönderiler'],
-              ['replies', 'Yanıtlar'],
-              ['reposts', 'Yeniden gönderiler'],
-              ['likes', 'Beğeniler'],
-              ['bookmarks', 'Yer İşaretleri']
-            ].map(([k, l]) => (
+            {profileTabs.map(t => (
               <button
-                key={k}
-                onClick={() => setTab(k as any)}
+                key={t.id}
+                onClick={() => setTab(t.id as any)}
                 className="profil-tab-btn"
                 style={{
                   flex: 1,
@@ -805,9 +987,9 @@ export default function ProfilClient({ username }: { username: string }) {
                   border: 'none',
                   background: 'none',
                   cursor: 'pointer',
-                  fontWeight: tab === k ? 800 : 600,
+                  fontWeight: tab === t.id ? 800 : 600,
                   fontSize: '0.92rem',
-                  color: tab === k ? '#0f172a' : '#64748b',
+                  color: tab === t.id ? '#0f172a' : '#64748b',
                   position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
@@ -816,8 +998,8 @@ export default function ProfilClient({ username }: { username: string }) {
                   whiteSpace: 'nowrap'
                 }}
               >
-                <span>{l}</span>
-                {tab === k && (
+                <span>{t.label}</span>
+                {tab === t.id && (
                   <span
                     style={{
                       position: 'absolute',
@@ -836,26 +1018,36 @@ export default function ProfilClient({ username }: { username: string }) {
 
           {/* Tab Content */}
           {tab === 'posts' && (posts.length === 0 ? <Empty icon={<FileText size={36} color="#cbd5e1" />} text="Henüz gönderi yok" /> : posts.map(p => <PostCard key={p.id} p={p} pd={pd} isOwn={isOwn} userEmail={user?.email || ''} onDelete={delPost} />))}
-          {tab === 'replies' && (replies.length === 0 ? <Empty icon={<MessageCircle size={36} color="#cbd5e1" />} text="Henüz yanıt yok" /> : replies.map((r, i) => (
-            <div 
-              key={i} 
-              className="profile-card-item"
-              onClick={() => r.postId && router.push(`/forum?thread=${r.postId}`)}
-              style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: r.postId ? 'pointer' : 'default', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
-            >
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: 8 }}>Yanıtladı: <em>"{r.postBody}..."</em></p>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>
-                  {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (pd.displayName || 'U')[0].toUpperCase()}
+
+          {tab === 'replies' && (
+            !isOwn && pd?.hideReplies ? (
+              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Bu kullanıcı yanıtlarını gizlemiştir." />
+            ) : replies.length === 0 ? (
+              <Empty icon={<MessageCircle size={36} color="#cbd5e1" />} text="Henüz yanıt yok" />
+            ) : (
+              replies.map((r, i) => (
+                <div 
+                  key={i} 
+                  className="profile-card-item"
+                  onClick={() => r.postId && router.push(`/forum?thread=${r.postId}`)}
+                  style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: r.postId ? 'pointer' : 'default', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
+                >
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: 8 }}>Yanıtladı: <em>"{r.postBody}..."</em></p>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>
+                      {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (pd.displayName || 'U')[0].toUpperCase()}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>{pd.displayName}</span>
+                      <span style={{ color: '#94a3b8', fontSize: '0.82rem', marginLeft: 8 }}>· {formatTimeAgo(r.createdAt)}</span>
+                      <p style={{ margin: '6px 0 0', fontSize: '0.95rem', color: '#334155', lineHeight: 1.6, wordBreak: 'break-word' }}>{r.text}</p>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>{pd.displayName}</span>
-                  <span style={{ color: '#94a3b8', fontSize: '0.82rem', marginLeft: 8 }}>· {formatTimeAgo(r.createdAt)}</span>
-                  <p style={{ margin: '6px 0 0', fontSize: '0.95rem', color: '#334155', lineHeight: 1.6, wordBreak: 'break-word' }}>{r.text}</p>
-                </div>
-              </div>
-            </div>
-          )))}
+              ))
+            )
+          )}
+
           {tab === 'reposts' && (reposts.length === 0 ? <Empty icon={<Repeat2 size={36} color="#cbd5e1" />} text="Henüz yeniden gönderi yok" /> : reposts.map(p => (
             <PostCard 
               key={p.id} 
@@ -867,39 +1059,57 @@ export default function ProfilClient({ username }: { username: string }) {
               repostedBy={pd.displayName || pd.username}
             />
           )))}
-          {tab === 'likes' && (likes.length === 0 ? <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" /> : likes.map(p => (
-            <div 
-              key={p.id} 
-              className="profile-card-item"
-              onClick={() => router.push(`/forum?thread=${p.originalPostId || p.id}`)}
-              style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
-            >
-              <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{(p.authorName || 'U')[0].toUpperCase()}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                  <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem' }}>{p.authorName}</span>
-                  <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>· {formatTimeAgo(p.createdAt)}</span>
+
+          {tab === 'likes' && (
+            !isOwn && pd?.hideLikes ? (
+              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Bu kullanıcı beğenilerini gizlemiştir." />
+            ) : likes.length === 0 ? (
+              <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" />
+            ) : (
+              likes.map(p => (
+                <div 
+                  key={p.id} 
+                  className="profile-card-item"
+                  onClick={() => router.push(`/forum?thread=${p.originalPostId || p.id}`)}
+                  style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
+                >
+                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{(p.authorName || 'U')[0].toUpperCase()}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem' }}>{p.authorName}</span>
+                      <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>· {formatTimeAgo(p.createdAt)}</span>
+                    </div>
+                    <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, margin: 0, wordBreak: 'break-word' }}>
+                      {renderTextWithMentions(p.body)}
+                    </p>
+                    <div style={{ display: 'flex', gap: 16, marginTop: 8, color: '#94a3b8', fontSize: '0.82rem' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={14} />{p.commentCount}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ef4444' }}><Heart size={14} fill="#ef4444" />{Object.keys(p.reactionsData || {}).length}</span>
+                    </div>
+                  </div>
                 </div>
-                <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, margin: 0, wordBreak: 'break-word' }}>
-                  {renderTextWithMentions(p.body)}
-                </p>
-                <div style={{ display: 'flex', gap: 16, marginTop: 8, color: '#94a3b8', fontSize: '0.82rem' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={14} />{p.commentCount}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ef4444' }}><Heart size={14} fill="#ef4444" />{Object.keys(p.reactionsData || {}).length}</span>
-                </div>
-              </div>
-            </div>
-          )))}
-          {tab === 'bookmarks' && (bookmarks.length === 0 ? <Empty icon={<Bookmark size={36} color="#cbd5e1" />} text="Henüz kaydedilen yer işareti yok" /> : bookmarks.map(p => (
-            <PostCard 
-              key={p.id} 
-              p={p} 
-              pd={pd} 
-              isOwn={isOwn} 
-              userEmail={user?.email || ''} 
-              onDelete={delPost} 
-            />
-          )))}
+              ))
+            )
+          )}
+
+          {tab === 'bookmarks' && (
+            !isOwn ? (
+              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Yer işaretleri yalnızca hesap sahibi tarafından görüntülenebilir." />
+            ) : bookmarks.length === 0 ? (
+              <Empty icon={<Bookmark size={36} color="#cbd5e1" />} text="Henüz kaydedilen yer işareti yok" />
+            ) : (
+              bookmarks.map(p => (
+                <PostCard 
+                  key={p.id} 
+                  p={p} 
+                  pd={pd} 
+                  isOwn={isOwn} 
+                  userEmail={user?.email || ''} 
+                  onDelete={delPost} 
+                />
+              ))
+            )
+          )}
         </main>
 
         {/* ── RIGHT SIDEBAR ── */}
@@ -996,27 +1206,198 @@ export default function ProfilClient({ username }: { username: string }) {
 
       </div>
 
-      {/* Edit Profile Modal */}
-      {editOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setEditOpen(false)}>
-          <div style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: 480, padding: 28, boxShadow: '0 25px 50px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a', marginBottom: 24 }}>Profili Düzenle</h2>
-            {([['displayName','Ad Soyad','text','Adınız'],['bio','Hakkımda','textarea','Kendinizden bahsedin...'],['location','Konum','text','Şehir, Ülke'],['website','Web Sitesi','text','ornek.com']] as const).map(([k,l,t,ph]) => (
-              <div key={k} style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{l}</label>
-                {t === 'textarea'
-                  ? <textarea rows={3} placeholder={ph} value={ed[k as keyof typeof ed]} onChange={e => setEd({...ed,[k]:e.target.value})} style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                  : <input type="text" placeholder={ph} value={ed[k as keyof typeof ed]} onChange={e => setEd({...ed,[k]:e.target.value})} style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} />
-                }
+      {/* Edit Profile & Settings Modal */}
+      {(editOpen || settingsOpen) && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => { setEditOpen(false); setSettingsOpen(false); }}>
+          <div style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: 520, padding: 28, boxShadow: '0 25px 50px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {settingsOpen && !editOpen ? <Settings size={22} color="#0f172a" /> : <SlidersHorizontal size={22} color="#0f172a" />}
+                <h2 style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a', margin: 0 }}>
+                  {settingsOpen && !editOpen ? 'Ayarlar ve Gizlilik' : 'Profili Düzenle & Ayarlar'}
+                </h2>
               </div>
-            ))}
-            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-              <button onClick={() => setEditOpen(false)} style={{ flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#0f172a' }}>İptal</button>
-              <button onClick={saveProfile} disabled={saving} style={{ flex: 1, background: '#0f172a', color: 'white', border: 'none', borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</button>
+              <button 
+                onClick={() => { setEditOpen(false); setSettingsOpen(false); }} 
+                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}
+                aria-label="Kapat"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Section 1: Profil Bilgileri */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                Profil Bilgileri
+              </div>
+              
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Ad Soyad</label>
+                <input 
+                  type="text" 
+                  placeholder="Adınız ve soyadınız" 
+                  value={ed.displayName} 
+                  onChange={e => setEd({ ...ed, displayName: e.target.value })} 
+                  style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
+                />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Kullanıcı Adı</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0 14px', background: '#f8fafc' }}>
+                  <span style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.93rem' }}>@</span>
+                  <input 
+                    type="text" 
+                    placeholder="kullaniciadi" 
+                    value={ed.username} 
+                    onChange={e => setEd({ ...ed, username: e.target.value.toLowerCase().replace(/[^a-z0-9_\.]/g, '') })} 
+                    style={{ width: '100%', border: 'none', background: 'transparent', padding: '11px 6px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Hakkımda</label>
+                <textarea 
+                  rows={3} 
+                  placeholder="Kendinizden bahsedin..." 
+                  value={ed.bio} 
+                  onChange={e => setEd({ ...ed, bio: e.target.value })} 
+                  style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} 
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Konum</label>
+                  <input 
+                    type="text" 
+                    placeholder="Şehir, Ülke" 
+                    value={ed.location} 
+                    onChange={e => setEd({ ...ed, location: e.target.value })} 
+                    style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Web Sitesi</label>
+                  <input 
+                    type="text" 
+                    placeholder="ornek.com" 
+                    value={ed.website} 
+                    onChange={e => setEd({ ...ed, website: e.target.value })} 
+                    style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Gizlilik ve Görünürlük Ayarları */}
+            <div style={{ marginBottom: 24, paddingTop: 18, borderTop: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                <Shield size={14} color="#64748b" />
+                <span>Gizlilik Ayarları</span>
+              </div>
+
+              {/* Toggle: Beğenileri Gizle */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 12 }}>
+                <div style={{ paddingRight: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>Beğenilerimi herkese gizle</div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>Diğer kullanıcılar profilinizde beğendiğiniz gönderileri göremez.</div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={ed.hideLikes}
+                  onClick={() => setEd(prev => ({ ...prev, hideLikes: !prev.hideLikes }))}
+                  style={{
+                    width: 46,
+                    height: 26,
+                    borderRadius: 999,
+                    background: ed.hideLikes ? '#0f172a' : '#cbd5e1',
+                    border: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'background 0.2s',
+                    flexShrink: 0
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 3,
+                      left: ed.hideLikes ? 23 : 3,
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      background: 'white',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      transition: 'left 0.2s'
+                    }}
+                  />
+                </button>
+              </div>
+
+              {/* Toggle: Yanıtları Gizle */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                <div style={{ paddingRight: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>Yanıtlarımı herkese gizle</div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>Diğer kullanıcılar profilinizde yaptığınız yorum ve yanıtları göremez.</div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={ed.hideReplies}
+                  onClick={() => setEd(prev => ({ ...prev, hideReplies: !prev.hideReplies }))}
+                  style={{
+                    width: 46,
+                    height: 26,
+                    borderRadius: 999,
+                    background: ed.hideReplies ? '#0f172a' : '#cbd5e1',
+                    border: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'background 0.2s',
+                    flexShrink: 0
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 3,
+                      left: ed.hideReplies ? 23 : 3,
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      background: 'white',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      transition: 'left 0.2s'
+                    }}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+              <button 
+                onClick={() => { setEditOpen(false); setSettingsOpen(false); }} 
+                style={{ flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#0f172a' }}
+              >
+                İptal
+              </button>
+              <button 
+                onClick={saveProfile} 
+                disabled={saving} 
+                style={{ flex: 1, background: '#0f172a', color: 'white', border: 'none', borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}
+              >
+                {saving ? 'Kaydediliyor...' : 'Kaydet'}
+              </button>
             </div>
           </div>
         </div>
       )}
+
       {/* Mobile Bottom Navigation Bar (Symmetric 4-Item Grid) */}
       <nav className="forum-mobile-bottom-nav" style={{
         display: 'none',
@@ -1107,8 +1488,23 @@ export default function ProfilClient({ username }: { username: string }) {
           <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Bildirim</span>
         </Link>
 
-        {/* 4. Profile (Active) */}
-        <div
+        {/* 4. Profile */}
+        <Link
+          href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername || user.uid)}` : '#'}
+          onClick={(e) => {
+            if (!user || user.isAnonymous) {
+              e.preventDefault();
+              router.push('/forum');
+              return;
+            }
+            if (isOwn) {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              e.preventDefault();
+              router.push(`/forum/profil/${encodeURIComponent(myUsername || user.uid)}`);
+            }
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -1116,12 +1512,14 @@ export default function ProfilClient({ username }: { username: string }) {
             justifyContent: 'center',
             gap: 4,
             height: '100%',
-            color: '#0f172a',
+            color: isOwn ? '#0f172a' : '#64748b',
             padding: 0,
-            position: 'relative'
+            position: 'relative',
+            textDecoration: 'none',
+            cursor: 'pointer'
           }}
         >
-          <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: '#0f172a', borderRadius: '0 0 4px 4px' }} />
+          {isOwn && <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: '#0f172a', borderRadius: '0 0 4px 4px' }} />}
           <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1131,8 +1529,8 @@ export default function ProfilClient({ username }: { username: string }) {
               <User size={13} color="white" />
             )}
           </div>
-          <span style={{ fontSize: '0.68rem', fontWeight: 700 }}>Profilim</span>
-        </div>
+          <span style={{ fontSize: '0.68rem', fontWeight: isOwn ? 700 : 500 }}>Profilim</span>
+        </Link>
       </nav>
     </div>
   );

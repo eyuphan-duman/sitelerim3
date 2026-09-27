@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ThreadView from '@/components/forum/ThreadView';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark, Heart } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark, Heart, Sun, Moon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -50,6 +50,7 @@ export default function ForumClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const topSearchInputRef = useRef<HTMLInputElement>(null);
   const [threads, setThreads] = useState<Post[]>([]);
   const [filter, setFilter] = useState('Tümü');
   const [feedTab, setFeedTab] = useState<'all' | 'following' | 'bookmarks' | 'likes'>('all');
@@ -61,9 +62,47 @@ export default function ForumClient() {
   const [activeThread, setActiveThread] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [usersMap, setUsersMap] = useState<Record<string, any>>({});
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Dark Mode State with localStorage persistence
+  const [isDark, setIsDark] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem('forum_theme');
+      if (savedTheme) {
+        setIsDark(savedTheme === 'dark');
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setIsDark(true);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    setIsDark(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('forum_theme', next ? 'dark' : 'light');
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('forum-dark-body');
+    } else {
+      document.documentElement.classList.remove('forum-dark-body');
+    }
+    return () => {
+      document.documentElement.classList.remove('forum-dark-body');
+    };
+  }, [isDark]);
 
   useEffect(() => { return onSnapshot(collection(db, 'users'), snap => { const m: Record<string, any> = {}; snap.docs.forEach(d => m[d.id] = d.data()); setUsersMap(m); }); }, []);
   useEffect(() => { const q = query(collection(db, 'forum'), orderBy('createdAt', 'desc')); return onSnapshot(q, snap => { setThreads(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[]); }); }, []);
@@ -81,7 +120,7 @@ export default function ForumClient() {
     } else if (qParam !== null && qParam !== undefined) {
       if (qParam === 'open' || qParam === '1') {
         setTimeout(() => {
-          searchInputRef.current?.focus();
+          topSearchInputRef.current?.focus();
         }, 200);
       } else {
         setSearchQuery(qParam);
@@ -108,6 +147,7 @@ export default function ForumClient() {
       const cleanQ = rawQ.startsWith('#') ? rawQ.slice(1) : rawQ;
       list = list.filter(t => {
         const body = (t.body || '').toLocaleLowerCase('tr-TR');
+        const title = (t.title || '').toLocaleLowerCase('tr-TR');
         const author = (t.authorName || '').toLocaleLowerCase('tr-TR');
         const username = (t.authorUsername || '').toLocaleLowerCase('tr-TR');
         const category = (t.category || '').toLocaleLowerCase('tr-TR');
@@ -118,6 +158,7 @@ export default function ForumClient() {
         }
         return (
           body.includes(rawQ) ||
+          title.includes(rawQ) ||
           body.includes(`#${cleanQ}`) ||
           author.includes(rawQ) ||
           username.includes(rawQ) ||
@@ -455,12 +496,12 @@ export default function ForumClient() {
   const myUsername = userProfile?.username || (user?.displayName || '').toLowerCase().replace(/\s+/g, '') || (user?.email ? user.email.split('@')[0].toLowerCase().replace(/\s+/g, '') : '') || user?.uid || '';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', background: isDark ? '#000000' : '#f8fafc', transition: 'background-color 0.2s ease' }}>
 
       {/* Mobile category pills */}
-      <div className="forum-mobile-cats" style={{ display: 'none', overflowX: 'auto', padding: '8px 12px', gap: 8, background: 'white', borderBottom: '1px solid #e2e8f0', position: 'relative', zIndex: 10, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+      <div className="forum-mobile-cats" style={{ display: 'none', overflowX: 'auto', padding: '8px 12px', gap: 8, background: isDark ? '#000000' : 'white', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, position: 'relative', zIndex: 10, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
         {CATEGORIES.map(c => (
-          <button key={c} onClick={() => { setFilter(c); setFeedTab('all'); }} style={{ flexShrink: 0, padding: '6px 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, background: filter === c ? '#0f172a' : '#f1f5f9', color: filter === c ? 'white' : '#64748b', whiteSpace: 'nowrap' }}>
+          <button key={c} onClick={() => { setFilter(c); setFeedTab('all'); }} style={{ flexShrink: 0, padding: '6px 14px', borderRadius: 999, border: isDark ? '1px solid #2f3336' : 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, background: filter === c ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#16181c' : '#f1f5f9'), color: filter === c ? (isDark ? '#000000' : 'white') : (isDark ? '#71767b' : '#64748b'), whiteSpace: 'nowrap' }}>
             {c}
           </button>
         ))}
@@ -469,41 +510,47 @@ export default function ForumClient() {
       <div className="forum-grid-3col" style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: 0, paddingTop: 72 }}>
 
         {/* LEFT SIDEBAR */}
-        <aside className="forum-sidebar-left" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: '1px solid #e2e8f0' }}>
+        <aside className="forum-sidebar-left" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#000000' : 'transparent' }}>
           <div style={{ padding: '0 8px 16px', marginBottom: 8 }}>
-            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
               Topluluk
-              <span style={{ fontSize: '0.6rem', background: '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
+              <span style={{ fontSize: '0.6rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
             </h1>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 4 }}>Psikoloji forumu</p>
+            <p style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#94a3b8', marginTop: 4 }}>Psikoloji forumu</p>
           </div>
           {[
-            { label: 'Ana Akış', action: () => { setFeedTab('all'); setFilter('Tümü'); closeThread(); }, active: feedTab === 'all' && !activeThread, icon: <Home size={20} /> },
+            { label: 'Ana Akış', action: () => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); closeThread(); }, active: feedTab === 'all' && !searchQuery && !activeThread, icon: <Home size={20} /> },
             { label: 'Takip Ettiklerim', action: () => !user?.uid ? setAuthOpen(true) : setFeedTab('following'), active: feedTab === 'following' && !activeThread, icon: <Users size={20} /> },
             { label: 'Yer İşaretleri', action: () => !user?.uid ? setAuthOpen(true) : router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?tab=bookmarks` : '/forum'), active: false, icon: <Bookmark size={20} /> },
             { 
               label: 'Arama', 
               action: () => {
-                if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                  setMobileSearchOpen(true);
-                } else {
-                  searchInputRef.current?.focus();
-                  searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+                if (activeThread) closeThread();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setTimeout(() => {
+                  topSearchInputRef.current?.focus();
+                  topSearchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 80);
               }, 
-              active: false, 
+              active: isSearchFocused || Boolean(searchQuery), 
               icon: <Search size={20} /> 
             },
             { label: 'Beğenilenler', action: () => !user?.uid ? setAuthOpen(true) : router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?tab=likes` : '/forum'), active: false, icon: <Heart size={20} /> },
             { label: 'Bildirimler', action: () => !user?.uid ? setAuthOpen(true) : router.push('/bildirimler'), active: false, icon: <Bell size={20} />, badge: unreadCount },
             { 
+              label: isDark ? 'Açık Mod' : 'Karanlık Mod', 
+              action: toggleDarkMode, 
+              active: false, 
+              icon: isDark ? <Sun size={20} color="#fbbf24" /> : <Moon size={20} /> 
+            },
+            { 
               label: 'Profilim', 
               action: () => !user?.uid ? setAuthOpen(true) : router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum'), 
               active: false, 
-              icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> 
+              icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> 
             },
           ].map(item => (
-            <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', background: item.active ? '#0f172a' : 'transparent', color: item.active ? 'white' : '#475569', fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', textAlign: 'left' }}>
+            <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', background: item.active ? (isDark ? '#e7e9ea' : '#0f172a') : 'transparent', color: item.active ? (isDark ? '#000000' : 'white') : (isDark ? '#e7e9ea' : '#475569'), fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 {item.icon} <span>{item.label}</span>
               </div>
@@ -512,27 +559,27 @@ export default function ForumClient() {
               ) : null}
             </button>
           ))}
-          <div style={{ margin: '16px 0 8px', padding: '0 8px', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Kategoriler</div>
+          <div style={{ margin: '16px 0 8px', padding: '0 8px', fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Kategoriler</div>
           {CATEGORIES.filter(c => c !== 'Tümü').map(c => (
-            <button key={c} onClick={() => { setFilter(c); setFeedTab('all'); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', width: '100%', background: filter === c ? '#eff6ff' : 'transparent', color: filter === c ? '#1d4ed8' : '#64748b', fontWeight: filter === c ? 700 : 500, fontSize: '0.88rem', transition: 'all 0.15s' }}>
+            <button key={c} onClick={() => { setFilter(c); setFeedTab('all'); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', width: '100%', background: filter === c ? (isDark ? 'rgba(56, 189, 248, 0.12)' : '#eff6ff') : 'transparent', color: filter === c ? (isDark ? '#38bdf8' : '#1d4ed8') : (isDark ? '#71767b' : '#64748b'), fontWeight: filter === c ? 700 : 500, fontSize: '0.88rem', transition: 'all 0.15s' }}>
               <Hash size={15} /> {c}
             </button>
           ))}
           {user && !user.isAnonymous && (
-            <Link href={myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum'} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 12, textDecoration: 'none', marginTop: 'auto', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Link href={myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum'} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 12, textDecoration: 'none', marginTop: 'auto', background: isDark ? '#16181c' : '#f8fafc', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, overflow: 'hidden' }}>
                 {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
               </div>
               <div>
-                <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>{userProfile?.displayName || user.displayName}</div>
-                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>@{myUsername}</div>
+                <div style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem' }}>{userProfile?.displayName || user.displayName}</div>
+                <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.8rem' }}>@{myUsername}</div>
               </div>
             </Link>
           )}
         </aside>
 
         {/* MAIN FEED / THREAD VIEW */}
-        <main style={{ borderRight: '1px solid #e2e8f0', minHeight: 'calc(100vh - 72px)', background: 'white' }}>
+        <main style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: 'calc(100vh - 72px)', background: isDark ? '#000000' : 'white' }}>
           {activeThread ? (
             <ThreadView
               post={{
@@ -547,6 +594,7 @@ export default function ForumClient() {
               currentUser={user}
               userProfile={userProfile}
               adminEmails={ADMIN_EMAILS}
+              isDark={isDark}
               onBack={closeThread}
               onOpenAuth={() => setAuthOpen(true)}
               onPostDeleted={(deletedId) => {
@@ -556,29 +604,130 @@ export default function ForumClient() {
             />
           ) : (
             <>
+              {/* ─── X-STYLE STICKY TOP SEARCH & THEME BAR ─── */}
+              <div className="forum-top-bar" style={{
+                background: isDark ? 'rgba(0, 0, 0, 0.88)' : 'rgba(255, 255, 255, 0.92)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                padding: '10px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+              }}>
+                {/* Search Pill Input (X-style) */}
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  background: isDark ? '#16181c' : '#f1f5f9',
+                  borderRadius: 999,
+                  padding: '8px 16px',
+                  border: `1.5px solid ${isSearchFocused ? '#1d9bf0' : isDark ? '#2f3336' : '#e2e8f0'}`,
+                  boxShadow: isSearchFocused ? '0 0 0 3px rgba(29, 155, 240, 0.15)' : 'none',
+                  transition: 'all 0.18s ease',
+                }}>
+                  <Search size={18} color={isSearchFocused ? '#1d9bf0' : isDark ? '#71767b' : '#94a3b8'} />
+                  <input
+                    ref={topSearchInputRef}
+                    value={searchQuery}
+                    onChange={e => {
+                      setSearchQuery(e.target.value);
+                      if (activeThread) closeThread();
+                    }}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    placeholder="Forumda ara (gönderi, etiket, yazar)..."
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      outline: 'none',
+                      fontSize: '0.92rem',
+                      color: isDark ? '#e7e9ea' : '#0f172a',
+                      width: '100%',
+                      fontWeight: 500,
+                    }}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        topSearchInputRef.current?.focus();
+                      }}
+                      style={{
+                        background: isDark ? '#2f3336' : '#cbd5e1',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: 20,
+                        height: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        color: isDark ? '#e7e9ea' : '#475569',
+                        padding: 0,
+                        flexShrink: 0,
+                      }}
+                      title="Temizle"
+                    >
+                      <X size={12} strokeWidth={2.5} />
+                    </button>
+                  )}
+                </div>
+
+                {/* X-Style Dark Mode Toggle Button */}
+                <button
+                  type="button"
+                  onClick={toggleDarkMode}
+                  style={{
+                    background: isDark ? '#16181c' : '#f1f5f9',
+                    border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                    borderRadius: 999,
+                    width: 38,
+                    height: 38,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: isDark ? '#fbbf24' : '#475569',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                  }}
+                  title={isDark ? 'Aydınlık moda geç' : 'Karanlık moda geç (X Tarzı)'}
+                  aria-label="Karanlık Mod Değiştir"
+                >
+                  {isDark ? <Sun size={19} strokeWidth={2} /> : <Moon size={19} strokeWidth={2} />}
+                </button>
+              </div>
+
               {/* Tabs */}
-              <div style={{ position: 'relative', background: '#ffffff', borderBottom: '1px solid #e2e8f0', zIndex: 10 }}>
+              <div style={{ position: 'relative', background: isDark ? '#000000' : '#ffffff', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, zIndex: 10 }}>
                 <div style={{ display: 'flex' }}>
                   {[{ key: 'all', label: 'Ana Akış' }, { key: 'following', label: 'Takip Ettiklerim' }].map(tab => (
                     <button key={tab.key} onClick={() => tab.key === 'following' && !user?.uid ? setAuthOpen(true) : setFeedTab(tab.key as any)}
-                      style={{ flex: 1, padding: '16px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', background: 'transparent', color: feedTab === tab.key ? '#0f172a' : '#94a3b8', borderBottom: feedTab === tab.key ? '3px solid #0f172a' : '3px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      style={{ flex: 1, padding: '16px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', background: 'transparent', color: feedTab === tab.key ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#71767b' : '#94a3b8'), borderBottom: feedTab === tab.key ? `3px solid ${isDark ? '#e7e9ea' : '#0f172a'}` : '3px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                       {tab.label}
-                      {tab.key === 'all' && <span style={{ fontSize: '0.55rem', background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>v2.0</span>}
+                      {tab.key === 'all' && <span style={{ fontSize: '0.55rem', background: isDark ? '#16181c' : '#f1f5f9', color: isDark ? '#71767b' : '#64748b', padding: '1px 5px', borderRadius: 4, fontWeight: 800, border: isDark ? '1px solid #2f3336' : 'none' }}>v2.0</span>}
                     </button>
                   ))}
                 </div>
                 {filter !== 'Tümü' && (
-                  <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.8rem', fontWeight: 700, padding: '4px 12px', borderRadius: 999 }}>#{filter}</span>
-                    <button onClick={() => setFilter('Tümü')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={14} /></button>
+                  <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, background: isDark ? '#16181c' : '#eff6ff', borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+                    <span style={{ background: isDark ? 'rgba(56,189,248,0.15)' : '#eff6ff', color: isDark ? '#38bdf8' : '#1d4ed8', fontSize: '0.8rem', fontWeight: 700, padding: '4px 12px', borderRadius: 999, border: isDark ? '1px solid rgba(56,189,248,0.3)' : 'none' }}>#{filter}</span>
+                    <button onClick={() => setFilter('Tümü')} style={{ background: 'none', border: 'none', color: isDark ? '#71767b' : '#94a3b8', cursor: 'pointer' }}><X size={14} /></button>
                   </div>
                 )}
                 {searchQuery && (
-                  <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: searchQuery.startsWith('#') ? '#f0f9ff' : '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                  <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isDark ? '#16181c' : (searchQuery.startsWith('#') ? '#f0f9ff' : '#f8fafc'), borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>{searchQuery.startsWith('#') ? 'Etiket:' : 'Arama:'}</span>
-                      <span style={{ background: searchQuery.startsWith('#') ? '#0284c7' : '#0f172a', color: 'white', fontSize: '0.82rem', fontWeight: 700, padding: '3px 12px', borderRadius: 999 }}>
+                      <span style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#64748b', fontWeight: 600 }}>{searchQuery.startsWith('#') ? 'Etiket:' : 'Arama:'}</span>
+                      <span style={{ background: isDark ? '#1d9bf0' : (searchQuery.startsWith('#') ? '#0284c7' : '#0f172a'), color: 'white', fontSize: '0.82rem', fontWeight: 700, padding: '3px 12px', borderRadius: 999 }}>
                         {searchQuery}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8' }}>
+                        ({filtered.length} sonuç)
                       </span>
                     </div>
                     <button 
@@ -586,7 +735,7 @@ export default function ForumClient() {
                         setSearchQuery(''); 
                         router.replace('/forum', { scroll: false }); 
                       }} 
-                      style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', fontWeight: 600 }}
+                      style={{ background: 'none', border: 'none', color: isDark ? '#71767b' : '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem', fontWeight: 600 }}
                     >
                       <X size={14} /> Temizle
                     </button>
@@ -596,15 +745,15 @@ export default function ForumClient() {
 
               {/* Compose */}
               {user && !user.isAnonymous && (
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 14 }}>
+                <div style={{ padding: '20px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, display: 'flex', gap: 14, background: isDark ? '#000000' : 'white' }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0, overflow: 'hidden' }}>
                     {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <textarea placeholder="Ne düşünüyorsunuz? Psikoloji topluluğuyla paylaşın..." value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} style={{ width: '100%', border: 'none', fontSize: '1.05rem', color: '#0f172a', minHeight: 72, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5 }} />
+                    <textarea placeholder="Ne düşünüyorsunuz? Psikoloji topluluğuyla paylaşın..." value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} style={{ width: '100%', border: 'none', fontSize: '1.05rem', color: isDark ? '#e7e9ea' : '#0f172a', minHeight: 72, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5 }} />
                     
                     {form.imageUrl && (
-                      <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: 12 }}>
+                      <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 12, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, marginBottom: 12 }}>
                         <img src={form.imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <button onClick={() => setForm({ ...form, imageUrl: '' })} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                           <X size={14} />
@@ -612,13 +761,13 @@ export default function ForumClient() {
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, flexWrap: 'wrap', gap: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <select value={form.cat} onChange={e => setForm({ ...form, cat: e.target.value })} style={{ border: 'none', background: '#f1f5f9', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
-                          {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c}>{c}</option>)}
+                        <select value={form.cat} onChange={e => setForm({ ...form, cat: e.target.value })} style={{ border: isDark ? '1px solid #2f3336' : 'none', background: isDark ? '#16181c' : '#f1f5f9', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: isDark ? '#e7e9ea' : '#475569', cursor: 'pointer', outline: 'none', fontWeight: 600 }}>
+                          {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c} style={{ background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a' }}>{c}</option>)}
                         </select>
 
-                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', fontWeight: 600 }} title="Görsel ekle">
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isDark ? '#16181c' : '#f1f5f9', border: isDark ? '1px solid #2f3336' : 'none', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', color: isDark ? '#e7e9ea' : '#475569', cursor: 'pointer', fontWeight: 600 }} title="Görsel ekle">
                           {uploadingImage ? (
                             <>
                               <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
@@ -634,47 +783,66 @@ export default function ForumClient() {
                         </label>
                       </div>
 
-                      <button onClick={handlePost} disabled={posting || (!form.body.trim() && !form.imageUrl)} style={{ background: (form.body.trim() || form.imageUrl) ? '#0f172a' : '#e2e8f0', color: (form.body.trim() || form.imageUrl) ? 'white' : '#94a3b8', border: 'none', padding: '10px 22px', borderRadius: 999, fontWeight: 700, cursor: (form.body.trim() || form.imageUrl) ? 'pointer' : 'default', fontSize: '0.9rem', transition: 'all 0.2s' }}>Paylaş</button>
+                      <button onClick={handlePost} disabled={posting || (!form.body.trim() && !form.imageUrl)} style={{ background: (form.body.trim() || form.imageUrl) ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#262a30' : '#e2e8f0'), color: (form.body.trim() || form.imageUrl) ? (isDark ? '#000000' : 'white') : (isDark ? '#71767b' : '#94a3b8'), border: 'none', padding: '10px 22px', borderRadius: 999, fontWeight: 700, cursor: (form.body.trim() || form.imageUrl) ? 'pointer' : 'default', fontSize: '0.9rem', transition: 'all 0.2s' }}>Paylaş</button>
                     </div>
                   </div>
                 </div>
               )}
 
               {!user && (
-                <div style={{ padding: '32px 24px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', background: 'linear-gradient(135deg,#f8fafc,#eff6ff)' }}>
-                  <Users size={32} color="#0f172a" style={{ margin: '0 auto 12px' }} />
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>Psikoloji topluluğuna katılın</h3>
-                  <p style={{ color: '#64748b', marginBottom: 20, fontSize: '0.95rem' }}>Düşüncelerinizi paylaşın, tartışmalara katılın.</p>
-                  <button onClick={() => setAuthOpen(true)} style={{ background: '#0f172a', color: 'white', border: 'none', padding: '12px 28px', borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}>Katıl</button>
+                <div style={{ padding: '32px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, textAlign: 'center', background: isDark ? '#16181c' : 'linear-gradient(135deg,#f8fafc,#eff6ff)' }}>
+                  <Users size={32} color={isDark ? '#e7e9ea' : '#0f172a'} style={{ margin: '0 auto 12px' }} />
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 8 }}>Psikoloji topluluğuna katılın</h3>
+                  <p style={{ color: isDark ? '#71767b' : '#64748b', marginBottom: 20, fontSize: '0.95rem' }}>Düşüncelerinizi paylaşın, tartışmalara katılın.</p>
+                  <button onClick={() => setAuthOpen(true)} style={{ background: isDark ? '#e7e9ea' : '#0f172a', color: isDark ? '#000000' : 'white', border: 'none', padding: '12px 28px', borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}>Katıl</button>
                 </div>
               )}
 
-              {/* Active Search Banner */}
-              {searchQuery.trim() && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#eff6ff', borderBottom: '1px solid #bfdbfe' }}>
-                  <div style={{ color: '#1e3a8a', fontSize: '0.88rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Search size={15} />
-                    <span><strong>"{searchQuery}"</strong> için arama sonuçları ({filtered.length} gönderi)</span>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setSearchQuery('');
-                      router.replace('/forum', { scroll: false });
-                    }} 
-                    style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
-                  >
-                    Aramayı Temizle
-                  </button>
-                </div>
-              )}
-
-              {/* Posts */}
+              {/* Posts or Empty State */}
               {filtered.length === 0 ? (
                 <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-                  <MessageSquare size={36} color="#94a3b8" style={{ margin: '0 auto 16px' }} />
-                  <h3 style={{ color: '#94a3b8', fontWeight: 700 }}>
-                    {searchQuery.trim() ? `"${searchQuery}" ile eşleşen gönderi bulunamadı.` : (feedTab === 'following' ? 'Takip ettiğiniz kişi paylaşım yapmamış.' : 'Bu kategoride henüz gönderi yok.')}
+                  <div style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    background: isDark ? '#16181c' : '#f1f5f9',
+                    border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 16px',
+                    color: isDark ? '#71767b' : '#94a3b8',
+                  }}>
+                    {searchQuery.trim() ? <Search size={28} /> : <MessageSquare size={28} />}
+                  </div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 8 }}>
+                    {searchQuery.trim() ? 'Sonuç bulunamadı' : (feedTab === 'following' ? 'Henüz paylaşım yok' : 'Gönderi bulunamadı')}
                   </h3>
+                  <p style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.9rem', maxWidth: 380, margin: '0 auto 20px', lineHeight: 1.5 }}>
+                    {searchQuery.trim() 
+                      ? `"${searchQuery}" terimi ile eşleşen bir forum gönderisi bulunamadı. Farklı kelimeler veya etiketler deneyebilirsiniz.` 
+                      : (feedTab === 'following' ? 'Takip ettiğiniz kişiler henüz bir şey paylaşmamış.' : 'Bu kategoride henüz gönderi yok.')}
+                  </p>
+                  {searchQuery.trim() && (
+                    <button 
+                      onClick={() => {
+                        setSearchQuery('');
+                        router.replace('/forum', { scroll: false });
+                      }}
+                      style={{
+                        background: isDark ? '#e7e9ea' : '#0f172a',
+                        color: isDark ? '#000000' : '#ffffff',
+                        border: 'none',
+                        padding: '10px 24px',
+                        borderRadius: 999,
+                        fontWeight: 700,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Aramayı Temizle
+                    </button>
+                  )}
                 </div>
               ) : (
                 filtered.map(t => {
@@ -694,6 +862,7 @@ export default function ForumClient() {
                       currentUserUid={user?.uid}
                       currentUserEmail={user?.email || ''}
                       adminEmails={ADMIN_EMAILS}
+                      isDark={isDark}
                       onOpen={openThread}
                       onLike={handleLike}
                       onDislike={handleDislike}
@@ -709,15 +878,15 @@ export default function ForumClient() {
         </main>
 
         {/* RIGHT SIDEBAR */}
-        <aside className="forum-sidebar-right" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f1f5f9', borderRadius: 12, padding: '12px 16px', border: '1px solid #e2e8f0' }}>
-            <Search size={17} color="#94a3b8" />
+        <aside className="forum-sidebar-right" style={{ position: 'sticky', top: 72, height: 'calc(100vh - 72px)', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20, background: isDark ? '#000000' : 'transparent' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: isDark ? '#16181c' : '#f1f5f9', borderRadius: 999, padding: '11px 16px', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+            <Search size={17} color={isDark ? '#71767b' : '#94a3b8'} />
             <input 
               ref={searchInputRef}
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
               placeholder="Forumda ara..." 
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', color: '#0f172a', width: '100%' }} 
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', color: isDark ? '#e7e9ea' : '#0f172a', width: '100%' }} 
             />
             {searchQuery && (
               <button 
@@ -725,7 +894,7 @@ export default function ForumClient() {
                   setSearchQuery('');
                   router.replace('/forum', { scroll: false });
                 }} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', padding: 2 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDark ? '#71767b' : '#94a3b8', display: 'flex', padding: 2 }}
                 title="Aramayı temizle"
               >
                 <X size={16} />
@@ -734,22 +903,22 @@ export default function ForumClient() {
           </div>
           {user && !user.isAnonymous && (
             <Link href="/bildirimler" style={{ textDecoration: 'none' }}>
-              <div style={{ background: unreadCount > 0 ? '#eff6ff' : '#f8fafc', border: `1px solid ${unreadCount > 0 ? '#bfdbfe' : '#e2e8f0'}`, borderRadius: 14, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <div style={{ background: unreadCount > 0 ? (isDark ? 'rgba(37,99,235,0.15)' : '#eff6ff') : (isDark ? '#16181c' : '#f8fafc'), border: `1px solid ${unreadCount > 0 ? (isDark ? '#1d4ed8' : '#bfdbfe') : (isDark ? '#2f3336' : '#e2e8f0')}`, borderRadius: 14, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 <div style={{ position: 'relative' }}>
-                  <Bell size={22} color={unreadCount > 0 ? '#2563eb' : '#94a3b8'} />
+                  <Bell size={22} color={unreadCount > 0 ? '#38bdf8' : (isDark ? '#71767b' : '#94a3b8')} />
                   {unreadCount > 0 && <div style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: 'white', fontSize: '0.65rem', fontWeight: 800, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unreadCount}</div>}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>Bildirimler</div>
-                  <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{unreadCount > 0 ? `${unreadCount} okunmamış` : 'Hepsi okundu'}</div>
+                  <div style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem' }}>Bildirimler</div>
+                  <div style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.8rem' }}>{unreadCount > 0 ? `${unreadCount} okunmamış` : 'Hepsi okundu'}</div>
                 </div>
               </div>
             </Link>
           )}
-          <div style={{ background: '#f8fafc', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-            <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #e2e8f0' }}>
-              <TrendingUp size={18} color="#64748b" />
-              <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', margin: 0 }}>Gündemdekiler</h3>
+          <div style={{ background: isDark ? '#16181c' : '#f8fafc', borderRadius: 16, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+            <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+              <TrendingUp size={18} color={isDark ? '#71767b' : '#64748b'} />
+              <h3 style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '1rem', margin: 0 }}>Gündemdekiler</h3>
             </div>
             {trends.map(({ tag, count }) => (
               <button 
@@ -762,24 +931,24 @@ export default function ForumClient() {
                   if (activeThread) closeThread();
                   router.replace(`/forum?tag=${encodeURIComponent(tag)}`, { scroll: false });
                 }} 
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '13px 18px', border: 'none', background: 'transparent', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', textAlign: 'left' }} 
-                onMouseOver={e => (e.currentTarget.style.background = '#f1f5f9')} 
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '13px 18px', border: 'none', background: 'transparent', cursor: 'pointer', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, textAlign: 'left' }} 
+                onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : '#f1f5f9')} 
                 onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
               >
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 2 }}>Gündemdekiler · Türkiye</div>
-                  <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem' }}>#{tag}</div>
-                  <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 2 }}>{count} gönderi</div>
+                  <div style={{ fontSize: '0.72rem', color: isDark ? '#71767b' : '#94a3b8', marginBottom: 2 }}>Gündemdekiler · Türkiye</div>
+                  <div style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.92rem' }}>#{tag}</div>
+                  <div style={{ fontSize: '0.74rem', color: isDark ? '#71767b' : '#64748b', marginTop: 2 }}>{count} gönderi</div>
                 </div>
-                <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999 }}>#{tag}</span>
+                <span style={{ background: isDark ? 'rgba(56,189,248,0.15)' : '#eff6ff', color: isDark ? '#38bdf8' : '#1d4ed8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999, border: isDark ? '1px solid rgba(56,189,248,0.3)' : 'none' }}>#{tag}</span>
               </button>
             ))}
           </div>
           {!user && (
-            <div style={{ background: 'linear-gradient(135deg,#0f172a,#1e293b)', borderRadius: 16, padding: '24px 20px', textAlign: 'center' }}>
+            <div style={{ background: isDark ? '#16181c' : 'linear-gradient(135deg,#0f172a,#1e293b)', border: isDark ? '1px solid #2f3336' : 'none', borderRadius: 16, padding: '24px 20px', textAlign: 'center' }}>
               <Sparkles size={28} color="#d97706" style={{ margin: '0 auto 12px' }} />
               <h3 style={{ fontWeight: 800, color: 'white', fontSize: '1rem', marginBottom: 8 }}>Topluluğa Katılın</h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: 16, lineHeight: 1.5 }}>Paylaşın, tartışın, büyüyün.</p>
+              <p style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem', marginBottom: 16, lineHeight: 1.5 }}>Paylaşın, tartışın, büyüyün.</p>
               <button onClick={() => setAuthOpen(true)} style={{ background: 'white', color: '#0f172a', border: 'none', padding: '10px 22px', borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', width: '100%' }}>Katıl</button>
             </div>
           )}
@@ -790,28 +959,28 @@ export default function ForumClient() {
 
       {/* Mobile Search Overlay */}
       {mobileSearchOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', padding: '20px 16px' }} onClick={() => setMobileSearchOpen(false)}>
-          <div style={{ background: 'white', borderRadius: 16, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
-            <Search size={18} color="#94a3b8" />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', padding: '20px 16px' }} onClick={() => setMobileSearchOpen(false)}>
+          <div style={{ background: isDark ? '#16181c' : 'white', borderRadius: 16, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: isDark ? '1px solid #2f3336' : 'none' }} onClick={e => e.stopPropagation()}>
+            <Search size={18} color={isDark ? '#71767b' : '#94a3b8'} />
             <input
               autoFocus
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Forumda ara..."
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '1rem', color: '#0f172a', background: 'transparent' }}
+              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '1rem', color: isDark ? '#e7e9ea' : '#0f172a', background: 'transparent' }}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex' }}>
+              <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDark ? '#71767b' : '#94a3b8', display: 'flex' }}>
                 <X size={18} />
               </button>
             )}
           </div>
           {searchQuery && (
-            <div style={{ marginTop: 12, background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-              {threads.filter(t => t.body.toLowerCase().includes(searchQuery.toLowerCase()) || t.authorName.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5).map(t => (
-                <div key={t.id} onClick={() => { openThread(t); setMobileSearchOpen(false); setSearchQuery(''); }} style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a', marginBottom: 2 }}>{t.authorName}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.body}</div>
+            <div style={{ marginTop: 12, background: isDark ? '#16181c' : 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', border: isDark ? '1px solid #2f3336' : 'none' }}>
+              {threads.filter(t => (t.body || '').toLowerCase().includes(searchQuery.toLowerCase()) || (t.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (t.title || '').toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5).map(t => (
+                <div key={t.id} onClick={() => { openThread(t); setMobileSearchOpen(false); setSearchQuery(''); }} style={{ padding: '14px 16px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, cursor: 'pointer' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 2 }}>{t.authorName}</div>
+                  <div style={{ fontSize: '0.85rem', color: isDark ? '#71767b' : '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.body}</div>
                 </div>
               ))}
             </div>
@@ -827,19 +996,19 @@ export default function ForumClient() {
         left: 0,
         right: 0,
         height: 60,
-        background: 'rgba(255,255,255,0.98)',
+        background: isDark ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.98)',
         backdropFilter: 'blur(20px)',
-        borderTop: '1px solid #e2e8f0',
+        borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
         zIndex: 2100,
         gridTemplateColumns: 'repeat(4, 1fr)',
         alignItems: 'center',
         paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: '0 -2px 16px rgba(15,23,42,0.06)',
+        boxShadow: isDark ? '0 -2px 16px rgba(0,0,0,0.7)' : '0 -2px 16px rgba(15,23,42,0.06)',
       }}>
         {/* 1. Home */}
         <button
           type="button"
-          onClick={() => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); }}
+          onClick={() => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); if (activeThread) closeThread(); }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -850,14 +1019,14 @@ export default function ForumClient() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: feedTab === 'all' && filter === 'Tümü' && !searchQuery ? '#0f172a' : '#64748b',
+            color: feedTab === 'all' && filter === 'Tümü' && !searchQuery ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#71767b' : '#64748b'),
             transition: 'color 0.15s ease',
             padding: 0,
             position: 'relative'
           }}
         >
           {feedTab === 'all' && filter === 'Tümü' && !searchQuery && (
-            <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: '#0f172a', borderRadius: '0 0 4px 4px' }} />
+            <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: isDark ? '#1d9bf0' : '#0f172a', borderRadius: '0 0 4px 4px' }} />
           )}
           <Home size={22} strokeWidth={feedTab === 'all' && filter === 'Tümü' && !searchQuery ? 2.4 : 1.9} />
           <span style={{ fontSize: '0.68rem', fontWeight: feedTab === 'all' && filter === 'Tümü' && !searchQuery ? 700 : 500 }}>Anasayfa</span>
@@ -866,7 +1035,13 @@ export default function ForumClient() {
         {/* 2. Search */}
         <button
           type="button"
-          onClick={() => setMobileSearchOpen(true)}
+          onClick={() => {
+            if (activeThread) closeThread();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => {
+              topSearchInputRef.current?.focus();
+            }, 100);
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -877,17 +1052,17 @@ export default function ForumClient() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: mobileSearchOpen || searchQuery ? '#0f172a' : '#64748b',
+            color: isSearchFocused || searchQuery ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#71767b' : '#64748b'),
             transition: 'color 0.15s ease',
             padding: 0,
             position: 'relative'
           }}
         >
-          {(mobileSearchOpen || searchQuery) && (
-            <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: '#0f172a', borderRadius: '0 0 4px 4px' }} />
+          {(isSearchFocused || searchQuery) && (
+            <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: isDark ? '#1d9bf0' : '#0f172a', borderRadius: '0 0 4px 4px' }} />
           )}
-          <Search size={22} strokeWidth={mobileSearchOpen || searchQuery ? 2.4 : 1.9} />
-          <span style={{ fontSize: '0.68rem', fontWeight: mobileSearchOpen || searchQuery ? 700 : 500 }}>Ara</span>
+          <Search size={22} strokeWidth={isSearchFocused || searchQuery ? 2.4 : 1.9} />
+          <span style={{ fontSize: '0.68rem', fontWeight: isSearchFocused || searchQuery ? 700 : 500 }}>Ara</span>
         </button>
 
         {/* 3. Notifications */}
@@ -901,7 +1076,7 @@ export default function ForumClient() {
             justifyContent: 'center',
             gap: 4,
             height: '100%',
-            color: '#64748b',
+            color: isDark ? '#71767b' : '#64748b',
             textDecoration: 'none',
             padding: 0,
             position: 'relative',
@@ -921,8 +1096,19 @@ export default function ForumClient() {
 
         {/* 4. Profile */}
         <Link
-          href={user && !user.isAnonymous ? (myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum/profil') : '#'}
-          onClick={!user || user.isAnonymous ? (e) => { e.preventDefault(); setAuthOpen(true); } : undefined}
+          href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername || user.uid)}` : '#'}
+          onClick={(e) => {
+            if (!user || user.isAnonymous) {
+              e.preventDefault();
+              setAuthOpen(true);
+            } else {
+              const target = myUsername || user.uid;
+              if (target) {
+                e.preventDefault();
+                router.push(`/forum/profil/${encodeURIComponent(target)}`);
+              }
+            }
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -930,14 +1116,14 @@ export default function ForumClient() {
             justifyContent: 'center',
             gap: 4,
             height: '100%',
-            color: '#64748b',
+            color: isDark ? '#71767b' : '#64748b',
             textDecoration: 'none',
             padding: 0,
             position: 'relative',
             transition: 'color 0.15s ease'
           }}
         >
-          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
+          <div style={{ width: 22, height: 22, borderRadius: '50%', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : user && !user.isAnonymous ? (
