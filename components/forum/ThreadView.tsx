@@ -170,12 +170,23 @@ export default function ThreadView({
     return () => unsub();
   }, [post?.id]);
 
-  // Increment view count once per mount
+  // Increment view count strictly ONCE per device (does not re-increment on page refresh)
   useEffect(() => {
     if (!post?.id) return;
-    updateDoc(doc(db, 'forum', post.id), {
-      viewsCount: increment(1)
-    }).catch(() => {});
+    try {
+      const storageKey = `forum_view_${post.id}`;
+      if (typeof window !== 'undefined' && localStorage.getItem(storageKey)) {
+        return; // Already counted on this device
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(storageKey, '1');
+      }
+      updateDoc(doc(db, 'forum', post.id), {
+        viewsCount: increment(1)
+      }).catch(() => {});
+    } catch {
+      // LocalStorage fallback
+    }
   }, [post?.id]);
 
   const p = currentPost || post;

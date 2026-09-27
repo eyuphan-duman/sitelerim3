@@ -45,6 +45,24 @@ interface Comment {
 const CATEGORIES = ['Tümü','Psikanaliz','Varoluş & Anlam','Kaygı & Depresyon','İlişkiler','Çocukluk & Travma','Rüyalar','Kimlik & Benlik','Kişisel Gelişim'];
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
+// Letter-by-letter randomized neon flicker configuration for "MANAV PLATFORM"
+const SPLASH_LETTERS = [
+  { char: 'M', delay: 0.05, dur: 1.1 },
+  { char: 'A', delay: 0.38, dur: 0.95 },
+  { char: 'N', delay: 0.15, dur: 1.25 },
+  { char: 'A', delay: 0.52, dur: 1.05 },
+  { char: 'V', delay: 0.22, dur: 1.35 },
+  { char: ' ', isSpace: true },
+  { char: 'P', delay: 0.44, dur: 1.0 },
+  { char: 'L', delay: 0.10, dur: 1.2 },
+  { char: 'A', delay: 0.60, dur: 0.9 },
+  { char: 'T', delay: 0.26, dur: 1.15 },
+  { char: 'F', delay: 0.48, dur: 1.3 },
+  { char: 'O', delay: 0.18, dur: 0.85 },
+  { char: 'R', delay: 0.65, dur: 1.1 },
+  { char: 'M', delay: 0.30, dur: 1.2 },
+];
+
 export default function ForumClient() {
   const { user, userProfile, logout } = useAuth();
   const searchParams = useSearchParams();
@@ -69,7 +87,7 @@ export default function ForumClient() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [composeModalOpen, setComposeModalOpen] = useState(false);
 
-  // Animated "MANAV FORUM" Splash / Loading screen state
+  // Animated "MANAV PLATFORM" Splash / Loading screen state
   const [showSplash, setShowSplash] = useState(true);
   const [splashFading, setSplashFading] = useState(false);
 
@@ -77,7 +95,7 @@ export default function ForumClient() {
     const timer = setTimeout(() => {
       setSplashFading(true);
       setTimeout(() => setShowSplash(false), 450);
-    }, 900);
+    }, 1400);
     return () => clearTimeout(timer);
   }, []);
 
@@ -512,14 +530,14 @@ export default function ForumClient() {
   return (
     <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', background: isDark ? '#000000' : '#f8fafc', transition: 'background-color 0.2s ease' }}>
 
-      {/* ─── ANIMATED "MANAV FORUM" SPLASH / LOADING SCREEN ─── */}
+      {/* ─── ANIMATED "MANAV PLATFORM" SPLASH / LOADING SCREEN ─── */}
       {showSplash && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 99999,
-            background: isDark ? '#000000' : '#080c14',
+            background: isDark ? '#000000' : '#050810',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -530,27 +548,38 @@ export default function ForumClient() {
             pointerEvents: splashFading ? 'none' : 'auto',
           }}
         >
-          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 20px', textAlign: 'center' }}>
             {/* Glowing outer aura */}
             <div className="manav-splash-glow" />
 
-            {/* Emblem / Monogram */}
-            <div className="manav-splash-badge">
-              <span className="manav-splash-m">M</span>
+            {/* Random letter-by-letter flickering MANAV PLATFORM */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', userSelect: 'none', position: 'relative', zIndex: 2 }}>
+              {SPLASH_LETTERS.map((item, idx) => {
+                if (item.isSpace) {
+                  return <span key={idx} className="manav-letter-space" />;
+                }
+                return (
+                  <span
+                    key={idx}
+                    className="manav-letter-flicker"
+                    style={{
+                      animationDelay: `${item.delay}s`,
+                      animationDuration: `${item.dur}s`,
+                    }}
+                  >
+                    {item.char}
+                  </span>
+                );
+              })}
             </div>
 
-            {/* Brand text */}
-            <div style={{ marginTop: 22, textAlign: 'center' }}>
-              <div className="manav-splash-title">
-                MANAV FORUM
-              </div>
-              <div className="manav-splash-subtitle">
-                Psikoloji &amp; Farkındalık Topluluğu
-              </div>
+            {/* Subtitle */}
+            <div className="manav-splash-subtitle">
+              Psikoloji &amp; Farkındalık Topluluğu
             </div>
 
             {/* Glowing animated dots */}
-            <div style={{ display: 'flex', gap: 8, marginTop: 28, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 24, alignItems: 'center' }}>
               <span className="manav-splash-dot dot-1" />
               <span className="manav-splash-dot dot-2" />
               <span className="manav-splash-dot dot-3" />
@@ -1471,59 +1500,171 @@ export default function ForumClient() {
               </button>
             </div>
 
-            {/* Forum Categories Navigation */}
-            <div style={{ fontSize: '0.74rem', fontWeight: 800, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, paddingLeft: 6 }}>
-              Forum Kategorileri
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-              {CATEGORIES.map(cat => {
-                const isActive = filter === cat;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => {
-                      setFilter(cat);
-                      setFeedTab('all');
-                      setSearchQuery('');
-                      if (activeThread) closeThread();
-                      setMobileDrawerOpen(false);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '11px 14px',
-                      borderRadius: 12,
-                      background: isActive 
-                        ? (isDark ? 'rgba(29, 155, 240, 0.15)' : 'rgba(29, 155, 240, 0.08)') 
-                        : (isDark ? 'transparent' : 'transparent'),
-                      border: isActive 
-                        ? `1.5px solid ${isDark ? '#1d9bf0' : '#0284c7'}` 
-                        : `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`,
-                      color: isActive 
-                        ? (isDark ? '#38bdf8' : '#0284c7') 
-                        : (isDark ? '#e7e9ea' : '#1e293b'),
-                      fontSize: '0.92rem',
-                      fontWeight: isActive ? 800 : 600,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Hash size={17} color={isActive ? (isDark ? '#38bdf8' : '#0284c7') : (isDark ? '#71767b' : '#94a3b8')} />
-                      <span>{cat}</span>
-                    </div>
-                    {isActive && (
-                      <span style={{ fontSize: '0.7rem', background: isDark ? '#1d9bf0' : '#0284c7', color: 'white', padding: '2px 8px', borderRadius: 999, fontWeight: 700 }}>
-                        Aktif
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+            {/* Navigation List matching user screenshot */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 20 }}>
+              {[
+                { 
+                  label: 'Ana Akış', 
+                  icon: <Home size={22} strokeWidth={2.2} />, 
+                  action: () => { 
+                    setFeedTab('all'); 
+                    setFilter('Tümü'); 
+                    setSearchQuery(''); 
+                    if (activeThread) closeThread(); 
+                    setMobileDrawerOpen(false); 
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                  },
+                  active: feedTab === 'all' && !searchQuery && !activeThread
+                },
+                { 
+                  label: 'Takip Ettiklerim', 
+                  icon: <Users size={22} strokeWidth={2.2} />, 
+                  action: () => { 
+                    setMobileDrawerOpen(false);
+                    if (!user?.uid) setAuthOpen(true); 
+                    else {
+                      setFeedTab('following'); 
+                      if (activeThread) closeThread(); 
+                    }
+                  },
+                  active: feedTab === 'following' && !activeThread
+                },
+                { 
+                  label: 'Yer İşaretleri', 
+                  icon: <Bookmark size={22} strokeWidth={2.2} />, 
+                  action: () => { 
+                    setMobileDrawerOpen(false);
+                    if (!user?.uid) setAuthOpen(true); 
+                    else router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?tab=bookmarks` : '/forum'); 
+                  },
+                  active: false
+                },
+                { 
+                  label: 'Arama', 
+                  icon: <Search size={22} strokeWidth={2.2} />, 
+                  action: () => { 
+                    setMobileDrawerOpen(false);
+                    setMobileSearchOpen(true);
+                  },
+                  active: Boolean(searchQuery)
+                },
+                { 
+                  label: 'Beğenilenler', 
+                  icon: <Heart size={22} strokeWidth={2.2} />, 
+                  action: () => { 
+                    setMobileDrawerOpen(false);
+                    if (!user?.uid) setAuthOpen(true); 
+                    else router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?tab=likes` : '/forum'); 
+                  },
+                  active: false
+                },
+                { 
+                  label: 'Bildirimler', 
+                  icon: <Bell size={22} strokeWidth={2.2} />, 
+                  badge: unreadCount,
+                  action: () => { 
+                    setMobileDrawerOpen(false);
+                    if (!user?.uid) setAuthOpen(true); 
+                    else router.push('/bildirimler'); 
+                  },
+                  active: false
+                },
+              ].map(item => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={item.action}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '13px 14px',
+                    borderRadius: 12,
+                    background: item.active 
+                      ? (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.06)') 
+                      : 'transparent',
+                    border: 'none',
+                    color: item.active 
+                      ? (isDark ? '#e7e9ea' : '#0f172a') 
+                      : (isDark ? '#8e9aa8' : '#64748b'),
+                    fontSize: '1.05rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.color = isDark ? '#ffffff' : '#0f172a';
+                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.04)' : '#f1f5f9';
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.color = item.active ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#8e9aa8' : '#64748b');
+                    e.currentTarget.style.background = item.active ? (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.06)') : 'transparent';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && item.badge > 0 ? (
+                    <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', fontWeight: 800, padding: '2px 7px', borderRadius: 999 }}>
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+
+              {/* 7. Profilim (Stylized dark rounded pill matching user screenshot) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  if (!user?.uid) setAuthOpen(true);
+                  else router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum');
+                }}
+                style={{
+                  marginTop: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: '13px 18px',
+                  borderRadius: 16,
+                  background: isDark ? '#111c2e' : '#0f172a',
+                  border: isDark ? '1px solid rgba(56, 189, 248, 0.25)' : '1px solid #1e293b',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  width: '100%',
+                  textAlign: 'left',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseOver={e => (e.currentTarget.style.background = isDark ? '#17253d' : '#1e293b')}
+                onMouseOut={e => (e.currentTarget.style.background = isDark ? '#111c2e' : '#0f172a')}
+              >
+                <div style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  background: isDark ? '#27384e' : '#334155',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  overflow: 'hidden',
+                  flexShrink: 0
+                }}>
+                  {userProfile?.photoURL ? (
+                    <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    (userProfile?.displayName || user?.displayName || 'f')[0].toLowerCase()
+                  )}
+                </div>
+                <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#ffffff' }}>
+                  Profilim
+                </span>
+              </button>
             </div>
 
             {/* Link to main website */}
