@@ -497,14 +497,35 @@ export default function ForumClient() {
 
     const found = threads.find(t => t.id === threadId);
     if (found) {
-      setActiveThread(found);
+      const target = found.originalPostId ? (threads.find(x => x.id === found.originalPostId) || found) : found;
+      setActiveThread(target);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     // Direct fetch fallback for direct links or shared post URLs
-    getDoc(doc(db, 'forum', threadId)).then(snap => {
+    getDoc(doc(db, 'forum', threadId)).then(async snap => {
       if (snap.exists()) {
-        setActiveThread({ id: snap.id, ...snap.data() } as Post);
+        const data = snap.data();
+        let postData: Post = {
+          id: snap.id,
+          ...data,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
+        } as Post;
+        if (postData.originalPostId) {
+          try {
+            const origSnap = await getDoc(doc(db, 'forum', postData.originalPostId));
+            if (origSnap.exists()) {
+              postData = {
+                id: origSnap.id,
+                ...origSnap.data(),
+                createdAt: origSnap.data().createdAt?.toDate ? origSnap.data().createdAt.toDate() : new Date()
+              } as Post;
+            }
+          } catch (e) {}
+        }
+        setActiveThread(postData);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }).catch(console.error);
   }, [searchParams, threads]);

@@ -199,11 +199,21 @@ export default function BildirimlerPage() {
     }
   };
 
+  const handleUserClick = (targetUsername: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (targetUsername) {
+      skipSplashAndGo(`/forum/profil/${encodeURIComponent(targetUsername)}`);
+    }
+  };
+
   const handleNotificationClick = async (n: Notification) => {
     if (!n.read) {
       await markRead(n.id);
     }
-    skipSplashAndGo(n.postId ? `/forum?thread=${encodeURIComponent(n.postId)}` : '/forum');
+    const targetUrl = n.postId 
+      ? `/forum?thread=${encodeURIComponent(n.postId)}&fromUser=${encodeURIComponent(n.fromUser || n.fromUsername)}&notifType=${encodeURIComponent(n.type)}` 
+      : '/forum';
+    skipSplashAndGo(targetUrl);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -556,8 +566,12 @@ export default function BildirimlerPage() {
                   }}
                 >
                   {/* Left: Avatar with type icon badge */}
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem', overflow: 'hidden' }}>
+                  <div 
+                    onClick={(e) => handleUserClick(n.fromUsername || n.fromUser, e)}
+                    style={{ position: 'relative', flexShrink: 0, cursor: 'pointer' }}
+                    title={`${n.fromUser} profiline git`}
+                  >
+                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem', overflow: 'hidden', transition: 'transform 0.15s ease' }}>
                       {n.fromPhotoURL ? (
                         <img src={n.fromPhotoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
@@ -573,8 +587,22 @@ export default function BildirimlerPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.95rem' }}>{n.fromUser}</span>
-                        <span style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.85rem' }}>@{n.fromUsername}</span>
+                        <span 
+                          onClick={(e) => handleUserClick(n.fromUsername || n.fromUser, e)}
+                          style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.95rem', cursor: 'pointer' }}
+                          onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
+                          onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
+                        >
+                          {n.fromUser}
+                        </span>
+                        <span 
+                          onClick={(e) => handleUserClick(n.fromUsername || n.fromUser, e)}
+                          style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.85rem', cursor: 'pointer' }}
+                          onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
+                          onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
+                        >
+                          @{n.fromUsername}
+                        </span>
                         <span style={{ color: isDark ? '#d1d5db' : '#334155', fontSize: '0.9rem' }}>{n.message}</span>
                       </div>
                       <span style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>

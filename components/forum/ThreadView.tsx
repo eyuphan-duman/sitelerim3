@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, MessageCircle, Heart, ThumbsDown, Repeat2, Bookmark, 
   Share2, Trash2, Camera, Loader, CheckCircle, Image as ImageIcon, X, MoreHorizontal 
@@ -143,6 +144,10 @@ export default function ThreadView({
   const [submittingReply, setSubmittingReply] = useState(false);
   const [replyToUser, setReplyToUser] = useState<string>('');
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
+  const searchParams = useSearchParams();
+  const notifFromUser = searchParams?.get('fromUser');
+  const notifType = searchParams?.get('notifType');
+  const [dismissNotif, setDismissNotif] = useState(false);
 
   useEffect(() => {
     const u = post?.authorUsername || (post?.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
@@ -594,6 +599,74 @@ export default function ThreadView({
           Gönderi
         </h2>
       </div>
+
+      {/* ── NOTIFICATION CONTEXT BANNER (if arrived from a notification) ── */}
+      {notifFromUser && !dismissNotif && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          padding: '11px 18px',
+          background: isDark ? 'rgba(56, 189, 248, 0.12)' : '#f0f9ff',
+          borderBottom: `1px solid ${isDark ? 'rgba(56, 189, 248, 0.25)' : '#bae6fd'}`,
+          fontSize: '0.88rem',
+          color: isDark ? '#e7e9ea' : '#0369a1'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {notifType === 'reaction' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
+                <Heart size={14} fill="#ef4444" />
+              </span>
+            )}
+            {notifType === 'repost' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: '50%', background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a' }}>
+                <Repeat2 size={15} />
+              </span>
+            )}
+            {notifType === 'comment' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
+                <MessageCircle size={14} />
+              </span>
+            )}
+            {notifType === 'mention' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', color: '#6366f1', fontWeight: 800, fontSize: '0.8rem' }}>
+                @
+              </span>
+            )}
+            <span>
+              <Link 
+                href={`/forum/profil/${encodeURIComponent(notifFromUser)}`}
+                style={{ fontWeight: 800, color: isDark ? '#38bdf8' : '#0284c7', textDecoration: 'underline' }}
+              >
+                {notifFromUser}
+              </Link>{' '}
+              {notifType === 'reaction' && 'bu gönderinizi beğendi.'}
+              {notifType === 'repost' && 'bu gönderinizi yeniden paylaştı.'}
+              {notifType === 'comment' && 'bu gönderinize yorum yaptı.'}
+              {notifType === 'mention' && 'bu gönderide sizden bahsetti.'}
+              {!['reaction', 'repost', 'comment', 'mention'].includes(notifType || '') && 'bu gönderiniz ile etkileşime geçti.'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDismissNotif(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: isDark ? '#71767b' : '#64748b',
+              cursor: 'pointer',
+              padding: 4,
+              display: 'flex',
+              alignItems: 'center'
+            }}
+            title="Kapat"
+            aria-label="Kapat"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* ── MAIN POST CONTAINER ── */}
       <article style={{ padding: '16px 20px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, background: isDark ? '#000000' : 'white' }}>
