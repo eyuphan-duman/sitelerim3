@@ -45,8 +45,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Healing: If username is missing, set it now
           if (!data.username) {
             const fallbackUsername = (u.displayName || u.email?.split('@')[0] || 'user').toLowerCase().replace(/\s+/g, '');
-            await updateDoc(ref, { username: fallbackUsername });
+            try {
+              await updateDoc(ref, { username: fallbackUsername });
+            } catch {}
             data.username = fallbackUsername;
+          }
+
+          const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
+          const isAdmin = ADMIN_EMAILS.includes(u.email?.toLowerCase() || '');
+          if (isAdmin) {
+            if (!data.isPsychologist || data.psychologistStatus !== 'approved' || data.role !== 'psychologist') {
+              try {
+                await updateDoc(ref, {
+                  isPsychologist: true,
+                  psychologistStatus: 'approved',
+                  role: 'psychologist',
+                  title: data.title || 'Psikolog',
+                });
+                data.isPsychologist = true;
+                data.psychologistStatus = 'approved';
+                data.role = 'psychologist';
+                data.title = data.title || 'Psikolog';
+              } catch (e) {
+                console.error('Error auto-updating admin psychologist status:', e);
+              }
+            }
           }
           setUserProfile(data);
         } else {

@@ -45,22 +45,19 @@ interface Comment {
 const CATEGORIES = ['Tümü','Psikanaliz','Varoluş & Anlam','Kaygı & Depresyon','İlişkiler','Çocukluk & Travma','Rüyalar','Kimlik & Benlik','Kişisel Gelişim'];
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
-// Letter-by-letter randomized neon flicker configuration for "MANAV PLATFORM"
+// Letter-by-letter randomized white light-up configuration for "MANAV FORUM"
 const SPLASH_LETTERS = [
-  { char: 'M', delay: 0.05, dur: 1.1 },
-  { char: 'A', delay: 0.38, dur: 0.95 },
-  { char: 'N', delay: 0.15, dur: 1.25 },
-  { char: 'A', delay: 0.52, dur: 1.05 },
-  { char: 'V', delay: 0.22, dur: 1.35 },
+  { char: 'M', delay: 0.12, dur: 0.35 },
+  { char: 'A', delay: 0.46, dur: 0.35 },
+  { char: 'N', delay: 0.22, dur: 0.35 },
+  { char: 'A', delay: 0.62, dur: 0.35 },
+  { char: 'V', delay: 0.32, dur: 0.35 },
   { char: ' ', isSpace: true },
-  { char: 'P', delay: 0.44, dur: 1.0 },
-  { char: 'L', delay: 0.10, dur: 1.2 },
-  { char: 'A', delay: 0.60, dur: 0.9 },
-  { char: 'T', delay: 0.26, dur: 1.15 },
-  { char: 'F', delay: 0.48, dur: 1.3 },
-  { char: 'O', delay: 0.18, dur: 0.85 },
-  { char: 'R', delay: 0.65, dur: 1.1 },
-  { char: 'M', delay: 0.30, dur: 1.2 },
+  { char: 'F', delay: 0.54, dur: 0.35 },
+  { char: 'O', delay: 0.08, dur: 0.35 },
+  { char: 'R', delay: 0.70, dur: 0.35 },
+  { char: 'U', delay: 0.26, dur: 0.35 },
+  { char: 'M', delay: 0.40, dur: 0.35 },
 ];
 
 export default function ForumClient() {
@@ -87,17 +84,39 @@ export default function ForumClient() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [composeModalOpen, setComposeModalOpen] = useState(false);
 
-  // Animated "MANAV PLATFORM" Splash / Loading screen state
-  const [showSplash, setShowSplash] = useState(true);
+  // Animated "MANAV FORUM" Splash / Loading screen state (skipped on back navigation)
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (sessionStorage.getItem('forum_skip_splash') === 'true' || sessionStorage.getItem('forum_splash_shown') === '1') {
+          return false;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return true;
+  });
   const [splashFading, setSplashFading] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('forum_skip_splash');
+      } catch (e) {}
+    }
+    if (!showSplash) return;
     const timer = setTimeout(() => {
       setSplashFading(true);
-      setTimeout(() => setShowSplash(false), 450);
-    }, 1400);
+      setTimeout(() => {
+        setShowSplash(false);
+        try {
+          sessionStorage.setItem('forum_splash_shown', '1');
+        } catch (e) {}
+      }, 450);
+    }, 1300);
     return () => clearTimeout(timer);
-  }, []);
+  }, [showSplash]);
 
   // Dark Mode State with localStorage persistence
   const [isDark, setIsDark] = useState<boolean>(false);
@@ -530,7 +549,7 @@ export default function ForumClient() {
   return (
     <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', background: isDark ? '#000000' : '#f8fafc', transition: 'background-color 0.2s ease' }}>
 
-      {/* ─── ANIMATED "MANAV PLATFORM" SPLASH / LOADING SCREEN ─── */}
+      {/* ─── ANIMATED "MANAV FORUM" SPLASH / LOADING SCREEN ─── */}
       {showSplash && (
         <div
           style={{
@@ -548,12 +567,12 @@ export default function ForumClient() {
             pointerEvents: splashFading ? 'none' : 'auto',
           }}
         >
-          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 20px', textAlign: 'center' }}>
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 16px', textAlign: 'center', width: '100%', maxWidth: 540 }}>
             {/* Glowing outer aura */}
             <div className="manav-splash-glow" />
 
-            {/* Random letter-by-letter flickering MANAV PLATFORM */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', userSelect: 'none', position: 'relative', zIndex: 2 }}>
+            {/* Random letter-by-letter white ignition MANAV FORUM */}
+            <div className="manav-splash-letters-row">
               {SPLASH_LETTERS.map((item, idx) => {
                 if (item.isSpace) {
                   return <span key={idx} className="manav-letter-space" />;

@@ -798,7 +798,19 @@ export default function ProfilClient({ username }: { username: string }) {
             { label: 'Bildirimler', href: '/bildirimler', active: false, icon: <Bell size={20} />, badge: unreadCount },
             { label: 'Profilim', href: `/forum/profil/${myUsername || username}`, active: isOwn && tab !== 'bookmarks' && tab !== 'likes', icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: isOwn && tab !== 'bookmarks' && tab !== 'likes' ? (isDark ? '#38bdf8' : '#334155') : (isDark ? '#1d9bf0' : '#0f172a'), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> },
           ].map(item => (
-            <Link key={item.label} href={item.href} style={{ textDecoration: 'none' }}>
+            <Link 
+              key={item.label} 
+              href={item.href} 
+              onClick={() => {
+                if (item.href.startsWith('/forum')) {
+                  try {
+                    sessionStorage.setItem('forum_skip_splash', 'true');
+                    sessionStorage.setItem('forum_splash_shown', '1');
+                  } catch (e) {}
+                }
+              }}
+              style={{ textDecoration: 'none' }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? (isDark ? '#e7e9ea' : '#0f172a') : 'transparent', color: item.active ? (isDark ? '#000000' : 'white') : (isDark ? '#e7e9ea' : '#475569'), fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   {item.icon}
@@ -838,9 +850,33 @@ export default function ProfilClient({ username }: { username: string }) {
           
           {/* Header (normal scroll, non-sticky) */}
           <div style={{ background: isDark ? '#000000' : 'white', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 20 }}>
-            <Link href="/forum" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: isDark ? '#16181c' : '#f1f5f9', textDecoration: 'none', color: isDark ? '#e7e9ea' : '#0f172a' }}>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  sessionStorage.setItem('forum_skip_splash', 'true');
+                  sessionStorage.setItem('forum_splash_shown', '1');
+                } catch (e) {}
+                router.push('/forum');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: isDark ? '#16181c' : '#f1f5f9',
+                border: 'none',
+                cursor: 'pointer',
+                color: isDark ? '#e7e9ea' : '#0f172a',
+                transition: 'background 0.15s ease'
+              }}
+              title="Geri Dön"
+              aria-label="Foruma Geri Dön"
+            >
               <ArrowLeft size={18} />
-            </Link>
+            </button>
             <div>
               <div className="profile-bio-name" style={{ fontWeight: 800, fontSize: '1.1rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>{pd.displayName || pd.username}</div>
               <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.78rem' }}>{posts.length} gönderi</div>
@@ -1443,6 +1479,12 @@ export default function ProfilClient({ username }: { username: string }) {
         {/* 1. Home */}
         <Link
           href="/forum"
+          onClick={() => {
+            try {
+              sessionStorage.setItem('forum_skip_splash', 'true');
+              sessionStorage.setItem('forum_splash_shown', '1');
+            } catch (e) {}
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',

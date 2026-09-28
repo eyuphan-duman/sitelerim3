@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
-import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check, Award, ExternalLink, GraduationCap } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check, Award, ExternalLink, GraduationCap, Users, Search, UserCheck, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -29,6 +29,12 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'hero' | 'psychologists' | 'appointments' | 'posts' | 'videos' | 'messages'>('hero');
   const [psychApplications, setPsychApplications] = useState<any[]>([]);
   const [psychFilter, setPsychFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+  const [psychSubTab, setPsychSubTab] = useState<'users' | 'applications'>('users');
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userFilterRole, setUserFilterRole] = useState<'all' | 'psychologists' | 'members'>('all');
+  const [targetTitle, setTargetTitle] = useState('Psikolog');
+  const [grantingUid, setGrantingUid] = useState<string | null>(null);
   const [subTab, setSubTab] = useState<'pending' | 'approved'>('pending');
   const [messages, setMessages] = useState<any[]>([]);
   const [editingMsg, setEditingMsg] = useState<string | null>(null);
@@ -105,6 +111,7 @@ export default function AdminPage() {
 
     const u6 = onSnapshot(collection(db, 'users'), snap => {
       usersList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setAllUsers(usersList);
       mergeAndSet();
     });
 
@@ -112,6 +119,23 @@ export default function AdminPage() {
       appsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       mergeAndSet();
     });
+
+    // Auto-ensure admin has psychologist status active
+    if (user && ADMIN_EMAILS.includes(user.email || '')) {
+      getDoc(doc(db, 'users', user.uid)).then(async (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          if (!d.isPsychologist || d.psychologistStatus !== 'approved' || d.role !== 'psychologist') {
+            await updateDoc(doc(db, 'users', user.uid), {
+              isPsychologist: true,
+              psychologistStatus: 'approved',
+              role: 'psychologist',
+              title: d.title || 'Psikolog',
+            });
+          }
+        }
+      }).catch(() => {});
+    }
 
     return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); };
   }, [user]);
@@ -212,6 +236,84 @@ export default function AdminPage() {
       toast.success('Başvuru tekrar inceleme durumuna alındı.');
     } catch (err: any) {
       toast.error('İşlem başarısız: ' + (err.message || ''));
+    }
+  };
+
+  const handleGrantMySelf = async () => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        isPsychologist: true,
+        psychologistStatus: 'approved',
+        role: 'psychologist',
+        title: 'Psikolog',
+        reviewedAt: serverTimestamp()
+      });
+      try {
+        await setDoc(doc(db, 'psychologist_applications', user.uid), {
+          uid: user.uid,
+          fullName: user.displayName || 'Furkan Manav',
+          email: user.email || '',
+          title: 'Psikolog',
+          status: 'approved',
+          reviewedAt: serverTimestamp()
+        }, { merge: true });
+      } catch {}
+      toast.success('Admin hesabınıza "Psikolog" başlığı ve rozeti başarıyla tanımlandı!');
+    } catch (err: any) {
+      toast.error('İşlem başarısız: ' + (err.message || ''));
+    }
+  };
+
+  const handleGrantPsychologist = async (targetUser: any, customTitle = 'Psikolog') => {
+    setGrantingUid(targetUser.id);
+    try {
+      await updateDoc(doc(db, 'users', targetUser.id), {
+        isPsychologist: true,
+        psychologistStatus: 'approved',
+        role: 'psychologist',
+        title: customTitle || targetUser.title || 'Psikolog',
+        reviewedAt: serverTimestamp()
+      });
+      try {
+        await setDoc(doc(db, 'psychologist_applications', targetUser.id), {
+          uid: targetUser.id,
+          fullName: targetUser.displayName || targetUser.fullName || '',
+          username: targetUser.username || '',
+          email: targetUser.email || '',
+          title: customTitle || targetUser.title || 'Psikolog',
+          status: 'approved',
+          reviewedAt: serverTimestamp()
+        }, { merge: true });
+      } catch {}
+      toast.success(`${targetUser.displayName || targetUser.username || 'Kullanıcı'} başarıyla "Psikolog" olarak yetkilendirildi!`);
+    } catch (err: any) {
+      toast.error('Yetkilendirme sırasında hata: ' + (err.message || ''));
+    } finally {
+      setGrantingUid(null);
+    }
+  };
+
+  const handleRevokePsychologist = async (targetUser: any) => {
+    if (!confirm(`${targetUser.displayName || targetUser.username || 'Bu kullanıcı'}'ın psikolog unvanını ve rozetini kaldırmak istediğinize emin misiniz?`)) return;
+    setGrantingUid(targetUser.id);
+    try {
+      await updateDoc(doc(db, 'users', targetUser.id), {
+        isPsychologist: false,
+        psychologistStatus: 'rejected',
+        role: 'member'
+      });
+      try {
+        await updateDoc(doc(db, 'psychologist_applications', targetUser.id), {
+          status: 'rejected',
+          reviewedAt: serverTimestamp()
+        });
+      } catch {}
+      toast.success('Psikolog unvanı ve yetkisi kaldırıldı, kullanıcı standart üye yapıldı.');
+    } catch (err: any) {
+      toast.error('İşlem başarısız: ' + (err.message || ''));
+    } finally {
+      setGrantingUid(null);
     }
   };
 
@@ -388,7 +490,7 @@ export default function AdminPage() {
 
   const MENUS = [
     { id: 'hero', label: 'Ana Sayfa Kapağı', icon: <Sliders size={18}/> },
-    { id: 'psychologists', label: 'Psikolog Başvuruları', icon: <Award size={18}/> },
+    { id: 'psychologists', label: 'Psikologlar & Yetkiler', icon: <Award size={18}/> },
     { id: 'appointments', label: 'Randevular', icon: <Calendar size={18}/> },
     { id: 'posts', label: 'Yazılarım', icon: <FileText size={18}/> },
     { id: 'videos', label: 'Videolarım', icon: <Video size={18}/> },
@@ -1147,10 +1249,421 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* PSYCHOLOGISTS APPLICATIONS TAB */}
+        {/* PSYCHOLOGISTS & USER ROLES TAB */}
         {activeTab === 'psychologists' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+            {/* ─── ADMIN PSYCHOLOGIST STATUS CARD ─── */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0a1628 0%, #1e293b 100%)',
+              border: '1.5px solid rgba(201,169,110,0.4)',
+              borderRadius: 12,
+              padding: '20px 24px',
+              marginBottom: 24,
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 16,
+              boxShadow: '0 4px 20px rgba(10,22,40,0.15)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--gold)', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.3rem', flexShrink: 0 }}>
+                  F
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'white' }}>
+                      Yönetici Hesabı: Psikolog Furkan Manav
+                    </h3>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      background: 'rgba(34,197,94,0.2)',
+                      border: '1px solid rgba(34,197,94,0.4)',
+                      color: '#4ade80',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '3px 10px',
+                      borderRadius: 999
+                    }}>
+                      <CheckCircle size={12} />
+                      Psikolog Rozeti Aktif
+                    </span>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#cbd5e1' }}>
+                    {user?.email} · Tüm forum paylaşımlarınızda, yorumlarınızda ve profilinizde onaylı altın &quot;Psikolog&quot; rozeti görünür.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGrantMySelf}
+                style={{
+                  background: 'var(--gold)',
+                  color: 'var(--navy)',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '10px 18px',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  boxShadow: '0 2px 10px rgba(201,169,110,0.3)',
+                  transition: 'all 0.2s ease',
+                  flexShrink: 0
+                }}
+              >
+                <ShieldCheck size={16} />
+                <span>Admin Rozetimi Yenile</span>
+              </button>
+            </div>
+
+            {/* ─── SECTION SUB-TABS (Kullanıcı Yetkilendirme vs Resmi Başvurular) ─── */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '2px solid #e2e8f0', paddingBottom: 14, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setPsychSubTab('users')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  border: psychSubTab === 'users' ? '1px solid var(--navy)' : '1px solid #cbd5e1',
+                  background: psychSubTab === 'users' ? 'var(--navy)' : '#ffffff',
+                  color: psychSubTab === 'users' ? '#ffffff' : '#475569',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: 'all 0.2s',
+                  boxShadow: psychSubTab === 'users' ? '0 2px 8px rgba(10,22,40,0.15)' : 'none'
+                }}
+              >
+                <Users size={17} />
+                <span>Kullanıcı Yetkilendirme (Tüm Üyeler)</span>
+                <span style={{
+                  background: psychSubTab === 'users' ? 'var(--gold)' : '#f1f5f9',
+                  color: psychSubTab === 'users' ? 'var(--navy)' : '#475569',
+                  padding: '2px 8px',
+                  borderRadius: 999,
+                  fontSize: '0.72rem',
+                  fontWeight: 800
+                }}>
+                  {allUsers.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPsychSubTab('applications')}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  border: psychSubTab === 'applications' ? '1px solid var(--navy)' : '1px solid #cbd5e1',
+                  background: psychSubTab === 'applications' ? 'var(--navy)' : '#ffffff',
+                  color: psychSubTab === 'applications' ? '#ffffff' : '#475569',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: 'all 0.2s',
+                  boxShadow: psychSubTab === 'applications' ? '0 2px 8px rgba(10,22,40,0.15)' : 'none'
+                }}
+              >
+                <GraduationCap size={17} />
+                <span>Resmi Diploma Başvuruları</span>
+                {psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length > 0 && (
+                  <span style={{
+                    background: '#f59e0b',
+                    color: 'white',
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    fontSize: '0.72rem',
+                    fontWeight: 800
+                  }}>
+                    {psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length} bekleyen
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* ─── TAB 1: USERS ROLE MANAGEMENT ─── */}
+            {psychSubTab === 'users' && (
+              <div>
+                {/* Search & Filter Controls */}
+                <div style={{
+                  background: 'white',
+                  borderRadius: 10,
+                  border: '1px solid #e2e8f0',
+                  padding: '16px 20px',
+                  marginBottom: 20,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+                    <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+                      <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                      <input
+                        type="text"
+                        value={userSearchQuery}
+                        onChange={e => setUserSearchQuery(e.target.value)}
+                        placeholder="Kullanıcı adı, isim veya e-posta ile arayın..."
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px 10px 38px',
+                          borderRadius: 8,
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.9rem',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                      {userSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setUserSearchQuery('')}
+                          style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                        >
+                          <X size={15} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#475569' }}>Verilecek Başlık:</span>
+                      <select
+                        value={targetTitle}
+                        onChange={e => setTargetTitle(e.target.value)}
+                        style={{
+                          padding: '9px 12px',
+                          borderRadius: 6,
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.88rem',
+                          fontWeight: 700,
+                          color: 'var(--navy)',
+                          outline: 'none',
+                          background: '#f8fafc'
+                        }}
+                      >
+                        <option value="Psikolog">Psikolog</option>
+                        <option value="Uzman Psikolog">Uzman Psikolog</option>
+                        <option value="Klinik Psikolog">Klinik Psikolog</option>
+                        <option value="Psikolojik Danışman">Psikolojik Danışman</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Filter Pills */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {[
+                      { key: 'all', label: 'Tüm Kullanıcılar', count: allUsers.length },
+                      { key: 'psychologists', label: 'Psikologlar', count: allUsers.filter(u => u.isPsychologist || u.role === 'psychologist').length },
+                      { key: 'members', label: 'Standart Üyeler', count: allUsers.filter(u => !u.isPsychologist && u.role !== 'psychologist').length },
+                    ].map(f => (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setUserFilterRole(f.key as any)}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: 999,
+                          border: userFilterRole === f.key ? '1px solid var(--navy)' : '1px solid #e2e8f0',
+                          background: userFilterRole === f.key ? 'var(--navy)' : '#f8fafc',
+                          color: userFilterRole === f.key ? 'white' : '#475569',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6
+                        }}
+                      >
+                        <span>{f.label}</span>
+                        <span style={{
+                          background: userFilterRole === f.key ? 'rgba(255,255,255,0.2)' : '#e2e8f0',
+                          color: userFilterRole === f.key ? 'white' : '#64748b',
+                          padding: '1px 6px',
+                          borderRadius: 999,
+                          fontSize: '0.7rem'
+                        }}>
+                          {f.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Users List */}
+                {(() => {
+                  const filtered = allUsers.filter(u => {
+                    const q = userSearchQuery.toLowerCase().trim();
+                    const name = (u.displayName || u.fullName || '').toLowerCase();
+                    const username = (u.username || '').toLowerCase();
+                    const email = (u.email || '').toLowerCase();
+                    const matchesQuery = !q || name.includes(q) || username.includes(q) || email.includes(q);
+
+                    const isPsych = Boolean(u.isPsychologist || u.role === 'psychologist');
+                    if (userFilterRole === 'psychologists') return matchesQuery && isPsych;
+                    if (userFilterRole === 'members') return matchesQuery && !isPsych;
+                    return matchesQuery;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ background: 'white', borderRadius: 10, border: '1px solid #e2e8f0', padding: '60px 24px', textAlign: 'center', color: '#94a3b8' }}>
+                        <Users size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+                        <p style={{ fontWeight: 700, fontSize: '1rem', color: '#64748b' }}>Aramanızla eşleşen kullanıcı bulunamadı.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {filtered.map(u => {
+                        const isPsych = Boolean(u.isPsychologist || u.role === 'psychologist');
+                        const isBusy = grantingUid === u.id;
+
+                        return (
+                          <div
+                            key={u.id}
+                            style={{
+                              background: 'white',
+                              borderRadius: 10,
+                              border: isPsych ? '1.5px solid rgba(201,169,110,0.5)' : '1px solid #e2e8f0',
+                              padding: '14px 18px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 16,
+                              flexWrap: 'wrap',
+                              transition: 'box-shadow 0.15s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 200, flex: 1 }}>
+                              <div style={{
+                                width: 44,
+                                height: 44,
+                                borderRadius: '50%',
+                                background: isPsych ? 'linear-gradient(135deg, #0f172a, #1e293b)' : 'linear-gradient(135deg, #667eea, #764ba2)',
+                                color: isPsych ? '#facc15' : 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 800,
+                                fontSize: '1.1rem',
+                                flexShrink: 0,
+                                overflow: 'hidden'
+                              }}>
+                                {u.photoURL ? (
+                                  <img src={u.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  (u.displayName || u.username || 'U')[0].toUpperCase()
+                                )}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <span style={{ fontWeight: 800, fontSize: '0.96rem', color: 'var(--navy)' }}>
+                                    {u.displayName || u.fullName || 'İsimsiz Kullanıcı'}
+                                  </span>
+                                  {isPsych && (
+                                    <span style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                                      border: '1px solid rgba(201,169,110,0.4)',
+                                      color: '#facc15',
+                                      fontSize: '0.68rem',
+                                      fontWeight: 800,
+                                      padding: '2px 8px',
+                                      borderRadius: 999
+                                    }}>
+                                      <CheckCircle size={11} color="#facc15" />
+                                      {u.title || 'Psikolog'}
+                                    </span>
+                                  )}
+                                  <span style={{ color: '#64748b', fontSize: '0.82rem' }}>@{u.username || 'kullanici'}</span>
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 2 }}>
+                                  {u.email || 'E-posta belirtilmemiş'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              {isPsych ? (
+                                <button
+                                  type="button"
+                                  disabled={isBusy}
+                                  onClick={() => handleRevokePsychologist(u)}
+                                  style={{
+                                    background: '#fef2f2',
+                                    border: '1px solid #fecaca',
+                                    color: '#ef4444',
+                                    padding: '8px 16px',
+                                    borderRadius: 6,
+                                    fontWeight: 700,
+                                    fontSize: '0.82rem',
+                                    cursor: isBusy ? 'wait' : 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  title="Psikolog unvanını ve rozetini kaldır"
+                                >
+                                  <Trash2 size={14} />
+                                  <span>{isBusy ? 'İşleniyor...' : 'Psikolog Yetkisini Kaldır'}</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={isBusy}
+                                  onClick={() => handleGrantPsychologist(u, targetTitle)}
+                                  style={{
+                                    background: '#10b981',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '8px 18px',
+                                    borderRadius: 6,
+                                    fontWeight: 700,
+                                    fontSize: '0.82rem',
+                                    cursor: isBusy ? 'wait' : 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  title={`Bu kullanıcıya "${targetTitle}" unvanı ve onay rozeti ver`}
+                                >
+                                  <Award size={14} />
+                                  <span>{isBusy ? 'İşleniyor...' : `"${targetTitle}" Başlığı Ver`}</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* ─── TAB 2: RESMİ DİPLOMA BAŞVURULARI ─── */}
+            {psychSubTab === 'applications' && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button
                   onClick={() => setPsychFilter('pending')}
@@ -1470,10 +1983,12 @@ export default function AdminPage() {
                       </div>
                     );
                   })}
-              </div>
-            )}
-          </div>
-        )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
         {/* APPOINTMENTS TAB */}
         {activeTab === 'appointments' && (
