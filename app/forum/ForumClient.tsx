@@ -170,6 +170,7 @@ export default function ForumClient() {
       setActiveThread(null);
     } else if (qParam !== null && qParam !== undefined) {
       if (qParam === 'open' || qParam === '1') {
+        setMobileSearchOpen(true);
         setTimeout(() => {
           topSearchInputRef.current?.focus();
         }, 200);
@@ -185,7 +186,14 @@ export default function ForumClient() {
     if (feedParam === 'following' || feedParam === 'bookmarks' || feedParam === 'likes') {
       setFeedTab(feedParam as any);
     }
-  }, [searchParams]);
+    const composeParam = searchParams.get('compose');
+    if (composeParam === 'open' || composeParam === '1') {
+      setTimeout(() => {
+        if (!user || user.isAnonymous) setAuthOpen(true);
+        else setComposeModalOpen(true);
+      }, 200);
+    }
+  }, [searchParams, user]);
 
   const filtered = (() => {
     let list = threads.filter(t => !t.isRepost);

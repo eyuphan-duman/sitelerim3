@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   Bell, MessageCircle, Heart, ArrowLeft, Home, Search, Users, 
   Bookmark, Hash, TrendingUp, Sparkles, CheckCheck, Repeat2, 
-  Clock, ArrowRight, User, Sun, Moon 
+  Clock, ArrowRight, User, Sun, Moon, Plus 
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -267,7 +267,6 @@ export default function BildirimlerPage() {
         @media (max-width: 768px) {
           .forum-sidebar-left { display: none !important; }
           .forum-grid-3col { grid-template-columns: 1fr !important; padding-top: 0 !important; }
-          .forum-mobile-bottom-nav { display: grid !important; }
         }
         .notif-card:hover {
           background: ${isDark ? '#0a0a0a' : '#f1f5f9'} !important;
@@ -667,134 +666,95 @@ export default function BildirimlerPage() {
         </aside>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Symmetric 4-Item Grid) */}
-      <nav className="forum-mobile-bottom-nav" style={{
-        display: 'none',
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 60,
-        background: isDark ? 'rgba(0, 0, 0, 0.95)' : 'rgba(255,255,255,0.98)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-        zIndex: 2100,
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        alignItems: 'center',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: isDark ? '0 -2px 16px rgba(0,0,0,0.7)' : '0 -2px 16px rgba(15,23,42,0.06)',
-      }}>
-        {/* 1. Home */}
+      {/* ─── THREADS-STYLE FLOATING BOTTOM DOCK (MOBILE ONLY) ─── */}
+      <nav className="forum-floating-dock" aria-label="Mobil Forum Navigasyonu">
+        {/* 1. Home button */}
         <button
           type="button"
           onClick={() => skipSplashAndGo('/forum')}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: isDark ? '#71767b' : '#64748b',
-            transition: 'color 0.15s ease',
-            padding: 0,
-          }}
+          className="dock-btn"
+          aria-label="Ana Akış"
         >
-          <Home size={22} strokeWidth={1.9} />
-          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Anasayfa</span>
+          <Home size={24} strokeWidth={1.9} />
         </button>
 
-        {/* 2. Search */}
+        {/* 2. Search button */}
         <button
           type="button"
           onClick={() => skipSplashAndGo('/forum?search=open')}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: isDark ? '#71767b' : '#64748b',
-            transition: 'color 0.15s ease',
-            padding: 0,
-          }}
+          className="dock-btn"
+          aria-label="Arama"
         >
-          <Search size={22} strokeWidth={1.9} />
-          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Ara</span>
+          <Search size={24} strokeWidth={1.9} />
         </button>
 
-        {/* 3. Notifications (Active) */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            color: isDark ? '#e7e9ea' : '#0f172a',
-            padding: 0,
-            position: 'relative'
-          }}
+        {/* 3. Center Create (+) button (Threads style prominent pill) */}
+        <button
+          type="button"
+          onClick={() => skipSplashAndGo('/forum?compose=open')}
+          className="dock-create-btn"
+          aria-label="Yeni Gönderi Paylaş"
         >
-          <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: isDark ? '#38bdf8' : '#0f172a', borderRadius: '0 0 4px 4px' }} />
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Bell size={22} strokeWidth={2.4} />
-            {unreadCount > 0 && (
-              <span style={{ position: 'absolute', top: -4, right: -6, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, minWidth: 16, height: 16, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </div>
-          <span style={{ fontSize: '0.68rem', fontWeight: 700 }}>Bildirim</span>
-        </div>
+          <Plus size={22} strokeWidth={2.6} />
+        </button>
 
-        {/* 4. Profile */}
+        {/* 4. Heart / Activity button (ACTIVE on Bildirimler) */}
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="dock-btn active"
+          aria-label="Bildirimler"
+          style={{ position: 'relative' }}
+        >
+          <Heart size={24} strokeWidth={2.4} fill={isDark ? '#ffffff' : '#0f172a'} />
+          {unreadCount > 0 && (
+            <span style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#ef4444',
+            }} />
+          )}
+        </button>
+
+        {/* 5. User Profile button */}
         <button
           type="button"
           onClick={() => {
             if (!user || user.isAnonymous) {
               skipSplashAndGo('/forum');
             } else {
-              const target = myUsername || user.uid;
-              if (target) {
-                skipSplashAndGo(`/forum/profil/${encodeURIComponent(target)}`);
-              }
+              skipSplashAndGo(`/forum/profil/${encodeURIComponent(myUsername || user.uid)}`);
             }
           }}
-          style={{
+          className="dock-btn"
+          aria-label="Profilim"
+        >
+          <div style={{
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            background: isDark ? '#2f3336' : '#0f172a',
+            overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: isDark ? '#71767b' : '#64748b',
-            padding: 0,
-            transition: 'color 0.15s ease'
-          }}
-        >
-          <div style={{ width: 22, height: 22, borderRadius: '50%', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            color: '#ffffff',
+            border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.3)'}`,
+          }}>
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : user && !user.isAnonymous ? (
               (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()
             ) : (
-              <User size={13} color="white" />
+              <User size={15} color="white" />
             )}
           </div>
-          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Profilim</span>
         </button>
       </nav>
     </div>

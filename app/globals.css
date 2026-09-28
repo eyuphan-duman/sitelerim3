@@ -914,7 +914,7 @@ body:has([data-forum-page]) .navbar {
     bottom: max(16px, env(safe-area-inset-bottom, 16px));
     left: 50%;
     transform: translateX(-50%);
-    z-index: 999;
+    z-index: 2500;
     width: calc(100% - 32px);
     max-width: 360px;
     height: 56px;
@@ -949,6 +949,7 @@ body:has([data-forum-page]) .navbar {
     justify-content: center;
     transition: transform 0.15s ease, color 0.15s ease;
     border-radius: 50%;
+    text-decoration: none;
   }
 
   [data-forum-dark="true"] .forum-floating-dock .dock-btn {

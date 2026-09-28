@@ -9,7 +9,7 @@ import {
   MessageCircle, Heart, Trash2, Home, Users, Film, FileText, 
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
   Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User,
-  Settings, Lock, EyeOff, Shield, SlidersHorizontal
+  Settings, Lock, EyeOff, Shield, SlidersHorizontal, Plus
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -184,6 +184,14 @@ export default function ProfilClient({ username }: { username: string }) {
       else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setIsDark(true);
     } catch {}
   }, []);
+
+  const skipSplashAndGo = (href: string) => {
+    try {
+      sessionStorage.setItem('forum_skip_splash', 'true');
+      sessionStorage.setItem('forum_splash_shown', '1');
+    } catch (e) {}
+    router.push(href);
+  };
 
   useEffect(() => {
     if (isDark) {
@@ -761,9 +769,6 @@ export default function ProfilClient({ username }: { username: string }) {
             padding: 14px 16px !important;
             font-size: 0.88rem !important;
             white-space: nowrap !important;
-          }
-          .forum-mobile-bottom-nav { 
-            display: grid !important; 
           }
         }
         .profil-tab-btn:hover { background: #f8fafc; }
@@ -1459,145 +1464,101 @@ export default function ProfilClient({ username }: { username: string }) {
         </div>
       )}
 
-      {/* Mobile Bottom Navigation Bar (Symmetric 4-Item Grid) */}
-      <nav className="forum-mobile-bottom-nav" style={{
-        display: 'none',
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 60,
-        background: isDark ? 'rgba(16, 18, 22, 0.95)' : 'rgba(255,255,255,0.98)',
-        backdropFilter: 'blur(20px)',
-        borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-        zIndex: 2100,
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        alignItems: 'center',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        boxShadow: isDark ? '0 -2px 16px rgba(0,0,0,0.6)' : '0 -2px 16px rgba(15,23,42,0.06)',
-      }}>
-        {/* 1. Home */}
-        <Link
-          href="/forum"
+      {/* ─── THREADS-STYLE FLOATING BOTTOM DOCK (MOBILE ONLY) ─── */}
+      <nav className="forum-floating-dock" aria-label="Mobil Forum Navigasyonu">
+        {/* 1. Home button */}
+        <button
+          type="button"
+          onClick={() => skipSplashAndGo('/forum')}
+          className="dock-btn"
+          aria-label="Ana Akış"
+        >
+          <Home size={24} strokeWidth={1.9} />
+        </button>
+
+        {/* 2. Search button */}
+        <button
+          type="button"
+          onClick={() => skipSplashAndGo('/forum?search=open')}
+          className="dock-btn"
+          aria-label="Arama"
+        >
+          <Search size={24} strokeWidth={1.9} />
+        </button>
+
+        {/* 3. Center Create (+) button (Threads style prominent pill) */}
+        <button
+          type="button"
+          onClick={() => skipSplashAndGo('/forum?compose=open')}
+          className="dock-create-btn"
+          aria-label="Yeni Gönderi Paylaş"
+        >
+          <Plus size={22} strokeWidth={2.6} />
+        </button>
+
+        {/* 4. Heart / Activity button */}
+        <button
+          type="button"
+          onClick={() => router.push('/bildirimler')}
+          className="dock-btn"
+          aria-label="Bildirimler"
+          style={{ position: 'relative' }}
+        >
+          <Heart size={24} strokeWidth={1.9} />
+          {unreadCount > 0 && (
+            <span style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#ef4444',
+            }} />
+          )}
+        </button>
+
+        {/* 5. User Profile button (ACTIVE on Profile) */}
+        <button
+          type="button"
           onClick={() => {
-            try {
-              sessionStorage.setItem('forum_skip_splash', 'true');
-              sessionStorage.setItem('forum_splash_shown', '1');
-            } catch (e) {}
-          }}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: isDark ? '#71767b' : '#64748b',
-            transition: 'color 0.15s ease',
-            padding: 0,
-            textDecoration: 'none'
-          }}
-        >
-          <Home size={22} strokeWidth={1.9} />
-          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Anasayfa</span>
-        </Link>
-
-        {/* 2. Search */}
-        <Link
-          href="/forum?search=open"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: isDark ? '#71767b' : '#64748b',
-            transition: 'color 0.15s ease',
-            padding: 0,
-            textDecoration: 'none'
-          }}
-        >
-          <Search size={22} strokeWidth={1.9} />
-          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Ara</span>
-        </Link>
-
-        {/* 3. Notifications */}
-        <Link
-          href="/bildirimler"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            color: isDark ? '#71767b' : '#64748b',
-            padding: 0,
-            textDecoration: 'none',
-            position: 'relative'
-          }}
-        >
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Bell size={22} strokeWidth={1.9} />
-            {unreadCount > 0 && (
-              <span style={{ position: 'absolute', top: -4, right: -6, background: '#ef4444', color: 'white', fontSize: '0.6rem', fontWeight: 800, minWidth: 16, height: 16, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </div>
-          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>Bildirim</span>
-        </Link>
-
-        {/* 4. Profile */}
-        <Link
-          href={user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername || user.uid)}` : '#'}
-          onClick={(e) => {
             if (!user || user.isAnonymous) {
-              e.preventDefault();
-              router.push('/forum');
-              return;
-            }
-            if (isOwn) {
-              e.preventDefault();
+              skipSplashAndGo('/forum');
+            } else if (isOwn) {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-              e.preventDefault();
               router.push(`/forum/profil/${encodeURIComponent(myUsername || user.uid)}`);
             }
           }}
-          style={{
+          className={`dock-btn ${isOwn ? 'active' : ''}`}
+          aria-label="Profilim"
+        >
+          <div style={{
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            background: isDark ? '#2f3336' : '#0f172a',
+            overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 4,
-            height: '100%',
-            color: isOwn ? (isDark ? '#38bdf8' : '#0f172a') : (isDark ? '#71767b' : '#64748b'),
-            padding: 0,
-            position: 'relative',
-            textDecoration: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          {isOwn && <span style={{ position: 'absolute', top: 0, width: 24, height: 3, background: isDark ? '#38bdf8' : '#0f172a', borderRadius: '0 0 4px 4px' }} />}
-          <div style={{ width: 22, height: 22, borderRadius: '50%', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, overflow: 'hidden' }}>
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            color: '#ffffff',
+            border: isOwn 
+              ? `2px solid ${isDark ? '#38bdf8' : '#0f172a'}` 
+              : `1.5px solid ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.3)'}`,
+            boxShadow: isOwn ? (isDark ? '0 0 10px rgba(56, 189, 248, 0.4)' : '0 0 8px rgba(15,23,42,0.3)') : 'none'
+          }}>
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : user && !user.isAnonymous ? (
               (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()
             ) : (
-              <User size={13} color="white" />
+              <User size={15} color="white" />
             )}
           </div>
-          <span style={{ fontSize: '0.68rem', fontWeight: isOwn ? 700 : 500 }}>Profilim</span>
-        </Link>
+        </button>
       </nav>
     </div>
   );
