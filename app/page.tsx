@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen, ShieldCheck, Users, CheckCircle2, Sparkles, Mail } from 'lucide-react';
-import { collection, query, orderBy, limit, getDocs, getDoc, deleteDoc, doc, where } from 'firebase/firestore';
+import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen, ShieldCheck, Users, CheckCircle2, Sparkles, Mail, Eye } from 'lucide-react';
+import { collection, query, orderBy, limit, getDocs, getDoc, deleteDoc, doc, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -62,6 +62,7 @@ export default function HomePage() {
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
   const [searchOpen, setSearchOpen] = useState(false);
   const [latestArticles, setLatestArticles] = useState<any[]>([]);
+  const [articleStats, setArticleStats] = useState<Record<string, number>>({});
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -175,6 +176,22 @@ export default function HomePage() {
       }
     }
     fetchLatest();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'article_stats'), snap => {
+      const statsMap: Record<string, number> = {};
+      snap.docs.forEach(docSnap => {
+        const d = docSnap.data();
+        if (typeof d?.readCount === 'number') {
+          statsMap[docSnap.id] = d.readCount;
+        }
+      });
+      setArticleStats(statsMap);
+    }, err => {
+      console.warn("article_stats listener notice:", err);
+    });
+    return () => unsub();
   }, []);
 
 
@@ -1004,7 +1021,10 @@ export default function HomePage() {
                           Makaleyi Oku 
                           <ArrowRight size={14} className="article-card-arrow-icon" style={{ transition: 'transform 0.2s ease', color: '#8a5814' }} />
                         </span>
-                        <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 500 }}>5 dk okuma</span>
+                        <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Eye size={13} color="#8a5814" />
+                          {(articleStats[a.id] ?? a.readCount ?? 0)} kişi okudu
+                        </span>
                       </div>
                     </div>
                   </Link>
