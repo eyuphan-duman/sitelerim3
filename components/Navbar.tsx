@@ -31,6 +31,7 @@ export default function Navbar() {
     return onSnapshot(q, snap => setUnreadCount(snap.size));
   }, [user]);
   const isForumPage = pathname === '/forum' || pathname?.startsWith('/forum/') || pathname === '/bildirimler';
+  const isAdminPage = pathname === '/admin' || pathname?.startsWith('/admin/');
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 50);
@@ -39,6 +40,11 @@ export default function Navbar() {
   }, []);
 
   const forceSolid = pathname === '/videolarim' || pathname?.startsWith('/yazilarim');
+
+  // Completely hide main site Navbar on admin panel so only admin drawer navigation is used
+  if (isAdminPage) {
+    return null;
+  }
 
   return (
     <>

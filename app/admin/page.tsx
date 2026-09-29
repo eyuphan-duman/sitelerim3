@@ -540,53 +540,8 @@ export default function AdminPage() {
           .admin-mobile-topbar {
             display: flex !important;
           }
-          .admin-mobile-tabs-bar {
+          .admin-sidebar-close-btn {
             display: flex !important;
-            gap: 8px;
-            padding: 10px 14px;
-            background: #0b1524;
-            overflow-x: auto;
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            scrollbar-width: none;
-            position: sticky;
-            top: 58px;
-            z-index: 890;
-          }
-          .admin-mobile-tabs-bar::-webkit-scrollbar {
-            display: none;
-          }
-          .admin-mobile-tab-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: rgba(255,255,255,0.72);
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.12);
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: all 0.2s ease;
-          }
-          .admin-mobile-tab-btn.active {
-            background: var(--gold) !important;
-            color: var(--navy) !important;
-            font-weight: 800 !important;
-            border-color: var(--gold) !important;
-            box-shadow: 0 2px 8px rgba(212,175,55,0.3) !important;
-          }
-          .admin-mobile-tab-badge {
-            background: #ef4444;
-            color: white;
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 1px 6px;
-            border-radius: 999px;
-            margin-left: 2px;
           }
           .admin-main {
             padding: 18px 14px 48px !important;
@@ -678,7 +633,7 @@ export default function AdminPage() {
           .admin-mobile-topbar {
             display: none !important;
           }
-          .admin-mobile-tabs-bar {
+          .admin-sidebar-close-btn {
             display: none !important;
           }
           .admin-sidebar-overlay {
@@ -691,47 +646,52 @@ export default function AdminPage() {
       `}</style>
 
       {/* MOBILE TOPBAR */}
-      <header className="admin-mobile-topbar" style={{ display: 'none', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: 'var(--navy)', color: 'white', position: 'sticky', top: 0, zIndex: 900, boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+      <header className="admin-mobile-topbar" style={{ display: 'none', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', background: 'var(--navy)', color: 'white', position: 'sticky', top: 0, zIndex: 900, boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--gold)', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem' }}>F</div>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--gold)', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.05rem', flexShrink: 0 }}>F</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', fontFamily: 'Playfair Display, serif' }}>Furkan Manav</div>
-            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)' }}>Yönetim Paneli</div>
+            <div style={{ fontWeight: 700, fontSize: '0.94rem', fontFamily: 'Playfair Display, serif', lineHeight: 1.2 }}>Furkan Manav</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--gold)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span>{MENUS.find(m => m.id === activeTab)?.label || 'Yönetim Paneli'}</span>
+            </div>
           </div>
         </div>
         <button 
           onClick={() => setMobileMenuOpen(prev => !prev)} 
-          style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: 'white', borderRadius: 8, padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          aria-label="Menüyü aç/kapat"
+          style={{
+            background: mobileMenuOpen ? 'var(--gold)' : 'rgba(255,255,255,0.12)',
+            border: 'none',
+            color: mobileMenuOpen ? 'var(--navy)' : 'white',
+            borderRadius: 8,
+            padding: '8px 14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            position: 'relative',
+            fontWeight: 700,
+            fontSize: '0.82rem',
+            transition: 'all 0.2s ease'
+          }}
+          aria-label="Admin Menüsünü aç/kapat"
         >
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          <span>{mobileMenuOpen ? 'Kapat' : 'Menü'}</span>
+          {(() => {
+            const pendingCount = psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length;
+            const unreadCount = messages.filter(msg => msg.status === 'unread').length;
+            const totalBadges = pendingCount + unreadCount;
+            if (totalBadges > 0 && !mobileMenuOpen) {
+              return (
+                <span style={{ position: 'absolute', top: -5, right: -5, background: '#ef4444', color: 'white', fontSize: '0.65rem', fontWeight: 800, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>
+                  {totalBadges}
+                </span>
+              );
+            }
+            return null;
+          })()}
         </button>
       </header>
-
-      {/* MOBILE HORIZONTAL QUICK TABS BAR */}
-      <div className="admin-mobile-tabs-bar">
-        {MENUS.map(m => {
-          const badgeCount = m.id === 'psychologists' 
-            ? psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length
-            : m.id === 'messages'
-            ? messages.filter(msg => msg.status === 'unread').length
-            : 0;
-          return (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setActiveTab(m.id as any)}
-              className={`admin-mobile-tab-btn ${activeTab === m.id ? 'active' : ''}`}
-            >
-              {m.icon}
-              <span>{m.label}</span>
-              {badgeCount > 0 && (
-                <span className="admin-mobile-tab-badge">{badgeCount}</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
 
       {/* MOBILE BACKDROP OVERLAY */}
       {mobileMenuOpen && (
@@ -740,14 +700,23 @@ export default function AdminPage() {
       
       {/* SIDEBAR (Desktop sticky, Mobile slide-in drawer) */}
       <aside className={`admin-sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ width: 280, background: 'var(--navy)', color: 'white', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'sticky', top: 0, height: '100vh' }}>
-        <div style={{ padding: '32px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--gold)', color: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.2rem' }}>F</div>
             <div>
               <div style={{ fontSize: '1.05rem', fontWeight: 700, fontFamily: 'Playfair Display, serif', letterSpacing: '0.02em' }}>Psikolog</div>
-              <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)' }}>Furkan Manav</div>
+              <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Furkan Manav</div>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="admin-sidebar-close-btn"
+            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: 8, padding: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            aria-label="Menüyü Kapat"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <nav style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>

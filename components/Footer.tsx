@@ -26,16 +26,18 @@ const LinkedInIcon = () => (
 export default function Footer() {
   const pathname = usePathname();
 
-  // Hide completely on forum and notification pages for a clean, full-screen forum experience
-  const isForumRoute =
+  // Hide completely on forum, notification, and admin pages
+  const isExcludedRoute =
     Boolean(pathname?.startsWith('/forum')) ||
     Boolean(pathname?.startsWith('/bildirimler')) ||
+    Boolean(pathname?.startsWith('/admin')) ||
     (typeof window !== 'undefined' && (
       window.location.pathname.startsWith('/forum') ||
-      window.location.pathname.startsWith('/bildirimler')
+      window.location.pathname.startsWith('/bildirimler') ||
+      window.location.pathname.startsWith('/admin')
     ));
 
-  if (isForumRoute) {
+  if (isExcludedRoute) {
     return null;
   }
 

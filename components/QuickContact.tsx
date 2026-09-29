@@ -27,16 +27,18 @@ export default function QuickContact() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Hide completely on forum and notification pages as requested
-  const isForumRoute = 
+  // Hide completely on forum, notification, and admin pages as requested
+  const isExcludedRoute = 
     Boolean(pathname?.startsWith('/forum')) || 
     Boolean(pathname?.startsWith('/bildirimler')) ||
+    Boolean(pathname?.startsWith('/admin')) ||
     (typeof window !== 'undefined' && (
       window.location.pathname.startsWith('/forum') || 
-      window.location.pathname.startsWith('/bildirimler')
+      window.location.pathname.startsWith('/bildirimler') ||
+      window.location.pathname.startsWith('/admin')
     ));
 
-  if (isForumRoute) {
+  if (isExcludedRoute) {
     return null;
   }
 
