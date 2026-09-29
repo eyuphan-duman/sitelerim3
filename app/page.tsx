@@ -904,19 +904,19 @@ export default function HomePage() {
 
       {/* ══════════════════ LATEST ARTICLES (HORIZONTAL CAROUSEL) ══════════════════ */}
       {latestArticles.length > 0 && (
-        <section style={{ padding: '80px 0', background: '#f8fafc', overflow: 'hidden' }}>
+        <section style={{ padding: '100px 0', background: '#f8fafc', overflow: 'hidden' }}>
           <style>{`
             .articles-carousel-container::-webkit-scrollbar {
               display: none;
             }
             .article-carousel-card {
-              flex: 0 0 360px;
+              flex: 0 0 420px;
               scroll-snap-align: start;
               background: white;
               border-radius: 20px;
               overflow: hidden;
-              border: 1.5px solid rgba(212, 175, 55, 0.38);
-              box-shadow: 0 6px 24px rgba(10, 22, 40, 0.05), 0 0 0 1px rgba(212, 175, 55, 0.12);
+              border: 1.5px solid rgba(212, 175, 55, 0.25);
+              box-shadow: 0 8px 32px rgba(10, 22, 40, 0.06);
               transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
               display: flex;
               flex-direction: column;
@@ -926,7 +926,7 @@ export default function HomePage() {
             .article-carousel-card:hover {
               border-color: var(--gold);
               transform: translateY(-6px);
-              box-shadow: 0 20px 42px -10px rgba(10, 22, 40, 0.14), 0 0 22px rgba(212, 175, 55, 0.28);
+              box-shadow: 0 20px 48px -10px rgba(10, 22, 40, 0.14), 0 0 22px rgba(212, 175, 55, 0.2);
             }
             .article-carousel-card:hover .article-img-zoom {
               transform: scale(1.06);
@@ -936,8 +936,8 @@ export default function HomePage() {
             }
             @media (max-width: 768px) {
               .article-carousel-card {
-                flex: 0 0 85vw !important;
-                max-width: 330px !important;
+                flex: 0 0 88vw !important;
+                max-width: 380px !important;
                 border-radius: 16px !important;
               }
               .articles-carousel-container {
@@ -948,11 +948,11 @@ export default function HomePage() {
               }
             }
           `}</style>
-          <div className="container-main">
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36, flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, flexWrap: 'wrap', gap: 16 }}>
               <div>
                 <div className="eyebrow" style={{ marginBottom: 10, color: '#8a5814' }}>Güncel İçerikler</div>
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.9rem,3.2vw,2.5rem)', fontWeight: 700, color: 'var(--navy)', margin: 0 }}>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,2.8rem)', fontWeight: 700, color: 'var(--navy)', margin: 0 }}>
                   Son Makaleler
                 </h2>
               </div>
@@ -994,7 +994,7 @@ export default function HomePage() {
               className="articles-carousel-container"
               style={{
                 display: 'flex',
-                gap: 24,
+                gap: 28,
                 overflowX: 'auto',
                 scrollSnapType: 'x mandatory',
                 scrollBehavior: 'smooth',
@@ -1016,7 +1016,7 @@ export default function HomePage() {
                   <Link href={`/yazilarim/${a.id}`} key={a.id} className="article-carousel-card">
                     {/* Image / Header banner */}
                     {a.featuredImage ? (
-                      <div style={{ height: 190, width: '100%', position: 'relative', overflow: 'hidden', background: '#f1f5f9' }}>
+                      <div style={{ height: 220, width: '100%', position: 'relative', overflow: 'hidden', background: '#f1f5f9' }}>
                         <img 
                           src={a.featuredImage} 
                           alt={a.title} 
@@ -1025,38 +1025,38 @@ export default function HomePage() {
                         />
                       </div>
                     ) : (
-                      <div style={{ height: 130, width: '100%', background: 'linear-gradient(135deg, #0a1628 0%, #1e293b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ height: 160, width: '100%', background: 'linear-gradient(135deg, #0a1628 0%, #1e293b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', inset: 0, opacity: 0.15, background: 'radial-gradient(circle at center, var(--gold) 0%, transparent 70%)' }} />
-                        <BookOpen size={34} color="var(--gold)" style={{ opacity: 0.85 }} />
+                        <BookOpen size={38} color="var(--gold)" style={{ opacity: 0.85 }} />
                       </div>
                     )}
 
                     {/* Card Content */}
-                    <div style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                    <div style={{ padding: '24px 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
                         {a.category && (
-                          <span style={{ background: '#fef3c7', color: '#b45309', padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          <span style={{ background: '#fef3c7', color: '#b45309', padding: '4px 12px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                             {a.category}
                           </span>
                         )}
                         {formattedDate && (
-                          <span style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 600 }}>
+                          <span style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
                             {formattedDate}
                           </span>
                         )}
                       </div>
 
-                      <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.4, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.4, margin: '0 0 12px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {a.title}
                       </h3>
 
                       {a.excerpt && (
-                        <p style={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.7, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {a.excerpt}
                         </p>
                       )}
 
-                      <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center' }}>
+                      <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center' }}>
                         <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                           Makaleyi Oku 
                           <ArrowRight size={14} className="article-card-arrow-icon" style={{ transition: 'transform 0.2s ease', color: '#8a5814' }} />
