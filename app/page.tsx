@@ -804,256 +804,95 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════ ABOUT ══════════════════ */}
-      <section style={{ padding: '100px 0', background: 'linear-gradient(180deg, #fdfbf7 0%, #ffffff 50%, #faf8f5 100%)', borderTop: '1px solid rgba(201, 169, 110, 0.15)', borderBottom: '1px solid rgba(201, 169, 110, 0.15)' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px' }}>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-            
-            {/* Left Column: Portrait Card & Key Credentials (5 cols) */}
-            <div className="lg:col-span-5 lg:sticky lg:top-24">
-              <div 
+      <section style={{ padding: '120px 0', background: '#ffffff' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 28px' }}>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+
+            {/* Left: Photo */}
+            <div>
+              <div
                 style={{
-                  background: 'white',
-                  borderRadius: 24,
-                  border: '1.5px solid rgba(201, 169, 110, 0.35)',
-                  boxShadow: '0 20px 48px -12px rgba(10, 22, 40, 0.1), 0 0 0 1px rgba(201, 169, 110, 0.1)',
+                  borderRadius: 16,
                   overflow: 'hidden',
+                  boxShadow: '0 32px 64px -16px rgba(10, 22, 40, 0.14)',
                 }}
-                className="transition-all hover:shadow-2xl"
               >
-                {/* Photo with Overlay Badge */}
-                <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-900">
-                  <img
-                    src="/pskfurkanmanav.jpeg"
-                    alt="Psikolog Furkan Manav"
-                    className="w-full h-full object-cover object-top transition-transform duration-700 hover:scale-105"
-                  />
-                  <div 
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      background: 'linear-gradient(180deg, rgba(10,22,40,0.1) 0%, transparent 40%, rgba(10,22,40,0.7) 100%)'
-                    }}
-                  />
-                  
-                  {/* Floating Top Badge */}
-                  <div className="absolute top-4 left-4">
-                    <span 
-                      style={{
-                        background: 'rgba(10, 22, 40, 0.75)',
-                        backdropFilter: 'blur(8px)',
-                        borderColor: 'rgba(201, 169, 110, 0.4)',
-                        color: '#f8fafc',
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold tracking-wide border shadow-sm"
-                    >
-                      <Sparkles size={13} className="text-[#c9a96e]" />
-                      <span>Varoluşçu-Psikanalitik Terapi</span>
-                    </span>
-                  </div>
-
-                  {/* Floating Bottom Info on Photo */}
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div 
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.95)',
-                        backdropFilter: 'blur(10px)',
-                        borderColor: 'rgba(201, 169, 110, 0.35)',
-                      }}
-                      className="p-3.5 rounded-xl border flex items-center justify-between shadow-lg"
-                    >
-                      <div>
-                        <div className="font-serif font-bold text-slate-900 text-[16px] leading-tight">
-                          Furkan Manav
-                        </div>
-                        <div className="text-[12px] font-medium text-amber-700 tracking-wide mt-0.5">
-                          Psikolog • Ankara & Online
-                        </div>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
-                        <Award size={16} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card Bottom Highlights & CTA */}
-                <div className="p-6 sm:p-7 flex flex-col gap-4">
-                  <div className="flex flex-col gap-2.5 text-[13.5px] text-slate-600">
-                    <div className="flex items-center gap-2.5">
-                      <GraduationCap size={16} className="text-[#c9a96e] shrink-0" />
-                      <span>Bülent Ecevit Üniversitesi Psikoloji</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <Compass size={16} className="text-[#c9a96e] shrink-0" />
-                      <span>Varoluşçu-Psikanalitik Psikoterapi</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <Clock size={16} className="text-[#c9a96e] shrink-0" />
-                      <span>45 Dk Seanslar • Yetişkin Danışmanlığı</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <Shield size={16} className="text-[#c9a96e] shrink-0" />
-                      <span>Mesleki Etik, Gizlilik ve Süpervizyon</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-100 flex items-center gap-3">
-                    <Link
-                      href="/iletisim"
-                      className="flex-1 py-3 px-4 rounded-xl font-bold text-[13.5px] bg-[#c9a96e] hover:bg-[#b8965a] text-[#0a1628] text-center transition-all shadow-sm hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1.5"
-                    >
-                      <span>İletişime Geç</span>
-                      <ArrowRight size={15} />
-                    </Link>
-                    <Link
-                      href="/ben-kimim"
-                      className="py-3 px-4 rounded-xl font-semibold text-[13.5px] border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors text-center"
-                    >
-                      Detaylar
-                    </Link>
-                  </div>
-                </div>
+                <img
+                  src="/pskfurkanmanav.jpeg"
+                  alt="Psikolog Furkan Manav"
+                  style={{ width: '100%', display: 'block', aspectRatio: '4/5', objectFit: 'cover', objectPosition: 'top center' }}
+                />
               </div>
             </div>
 
-            {/* Right Column: Narrative, Quote, Highlight Pillars & Interactive Tags (7 cols) */}
-            <div className="lg:col-span-7 flex flex-col">
-              
-              {/* Eyebrow & Main Title */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-8 h-[2px] bg-[#c9a96e]" />
-                <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8a5814]">
-                  Hakkımda & Terapi Felsefesi
+            {/* Right: Content */}
+            <div>
+              {/* Eyebrow */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <span style={{ width: 32, height: 2, background: '#c9a96e', display: 'block' }} />
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8a5814' }}>
+                  Hakkımda
                 </span>
               </div>
 
-              <h2 
-                style={{ fontFamily: 'Playfair Display, serif' }}
-                className="text-[32px] sm:text-[42px] lg:text-[46px] font-bold text-slate-900 leading-[1.12] mb-5 tracking-tight"
-              >
+              {/* Title */}
+              <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', fontWeight: 700, color: '#0a1628', lineHeight: 1.1, marginBottom: 12 }}>
                 Furkan Manav,
-                <br/>
-                <span style={{ color: '#8a5814' }} className="italic font-normal">Psikolog</span>
               </h2>
+              <p style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.6rem, 2.5vw, 2.2rem)', fontStyle: 'italic', color: '#8a5814', lineHeight: 1.2, marginBottom: 32 }}>
+                Psikolog
+              </p>
 
-              {/* Distinctive Pull Quote Card */}
-              <div 
-                style={{
-                  background: 'linear-gradient(135deg, rgba(201, 169, 110, 0.12) 0%, rgba(255, 255, 255, 0.9) 100%)',
-                  borderColor: 'rgba(201, 169, 110, 0.45)',
-                  boxShadow: '0 4px 20px rgba(201, 169, 110, 0.08)'
-                }}
-                className="relative p-5 sm:p-6 rounded-2xl border-l-4 border-l-[#c9a96e] border border-amber-200/60 mb-6"
-              >
-                <Quote size={32} className="text-[#c9a96e]/30 absolute top-3 right-4 pointer-events-none" />
-                <p 
-                  style={{ fontFamily: 'Playfair Display, serif' }}
-                  className="italic text-slate-800 text-[16.5px] sm:text-[18.5px] leading-relaxed pr-8"
-                >
-                  "Geçmiş değiştirilemez belki ama geçmişle kurulan ilişki ve bağ değişebilir. Bastırılmış ya da reddedilmiş yaşantılara yer açıldığında, kişi kendi hikâyesine yeni bir anlam kazandırabilir."
+              {/* Separator */}
+              <div style={{ width: 48, height: 2, background: '#c9a96e', marginBottom: 32 }} />
+
+              {/* Body Text */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 40 }}>
+                <p style={{ fontSize: '1.05rem', lineHeight: 1.85, color: '#475569' }}>
+                  Varoluşçu-Psikanalitik yönelimli bir yaklaşımla, yetişkinlere yönelik bireysel psikolojik danışmanlık hizmeti sunmaktayım. Terapi odası, hazır reçeteler sunan bir otorite yeri değil; kişinin kendi iç dünyasını güvenle keşfetmesine alan açan derin bir karşılaşmadır.
+                </p>
+                <p style={{ fontSize: '1.05rem', lineHeight: 1.85, color: '#475569' }}>
+                  Terapide kişi; yalnızca ne hissettiğini değil, neden öyle hissettiğini ve düşüncelerinin ardında hangi anlamların gizlendiğini keşfetmeye başlar. Semptomlar çoğu zaman yalnızca birer şikâyet değil, daha derin psikolojik süreçlerin birer yansımasıdır.
                 </p>
               </div>
 
-              {/* Narrative Content */}
-              <div className="flex flex-col gap-4 text-[15px] sm:text-[16px] text-slate-700 leading-[1.8] mb-8">
-                <p>
-                  Ben Psikolog Furkan Manav. Varoluşçu-Psikanalitik yönelimli bir yaklaşımla, yetişkinlere yönelik bireysel psikolojik danışmanlık hizmeti sunmaktayım. Terapi odası, hazır reçeteler sunan bir otorite yeri değil; kişinin kendi iç dünyasını güvenle keşfetmesine alan açan derin bir karşılaşmadır.
+              {/* Quote */}
+              <blockquote style={{ borderLeft: '3px solid #c9a96e', paddingLeft: 24, marginBottom: 40 }}>
+                <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '1.15rem', lineHeight: 1.7, color: '#1e293b' }}>
+                  "Geçmiş değiştirilemez belki ama geçmişle kurulan ilişki ve bağ değişebilir."
                 </p>
-                <p>
-                  Terapide kişi; yalnızca ne hissettiğini değil, neden öyle hissettiğini ve düşüncelerinin ardında hangi anlamların gizlendiğini keşfetmeye başlar. Semptomlar çoğu zaman yalnızca birer şikâyet değil, daha derin psikolojik süreçlerin birer yansımasıdır. Bu süreçte, sözcüklerin ötesine geçerek bilinçdışı örüntüleri anlamaya ve kişinin kendi hakikatiyle karşılaşmasına eşlik ediyorum.
-                </p>
-              </div>
+              </blockquote>
 
-              {/* 3 Pillars / Feature Highlight Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-8">
-                <div 
-                  style={{ background: 'white', borderColor: 'rgba(201, 169, 110, 0.25)' }}
-                  className="p-4 rounded-xl border shadow-sm flex flex-col gap-2 hover:border-[#c9a96e] transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-[#8a5814] flex items-center justify-center font-bold">
-                    <Compass size={18} />
-                  </div>
-                  <div className="font-bold text-slate-900 text-[14px]">
-                    Varoluşsal Bakış
-                  </div>
-                  <p className="text-[12.5px] text-slate-600 leading-snug">
-                    Kaygı, yalnızlık ve anlam arayışına cesaretle yaklaşma.
-                  </p>
-                </div>
-
-                <div 
-                  style={{ background: 'white', borderColor: 'rgba(201, 169, 110, 0.25)' }}
-                  className="p-4 rounded-xl border shadow-sm flex flex-col gap-2 hover:border-[#c9a96e] transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-[#8a5814] flex items-center justify-center font-bold">
-                    <Sparkles size={18} />
-                  </div>
-                  <div className="font-bold text-slate-900 text-[14px]">
-                    Bilinçdışı Süreçler
-                  </div>
-                  <p className="text-[12.5px] text-slate-600 leading-snug">
-                    Semptomların ötesinde bastırılmış dinamikleri anlama.
-                  </p>
-                </div>
-
-                <div 
-                  style={{ background: 'white', borderColor: 'rgba(201, 169, 110, 0.25)' }}
-                  className="p-4 rounded-xl border shadow-sm flex flex-col gap-2 hover:border-[#c9a96e] transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-[#8a5814] flex items-center justify-center font-bold">
-                    <Shield size={18} />
-                  </div>
-                  <div className="font-bold text-slate-900 text-[14px]">
-                    Etik & Güven
-                  </div>
-                  <p className="text-[12.5px] text-slate-600 leading-snug">
-                    Klinik süpervizyon ve koşulsuz gizlilik standartları.
-                  </p>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2 items-center mb-8">
-                <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-                  Odak Alanları:
-                </span>
-                {[
-                  { name: 'Psikanaliz', href: '/forum' },
-                  { name: 'Varoluşçu Yaklaşım', href: '/ben-kimim' },
-                  { name: 'Felsefe', href: '/forum' },
-                  { name: 'Topluluk', href: '/forum' },
-                  { name: 'Videolarım', href: '/videolarim' },
-                  { name: 'Blog', href: '/yazilarim' },
-                  { name: 'Forum', href: '/forum' }
-                ].map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold bg-white border border-slate-200 text-slate-700 hover:border-[#c9a96e] hover:text-[#8a5814] hover:shadow-sm transition-all"
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-4 pt-2">
-                <Link 
-                  href="/forum" 
-                  className="btn-gold px-7 py-3.5 text-[15px] font-bold rounded-xl shadow-md hover:scale-[1.02] active:scale-95 transition-all inline-flex items-center gap-2"
-                >
-                  <span>Topluluğa Katıl</span>
-                  <ArrowRight size={17} />
+              {/* Actions */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
+                <Link href="/ben-kimim" className="btn-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  Devamını Oku
+                  <ArrowRight size={16} />
                 </Link>
-
                 <Link
-                  href="/ben-kimim"
-                  className="px-6 py-3.5 text-[15px] font-bold rounded-xl border-2 border-slate-800 text-slate-900 hover:bg-slate-900 hover:text-white transition-all shadow-sm"
+                  href="/iletisim"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '14px 28px',
+                    borderRadius: 8,
+                    border: '2px solid #0a1628',
+                    color: '#0a1628',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    textDecoration: 'none',
+                    transition: 'all 0.25s',
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.background = '#0a1628'; e.currentTarget.style.color = '#ffffff'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#0a1628'; }}
                 >
-                  Özgeçmişi İncele
+                  İletişime Geç
                 </Link>
               </div>
-
             </div>
 
           </div>
