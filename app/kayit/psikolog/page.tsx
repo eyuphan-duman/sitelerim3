@@ -450,44 +450,49 @@ export default function PsychologistRegisterPage() {
           <div 
             style={{
               background: termsAccepted ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.05)',
-              borderColor: termsAccepted ? 'rgba(212, 175, 55, 0.6)' : 'rgba(255, 255, 255, 0.15)',
-              boxShadow: termsAccepted ? '0 0 20px rgba(212, 175, 55, 0.2)' : 'none',
+              borderColor: termsAccepted ? '#eab308' : 'rgba(255, 255, 255, 0.15)',
+              boxShadow: termsAccepted ? '0 0 20px rgba(212, 175, 55, 0.25)' : 'none',
             }}
-            className="rounded-xl border p-4 my-3 flex flex-col gap-3 transition-all text-left"
+            className="rounded-2xl border p-4 sm:p-5 my-4 flex flex-col gap-3.5 transition-all text-left"
           >
             {/* Two large, clearly visible buttons to open legal docs */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setTermsModalOpen(true)}
-                className="flex-1 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                className="flex-1 min-h-[46px] py-2.5 px-3.5 rounded-xl text-[13.5px] sm:text-[14px] font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(212, 175, 55, 0.15)',
                   color: '#facc15',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  border: '1.5px solid rgba(212, 175, 55, 0.4)',
                 }}
               >
-                <span>📜 Sözleşmeyi Oku</span>
+                <span className="text-base">📜</span>
+                <span>Sözleşmeyi Oku</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTermsModalOpen(true)}
-                className="flex-1 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                className="flex-1 min-h-[46px] py-2.5 px-3.5 rounded-xl text-[13.5px] sm:text-[14px] font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  color: '#60a5fa',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  color: '#93c5fd',
+                  border: '1.5px solid rgba(59, 130, 246, 0.4)',
                 }}
               >
-                <span>🛡️ KVKK Metni</span>
+                <span className="text-base">🛡️</span>
+                <span>KVKK Metni</span>
               </button>
             </div>
+
+            {/* Divider */}
+            <div style={{ height: 1, background: 'rgba(255, 255, 255, 0.1)', margin: '2px 0' }} />
 
             {/* Big Checkable Row */}
             <div 
               onClick={() => setTermsAccepted(!termsAccepted)}
-              className="flex items-center gap-3 cursor-pointer select-none pt-1"
+              className="flex items-center gap-3.5 cursor-pointer select-none py-1"
             >
               <input
                 type="checkbox"
@@ -495,12 +500,12 @@ export default function PsychologistRegisterPage() {
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
                 onClick={(e) => e.stopPropagation()}
-                className="w-5 h-5 rounded-md cursor-pointer shrink-0 accent-[#b8965a]"
+                className="w-[22px] h-[22px] rounded-md cursor-pointer shrink-0 accent-[#b8965a]"
                 required
               />
               <label
                 htmlFor="psych_terms_checkbox"
-                className="text-[13.5px] font-bold leading-tight text-white cursor-pointer"
+                className="text-[14px] sm:text-[15px] font-bold leading-snug text-white cursor-pointer select-none"
               >
                 Kullanıcı Sözleşmesini ve KVKK Metnini Okudum, Onaylıyorum.
               </label>
@@ -514,9 +519,9 @@ export default function PsychologistRegisterPage() {
             className="btn-gold"
             style={{
               width: '100%',
-              padding: '16px',
-              borderRadius: 10,
-              fontSize: '1rem',
+              padding: '18px',
+              borderRadius: 12,
+              fontSize: '1.05rem',
               fontWeight: 800,
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
@@ -525,8 +530,9 @@ export default function PsychologistRegisterPage() {
               justifyContent: 'center',
               gap: 10,
               cursor: submitting ? 'wait' : 'pointer',
-              opacity: !termsAccepted ? 0.6 : 1,
-              marginTop: 8,
+              opacity: !termsAccepted ? 0.45 : 1,
+              marginTop: 16,
+              boxShadow: '0 4px 15px rgba(212, 175, 55, 0.25)'
             }}
           >
             {submitting ? (

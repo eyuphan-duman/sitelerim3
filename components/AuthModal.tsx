@@ -154,7 +154,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
         {/* Form Body - Constrained Center Block */}
         <div className="flex-1 flex flex-col items-center pt-2 pb-10">
           
-          <div className="w-full max-w-[340px] flex flex-col">
+          <div className="w-full max-w-[400px] px-3 sm:px-0 flex flex-col">
             
             <h1 
               style={{ color: dark ? '#e7e9ea' : '#0f172a' }}
@@ -333,48 +333,59 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                 <div 
                   style={{
                     background: dark 
-                      ? (termsAccepted ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255, 255, 255, 0.04)')
+                      ? (termsAccepted ? 'rgba(212, 175, 55, 0.1)' : 'rgba(255, 255, 255, 0.05)')
                       : (termsAccepted ? '#fefce8' : '#f8fafc'),
                     borderColor: dark 
-                      ? (termsAccepted ? 'rgba(212, 175, 55, 0.55)' : '#2f3336')
-                      : (termsAccepted ? '#eab308' : '#cbd5e1'),
-                    boxShadow: termsAccepted ? '0 0 15px rgba(212, 175, 55, 0.15)' : 'none',
+                      ? (termsAccepted ? '#eab308' : 'rgba(255, 255, 255, 0.15)')
+                      : (termsAccepted ? '#ca8a04' : '#cbd5e1'),
+                    boxShadow: termsAccepted ? '0 0 20px rgba(212, 175, 55, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
                   }}
-                  className="rounded-xl border p-3.5 my-2 flex flex-col gap-3 transition-all text-left"
+                  className="rounded-2xl border p-4 sm:p-5 my-3 flex flex-col gap-3.5 transition-all text-left"
                 >
                   {/* Two large, clearly visible buttons to open legal docs */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setTermsModalOpen(true)}
-                      className="flex-1 py-2 px-3 rounded-lg text-xs sm:text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                      className="flex-1 min-h-[46px] py-2.5 px-3.5 rounded-xl text-[13.5px] sm:text-[14px] font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
                       style={{
-                        background: dark ? '#1e293b' : '#ffffff',
-                        color: dark ? '#facc15' : '#0f172a',
-                        border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid #cbd5e1',
+                        background: dark ? 'rgba(212, 175, 55, 0.15)' : '#fef3c7',
+                        color: dark ? '#facc15' : '#854d0e',
+                        border: dark ? '1.5px solid rgba(212, 175, 55, 0.4)' : '1.5px solid #fde047',
                       }}
                     >
-                      <span>📜 Sözleşmeyi Oku</span>
+                      <span className="text-base">📜</span>
+                      <span>Sözleşmeyi Oku</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setTermsModalOpen(true)}
-                      className="flex-1 py-2 px-3 rounded-lg text-xs sm:text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                      className="flex-1 min-h-[46px] py-2.5 px-3.5 rounded-xl text-[13.5px] sm:text-[14px] font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
                       style={{
-                        background: dark ? '#1e293b' : '#ffffff',
-                        color: dark ? '#60a5fa' : '#1e40af',
-                        border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid #cbd5e1',
+                        background: dark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff',
+                        color: dark ? '#93c5fd' : '#1e40af',
+                        border: dark ? '1.5px solid rgba(59, 130, 246, 0.4)' : '1.5px solid #bfdbfe',
                       }}
                     >
-                      <span>🛡️ KVKK Metni</span>
+                      <span className="text-base">🛡️</span>
+                      <span>KVKK Metni</span>
                     </button>
                   </div>
+
+                  {/* Divider */}
+                  <div 
+                    style={{ 
+                      height: 1, 
+                      background: dark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0', 
+                      margin: '2px 0' 
+                    }} 
+                  />
 
                   {/* Big Checkable Row */}
                   <div 
                     onClick={() => setTermsAccepted(!termsAccepted)}
-                    className="flex items-center gap-3 cursor-pointer select-none pt-0.5"
+                    className="flex items-center gap-3.5 cursor-pointer select-none py-1"
                   >
                     <input
                       type="checkbox"
@@ -382,13 +393,13 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                       checked={termsAccepted}
                       onChange={(e) => setTermsAccepted(e.target.checked)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded-md cursor-pointer shrink-0 accent-[#b8965a]"
+                      className="w-[22px] h-[22px] rounded-md cursor-pointer shrink-0 accent-[#b8965a]"
                       required
                     />
                     <label
                       htmlFor="auth_terms_checkbox"
-                      className="text-[13.5px] font-bold leading-tight cursor-pointer"
-                      style={{ color: dark ? '#f1f5f9' : '#0f172a' }}
+                      className="text-[14px] sm:text-[15px] font-bold leading-snug cursor-pointer select-none"
+                      style={{ color: dark ? '#ffffff' : '#0f172a' }}
                     >
                       Kullanıcı Sözleşmesini ve KVKK Metnini Okudum, Onaylıyorum.
                     </label>
@@ -396,7 +407,8 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                 </div>
               )}
 
-              <div className="mt-2 flex flex-col gap-6">
+              {/* Generous spacing above Kaydol button */}
+              <div className="mt-5 flex flex-col gap-6">
                 <button
                   type="submit"
                   disabled={loading || (mode === 'signup' && !termsAccepted)}
@@ -404,7 +416,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                     background: dark ? '#ffffff' : '#000000',
                     color: dark ? '#000000' : '#ffffff'
                   }}
-                  className="w-full h-[52px] rounded-full disabled:opacity-50 font-bold text-[17px] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full h-[54px] rounded-full disabled:opacity-40 font-extrabold text-[17px] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.99]"
                 >
                   {loading && <Loader size={18} className="animate-spin" />}
                   {mode === 'signin' ? 'İleri' : 'Kaydol'}

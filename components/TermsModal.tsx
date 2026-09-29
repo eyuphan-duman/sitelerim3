@@ -109,7 +109,7 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
           style={{
             color: isDark ? '#cbd5e1' : '#334155',
           }}
-          className="flex-1 overflow-y-auto p-4 sm:p-6 text-xs sm:text-sm leading-relaxed space-y-4"
+          className="flex-1 overflow-y-auto p-5 sm:p-7 pb-16 text-xs sm:text-sm leading-relaxed space-y-5"
         >
           {activeTab === 'terms' ? (
             <div className="space-y-4">
@@ -249,10 +249,11 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
         {/* Footer Actions */}
         <div
           style={{
-            background: isDark ? '#091120' : '#f8fafc',
-            borderTop: `1.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`
+            background: isDark ? '#060e1a' : '#f8fafc',
+            borderTop: `2px solid ${isDark ? 'rgba(212,175,55,0.3)' : '#cbd5e1'}`,
+            boxShadow: '0 -8px 25px rgba(0, 0, 0, 0.4)',
           }}
-          className="p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0"
+          className="p-5 sm:p-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 sm:gap-6 shrink-0"
         >
           {onAccept && (
             <button
@@ -262,12 +263,13 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
                 onClose();
               }}
               style={{
-                background: 'linear-gradient(135deg, #b8965a 0%, #d4aa70 100%)',
+                background: 'linear-gradient(135deg, #d4aa70 0%, #b8965a 100%)',
                 color: '#070e1b',
+                boxShadow: '0 4px 18px rgba(212, 175, 55, 0.35)',
               }}
-              className="w-full sm:flex-1 py-3.5 px-6 rounded-xl text-sm sm:text-base font-extrabold flex items-center justify-center gap-2.5 hover:opacity-95 active:scale-[0.99] shadow-lg transition-all cursor-pointer order-1 sm:order-2"
+              className="w-full sm:flex-1 py-4 px-8 rounded-xl text-base sm:text-lg font-extrabold flex items-center justify-center gap-3 hover:brightness-105 active:scale-[0.98] transition-all cursor-pointer order-1 sm:order-2"
             >
-              <CheckCircle2 size={20} strokeWidth={2.5} />
+              <CheckCircle2 size={22} strokeWidth={2.5} />
               <span>Sözleşmeyi Okudum ve Onaylıyorum</span>
             </button>
           )}
@@ -276,10 +278,11 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
             type="button"
             onClick={onClose}
             style={{
-              borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1',
-              color: isDark ? '#cbd5e1' : '#475569'
+              borderColor: isDark ? 'rgba(255,255,255,0.25)' : '#cbd5e1',
+              color: isDark ? '#e2e8f0' : '#475569',
+              background: isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
             }}
-            className="w-full sm:w-auto py-3 px-5 rounded-xl border text-sm font-bold hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer order-2 sm:order-1 text-center"
+            className="w-full sm:w-auto min-w-[130px] py-3.5 px-6 rounded-xl border text-sm sm:text-base font-bold hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer order-2 sm:order-1 text-center"
           >
             Kapat
           </button>
