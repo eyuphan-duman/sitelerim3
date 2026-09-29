@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { X as CloseIcon, Loader, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
+import TermsModal from './TermsModal';
 
 interface Props {
   isOpen: boolean;
@@ -17,6 +18,8 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ username: '', email: '', password: '' });
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [show, setShow] = useState(false);
   const [detectedDark, setDetectedDark] = useState(false);
 
@@ -44,6 +47,10 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === 'signup' && !termsAccepted) {
+      toast.error('Lütfen kayıt sözleşmesini ve KVKK aydınlatma metnini onaylayın.');
+      return;
+    }
     setLoading(true);
     try {
       if (mode === 'signin') {
@@ -321,15 +328,51 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                 </label>
               </div>
 
-              <div className="mt-4 flex flex-col gap-6">
+              {/* Registration Terms & KVKK Checkbox */}
+              {mode === 'signup' && (
+                <div className="flex items-start gap-2.5 mt-1 text-left">
+                  <input
+                    type="checkbox"
+                    id="auth_terms_checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
+                    required
+                  />
+                  <label
+                    htmlFor="auth_terms_checkbox"
+                    className="text-[12px] leading-snug select-none cursor-pointer"
+                    style={{ color: dark ? '#94a3b8' : '#475569' }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setTermsModalOpen(true)}
+                      className="text-blue-500 hover:underline font-semibold"
+                    >
+                      Kayıt Sözleşmesi
+                    </button>
+                    &apos;ni ve{' '}
+                    <button
+                      type="button"
+                      onClick={() => setTermsModalOpen(true)}
+                      className="text-blue-500 hover:underline font-semibold"
+                    >
+                      KVKK Aydınlatma Metni
+                    </button>
+                    &apos;ni okudum, şartları kabul ediyorum.
+                  </label>
+                </div>
+              )}
+
+              <div className="mt-2 flex flex-col gap-6">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (mode === 'signup' && !termsAccepted)}
                   style={{
                     background: dark ? '#ffffff' : '#000000',
                     color: dark ? '#000000' : '#ffffff'
                   }}
-                  className="w-full h-[52px] rounded-full disabled:opacity-70 font-bold text-[17px] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full h-[52px] rounded-full disabled:opacity-50 font-bold text-[17px] transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {loading && <Loader size={18} className="animate-spin" />}
                   {mode === 'signin' ? 'İleri' : 'Kaydol'}
@@ -352,6 +395,14 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Legal Terms & KVKK Modal */}
+      <TermsModal
+        isOpen={termsModalOpen}
+        onClose={() => setTermsModalOpen(false)}
+        onAccept={() => setTermsAccepted(true)}
+        isDark={dark}
+      />
     </div>
   );
 }

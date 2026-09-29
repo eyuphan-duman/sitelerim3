@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Award, Upload, CheckCircle2, ShieldCheck, ArrowLeft, ArrowRight, Loader, FileText, ExternalLink, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import TermsModal from '@/components/TermsModal';
 
 export default function PsychologistRegisterPage() {
   const router = useRouter();
@@ -21,6 +22,8 @@ export default function PsychologistRegisterPage() {
     diplomaUrl: '',
   });
 
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [diplomaFileName, setDiplomaFileName] = useState('');
   const [uploadingDiploma, setUploadingDiploma] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,6 +66,11 @@ export default function PsychologistRegisterPage() {
 
     if (!form.diplomaUrl) {
       toast.error('Lütfen psikolog doğrulaması için diploma belgenizi yükleyin.');
+      return;
+    }
+
+    if (!termsAccepted) {
+      toast.error('Lütfen kayıt sözleşmesini ve KVKK aydınlatma metnini onaylayın.');
       return;
     }
 
@@ -438,10 +446,40 @@ export default function PsychologistRegisterPage() {
             )}
           </div>
 
+          {/* Terms & Conditions Checkbox */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0 6px', background: 'rgba(255,255,255,0.04)', padding: '12px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }}>
+            <input
+              type="checkbox"
+              id="psych_terms_checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              style={{ marginTop: 3, width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
+              required
+            />
+            <label htmlFor="psych_terms_checkbox" style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4, cursor: 'pointer', userSelect: 'none' }}>
+              <button
+                type="button"
+                onClick={() => setTermsModalOpen(true)}
+                style={{ color: 'var(--gold)', background: 'none', border: 'none', padding: 0, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Kullanıcı ve Kayıt Sözleşmesi
+              </button>
+              {' '}ile{' '}
+              <button
+                type="button"
+                onClick={() => setTermsModalOpen(true)}
+                style={{ color: 'var(--gold)', background: 'none', border: 'none', padding: 0, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                KVKK Aydınlatma Metni
+              </button>
+              &apos;ni okudum, uzmanlık şartlarını ve yasal hükümleri kabul ediyorum.
+            </label>
+          </div>
+
           {/* Submit */}
           <button
             type="submit"
-            disabled={submitting || uploadingDiploma}
+            disabled={submitting || uploadingDiploma || !termsAccepted}
             className="btn-gold"
             style={{
               width: '100%',
@@ -456,6 +494,7 @@ export default function PsychologistRegisterPage() {
               justifyContent: 'center',
               gap: 10,
               cursor: submitting ? 'wait' : 'pointer',
+              opacity: !termsAccepted ? 0.6 : 1,
               marginTop: 8,
             }}
           >
@@ -481,6 +520,14 @@ export default function PsychologistRegisterPage() {
           </Link>
         </div>
       </div>
+
+      {/* Legal Terms & KVKK Modal */}
+      <TermsModal
+        isOpen={termsModalOpen}
+        onClose={() => setTermsModalOpen(false)}
+        onAccept={() => setTermsAccepted(true)}
+        isDark={true}
+      />
     </div>
   );
 }

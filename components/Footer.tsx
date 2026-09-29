@@ -188,6 +188,8 @@ export default function Footer() {
             © {new Date().getFullYear()} Psikolog Furkan Manav. Tüm hakları saklıdır.
           </p>
           <div className="flex items-center gap-4 text-xs text-white/70 flex-wrap justify-center">
+            <Link href="/kullanici-sozlesmesi" className="hover:text-[#e8c187] transition-colors">Kullanıcı Sözleşmesi</Link>
+            <span>·</span>
             <Link href="/gizlilik" className="hover:text-[#e8c187] transition-colors">Gizlilik Politikası</Link>
             <span>·</span>
             <Link href="/iletisim" className="hover:text-[#e8c187] transition-colors">İletişim</Link>
