@@ -500,9 +500,18 @@ export default function AdminPage() {
   return (
     <div className="admin-layout" style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex' }}>
       <style>{`
+        .admin-mobile-tabs-bar {
+          display: none;
+        }
+        .admin-table-mobile-cards {
+          display: none;
+        }
         @media (max-width: 900px) {
           .admin-layout {
             flex-direction: column !important;
+            overflow-x: hidden !important;
+            width: 100% !important;
+            max-width: 100vw !important;
           }
           .admin-sidebar {
             position: fixed !important;
@@ -513,6 +522,10 @@ export default function AdminPage() {
             transform: translateX(-100%) !important;
             transition: transform 0.28s ease !important;
             box-shadow: 4px 0 24px rgba(0,0,0,0.3) !important;
+            max-width: 85vw !important;
+            width: 290px !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
           }
           .admin-sidebar.open {
             transform: translateX(0) !important;
@@ -527,30 +540,151 @@ export default function AdminPage() {
           .admin-mobile-topbar {
             display: flex !important;
           }
+          .admin-mobile-tabs-bar {
+            display: flex !important;
+            gap: 8px;
+            padding: 10px 14px;
+            background: #0b1524;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            scrollbar-width: none;
+            position: sticky;
+            top: 58px;
+            z-index: 890;
+          }
+          .admin-mobile-tabs-bar::-webkit-scrollbar {
+            display: none;
+          }
+          .admin-mobile-tab-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.72);
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+          }
+          .admin-mobile-tab-btn.active {
+            background: var(--gold) !important;
+            color: var(--navy) !important;
+            font-weight: 800 !important;
+            border-color: var(--gold) !important;
+            box-shadow: 0 2px 8px rgba(212,175,55,0.3) !important;
+          }
+          .admin-mobile-tab-badge {
+            background: #ef4444;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 1px 6px;
+            border-radius: 999px;
+            margin-left: 2px;
+          }
           .admin-main {
-            padding: 20px 16px !important;
+            padding: 18px 14px 48px !important;
+            max-width: 100vw !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
           }
           .admin-page-title {
-            font-size: 1.4rem !important;
-            margin-bottom: 20px !important;
-            padding-bottom: 14px !important;
+            font-size: 1.35rem !important;
+            margin-bottom: 16px !important;
+            padding-bottom: 12px !important;
           }
           .admin-post-form-row {
             grid-template-columns: 1fr !important;
           }
           .admin-posts-grid {
             grid-template-columns: 1fr !important;
-            gap: 24px !important;
+            gap: 20px !important;
           }
           .admin-card-inner {
-            padding: 18px 16px !important;
+            padding: 16px 14px !important;
+          }
+          .admin-highlight-grid {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .admin-user-card {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .admin-user-card-actions {
+            width: 100% !important;
+          }
+          .admin-user-card-actions button {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .admin-psych-status-card {
+            padding: 16px 14px !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+          .admin-psych-status-card button {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .admin-psych-card-actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+          .admin-psych-card-actions button {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .admin-hero-subtabs-box {
+            padding: 12px 14px !important;
+            gap: 12px !important;
+          }
+          .admin-hero-subtabs-pills {
+            width: 100% !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding-bottom: 4px !important;
+            scrollbar-width: none !important;
+          }
+          .admin-hero-subtabs-pills::-webkit-scrollbar {
+            display: none !important;
+          }
+          .admin-hero-actions-box {
+            width: 100% !important;
+            flex-direction: column !important;
+          }
+          .admin-hero-actions-box button {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .admin-table-desktop {
+            display: none !important;
+          }
+          .admin-table-mobile-cards {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
           }
         }
         @media (min-width: 901px) {
           .admin-mobile-topbar {
             display: none !important;
           }
+          .admin-mobile-tabs-bar {
+            display: none !important;
+          }
           .admin-sidebar-overlay {
+            display: none !important;
+          }
+          .admin-table-mobile-cards {
             display: none !important;
           }
         }
@@ -573,6 +707,31 @@ export default function AdminPage() {
           {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </header>
+
+      {/* MOBILE HORIZONTAL QUICK TABS BAR */}
+      <div className="admin-mobile-tabs-bar">
+        {MENUS.map(m => {
+          const badgeCount = m.id === 'psychologists' 
+            ? psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length
+            : m.id === 'messages'
+            ? messages.filter(msg => msg.status === 'unread').length
+            : 0;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setActiveTab(m.id as any)}
+              className={`admin-mobile-tab-btn ${activeTab === m.id ? 'active' : ''}`}
+            >
+              {m.icon}
+              <span>{m.label}</span>
+              {badgeCount > 0 && (
+                <span className="admin-mobile-tab-badge">{badgeCount}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {/* MOBILE BACKDROP OVERLAY */}
       {mobileMenuOpen && (
@@ -635,8 +794,8 @@ export default function AdminPage() {
         {activeTab === 'hero' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
             {/* Sub-tab pills & Actions header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, background: 'white', padding: '16px 20px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div className="admin-hero-subtabs-box" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, background: 'white', padding: '16px 20px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <div className="admin-hero-subtabs-pills" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   onClick={() => setHeroSubTab('slide1')}
@@ -699,7 +858,7 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div className="admin-hero-actions-box" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={handleResetHeroSettings}
@@ -1053,7 +1212,7 @@ export default function AdminPage() {
                       {/* Highlight 1 */}
                       <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
                         <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: 8 }}>1. Özellik Kartı</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 10 }}>
+                        <div className="admin-highlight-grid" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 10 }}>
                           <input
                             type="text"
                             value={heroSettings.slide2.highlight1Title}
@@ -1074,7 +1233,7 @@ export default function AdminPage() {
                       {/* Highlight 2 */}
                       <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
                         <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: 8 }}>2. Özellik Kartı</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 10 }}>
+                        <div className="admin-highlight-grid" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 10 }}>
                           <input
                             type="text"
                             value={heroSettings.slide2.highlight2Title}
@@ -1095,7 +1254,7 @@ export default function AdminPage() {
                       {/* Highlight 3 */}
                       <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
                         <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--navy)', marginBottom: 8 }}>3. Özellik Kartı</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 10 }}>
+                        <div className="admin-highlight-grid" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 10 }}>
                           <input
                             type="text"
                             value={heroSettings.slide2.highlight3Title}
@@ -1253,7 +1412,7 @@ export default function AdminPage() {
         {activeTab === 'psychologists' && (
           <div>
             {/* ─── ADMIN PSYCHOLOGIST STATUS CARD ─── */}
-            <div style={{
+            <div className="admin-psych-status-card" style={{
               background: 'linear-gradient(135deg, #0a1628 0%, #1e293b 100%)',
               border: '1.5px solid rgba(201,169,110,0.4)',
               borderRadius: 12,
@@ -1409,7 +1568,7 @@ export default function AdminPage() {
                   gap: 16
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
-                    <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+                    <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 0, width: '100%' }}>
                       <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                       <input
                         type="text"
@@ -1534,6 +1693,7 @@ export default function AdminPage() {
                         return (
                           <div
                             key={u.id}
+                            className="admin-user-card"
                             style={{
                               background: 'white',
                               borderRadius: 10,
@@ -1599,7 +1759,7 @@ export default function AdminPage() {
                             </div>
 
                             {/* Action Buttons */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div className="admin-user-card-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                               {isPsych ? (
                                 <button
                                   type="button"
@@ -1773,6 +1933,7 @@ export default function AdminPage() {
                     return (
                       <div
                         key={app.id}
+                        className="admin-card-inner"
                         style={{
                           background: 'white',
                           borderRadius: 12,
@@ -1919,7 +2080,7 @@ export default function AdminPage() {
                         </div>
 
                         {/* Action buttons */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
+                        <div className="admin-psych-card-actions" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
                           {!isApproved && (
                             <button
                               onClick={() => handleApprovePsychologist(app)}
@@ -2001,7 +2162,8 @@ export default function AdminPage() {
                 Onaylanmış Seanslar
               </button>
             </div>
-            <div style={{ background: 'white', borderRadius: 8, border: '1px solid #e2e8f0', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            {/* Desktop Table View */}
+            <div className="admin-table-desktop" style={{ background: 'white', borderRadius: 8, border: '1px solid #e2e8f0', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -2035,8 +2197,66 @@ export default function AdminPage() {
                       </td>
                     </tr>
                   ))}
+                  {appointments.filter(a => a.status === subTab).length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
+                        Bu sekmede randevu bulunmuyor.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="admin-table-mobile-cards">
+              {appointments.filter(a => a.status === subTab).length === 0 ? (
+                <div style={{ background: 'white', borderRadius: 10, border: '1px solid #e2e8f0', padding: '32px 16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                  Bu sekmede randevu bulunmuyor.
+                </div>
+              ) : (
+                appointments.filter(a => a.status === subTab).map(app => (
+                  <div key={app.id} style={{ background: 'white', borderRadius: 10, border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.96rem', color: 'var(--navy)' }}>{app.displayName}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{app.email}</div>
+                      </div>
+                      <span style={{ padding: '4px 10px', borderRadius: 4, fontSize: '0.72rem', fontWeight: 700, background: app.sessionType === 'online' ? '#eff6ff' : '#f5f3ff', color: app.sessionType === 'online' ? '#2563eb' : '#7c3aed', flexShrink: 0 }}>
+                        {app.sessionType === 'online' ? 'Online' : 'Yüz Yüze'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.82rem', color: '#334155', background: '#f8fafc', padding: '8px 12px', borderRadius: 6 }}>
+                      <span>📅 {app.date}</span>
+                      <span>⏰ {app.time}</span>
+                    </div>
+
+                    {app.note && (
+                      <div style={{ fontSize: '0.82rem', color: '#475569', background: '#f1f5f9', padding: '8px 12px', borderRadius: 6 }}>
+                        <span style={{ fontWeight: 600 }}>Not: </span>{app.note}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      {subTab === 'pending' ? (
+                        <>
+                          <button onClick={() => updateAppointment(app.id, 'approved')} style={{ flex: 1, background: '#16a34a', color: 'white', border: 'none', padding: '10px 14px', borderRadius: 6, fontWeight: 700, fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <CheckCircle size={15}/> Onayla
+                          </button>
+                          <button onClick={() => updateAppointment(app.id, 'cancelled')} style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '10px 14px', borderRadius: 6, fontWeight: 700, fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <Trash2 size={15}/> İptal Et
+                          </button>
+                        </>
+                      ) : (
+                        <button onClick={() => updateAppointment(app.id, 'cancelled')} style={{ width: '100%', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '10px 14px', borderRadius: 6, fontWeight: 700, fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                          <Trash2 size={15}/> Seansı İptal Et / Sil
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -2123,7 +2343,7 @@ export default function AdminPage() {
             {/* Published Articles */}
             <div>
               <h2 style={{ fontSize: '1.2rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)', marginBottom: 20 }}>Yayımlanan Makaleler</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
                 {articles.map(a => (
                   <div key={a.id} style={{ background: 'white', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     {a.featuredImage && <img src={a.featuredImage} alt={a.title} style={{ width: '100%', height: 140, objectFit: 'cover' }}/>}
@@ -2177,7 +2397,7 @@ export default function AdminPage() {
               <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)', marginBottom: 24 }}>Sitedeki Videolar</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {videos.map(v => (
-                  <div key={v.id} style={{ background: 'white', padding: 20, borderRadius: 6, border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={v.id} style={{ background: 'white', padding: 20, borderRadius: 6, border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                     <div>
                       <span style={{ fontSize: '0.7rem', color: 'var(--gold-dim)', fontWeight: 700, textTransform: 'uppercase' }}>{v.category}</span>
                       <h3 style={{ fontWeight: 700, color: 'var(--navy)', marginTop: 4 }}>{v.title}</h3>
@@ -2198,16 +2418,16 @@ export default function AdminPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {messages.length === 0 && <div style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Henüz mesaj gönderilmedi.</div>}
               {messages.map(msg => (
-                <div key={msg.id} style={{ background: 'white', borderRadius: 8, border: msg.status === 'unread' ? '2px solid var(--gold)' : '1px solid #e2e8f0', padding: 24, boxShadow: '0 2px 8px rgba(10,22,40,0.04)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                <div key={msg.id} className="admin-card-inner" style={{ background: 'white', borderRadius: 8, border: msg.status === 'unread' ? '2px solid var(--gold)' : '1px solid #e2e8f0', padding: 24, boxShadow: '0 2px 8px rgba(10,22,40,0.04)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
+                    <div style={{ minWidth: 200, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '1rem' }}>{msg.name}</span>
                         {msg.status === 'unread' && <span style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999 }}>YENİ</span>}
                       </div>
                       <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{msg.email} • {msg.subject}</div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {msg.status === 'unread' && (
                         <button onClick={() => updateDoc(doc(db, 'messages', msg.id), { status: 'read' })} title="Okundu işaretle"
                           style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
