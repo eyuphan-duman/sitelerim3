@@ -7,6 +7,7 @@ import QuickContact from "@/components/QuickContact";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import CookieConsent from "@/components/CookieConsent";
+import SwipeBackNavigation from "@/components/SwipeBackNavigation";
 import { Inter, Playfair_Display, Crimson_Text, Montserrat } from "next/font/google";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -165,6 +166,7 @@ export default function RootLayout({
             }}
           />
           <Navbar />
+          <SwipeBackNavigation />
           <main>{children}</main>
           <Footer />
           <QuickContact />
