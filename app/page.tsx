@@ -1072,6 +1072,8 @@ export default function HomePage() {
                   } catch {}
                 }
 
+                const cardExcerpt = a.excerpt || (a.content ? truncateText(stripHtml(a.content), 150) : '');
+
                 return (
                   <Link href={`/yazilarim/${a.id}`} key={a.id} className="article-carousel-card">
                     {/* Image / Header banner */}
@@ -1112,9 +1114,9 @@ export default function HomePage() {
                         {a.title}
                       </h3>
 
-                      {a.excerpt && (
+                      {cardExcerpt && (
                         <p className="article-card-excerpt-desktop" style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.7, margin: '0 0 20px', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {a.excerpt}
+                          {cardExcerpt}
                         </p>
                       )}
 
