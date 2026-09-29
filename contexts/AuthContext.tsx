@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut, updateProfile, signInAnonymously } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 
@@ -23,6 +23,7 @@ interface AuthContextType {
   signUp: (username: string, email: string, password: string, psychologistData?: PsychologistData) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
+  resetPassword: (usernameOrEmail: string) => Promise<string>;
   logout: () => Promise<void>;
 }
 
@@ -223,12 +224,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Optional: No user doc for true guests, or create a thin one
   };
 
+  const resetPassword = async (usernameOrEmail: string): Promise<string> => {
+    let authEmail = usernameOrEmail.trim();
+    if (!authEmail) {
+      throw new Error('Lütfen kullanıcı adı veya e-posta adresinizi girin.');
+    }
+    // Check if it's not an email, assume it's a username
+    if (!authEmail.includes('@')) {
+      const q = query(collection(db, 'users'), where('username', '==', authEmail.toLowerCase()));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        throw new Error('Bu kullanıcı adına ait kayıtlı bir hesap bulunamadı.');
+      }
+      authEmail = snap.docs[0].data().email;
+      if (!authEmail) {
+        throw new Error('Bu hesaba ait tanımlı bir e-posta adresi bulunamadı.');
+      }
+    }
+    await sendPasswordResetEmail(auth, authEmail);
+    return authEmail;
+  };
+
   const logout = async () => {
     await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signIn, signUp, signInWithGoogle, signInAsGuest, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, signIn, signUp, signInWithGoogle, signInAsGuest, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );
