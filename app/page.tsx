@@ -934,22 +934,78 @@ export default function HomePage() {
             .article-carousel-card:hover .article-card-arrow-icon {
               transform: translateX(4px);
             }
+            /* Desktop: hide mobile card elements */
+            .article-card-mobile-img { display: none; }
+            .article-card-desktop-img { display: block; }
+            .article-card-excerpt-desktop { display: -webkit-box; }
+            .article-card-cta-desktop { display: flex; }
+            .article-nav-desktop { display: flex; }
+
             @media (max-width: 768px) {
               .article-carousel-card {
-                flex: 0 0 88vw !important;
-                max-width: 380px !important;
-                border-radius: 16px !important;
+                flex: 0 0 280px !important;
+                border-radius: 14px !important;
+                min-height: 0 !important;
               }
               .articles-carousel-container {
-                gap: 16px !important;
-                padding-left: 20px !important;
-                padding-right: 20px !important;
-                padding-bottom: 18px !important;
+                gap: 12px !important;
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+                padding-bottom: 12px !important;
+                padding-top: 4px !important;
+              }
+              .article-card-desktop-img {
+                height: 110px !important;
+              }
+              .article-card-desktop-img .article-card-placeholder {
+                height: 110px !important;
+              }
+              .article-card-content-inner {
+                padding: 14px 16px !important;
+              }
+              .article-card-content-inner h3 {
+                font-size: 1rem !important;
+                margin-bottom: 6px !important;
+                -webkit-line-clamp: 2 !important;
+              }
+              .article-card-excerpt-desktop {
+                display: none !important;
+              }
+              .article-card-cta-desktop {
+                padding-top: 10px !important;
+                margin-top: 8px !important;
+              }
+              .article-card-meta {
+                margin-bottom: 8px !important;
+              }
+              .article-card-meta span {
+                font-size: 0.65rem !important;
+                padding: 2px 8px !important;
+              }
+              .article-card-date {
+                font-size: 0.7rem !important;
+              }
+              .article-nav-desktop {
+                display: none !important;
+              }
+              .articles-section-header {
+                margin-bottom: 20px !important;
+                padding: 0 16px !important;
+              }
+              .articles-section-header h2 {
+                font-size: 1.5rem !important;
+              }
+              .articles-section-header .eyebrow {
+                font-size: 0.6rem !important;
+                margin-bottom: 6px !important;
+              }
+              .article-see-all-mobile {
+                display: flex !important;
               }
             }
           `}</style>
           <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, flexWrap: 'wrap', gap: 16 }}>
+            <div className="articles-section-header" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, flexWrap: 'wrap', gap: 16 }}>
               <div>
                 <div className="eyebrow" style={{ marginBottom: 10, color: '#8a5814' }}>Güncel İçerikler</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,2.8rem)', fontWeight: 700, color: 'var(--navy)', margin: 0 }}>
@@ -957,7 +1013,7 @@ export default function HomePage() {
                 </h2>
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div className="article-nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 {/* Arrow navigation buttons */}
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button 
@@ -1015,32 +1071,34 @@ export default function HomePage() {
                 return (
                   <Link href={`/yazilarim/${a.id}`} key={a.id} className="article-carousel-card">
                     {/* Image / Header banner */}
-                    {a.featuredImage ? (
-                      <div style={{ height: 220, width: '100%', position: 'relative', overflow: 'hidden', background: '#f1f5f9' }}>
-                        <img 
-                          src={a.featuredImage} 
-                          alt={a.title} 
-                          className="article-img-zoom"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease', display: 'block' }} 
-                        />
-                      </div>
-                    ) : (
-                      <div style={{ height: 160, width: '100%', background: 'linear-gradient(135deg, #0a1628 0%, #1e293b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', inset: 0, opacity: 0.15, background: 'radial-gradient(circle at center, var(--gold) 0%, transparent 70%)' }} />
-                        <BookOpen size={38} color="var(--gold)" style={{ opacity: 0.85 }} />
-                      </div>
-                    )}
+                    <div className="article-card-desktop-img">
+                      {a.featuredImage ? (
+                        <div style={{ height: 220, width: '100%', position: 'relative', overflow: 'hidden', background: '#f1f5f9' }}>
+                          <img 
+                            src={a.featuredImage} 
+                            alt={a.title} 
+                            className="article-img-zoom"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease', display: 'block' }} 
+                          />
+                        </div>
+                      ) : (
+                        <div className="article-card-placeholder" style={{ height: 160, width: '100%', background: 'linear-gradient(135deg, #0a1628 0%, #1e293b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                          <div style={{ position: 'absolute', inset: 0, opacity: 0.15, background: 'radial-gradient(circle at center, var(--gold) 0%, transparent 70%)' }} />
+                          <BookOpen size={38} color="var(--gold)" style={{ opacity: 0.85 }} />
+                        </div>
+                      )}
+                    </div>
 
                     {/* Card Content */}
-                    <div style={{ padding: '24px 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+                    <div className="article-card-content-inner" style={{ padding: '24px 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <div className="article-card-meta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
                         {a.category && (
                           <span style={{ background: '#fef3c7', color: '#b45309', padding: '4px 12px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                             {a.category}
                           </span>
                         )}
                         {formattedDate && (
-                          <span style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
+                          <span className="article-card-date" style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 600 }}>
                             {formattedDate}
                           </span>
                         )}
@@ -1051,12 +1109,12 @@ export default function HomePage() {
                       </h3>
 
                       {a.excerpt && (
-                        <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.7, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <p className="article-card-excerpt-desktop" style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.7, margin: '0 0 20px', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {a.excerpt}
                         </p>
                       )}
 
-                      <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center' }}>
+                      <div className="article-card-cta-desktop" style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center' }}>
                         <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                           Makaleyi Oku 
                           <ArrowRight size={14} className="article-card-arrow-icon" style={{ transition: 'transform 0.2s ease', color: '#8a5814' }} />
@@ -1066,6 +1124,13 @@ export default function HomePage() {
                   </Link>
                 );
               })}
+            </div>
+
+            {/* Mobile: See all link */}
+            <div className="article-see-all-mobile" style={{ display: 'none', justifyContent: 'center', marginTop: 8 }}>
+              <Link href="/yazilarim" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--navy)', fontWeight: 700, fontSize: '0.8rem', textDecoration: 'none', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '10px 20px', borderRadius: 999, background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+                Tümünü Gör <ArrowRight size={14}/>
+              </Link>
             </div>
           </div>
         </section>
