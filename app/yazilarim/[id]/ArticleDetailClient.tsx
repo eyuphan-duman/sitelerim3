@@ -5,8 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import {
   doc, deleteDoc, updateDoc,
-  collection, addDoc, serverTimestamp, query, orderBy, onSnapshot,
-  setDoc, increment
+  collection, addDoc, serverTimestamp, query, orderBy, onSnapshot
 } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -16,7 +15,7 @@ import toast from 'react-hot-toast';
 import {
   ArrowLeft, Calendar, Tag, Edit3, Trash2,
   MessageSquare, Send, User, X, Check,
-  Share2, Link2, MessageCircle, Upload, Eye
+  Share2, Link2, MessageCircle, Upload
 } from 'lucide-react';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
 import dynamic from 'next/dynamic';
@@ -67,50 +66,6 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
           createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || null),
         };
       }));
-    });
-    return () => unsub();
-  }, [id]);
-
-  // Read Count state
-  const [readCount, setReadCount] = useState<number>(initialArticle?.readCount || 0);
-
-  // Track unique real read per device (does not re-increment on page refresh)
-  useEffect(() => {
-    if (!id) return;
-    try {
-      const storageKey = `article_read_${id}`;
-      const alreadyRead = typeof window !== 'undefined' && localStorage.getItem(storageKey);
-      if (!alreadyRead) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(storageKey, '1');
-        }
-        // Increment in Firestore article_stats
-        setDoc(doc(db, 'article_stats', id), {
-          readCount: increment(1),
-          lastReadAt: serverTimestamp(),
-          title: initialArticle?.title || ''
-        }, { merge: true }).catch(() => {});
-
-        // Also update in articles collection if it exists
-        updateDoc(doc(db, 'articles', id), {
-          readCount: increment(1)
-        }).catch(() => {});
-      }
-    } catch (e) {
-      console.warn("Read tracking error:", e);
-    }
-  }, [id, initialArticle?.title]);
-
-  // Realtime readCount listener from article_stats
-  useEffect(() => {
-    if (!id) return;
-    const unsub = onSnapshot(doc(db, 'article_stats', id), snap => {
-      if (snap.exists()) {
-        const d = snap.data();
-        if (typeof d?.readCount === 'number') {
-          setReadCount(d.readCount);
-        }
-      }
     });
     return () => unsub();
   }, [id]);
@@ -301,9 +256,6 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
                 <Calendar size={14} /> {dateStr}
               </span>
             )}
-            <span className="yz-detail-meta-item">
-              <Eye size={14} /> {readCount} kişi okudu
-            </span>
           </div>
 
           {/* Admin controls */}

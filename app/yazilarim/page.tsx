@@ -2,18 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { collection, query, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { ArrowRight, Calendar, Tag, BookOpen, Plus, Eye } from 'lucide-react';
+import { ArrowRight, Calendar, Tag, BookOpen, Plus } from 'lucide-react';
 
 import { LOCAL_ARTICLES } from '@/data/local-articles';
 
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
-function ArticleCard({ article, readCount = 0 }: { article: any; readCount?: number }) {
+function ArticleCard({ article }: { article: any }) {
   const date = article.createdAt
     ? format(new Date(article.createdAt), 'd MMMM yyyy', { locale: tr })
     : '';
@@ -46,10 +46,6 @@ function ArticleCard({ article, readCount = 0 }: { article: any; readCount?: num
               {date}
             </span>
           )}
-          <span className="article-card-date" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Eye size={11} />
-            {readCount} kişi okudu
-          </span>
         </div>
 
         <h2 className="article-card-title">{article.title}</h2>
@@ -72,24 +68,7 @@ export default function YazilarimPage() {
   const { user } = useAuth();
   const isAdmin = ADMIN_EMAILS.includes(user?.email || '');
   const [articles, setArticles] = useState<any[]>([]);
-  const [articleStats, setArticleStats] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'article_stats'), snap => {
-      const map: Record<string, number> = {};
-      snap.docs.forEach(docSnap => {
-        const d = docSnap.data();
-        if (typeof d?.readCount === 'number') {
-          map[docSnap.id] = d.readCount;
-        }
-      });
-      setArticleStats(map);
-    }, err => {
-      console.warn("article_stats listener notice:", err);
-    });
-    return () => unsub();
-  }, []);
 
   useEffect(() => {
     async function fetch() {
@@ -157,13 +136,7 @@ export default function YazilarimPage() {
           </div>
         ) : (
           <div className="yz-grid">
-            {articles.map(a => (
-              <ArticleCard 
-                key={a.id} 
-                article={a} 
-                readCount={articleStats[a.id] ?? a.readCount ?? 0} 
-              />
-            ))}
+            {articles.map(a => <ArticleCard key={a.id} article={a} />)}
           </div>
         )}
       </main>
