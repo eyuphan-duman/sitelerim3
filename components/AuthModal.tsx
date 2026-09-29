@@ -328,39 +328,71 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                 </label>
               </div>
 
-              {/* Registration Terms & KVKK Checkbox */}
+              {/* Registration Terms & KVKK Checkbox & Document Buttons */}
               {mode === 'signup' && (
-                <div className="flex items-start gap-2.5 mt-1 text-left">
-                  <input
-                    type="checkbox"
-                    id="auth_terms_checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
-                    required
-                  />
-                  <label
-                    htmlFor="auth_terms_checkbox"
-                    className="text-[12px] leading-snug select-none cursor-pointer"
-                    style={{ color: dark ? '#94a3b8' : '#475569' }}
+                <div 
+                  style={{
+                    background: dark 
+                      ? (termsAccepted ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255, 255, 255, 0.04)')
+                      : (termsAccepted ? '#fefce8' : '#f8fafc'),
+                    borderColor: dark 
+                      ? (termsAccepted ? 'rgba(212, 175, 55, 0.55)' : '#2f3336')
+                      : (termsAccepted ? '#eab308' : '#cbd5e1'),
+                    boxShadow: termsAccepted ? '0 0 15px rgba(212, 175, 55, 0.15)' : 'none',
+                  }}
+                  className="rounded-xl border p-3.5 my-2 flex flex-col gap-3 transition-all text-left"
+                >
+                  {/* Two large, clearly visible buttons to open legal docs */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setTermsModalOpen(true)}
+                      className="flex-1 py-2 px-3 rounded-lg text-xs sm:text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                      style={{
+                        background: dark ? '#1e293b' : '#ffffff',
+                        color: dark ? '#facc15' : '#0f172a',
+                        border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid #cbd5e1',
+                      }}
+                    >
+                      <span>📜 Sözleşmeyi Oku</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTermsModalOpen(true)}
+                      className="flex-1 py-2 px-3 rounded-lg text-xs sm:text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                      style={{
+                        background: dark ? '#1e293b' : '#ffffff',
+                        color: dark ? '#60a5fa' : '#1e40af',
+                        border: dark ? '1px solid rgba(255,255,255,0.12)' : '1px solid #cbd5e1',
+                      }}
+                    >
+                      <span>🛡️ KVKK Metni</span>
+                    </button>
+                  </div>
+
+                  {/* Big Checkable Row */}
+                  <div 
+                    onClick={() => setTermsAccepted(!termsAccepted)}
+                    className="flex items-center gap-3 cursor-pointer select-none pt-0.5"
                   >
-                    <button
-                      type="button"
-                      onClick={() => setTermsModalOpen(true)}
-                      className="text-blue-500 hover:underline font-semibold"
+                    <input
+                      type="checkbox"
+                      id="auth_terms_checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-5 h-5 rounded-md cursor-pointer shrink-0 accent-[#b8965a]"
+                      required
+                    />
+                    <label
+                      htmlFor="auth_terms_checkbox"
+                      className="text-[13.5px] font-bold leading-tight cursor-pointer"
+                      style={{ color: dark ? '#f1f5f9' : '#0f172a' }}
                     >
-                      Kayıt Sözleşmesi
-                    </button>
-                    &apos;ni ve{' '}
-                    <button
-                      type="button"
-                      onClick={() => setTermsModalOpen(true)}
-                      className="text-blue-500 hover:underline font-semibold"
-                    >
-                      KVKK Aydınlatma Metni
-                    </button>
-                    &apos;ni okudum, şartları kabul ediyorum.
-                  </label>
+                      Kullanıcı Sözleşmesini ve KVKK Metnini Okudum, Onaylıyorum.
+                    </label>
+                  </div>
                 </div>
               )}
 

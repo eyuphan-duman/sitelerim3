@@ -70,34 +70,36 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
         <div
           style={{
             background: isDark ? '#091120' : '#f1f5f9',
-            borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`
+            borderBottom: `1.5px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`
           }}
-          className="flex px-4 sm:px-6 pt-2 gap-2 shrink-0 overflow-x-auto"
+          className="flex px-4 sm:px-6 py-3 gap-2.5 shrink-0 overflow-x-auto"
         >
           <button
             type="button"
             onClick={() => setActiveTab('terms')}
             style={{
-              borderBottom: activeTab === 'terms' ? '2px solid #b8965a' : '2px solid transparent',
-              color: activeTab === 'terms' ? (isDark ? '#facc15' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b'),
-              fontWeight: activeTab === 'terms' ? 700 : 500
+              background: activeTab === 'terms' ? 'var(--gold)' : (isDark ? 'rgba(255,255,255,0.06)' : '#ffffff'),
+              color: activeTab === 'terms' ? '#070e1b' : (isDark ? '#e2e8f0' : '#475569'),
+              borderColor: activeTab === 'terms' ? 'var(--gold)' : (isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'),
+              boxShadow: activeTab === 'terms' ? '0 2px 10px rgba(212,175,55,0.3)' : 'none',
             }}
-            className="pb-3 px-3 text-xs sm:text-sm flex items-center gap-2 transition-all whitespace-nowrap"
+            className="flex-1 min-h-[44px] py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
           >
-            <FileText size={16} />
+            <FileText size={17} />
             <span>Kullanıcı Sözleşmesi</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('kvkk')}
             style={{
-              borderBottom: activeTab === 'kvkk' ? '2px solid #b8965a' : '2px solid transparent',
-              color: activeTab === 'kvkk' ? (isDark ? '#facc15' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b'),
-              fontWeight: activeTab === 'kvkk' ? 700 : 500
+              background: activeTab === 'kvkk' ? 'var(--gold)' : (isDark ? 'rgba(255,255,255,0.06)' : '#ffffff'),
+              color: activeTab === 'kvkk' ? '#070e1b' : (isDark ? '#e2e8f0' : '#475569'),
+              borderColor: activeTab === 'kvkk' ? 'var(--gold)' : (isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'),
+              boxShadow: activeTab === 'kvkk' ? '0 2px 10px rgba(212,175,55,0.3)' : 'none',
             }}
-            className="pb-3 px-3 text-xs sm:text-sm flex items-center gap-2 transition-all whitespace-nowrap"
+            className="flex-1 min-h-[44px] py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
           >
-            <Lock size={16} />
+            <Lock size={17} />
             <span>KVKK Aydınlatma Metni</span>
           </button>
         </div>
@@ -248,22 +250,10 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
         <div
           style={{
             background: isDark ? '#091120' : '#f8fafc',
-            borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`
+            borderTop: `1.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`
           }}
-          className="p-4 sm:px-6 flex items-center justify-between gap-3 shrink-0"
+          className="p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0"
         >
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              borderColor: isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
-              color: isDark ? '#cbd5e1' : '#475569'
-            }}
-            className="px-4 py-2 rounded-lg border text-xs sm:text-sm font-semibold hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-          >
-            Kapat
-          </button>
-
           {onAccept && (
             <button
               type="button"
@@ -275,12 +265,24 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
                 background: 'linear-gradient(135deg, #b8965a 0%, #d4aa70 100%)',
                 color: '#070e1b',
               }}
-              className="px-5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-2 hover:opacity-95 shadow-md transition-all cursor-pointer"
+              className="w-full sm:flex-1 py-3.5 px-6 rounded-xl text-sm sm:text-base font-extrabold flex items-center justify-center gap-2.5 hover:opacity-95 active:scale-[0.99] shadow-lg transition-all cursor-pointer order-1 sm:order-2"
             >
-              <CheckCircle2 size={16} />
-              <span>Okudum ve Kabul Ediyorum</span>
+              <CheckCircle2 size={20} strokeWidth={2.5} />
+              <span>Sözleşmeyi Okudum ve Onaylıyorum</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1',
+              color: isDark ? '#cbd5e1' : '#475569'
+            }}
+            className="w-full sm:w-auto py-3 px-5 rounded-xl border text-sm font-bold hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer order-2 sm:order-1 text-center"
+          >
+            Kapat
+          </button>
         </div>
       </div>
     </div>

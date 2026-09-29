@@ -446,34 +446,65 @@ export default function PsychologistRegisterPage() {
             )}
           </div>
 
-          {/* Terms & Conditions Checkbox */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0 6px', background: 'rgba(255,255,255,0.04)', padding: '12px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }}>
-            <input
-              type="checkbox"
-              id="psych_terms_checkbox"
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              style={{ marginTop: 3, width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }}
-              required
-            />
-            <label htmlFor="psych_terms_checkbox" style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4, cursor: 'pointer', userSelect: 'none' }}>
+          {/* Terms & Conditions Checkbox & Document Buttons */}
+          <div 
+            style={{
+              background: termsAccepted ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+              borderColor: termsAccepted ? 'rgba(212, 175, 55, 0.6)' : 'rgba(255, 255, 255, 0.15)',
+              boxShadow: termsAccepted ? '0 0 20px rgba(212, 175, 55, 0.2)' : 'none',
+            }}
+            className="rounded-xl border p-4 my-3 flex flex-col gap-3 transition-all text-left"
+          >
+            {/* Two large, clearly visible buttons to open legal docs */}
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={() => setTermsModalOpen(true)}
-                style={{ color: 'var(--gold)', background: 'none', border: 'none', padding: 0, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                className="flex-1 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  color: '#facc15',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                }}
               >
-                Kullanıcı ve Kayıt Sözleşmesi
+                <span>📜 Sözleşmeyi Oku</span>
               </button>
-              {' '}ile{' '}
+
               <button
                 type="button"
                 onClick={() => setTermsModalOpen(true)}
-                style={{ color: 'var(--gold)', background: 'none', border: 'none', padding: 0, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                className="flex-1 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  color: '#60a5fa',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                }}
               >
-                KVKK Aydınlatma Metni
+                <span>🛡️ KVKK Metni</span>
               </button>
-              &apos;ni okudum, uzmanlık şartlarını ve yasal hükümleri kabul ediyorum.
-            </label>
+            </div>
+
+            {/* Big Checkable Row */}
+            <div 
+              onClick={() => setTermsAccepted(!termsAccepted)}
+              className="flex items-center gap-3 cursor-pointer select-none pt-1"
+            >
+              <input
+                type="checkbox"
+                id="psych_terms_checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                onClick={(e) => e.stopPropagation()}
+                className="w-5 h-5 rounded-md cursor-pointer shrink-0 accent-[#b8965a]"
+                required
+              />
+              <label
+                htmlFor="psych_terms_checkbox"
+                className="text-[13.5px] font-bold leading-tight text-white cursor-pointer"
+              >
+                Kullanıcı Sözleşmesini ve KVKK Metnini Okudum, Onaylıyorum.
+              </label>
+            </div>
           </div>
 
           {/* Submit */}
