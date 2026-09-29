@@ -374,7 +374,7 @@ export default function AdminPage() {
   const handleResetHeroSettings = () => {
     if (confirm('Kapak ayarlarını orijinal varsayılan ayarlara döndürmek istediğinize emin misiniz?')) {
       setHeroSettings(DEFAULT_HERO_SETTINGS);
-      toast('Varsayılan ayarlar yüklendi. Kalıcı olması için "Değişiklikleri Kaydet" butonuna tıklayın.', { icon: 'ℹ️' });
+      toast('Varsayılan ayarlar yüklendi. Kalıcı olması için "Değişiklikleri Kaydet" butonuna tıklayın.');
     }
   };
 
@@ -2197,8 +2197,12 @@ export default function AdminPage() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.82rem', color: '#334155', background: '#f8fafc', padding: '8px 12px', borderRadius: 6 }}>
-                      <span>📅 {app.date}</span>
-                      <span>⏰ {app.time}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Calendar size={14} style={{ color: '#64748b' }} /> {app.date}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Clock size={14} style={{ color: '#64748b' }} /> {app.time}
+                      </span>
                     </div>
 
                     {app.note && (

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { X as CloseIcon, Loader, Award } from 'lucide-react';
+import { X as CloseIcon, Loader, Award, FileText, ShieldCheck, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TermsModal from './TermsModal';
 
@@ -167,32 +167,48 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
             {mode === 'signup' && (
               <div 
                 style={{
-                  background: dark ? '#16181c' : undefined,
-                  borderColor: dark ? 'rgba(212, 175, 55, 0.35)' : undefined
+                  background: dark 
+                    ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(20, 24, 33, 0.95) 100%)' 
+                    : 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                  borderColor: dark ? 'rgba(212, 175, 55, 0.35)' : '#fde68a',
+                  boxShadow: dark ? '0 4px 16px rgba(0,0,0,0.3)' : '0 2px 10px rgba(245, 158, 11, 0.1)'
                 }}
-                className="mb-6 p-3.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50 to-amber-100/60 flex items-center justify-between gap-3 shadow-sm"
+                className="mb-6 p-4 rounded-2xl border flex flex-col gap-3.5 transition-all text-left"
               >
-                <div>
+                <div className="flex items-start gap-3">
                   <div 
-                    style={{ color: dark ? '#fbbf24' : '#0f172a' }}
-                    className="text-[14px] font-bold flex items-center gap-1.5"
+                    style={{ background: dark ? 'rgba(212, 175, 55, 0.2)' : 'rgba(245, 158, 11, 0.18)' }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   >
-                    <Award size={15} className="text-amber-500" />
-                    <span>Psikolog musunuz?</span>
+                    <Award size={20} className={dark ? "text-[#facc15]" : "text-[#b45309]"} />
                   </div>
-                  <div 
-                    style={{ color: dark ? '#94a3b8' : '#475569' }}
-                    className="text-[12px] mt-0.5"
-                  >
-                    Diploma ile uzman rozetli kayıt olun.
+                  <div className="flex-1 min-w-0">
+                    <div 
+                      style={{ color: dark ? '#facc15' : '#92400e' }}
+                      className="text-[15px] font-bold tracking-tight"
+                    >
+                      Psikolog musunuz?
+                    </div>
+                    <p 
+                      style={{ color: dark ? '#94a3b8' : '#475569' }}
+                      className="text-[13px] mt-0.5 leading-snug"
+                    >
+                      Diploma ve belgelerinizle uzman rozetli hesap açın.
+                    </p>
                   </div>
                 </div>
+
                 <Link
                   href="/kayit/psikolog"
                   onClick={onClose}
-                  className="text-[12px] font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 px-3 py-1.5 rounded-lg whitespace-nowrap shadow-sm transition-colors"
+                  className="w-full h-[40px] rounded-xl font-bold text-[13.5px] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.01] active:scale-98"
+                  style={{
+                    background: dark ? 'linear-gradient(135deg, #d4af37, #f6e05e)' : '#f59e0b',
+                    color: '#0f172a',
+                  }}
                 >
-                  Uzman Kaydı →
+                  <span>Uzman Kaydı Yap</span>
+                  <ArrowRight size={16} />
                 </Link>
               </div>
             )}
@@ -354,7 +370,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                         border: dark ? '1.5px solid rgba(212, 175, 55, 0.4)' : '1.5px solid #fde047',
                       }}
                     >
-                      <span className="text-base">📜</span>
+                      <FileText size={17} className={dark ? "text-amber-400" : "text-amber-600"} />
                       <span>Sözleşmeyi Oku</span>
                     </button>
 
@@ -368,7 +384,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                         border: dark ? '1.5px solid rgba(59, 130, 246, 0.4)' : '1.5px solid #bfdbfe',
                       }}
                     >
-                      <span className="text-base">🛡️</span>
+                      <ShieldCheck size={17} className={dark ? "text-blue-400" : "text-blue-600"} />
                       <span>KVKK Metni</span>
                     </button>
                   </div>

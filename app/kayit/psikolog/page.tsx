@@ -467,7 +467,7 @@ export default function PsychologistRegisterPage() {
                   border: '1.5px solid rgba(212, 175, 55, 0.4)',
                 }}
               >
-                <span className="text-base">📜</span>
+                <FileText size={17} className="text-amber-400" />
                 <span>Sözleşmeyi Oku</span>
               </button>
 
@@ -481,7 +481,7 @@ export default function PsychologistRegisterPage() {
                   border: '1.5px solid rgba(59, 130, 246, 0.4)',
                 }}
               >
-                <span className="text-base">🛡️</span>
+                <ShieldCheck size={17} className="text-blue-400" />
                 <span>KVKK Metni</span>
               </button>
             </div>
