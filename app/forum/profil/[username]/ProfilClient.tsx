@@ -56,10 +56,33 @@ function PostCard({
   isDark?: boolean;
 }) {
   const router = useRouter();
-  const authorName = p.authorName || 'Kullanıcı';
-  const authorUsername = p.authorUsername || authorName.toLowerCase().replace(/\s+/g, '') || 'kullanici';
-  const authorPhoto = p.authorPhotoURL;
-  const isPsych = Boolean(p.authorIsPsychologist);
+  const isRepost = Boolean(p.isRepost);
+  const authorName = (isRepost && p.originalAuthorName) ? p.originalAuthorName : (p.authorName || 'Kullanıcı');
+  const authorUsername = (isRepost && p.originalAuthorUsername) ? p.originalAuthorUsername : (p.authorUsername || authorName.toLowerCase().replace(/\s+/g, '') || 'kullanici');
+  const isPsych = Boolean(isRepost && p.originalAuthorIsPsychologist !== undefined ? p.originalAuthorIsPsychologist : p.authorIsPsychologist);
+
+  const initialPhoto = (isRepost && p.originalAuthorPhotoURL) 
+    ? p.originalAuthorPhotoURL 
+    : (p.authorPhotoURL || (p.uid === pd?.uid ? pd?.photoURL : undefined) || (p.authorUsername && pd?.username && p.authorUsername.toLowerCase() === pd.username.toLowerCase() ? pd?.photoURL : undefined));
+  const [authorPic, setAuthorPic] = useState<string | undefined>(initialPhoto);
+
+  useEffect(() => {
+    const candidate = (isRepost && p.originalAuthorPhotoURL)
+      ? p.originalAuthorPhotoURL
+      : (p.authorPhotoURL || (p.uid === pd?.uid ? pd?.photoURL : undefined) || (p.authorUsername && pd?.username && p.authorUsername.toLowerCase() === pd.username.toLowerCase() ? pd?.photoURL : undefined));
+    if (candidate) {
+      setAuthorPic(candidate);
+      return;
+    }
+    const targetUid = p.uid;
+    if (!targetUid) return;
+    const unsub = onSnapshot(doc(db, 'users', targetUid), snap => {
+      if (snap.exists() && snap.data()?.photoURL) {
+        setAuthorPic(snap.data().photoURL);
+      }
+    });
+    return () => unsub();
+  }, [p.uid, p.authorPhotoURL, p.isRepost, p.originalAuthorPhotoURL, pd?.uid, pd?.photoURL, pd?.username, p.authorUsername]);
 
   return (
     <div 
@@ -79,7 +102,7 @@ function PostCard({
 
       <div style={{ display: 'flex', gap: 14 }}>
         <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '1.05rem' }}>
-          {authorPhoto ? <img key={authorPhoto} src={authorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : authorName[0].toUpperCase()}
+          {authorPic ? <img key={authorPic} src={authorPic} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : authorName[0].toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -1138,7 +1161,13 @@ export default function ProfilClient({ username }: { username: string }) {
                   onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
                   style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
                 >
-                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>{(p.authorName || 'U')[0].toUpperCase()}</div>
+                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, overflow: 'hidden' }}>
+                    {(p.authorPhotoURL || (p.uid === pd?.uid ? pd?.photoURL : undefined)) ? (
+                      <img src={p.authorPhotoURL || pd?.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      (p.authorName || 'U')[0].toUpperCase()
+                    )}
+                  </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
                       <span style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.92rem' }}>{p.authorName}</span>

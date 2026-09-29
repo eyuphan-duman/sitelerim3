@@ -148,6 +148,24 @@ export default function ThreadView({
   const notifFromUser = searchParams?.get('fromUser');
   const notifType = searchParams?.get('notifType');
   const [dismissNotif, setDismissNotif] = useState(false);
+  const [authorProfilePhoto, setAuthorProfilePhoto] = useState<string>(
+    post?.authorPhotoURL || (currentUser?.uid === post?.uid ? (userProfile?.photoURL || currentUser?.photoURL) : '')
+  );
+
+  useEffect(() => {
+    const authorUid = post?.uid || currentPost?.uid;
+    if (!authorUid) return;
+    if (currentUser?.uid === authorUid && (userProfile?.photoURL || currentUser?.photoURL)) {
+      setAuthorProfilePhoto(userProfile?.photoURL || currentUser?.photoURL);
+      return;
+    }
+    const unsub = onSnapshot(doc(db, 'users', authorUid), snap => {
+      if (snap.exists() && snap.data()?.photoURL) {
+        setAuthorProfilePhoto(snap.data().photoURL);
+      }
+    });
+    return () => unsub();
+  }, [post?.uid, currentPost?.uid, currentUser?.uid, userProfile?.photoURL, currentUser?.photoURL]);
 
   useEffect(() => {
     const u = post?.authorUsername || (post?.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
@@ -159,11 +177,17 @@ export default function ThreadView({
     if (!post?.id) return;
     const unsub = onSnapshot(doc(db, 'forum', post.id), docSnap => {
       if (docSnap.exists()) {
-        setCurrentPost((prev: any) => ({ ...prev, id: docSnap.id, ...docSnap.data() }));
+        const d = docSnap.data();
+        setCurrentPost((prev: any) => ({
+          ...prev,
+          ...d,
+          id: docSnap.id,
+          authorPhotoURL: d.authorPhotoURL || prev?.authorPhotoURL || post?.authorPhotoURL
+        }));
       }
     });
     return () => unsub();
-  }, [post?.id]);
+  }, [post?.id, post?.authorPhotoURL]);
 
   // Listen to comments in real-time
   useEffect(() => {
@@ -689,8 +713,12 @@ export default function ThreadView({
                 overflow: 'hidden',
                 flexShrink: 0,
               }}>
-                {p.authorPhotoURL ? (
-                  <img src={p.authorPhotoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {authorProfilePhoto || p.authorPhotoURL || (currentUser?.uid === p.uid ? (userProfile?.photoURL || currentUser?.photoURL) : '') ? (
+                  <img 
+                    src={authorProfilePhoto || p.authorPhotoURL || (currentUser?.uid === p.uid ? (userProfile?.photoURL || currentUser?.photoURL) : '')} 
+                    alt="" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
                 ) : (
                   (p.authorName || 'U')[0].toUpperCase()
                 )}

@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   MessageCircle, Trash2, Heart, ThumbsDown, Repeat2, 
   Bookmark, Share2, CheckCircle 
 } from 'lucide-react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { formatPostDate, formatTimeAgo, renderTextWithMentions } from './ThreadView';
 import toast from 'react-hot-toast';
 
@@ -68,6 +70,26 @@ export default function ForumPost({
   const displayAuthorPhoto = isRepost && post.originalAuthorPhotoURL ? post.originalAuthorPhotoURL : post.authorPhotoURL;
   const canDelete = (currentUserUid && currentUserUid === post.uid) || adminEmails.includes(currentUserEmail || '');
   const hasPsychBadge = Boolean(isPsychologist || post.authorIsPsychologist || (isRepost && post.originalAuthorIsPsychologist));
+
+  const [liveAuthorPhoto, setLiveAuthorPhoto] = useState<string | undefined>(displayAuthorPhoto);
+
+  useEffect(() => {
+    if (displayAuthorPhoto) {
+      setLiveAuthorPhoto(displayAuthorPhoto);
+    }
+  }, [displayAuthorPhoto]);
+
+  useEffect(() => {
+    if (displayAuthorPhoto) return;
+    const targetUid = post.uid;
+    if (!targetUid) return;
+    const unsub = onSnapshot(doc(db, 'users', targetUid), snap => {
+      if (snap.exists() && snap.data()?.photoURL) {
+        setLiveAuthorPhoto(snap.data().photoURL);
+      }
+    });
+    return () => unsub();
+  }, [post.uid, displayAuthorPhoto]);
 
   // Reaction & state flags
   const userReaction = post.reactionsData?.[currentUserUid || ''];
@@ -151,8 +173,8 @@ export default function ForumPost({
             cursor: 'pointer',
             overflow: 'hidden'
           }}>
-            {displayAuthorPhoto ? (
-              <img src={displayAuthorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {(liveAuthorPhoto || displayAuthorPhoto) ? (
+              <img src={liveAuthorPhoto || displayAuthorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               (displayAuthorName || 'U')[0].toUpperCase()
             )}

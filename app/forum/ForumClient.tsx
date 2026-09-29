@@ -1116,7 +1116,7 @@ export default function ForumClient() {
                       key={t.id}
                       post={{
                         ...t,
-                        authorPhotoURL: usersMap[t.uid]?.photoURL,
+                        authorPhotoURL: usersMap[t.uid]?.photoURL || t.authorPhotoURL || (user?.uid === t.uid ? (userProfile?.photoURL || user?.photoURL) : undefined),
                         authorIsPsychologist: isAuthorPsych
                       }}
                       currentUserUid={user?.uid}
