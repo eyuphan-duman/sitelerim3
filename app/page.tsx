@@ -969,7 +969,11 @@ export default function HomePage() {
                 -webkit-line-clamp: 2 !important;
               }
               .article-card-excerpt-desktop {
-                display: none !important;
+                display: -webkit-box !important;
+                -webkit-line-clamp: 2 !important;
+                font-size: 0.8rem !important;
+                line-height: 1.5 !important;
+                margin-bottom: 10px !important;
               }
               .article-card-cta-desktop {
                 padding-top: 10px !important;
