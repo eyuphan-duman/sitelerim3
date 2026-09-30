@@ -46,20 +46,7 @@ interface Comment {
 const CATEGORIES = ['Tümü','Psikanaliz','Varoluş & Anlam','Kaygı & Depresyon','İlişkiler','Çocukluk & Travma','Rüyalar','Kimlik & Benlik','Kişisel Gelişim'];
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
-// Letter-by-letter randomized white light-up configuration for "MANAV FORUM"
-const SPLASH_LETTERS = [
-  { char: 'M', delay: 0.12, dur: 0.35 },
-  { char: 'A', delay: 0.46, dur: 0.35 },
-  { char: 'N', delay: 0.22, dur: 0.35 },
-  { char: 'A', delay: 0.62, dur: 0.35 },
-  { char: 'V', delay: 0.32, dur: 0.35 },
-  { char: ' ', isSpace: true },
-  { char: 'F', delay: 0.54, dur: 0.35 },
-  { char: 'O', delay: 0.08, dur: 0.35 },
-  { char: 'R', delay: 0.70, dur: 0.35 },
-  { char: 'U', delay: 0.26, dur: 0.35 },
-  { char: 'M', delay: 0.40, dur: 0.35 },
-];
+
 
 export default function ForumClient() {
   const { user, userProfile, logout } = useAuth();
@@ -623,39 +610,18 @@ export default function ForumClient() {
             <div className="manav-splash-glow" />
 
             {/* Official Forum Logo */}
-            <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img 
                 src="/forum-logo.png" 
                 alt="Manav Forum" 
                 style={{ 
-                  height: 60, 
+                  height: 72, 
                   width: 'auto', 
                   maxWidth: '85vw',
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 0 25px rgba(29, 155, 240, 0.65)) brightness(1.05)' 
+                  filter: 'drop-shadow(0 0 32px rgba(29, 155, 240, 0.75)) brightness(1.05)' 
                 }} 
               />
-            </div>
-
-            {/* Random letter-by-letter white ignition MANAV FORUM */}
-            <div className="manav-splash-letters-row">
-              {SPLASH_LETTERS.map((item, idx) => {
-                if (item.isSpace) {
-                  return <span key={idx} className="manav-letter-space" />;
-                }
-                return (
-                  <span
-                    key={idx}
-                    className="manav-letter-flicker"
-                    style={{
-                      animationDelay: `${item.delay}s`,
-                      animationDuration: `${item.dur}s`,
-                    }}
-                  >
-                    {item.char}
-                  </span>
-                );
-              })}
             </div>
 
             {/* Subtitle */}
