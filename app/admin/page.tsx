@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
-import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check, Award, ExternalLink, GraduationCap, Users, Search, UserCheck, ShieldCheck } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check, Award, ExternalLink, GraduationCap, Users, Search, UserCheck, ShieldCheck, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
+import { DEFAULT_ABOUT_SETTINGS, AboutSettings } from '@/lib/aboutSettings';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -26,7 +27,7 @@ export default function AdminPage() {
   const [articles, setArticles] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'hero' | 'psychologists' | 'appointments' | 'posts' | 'videos' | 'messages'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'psychologists' | 'appointments' | 'posts' | 'videos' | 'messages'>('hero');
   const [psychApplications, setPsychApplications] = useState<any[]>([]);
   const [psychFilter, setPsychFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [psychSubTab, setPsychSubTab] = useState<'users' | 'applications'>('users');
@@ -48,11 +49,16 @@ export default function AdminPage() {
   const [uploadingSlide1Img, setUploadingSlide1Img] = useState(false);
   const [uploadingSlide2Img, setUploadingSlide2Img] = useState(false);
 
+  // About Section Settings State
+  const [aboutSettings, setAboutSettings] = useState<AboutSettings>(DEFAULT_ABOUT_SETTINGS);
+  const [savingAbout, setSavingAbout] = useState(false);
+  const [uploadingAboutImg, setUploadingAboutImg] = useState(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam === 'hero' || tabParam === 'psychologists' || tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
+      if (tabParam === 'hero' || tabParam === 'about' || tabParam === 'psychologists' || tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
         setActiveTab(tabParam as any);
       }
     }
@@ -83,6 +89,15 @@ export default function AdminPage() {
           ...data,
           slide1: { ...prev.slide1, ...(data.slide1 || {}) },
           slide2: { ...prev.slide2, ...(data.slide2 || {}) },
+        }));
+      }
+    });
+    const uAbout = onSnapshot(doc(db, 'settings', 'about'), snap => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setAboutSettings(prev => ({
+          ...prev,
+          ...data,
         }));
       }
     });
@@ -137,7 +152,7 @@ export default function AdminPage() {
       }).catch(() => {});
     }
 
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); uAbout(); };
   }, [user]);
 
   const [adminUploadingDiploma, setAdminUploadingDiploma] = useState<string | null>(null);
@@ -378,6 +393,52 @@ export default function AdminPage() {
     }
   };
 
+  const handleUploadAboutImage = async (file: File) => {
+    try {
+      setUploadingAboutImg(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'manav-platform/about');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Görsel yüklenemedi');
+
+      setAboutSettings(prev => ({
+        ...prev,
+        image: data.url
+      }));
+      toast.success('Hakkımda fotoğrafı başarıyla yüklendi!');
+    } catch (err: any) {
+      toast.error('Fotoğraf yüklenirken hata: ' + (err.message || ''));
+    } finally {
+      setUploadingAboutImg(false);
+    }
+  };
+
+  const handleSaveAboutSettings = async () => {
+    setSavingAbout(true);
+    try {
+      await setDoc(doc(db, 'settings', 'about'), aboutSettings, { merge: true });
+      toast.success('Hakkımda bölümü başarıyla kaydedildi!');
+    } catch (err: any) {
+      toast.error('Kaydedilirken hata oluştu: ' + (err.message || ''));
+    } finally {
+      setSavingAbout(false);
+    }
+  };
+
+  const handleResetAboutSettings = () => {
+    if (confirm('Hakkımda bölümünü varsayılan metin ve fotoğrafa döndürmek istediğinize emin misiniz?')) {
+      setAboutSettings(DEFAULT_ABOUT_SETTINGS);
+      toast('Varsayılan ayarlar yüklendi. Kalıcı olması için "Değişiklikleri Kaydet" butonuna tıklayın.');
+    }
+  };
+
   const handleAddPost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!postForm.title.trim() || !postForm.content || postForm.content === '<p><br></p>') {
@@ -490,6 +551,7 @@ export default function AdminPage() {
 
   const MENUS = [
     { id: 'hero', label: 'Ana Sayfa Kapağı', icon: <Sliders size={18}/> },
+    { id: 'about', label: 'Hakkımda Bölümü', icon: <UserCheck size={18}/> },
     { id: 'psychologists', label: 'Psikologlar & Yetkiler', icon: <Award size={18}/> },
     { id: 'appointments', label: 'Randevular', icon: <Calendar size={18}/> },
     { id: 'posts', label: 'Yazılarım', icon: <FileText size={18}/> },
@@ -500,6 +562,11 @@ export default function AdminPage() {
   return (
     <div className="admin-layout" style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex' }}>
       <style>{`
+        .admin-about-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 380px;
+          gap: 28px;
+        }
         .admin-mobile-tabs-bar {
           display: none;
         }
@@ -627,6 +694,9 @@ export default function AdminPage() {
             display: flex !important;
             flex-direction: column !important;
             gap: 12px !important;
+          }
+          .admin-about-grid {
+            grid-template-columns: 1fr !important;
           }
         }
         @media (min-width: 901px) {
@@ -1374,6 +1444,310 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ══════════════════ ABOUT SECTION TAB ══════════════════ */}
+        {activeTab === 'about' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            {/* Header with actions */}
+            <div className="admin-hero-subtabs-box" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, background: 'white', padding: '16px 20px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--navy)', margin: 0 }}>
+                  Hakkımda Bölümü Ayarları
+                </h3>
+                <p style={{ fontSize: '0.84rem', color: '#64748b', margin: '4px 0 0' }}>
+                  Ana sayfadaki profil fotoğrafı, başlık, biyografi metinleri ve alıntıyı buradan düzenleyebilirsiniz.
+                </p>
+              </div>
+
+              <div className="admin-hero-actions-box" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleResetAboutSettings}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: 6,
+                    border: '1px solid #cbd5e1',
+                    background: 'white',
+                    color: '#64748b',
+                    fontSize: '0.84rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <RotateCcw size={14} /> Varsayılana Sıfırla
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAboutSettings}
+                  disabled={savingAbout}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: 'var(--gold)',
+                    color: 'var(--navy)',
+                    fontSize: '0.88rem',
+                    fontWeight: 700,
+                    cursor: savingAbout ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    boxShadow: '0 4px 14px rgba(212, 175, 55, 0.3)',
+                  }}
+                >
+                  <Save size={16} /> {savingAbout ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+                </button>
+              </div>
+            </div>
+
+            {/* Grid: Left form fields, Right image upload & preview */}
+            <div className="admin-about-grid">
+              {/* Form inputs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* 1. Header & Identity */}
+                <div style={{ background: 'white', padding: 24, borderRadius: 10, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--navy)', margin: 0, paddingBottom: 10, borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Type size={18} color="var(--gold)" /> Başlık ve Kimlik Bilgileri
+                  </h4>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Üst Başlık (Eyebrow)</label>
+                    <input
+                      type="text"
+                      value={aboutSettings.eyebrow}
+                      onChange={e => setAboutSettings(prev => ({ ...prev, eyebrow: e.target.value }))}
+                      placeholder="HAKKIMDA"
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>İsim / Ana Başlık</label>
+                      <input
+                        type="text"
+                        value={aboutSettings.name}
+                        onChange={e => setAboutSettings(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Furkan Manav,"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--gold-dim)', marginBottom: 6 }}>Ünvan / Meslek (İtalik Alt Başlık)</label>
+                      <input
+                        type="text"
+                        value={aboutSettings.title}
+                        onChange={e => setAboutSettings(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Psikolog"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid var(--gold)', fontSize: '0.92rem', outline: 'none', background: '#fffbeb' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Biography Paragraphs */}
+                <div style={{ background: 'white', padding: 24, borderRadius: 10, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--navy)', margin: 0, paddingBottom: 10, borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileText size={18} color="var(--gold)" /> Biyografi ve Tanıtım Metinleri
+                  </h4>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Paragraf Metni (Giriş & Yaklaşım)</label>
+                    <textarea
+                      rows={4}
+                      value={aboutSettings.paragraph1}
+                      onChange={e => setAboutSettings(prev => ({ ...prev, paragraph1: e.target.value }))}
+                      placeholder="Varoluşçu-Psikanalitik yönelimli bir yaklaşımla..."
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.9rem', lineHeight: 1.6, outline: 'none', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>2. Paragraf Metni (Terapötik Süreç)</label>
+                    <textarea
+                      rows={4}
+                      value={aboutSettings.paragraph2}
+                      onChange={e => setAboutSettings(prev => ({ ...prev, paragraph2: e.target.value }))}
+                      placeholder="Terapide kişi; yalnızca ne hissettiğini değil..."
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.9rem', lineHeight: 1.6, outline: 'none', resize: 'vertical' }}
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Quote Block */}
+                <div style={{ background: 'white', padding: 24, borderRadius: 10, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--navy)', margin: 0, paddingBottom: 10, borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Sparkles size={18} color="var(--gold)" /> Vurgulu Alıntı Sözü (Quote)
+                  </h4>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>Alıntı Metni</label>
+                    <textarea
+                      rows={2}
+                      value={aboutSettings.quote}
+                      onChange={e => setAboutSettings(prev => ({ ...prev, quote: e.target.value }))}
+                      placeholder="Geçmiş değiştirilemez belki ama geçmişle kurulan ilişki ve bağ değişebilir."
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', fontStyle: 'italic', outline: 'none', resize: 'vertical' }}
+                    />
+                    <span style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4, display: 'block' }}>
+                      Ana sayfada altın dikey çizgi ve tırnak işaretleri ile özel olarak vurgulanır.
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Action Buttons */}
+                <div style={{ background: 'white', padding: 24, borderRadius: 10, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--navy)', margin: 0, paddingBottom: 10, borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Link2 size={18} color="var(--gold)" /> Butonlar ve Yönlendirmeler
+                  </h4>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Metni (Altın Dolgulu)</label>
+                      <input
+                        type="text"
+                        value={aboutSettings.primaryBtnText}
+                        onChange={e => setAboutSettings(prev => ({ ...prev, primaryBtnText: e.target.value }))}
+                        placeholder="Devamını Oku"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>1. Buton Bağlantısı (Link)</label>
+                      <input
+                        type="text"
+                        value={aboutSettings.primaryBtnLink}
+                        onChange={e => setAboutSettings(prev => ({ ...prev, primaryBtnLink: e.target.value }))}
+                        placeholder="/ben-kimim"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>2. Buton Metni (Çerçeveli)</label>
+                      <input
+                        type="text"
+                        value={aboutSettings.secondaryBtnText}
+                        onChange={e => setAboutSettings(prev => ({ ...prev, secondaryBtnText: e.target.value }))}
+                        placeholder="İletişime Geç"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: 6 }}>2. Buton Bağlantısı (Link)</label>
+                      <input
+                        type="text"
+                        value={aboutSettings.secondaryBtnLink}
+                        onChange={e => setAboutSettings(prev => ({ ...prev, secondaryBtnLink: e.target.value }))}
+                        placeholder="/iletisim"
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: 6, border: '1.5px solid #cbd5e1', fontSize: '0.92rem', outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right column: Image upload and preview */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Photo card */}
+                <div style={{ background: 'white', padding: 24, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ImageIcon size={18} color="var(--gold)" /> Profil Fotoğrafı
+                  </h4>
+
+                  {/* Photo container */}
+                  <div style={{ width: '100%', borderRadius: 12, overflow: 'hidden', background: '#f1f5f9', position: 'relative', border: '1.5px solid rgba(212, 175, 55, 0.3)', marginBottom: 16, aspectRatio: '4/5', boxShadow: '0 8px 24px rgba(10, 22, 40, 0.08)' }}>
+                    <img
+                      src={aboutSettings.image || '/pskfurkanmanav.jpeg'}
+                      alt="Hakkımda Fotoğraf Önizleme"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }}
+                    />
+                    {uploadingAboutImg && (
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(10,22,40,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', gap: 10, padding: 16, textAlign: 'center' }}>
+                        <Clock className="animate-spin" size={28} color="var(--gold)" />
+                        <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Fotoğraf Yükleniyor...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload button */}
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--navy)', color: 'white', padding: '12px 18px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', marginBottom: 12, transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(10,22,40,0.15)' }}>
+                    <Upload size={16} /> Bilgisayardan Fotoğraf Yükle
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      disabled={uploadingAboutImg}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadAboutImage(file);
+                      }}
+                    />
+                  </label>
+
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Veya Doğrudan Görsel URL'si:</label>
+                    <input
+                      type="text"
+                      value={aboutSettings.image}
+                      onChange={e => setAboutSettings(prev => ({ ...prev, image: e.target.value }))}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none' }}
+                      placeholder="/pskfurkanmanav.jpeg veya https://..."
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setAboutSettings(prev => ({ ...prev, image: '/pskfurkanmanav.jpeg' }))}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  >
+                    <RotateCcw size={13} /> Orijinal Fotoğrafı Geri Yükle
+                  </button>
+                </div>
+
+                {/* Save Reminder Box */}
+                <div style={{ background: '#fdfbf7', border: '1.5px solid rgba(212, 175, 55, 0.4)', borderRadius: 10, padding: 18 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <Sparkles size={20} color="var(--gold-dim)" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--navy)' }}>Canlı Güncelleme</div>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0 12px', lineHeight: 1.5 }}>
+                        Fotoğraf ve metinlerde yaptığınız düzenlemeleri tamamladıktan sonra yukarıdaki <strong>"Değişiklikleri Kaydet"</strong> butonuna tıklayınız.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleSaveAboutSettings}
+                        disabled={savingAbout}
+                        style={{
+                          width: '100%',
+                          padding: '10px 16px',
+                          borderRadius: 6,
+                          border: 'none',
+                          background: 'var(--gold)',
+                          color: 'var(--navy)',
+                          fontSize: '0.86rem',
+                          fontWeight: 700,
+                          cursor: savingAbout ? 'wait' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <Save size={15} /> {savingAbout ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

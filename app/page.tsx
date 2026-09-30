@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
 import { QUOTES } from '@/data/quotes';
 import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
+import { DEFAULT_ABOUT_SETTINGS, AboutSettings } from '@/lib/aboutSettings';
 
 const YOUTUBE_SHORTS = [
   { id: 'ABmIev4nIkg', title: "MİTOMANİ", youtubeId: 'ABmIev4nIkg' },
@@ -95,6 +96,26 @@ export default function HomePage() {
       }
     }
     loadHeroSettings();
+  }, []);
+
+  // About Section settings state
+  const [aboutSettings, setAboutSettings] = useState<AboutSettings>(DEFAULT_ABOUT_SETTINGS);
+
+  useEffect(() => {
+    async function loadAboutSettings() {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'about'));
+        if (snap.exists()) {
+          setAboutSettings(prev => ({
+            ...prev,
+            ...snap.data(),
+          }));
+        }
+      } catch (err) {
+        console.warn('About settings fetch notice:', err);
+      }
+    }
+    loadAboutSettings();
   }, []);
 
   useEffect(() => {
@@ -819,8 +840,8 @@ export default function HomePage() {
                 }}
               >
                 <img
-                  src="/pskfurkanmanav.jpeg"
-                  alt="Psikolog Furkan Manav"
+                  src={aboutSettings.image || '/pskfurkanmanav.jpeg'}
+                  alt={aboutSettings.name || 'Psikolog Furkan Manav'}
                   style={{ width: '100%', display: 'block', aspectRatio: '4/5', objectFit: 'cover', objectPosition: 'top center' }}
                 />
               </div>
@@ -829,69 +850,85 @@ export default function HomePage() {
             {/* Right: Content */}
             <div>
               {/* Eyebrow */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <span style={{ width: 32, height: 2, background: '#c9a96e', display: 'block' }} />
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8a5814' }}>
-                  Hakkımda
-                </span>
-              </div>
+              {aboutSettings.eyebrow && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <span style={{ width: 32, height: 2, background: '#c9a96e', display: 'block' }} />
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8a5814' }}>
+                    {aboutSettings.eyebrow}
+                  </span>
+                </div>
+              )}
 
               {/* Title */}
-              <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', fontWeight: 700, color: '#0a1628', lineHeight: 1.1, marginBottom: 12 }}>
-                Furkan Manav,
-              </h2>
-              <p style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.6rem, 2.5vw, 2.2rem)', fontStyle: 'italic', color: '#8a5814', lineHeight: 1.2, marginBottom: 32 }}>
-                Psikolog
-              </p>
+              {aboutSettings.name && (
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', fontWeight: 700, color: '#0a1628', lineHeight: 1.1, marginBottom: 12 }}>
+                  {aboutSettings.name}
+                </h2>
+              )}
+              {aboutSettings.title && (
+                <p style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.6rem, 2.5vw, 2.2rem)', fontStyle: 'italic', color: '#8a5814', lineHeight: 1.2, marginBottom: 32 }}>
+                  {aboutSettings.title}
+                </p>
+              )}
 
               {/* Separator */}
               <div style={{ width: 48, height: 2, background: '#c9a96e', marginBottom: 32 }} />
 
               {/* Body Text */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 40 }}>
-                <p style={{ fontSize: '1.05rem', lineHeight: 1.85, color: '#475569' }}>
-                  Varoluşçu-Psikanalitik yönelimli bir yaklaşımla, yetişkinlere yönelik bireysel psikolojik danışmanlık hizmeti sunmaktayım. Terapi odası, hazır reçeteler sunan bir otorite yeri değil; kişinin kendi iç dünyasını güvenle keşfetmesine alan açan derin bir karşılaşmadır.
-                </p>
-                <p style={{ fontSize: '1.05rem', lineHeight: 1.85, color: '#475569' }}>
-                  Terapide kişi; yalnızca ne hissettiğini değil, neden öyle hissettiğini ve düşüncelerinin ardında hangi anlamların gizlendiğini keşfetmeye başlar. Semptomlar çoğu zaman yalnızca birer şikâyet değil, daha derin psikolojik süreçlerin birer yansımasıdır.
-                </p>
+                {aboutSettings.paragraph1 && (
+                  <p style={{ fontSize: '1.05rem', lineHeight: 1.85, color: '#475569' }}>
+                    {aboutSettings.paragraph1}
+                  </p>
+                )}
+                {aboutSettings.paragraph2 && (
+                  <p style={{ fontSize: '1.05rem', lineHeight: 1.85, color: '#475569' }}>
+                    {aboutSettings.paragraph2}
+                  </p>
+                )}
               </div>
 
               {/* Quote */}
-              <blockquote style={{ borderLeft: '3px solid #c9a96e', paddingLeft: 24, marginBottom: 40 }}>
-                <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '1.15rem', lineHeight: 1.7, color: '#1e293b' }}>
-                  "Geçmiş değiştirilemez belki ama geçmişle kurulan ilişki ve bağ değişebilir."
-                </p>
-              </blockquote>
+              {aboutSettings.quote && (
+                <blockquote style={{ borderLeft: '3px solid #c9a96e', paddingLeft: 24, marginBottom: 40 }}>
+                  <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '1.15rem', lineHeight: 1.7, color: '#1e293b' }}>
+                    "{aboutSettings.quote.replace(/^["“”']+|["“”']+$/g, '')}"
+                  </p>
+                </blockquote>
+              )}
 
               {/* Actions */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
-                <Link href="/ben-kimim" className="btn-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                  Devamını Oku
-                  <ArrowRight size={16} />
-                </Link>
-                <Link
-                  href="/iletisim"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '14px 28px',
-                    borderRadius: 8,
-                    border: '2px solid #0a1628',
-                    color: '#0a1628',
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    textDecoration: 'none',
-                    transition: 'all 0.25s',
-                  }}
-                  onMouseOver={e => { e.currentTarget.style.background = '#0a1628'; e.currentTarget.style.color = '#ffffff'; }}
-                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#0a1628'; }}
-                >
-                  İletişime Geç
-                </Link>
+                {aboutSettings.primaryBtnText && (
+                  <Link href={aboutSettings.primaryBtnLink || '/ben-kimim'} className="btn-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    {aboutSettings.primaryBtnText}
+                    <ArrowRight size={16} />
+                  </Link>
+                )}
+                {aboutSettings.secondaryBtnText && (
+                  <Link
+                    href={aboutSettings.secondaryBtnLink || '/iletisim'}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '14px 28px',
+                      borderRadius: 8,
+                      border: '2px solid #0a1628',
+                      color: '#0a1628',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      textDecoration: 'none',
+                      transition: 'all 0.25s',
+                    }}
+                    onMouseOver={e => { e.currentTarget.style.background = '#0a1628'; e.currentTarget.style.color = '#ffffff'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#0a1628'; }}
+                  >
+                    {aboutSettings.secondaryBtnText}
+                  </Link>
+                )}
               </div>
             </div>
 
