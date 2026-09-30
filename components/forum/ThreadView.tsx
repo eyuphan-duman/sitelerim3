@@ -14,10 +14,11 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import toast from 'react-hot-toast';
+import { notifyMentions } from '@/lib/mentionUtils';
 
 export function renderTextWithMentions(text: string) {
   if (!text) return null;
-  const parts = text.split(/(@[a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+|#[a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+)/g);
+  const parts = text.split(/(@[a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_\.]+|#[a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+)/g);
   return parts.map((part, i) => {
     if (part.startsWith('@')) {
       const cleanUsername = part.slice(1);
@@ -475,6 +476,16 @@ export default function ThreadView({
           });
         } catch {}
       }
+
+      // Notify any mentioned users in reply
+      try {
+        await notifyMentions({
+          text: replyText,
+          postId: p.originalPostId || p.id,
+          currentUser,
+          userProfile
+        });
+      } catch {}
 
       setReplyText('');
       setReplyImageUrl('');

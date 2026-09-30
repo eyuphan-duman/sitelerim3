@@ -10,6 +10,7 @@ import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, Me
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { notifyMentions } from '@/lib/mentionUtils';
 
 interface Post {
   id: string;
@@ -296,7 +297,7 @@ export default function ForumClient() {
       (userProfile?.isPsychologist && !userProfile?.psychologistStatus)
     );
     try {
-      await addDoc(collection(db, 'forum'), {
+      const newPostRef = await addDoc(collection(db, 'forum'), {
         body: form.body,
         category: form.cat,
         imageUrl: form.imageUrl || '',
@@ -308,6 +309,17 @@ export default function ForumClient() {
         createdAt: serverTimestamp(),
         reactionsData: {}
       });
+
+      // Notify mentioned users
+      try {
+        await notifyMentions({
+          text: form.body,
+          postId: newPostRef.id,
+          currentUser: user,
+          userProfile
+        });
+      } catch {}
+
       setForm({ body: '', cat: 'Psikanaliz', imageUrl: '' });
       toast.success('Paylaşıldı!');
     } catch {
@@ -566,6 +578,16 @@ export default function ForumClient() {
         });
       } catch {}
     }
+
+    // Notify mentioned users in comment
+    try {
+      await notifyMentions({
+        text,
+        postId: activeThread.id,
+        currentUser: user,
+        userProfile
+      });
+    } catch {}
 
     toast.success('Yorum eklendi.');
   };
