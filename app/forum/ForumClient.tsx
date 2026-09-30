@@ -622,6 +622,21 @@ export default function ForumClient() {
             {/* Glowing outer aura */}
             <div className="manav-splash-glow" />
 
+            {/* Official Forum Logo */}
+            <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img 
+                src="/forum-logo.png" 
+                alt="Manav Forum" 
+                style={{ 
+                  height: 60, 
+                  width: 'auto', 
+                  maxWidth: '85vw',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 0 25px rgba(29, 155, 240, 0.65)) brightness(1.05)' 
+                }} 
+              />
+            </div>
+
             {/* Random letter-by-letter white ignition MANAV FORUM */}
             <div className="manav-splash-letters-row">
               {SPLASH_LETTERS.map((item, idx) => {
@@ -700,9 +715,16 @@ export default function ForumClient() {
           onClick={() => { setFeedTab('all'); setFilter('Tümü'); setSearchQuery(''); closeThread(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
         >
-          <span style={{ fontSize: '1.2rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', fontFamily: 'Playfair Display, serif', letterSpacing: '0.04em' }}>
-            MANAV FORUM
-          </span>
+          <img 
+            src="/forum-logo.png" 
+            alt="Manav Forum" 
+            style={{ 
+              height: 28, 
+              width: 'auto', 
+              objectFit: 'contain',
+              filter: isDark ? 'drop-shadow(0 0 10px rgba(29, 155, 240, 0.45)) brightness(1.05)' : 'none'
+            }} 
+          />
           <span style={{ fontSize: '0.62rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '1px 5px', borderRadius: 4, fontWeight: 800 }}>v2.0</span>
         </div>
 
@@ -787,13 +809,20 @@ export default function ForumClient() {
         {/* LEFT SIDEBAR */}
         <aside className="forum-sidebar-left" style={{ position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#000000' : 'transparent' }}>
           <div style={{ padding: '0 8px 16px', marginBottom: 8 }}>
-            <Link href="/" style={{ textDecoration: 'none' }} title="Ana Sayfaya Dön">
-              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.45rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                MANAV FORUM
-                <span style={{ fontSize: '0.58rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
-              </h1>
+            <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }} title="Ana Sayfaya Dön">
+              <img 
+                src="/forum-logo.png" 
+                alt="Manav Forum" 
+                style={{ 
+                  height: 38, 
+                  width: 'auto', 
+                  objectFit: 'contain',
+                  filter: isDark ? 'drop-shadow(0 0 12px rgba(29, 155, 240, 0.45)) brightness(1.05)' : 'none'
+                }} 
+              />
+              <span style={{ fontSize: '0.58rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
             </Link>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingLeft: 2 }}>
               <p style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8', margin: 0 }}>Psikoloji Topluluğu</p>
               <Link href="/" style={{ fontSize: '0.74rem', color: isDark ? '#38bdf8' : '#2563eb', textDecoration: 'none', fontWeight: 700 }}>
                 ← Ana Site

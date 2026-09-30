@@ -954,13 +954,20 @@ export default function ProfilClient({ username }: { username: string }) {
         {/* ── LEFT SIDEBAR ── */}
         <aside className="profile-sidebar-left" style={{ position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#000000' : 'transparent' }}>
           <div style={{ padding: '0 8px 16px', marginBottom: 8 }}>
-            <Link href="/" style={{ textDecoration: 'none' }} title="Ana Sayfaya Dön">
-              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.45rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                MANAV FORUM
-                <span style={{ fontSize: '0.58rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
-              </h1>
+            <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }} title="Ana Sayfaya Dön">
+              <img 
+                src="/forum-logo.png" 
+                alt="Manav Forum" 
+                style={{ 
+                  height: 38, 
+                  width: 'auto', 
+                  objectFit: 'contain',
+                  filter: isDark ? 'drop-shadow(0 0 12px rgba(29, 155, 240, 0.45)) brightness(1.05)' : 'none'
+                }} 
+              />
+              <span style={{ fontSize: '0.58rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
             </Link>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingLeft: 2 }}>
               <p style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8', margin: 0 }}>Psikoloji Topluluğu</p>
               <Link href="/" style={{ fontSize: '0.74rem', color: isDark ? '#38bdf8' : '#2563eb', textDecoration: 'none', fontWeight: 700 }}>
                 ← Ana Site

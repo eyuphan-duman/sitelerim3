@@ -156,16 +156,17 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
             <CloseIcon size={20} strokeWidth={2}/>
           </button>
           
-          <div className="absolute left-1/2 -translate-x-1/2">
-            <div 
-              style={{
-                background: dark ? '#ffffff' : '#000000',
-                color: dark ? '#000000' : '#ffffff'
-              }}
-              className="w-8 h-8 rounded-full flex items-center justify-center font-serif font-bold text-lg select-none"
-            >
-              M
-            </div>
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+            <img 
+              src="/forum-logo.png" 
+              alt="Manav Forum" 
+              style={{ 
+                height: 30, 
+                width: 'auto', 
+                objectFit: 'contain',
+                filter: dark ? 'drop-shadow(0 0 10px rgba(29, 155, 240, 0.45)) brightness(1.05)' : 'none'
+              }} 
+            />
           </div>
           
           <div className="w-9" /> {/* Spacer to preserve absolute center balance */}
