@@ -1093,7 +1093,7 @@ export default function ProfilClient({ username }: { username: string }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <button 
                     className="profile-btn-action" 
-                    onClick={() => { setSettingsTab('security'); setSettingsOpen(true); }} 
+                    onClick={() => { setSettingsTab('profile'); setSettingsOpen(true); }} 
                     style={{ 
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -1503,7 +1503,7 @@ export default function ProfilClient({ username }: { username: string }) {
       {/* Edit Profile & Settings Modal */}
       {(editOpen || settingsOpen) && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => { setEditOpen(false); setSettingsOpen(false); }}>
-          <div style={{ background: isDark ? '#16181c' : 'white', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderRadius: 20, width: '100%', maxWidth: 580, padding: 24, boxShadow: '0 25px 50px rgba(0,0,0,0.5)', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: isDark ? '#16181c' : 'white', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderRadius: 20, width: '100%', maxWidth: 600, padding: '24px 20px', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Settings size={22} color={isDark ? '#e7e9ea' : '#0f172a'} />
@@ -1520,37 +1520,52 @@ export default function ProfilClient({ username }: { username: string }) {
               </button>
             </div>
 
-            {/* Sub-tabs header */}
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, marginBottom: 20, borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, scrollbarWidth: 'none' }}>
+            {/* Sub-tabs header - Segmented Bar that 100% fits within screen */}
+            <div 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', 
+                gap: 4, 
+                background: isDark ? '#000000' : '#f1f5f9',
+                padding: 4,
+                borderRadius: 12,
+                marginBottom: 20, 
+                border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+              }}
+            >
               {[
-                { id: 'profile', label: 'Profil Bilgileri', icon: <User size={15} /> },
-                { id: 'security', label: 'Şifre Değiştir', icon: <Key size={15} /> },
-                { id: 'privacy', label: 'Gizlilik', icon: <Shield size={15} /> },
-                { id: 'badge', label: 'Psikolog Rozeti', icon: <Award size={15} /> },
-                { id: 'danger', label: 'Hesap Durumu', icon: <AlertTriangle size={15} /> },
+                { id: 'profile', short: 'Profil', full: 'Profil Bilgileri', icon: <User size={14} /> },
+                { id: 'security', short: 'Şifre', full: 'Şifre Değiştir', icon: <Key size={14} /> },
+                { id: 'privacy', short: 'Gizlilik', full: 'Gizlilik Ayarları', icon: <Shield size={14} /> },
+                { id: 'badge', short: 'Rozet', full: 'Psikolog Rozeti', icon: <Award size={14} /> },
+                { id: 'danger', short: 'Hesap', full: 'Hesap Durumu', icon: <AlertTriangle size={14} /> },
               ].map(st => (
                 <button
                   key={st.id}
                   type="button"
+                  title={st.full}
                   onClick={() => setSettingsTab(st.id as any)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 12px',
-                    borderRadius: 8,
+                    justifyContent: 'center',
+                    gap: 5,
+                    padding: '8px 2px',
+                    borderRadius: 9,
                     border: 'none',
                     background: settingsTab === st.id ? (isDark ? '#1d9bf0' : '#0f172a') : 'transparent',
                     color: settingsTab === st.id ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
                     fontWeight: 700,
-                    fontSize: '0.82rem',
+                    fontSize: '0.8rem',
                     cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.15s'
+                    transition: 'all 0.15s',
+                    minWidth: 0,
                   }}
                 >
                   {st.icon}
-                  <span>{st.label}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {st.short}
+                  </span>
                 </button>
               ))}
             </div>
