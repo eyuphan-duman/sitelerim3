@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { formatTimeAgo, renderTextWithMentions } from '@/components/forum/ThreadView';
+import ForumLoadingScreen from '@/components/forum/ForumLoadingScreen';
 
 interface Post { 
   id: string; body: string; authorName: string; authorUsername?: string; uid: string; 
@@ -845,12 +846,7 @@ export default function ProfilClient({ username }: { username: string }) {
   };
 
   if (loading) {
-    return (
-      <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isDark ? '#000000' : '#f8fafc' }}>
-        <div style={{ width: 40, height: 40, border: `3px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderTopColor: isDark ? '#1d9bf0' : '#0f172a', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    );
+    return <ForumLoadingScreen text="Profil Yükleniyor..." isDark={isDark} />;
   }
 
   if (!pd) {
