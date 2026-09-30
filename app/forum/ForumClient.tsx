@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ThreadView from '@/components/forum/ThreadView';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark, Heart, Sun, Moon, Plus, Menu, LogOut } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark, Heart, Sun, Moon, Plus, Menu, LogOut, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -215,6 +215,45 @@ export default function ForumClient() {
     }
     return list;
   })();
+
+  // Matching users based on search query
+  const matchedUsers = React.useMemo(() => {
+    const rawQ = searchQuery.trim().toLocaleLowerCase('tr-TR');
+    if (!rawQ) return [];
+    const cleanQ = rawQ.startsWith('@') ? rawQ.slice(1) : rawQ.startsWith('#') ? '' : rawQ;
+    if (!cleanQ) return [];
+    return Object.values(usersMap).filter((u: any) => {
+      if (!u || u.isFrozen || u.isDeleted) return false;
+      const uname = (u.username || '').toLocaleLowerCase('tr-TR');
+      const dname = (u.displayName || '').toLocaleLowerCase('tr-TR');
+      const bio = (u.bio || '').toLocaleLowerCase('tr-TR');
+      return uname.includes(cleanQ) || dname.includes(cleanQ) || bio.includes(cleanQ);
+    }).slice(0, 8);
+  }, [searchQuery, usersMap]);
+
+  const toggleFollowUser = async (targetUid: string) => {
+    if (!user || user.isAnonymous) {
+      setAuthOpen(true);
+      return;
+    }
+    const fid = `${user.uid}_${targetUid}`;
+    const isFollowing = followingUids.includes(targetUid);
+    try {
+      if (isFollowing) {
+        await deleteDoc(doc(db, 'follows', fid));
+        toast.success('Takipten çıkıldı.');
+      } else {
+        await setDoc(doc(db, 'follows', fid), {
+          followerId: user.uid,
+          followingId: targetUid,
+          createdAt: serverTimestamp(),
+        });
+        toast.success('Takip edildi!');
+      }
+    } catch (err: any) {
+      toast.error('İşlem başarısız: ' + (err.message || ''));
+    }
+  };
 
   // Dynamic trending hashtags from all post bodies
   const trends = (() => {
@@ -998,13 +1037,13 @@ export default function ForumClient() {
                 )}
                 {searchQuery && (
                   <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isDark ? '#16181c' : (searchQuery.startsWith('#') ? '#f0f9ff' : '#f8fafc'), borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#64748b', fontWeight: 600 }}>{searchQuery.startsWith('#') ? 'Etiket:' : 'Arama:'}</span>
                       <span style={{ background: isDark ? '#1d9bf0' : (searchQuery.startsWith('#') ? '#0284c7' : '#0f172a'), color: 'white', fontSize: '0.82rem', fontWeight: 700, padding: '3px 12px', borderRadius: 999 }}>
                         {searchQuery}
                       </span>
                       <span style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8' }}>
-                        ({filtered.length} sonuç)
+                        ({filtered.length} gönderi{matchedUsers.length > 0 ? `, ${matchedUsers.length} kullanıcı` : ''})
                       </span>
                     </div>
                     <button 
@@ -1016,6 +1055,113 @@ export default function ForumClient() {
                     >
                       <X size={14} /> Temizle
                     </button>
+                  </div>
+                )}
+
+                {/* Matched Users Section when searching */}
+                {searchQuery.trim() && matchedUsers.length > 0 && (
+                  <div style={{ padding: '14px 20px', borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#0b0e14' : '#f8fafc' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                      <Users size={16} color={isDark ? '#38bdf8' : '#0284c7'} />
+                      <span style={{ fontSize: '0.84rem', fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', letterSpacing: '-0.01em' }}>
+                        Eşleşen Kullanıcılar ({matchedUsers.length})
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {matchedUsers.map((u: any) => {
+                        const isFollowingThisUser = followingUids.includes(u.uid);
+                        const isMe = user?.uid === u.uid;
+                        return (
+                          <div
+                            key={u.uid}
+                            onClick={() => router.push(`/forum/profil/${encodeURIComponent(u.username || u.uid)}`)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '10px 14px',
+                              borderRadius: 12,
+                              background: isDark ? '#16181c' : '#ffffff',
+                              border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                              <div style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #1d9bf0, #0284c7)',
+                                color: '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 800,
+                                fontSize: '0.95rem',
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                              }}>
+                                {u.photoURL ? (
+                                  <img src={u.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  (u.displayName || u.username || 'U')[0].toUpperCase()
+                                )}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontWeight: 800, fontSize: '0.9rem', color: isDark ? '#e7e9ea' : '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {u.displayName || u.username}
+                                  </span>
+                                  {Boolean((u.isPsychologist && u.psychologistStatus === 'approved') || (u.isPsychologist && !u.psychologistStatus)) && (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(201,169,110,0.18)', color: '#d4aa70', border: '1px solid rgba(201,169,110,0.4)', borderRadius: 999, padding: '1px 6px', fontSize: '0.65rem', fontWeight: 800 }}>
+                                      <Award size={10} />
+                                      Psikolog
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: '#1d9bf0', fontWeight: 600 }}>
+                                  @{u.username || 'kullanici'}
+                                </div>
+                                {u.bio && (
+                                  <div style={{ fontSize: '0.76rem', color: isDark ? '#94a3b8' : '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1, maxWidth: 360 }}>
+                                    {u.bio}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                              {!isMe && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleFollowUser(u.uid);
+                                  }}
+                                  style={{
+                                    padding: '5px 12px',
+                                    borderRadius: 999,
+                                    border: isFollowingThisUser ? `1px solid ${isDark ? '#2f3336' : '#cbd5e1'}` : 'none',
+                                    background: isFollowingThisUser ? (isDark ? '#16181c' : '#ffffff') : (isDark ? '#ffffff' : '#0f172a'),
+                                    color: isFollowingThisUser ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#000000' : '#ffffff'),
+                                    fontSize: '0.76rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                  }}
+                                >
+                                  {isFollowingThisUser ? 'Takip Ediliyor' : 'Takip Et'}
+                                </button>
+                              )}
+                              <div style={{ color: isDark ? '#71767b' : '#94a3b8' }}>
+                                <ArrowRight size={15} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1258,7 +1404,33 @@ export default function ForumClient() {
             )}
           </div>
           {searchQuery && (
-            <div style={{ marginTop: 12, background: isDark ? '#16181c' : 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', border: isDark ? '1px solid #2f3336' : 'none' }}>
+            <div style={{ marginTop: 12, background: isDark ? '#16181c' : 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', border: isDark ? '1px solid #2f3336' : 'none', maxHeight: '75vh', overflowY: 'auto' }}>
+              {matchedUsers.length > 0 && (
+                <div style={{ padding: '10px 14px', background: isDark ? '#0b0e14' : '#f8fafc', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+                  <div style={{ fontSize: '0.76rem', fontWeight: 800, color: isDark ? '#38bdf8' : '#0284c7', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                    Kullanıcılar
+                  </div>
+                  {matchedUsers.slice(0, 4).map((u: any) => (
+                    <div
+                      key={u.uid}
+                      onClick={() => {
+                        setMobileSearchOpen(false);
+                        setSearchQuery('');
+                        router.push(`/forum/profil/${encodeURIComponent(u.username || u.uid)}`);
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, cursor: 'pointer' }}
+                    >
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1d9bf0', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, flexShrink: 0 }}>
+                        {u.photoURL ? <img src={u.photoURL} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : (u.displayName || u.username || 'U')[0].toUpperCase()}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.86rem', color: isDark ? '#e7e9ea' : '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.displayName || u.username}</div>
+                        <div style={{ fontSize: '0.76rem', color: '#1d9bf0' }}>@{u.username}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {threads.filter(t => (t.body || '').toLowerCase().includes(searchQuery.toLowerCase()) || (t.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (t.title || '').toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5).map(t => (
                 <div key={t.id} onClick={() => { openThread(t); setMobileSearchOpen(false); setSearchQuery(''); }} style={{ padding: '14px 16px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, cursor: 'pointer' }}>
                   <div style={{ fontWeight: 700, fontSize: '0.9rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 2 }}>{t.authorName}</div>

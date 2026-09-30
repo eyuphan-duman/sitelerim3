@@ -208,9 +208,12 @@ export default function ProfilClient({ username }: { username: string }) {
   const [changingPassword, setChangingPassword] = useState(false);
   const [sendingResetEmail, setSendingResetEmail] = useState(false);
 
-  // Account freeze and delete state
+  // Account freeze and delete state with password verification
   const [freezing, setFreezing] = useState(false);
+  const [freezeModalOpen, setFreezeModalOpen] = useState(false);
+  const [freezePassword, setFreezePassword] = useState('');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
 
@@ -755,40 +758,78 @@ export default function ProfilClient({ username }: { username: string }) {
     }
   };
 
-  // Account Freeze handler
+  // Account Freeze handler with password verification
   const handleToggleFreeze = async () => {
     if (!user) return;
     const currentlyFrozen = Boolean(pd?.isFrozen);
-    if (!currentlyFrozen) {
-      if (!confirm('Hesabınızı dondurmak istediğinize emin misiniz? Dondurulduğunda profiliniz ve paylaşımlarınız diğer kullanıcılara gizlenecektir. İstediğiniz zaman profilinizden tekrar aktifleştirebilirsiniz.')) {
-        return;
+
+    // If currently frozen, allow reactivating directly
+    if (currentlyFrozen) {
+      setFreezing(true);
+      try {
+        await updateDoc(doc(db, 'users', user.uid), {
+          isFrozen: false,
+          frozenAt: null,
+        });
+        setPd((p: any) => ({ ...p, isFrozen: false }));
+        toast.success('Hesabınız başarıyla yeniden aktif edildi!');
+        setSettingsOpen(false);
+        setEditOpen(false);
+      } catch (err: any) {
+        toast.error('İşlem başarısız: ' + (err.message || ''));
+      } finally {
+        setFreezing(false);
       }
+      return;
     }
+
+    // Freezing requires existing password verification
+    if (!freezePassword.trim()) {
+      return toast.error('Hesabınızı dondurmak için mevcut şifrenizi girmelisiniz.');
+    }
+
     setFreezing(true);
     try {
+      if (user.email) {
+        const credential = EmailAuthProvider.credential(user.email, freezePassword);
+        await reauthenticateWithCredential(user, credential);
+      }
       await updateDoc(doc(db, 'users', user.uid), {
-        isFrozen: !currentlyFrozen,
-        frozenAt: !currentlyFrozen ? serverTimestamp() : null
+        isFrozen: true,
+        frozenAt: serverTimestamp(),
       });
-      setPd((p: any) => ({ ...p, isFrozen: !currentlyFrozen }));
-      toast.success(!currentlyFrozen ? 'Hesabınız donduruldu.' : 'Hesabınız yeniden aktif edildi!');
+      setPd((p: any) => ({ ...p, isFrozen: true }));
+      toast.success('Hesabınız başarıyla donduruldu.');
+      setFreezeModalOpen(false);
+      setFreezePassword('');
       setSettingsOpen(false);
       setEditOpen(false);
-    } catch (err: any) {
-      toast.error('İşlem başarısız: ' + (err.message || ''));
+    } catch (authErr: any) {
+      if (authErr.code === 'auth/wrong-password' || authErr.code === 'auth/invalid-credential') {
+        toast.error('Mevcut şifrenizi hatalı girdiniz. Hesap dondurulamadı.');
+      } else {
+        toast.error('Şifre doğrulanamadı: ' + (authErr.message || ''));
+      }
     } finally {
       setFreezing(false);
     }
   };
 
-  // Account Delete handler
+  // Account Delete handler with password verification
   const handleDeleteAccount = async () => {
     if (!user) return;
+    if (!deletePassword.trim()) {
+      return toast.error('Hesabınızı silmek için mevcut şifrenizi girmelisiniz.');
+    }
     if (deleteConfirmText.trim().toUpperCase() !== 'SİL') {
-      return toast.error('Lütfen onaylamak için büyük harflerle SİL yazın.');
+      return toast.error('Lütfen onaylamak için kutuya büyük harflerle SİL yazın.');
     }
     setDeletingAccount(true);
     try {
+      if (user.email) {
+        const credential = EmailAuthProvider.credential(user.email, deletePassword);
+        await reauthenticateWithCredential(user, credential);
+      }
       await updateDoc(doc(db, 'users', user.uid), {
         isDeleted: true,
         isFrozen: true,
@@ -797,7 +838,7 @@ export default function ProfilClient({ username }: { username: string }) {
         bio: '',
         photoURL: '',
         coverURL: '',
-        deletedAt: serverTimestamp()
+        deletedAt: serverTimestamp(),
       });
       try {
         await deleteUser(user);
@@ -807,8 +848,12 @@ export default function ProfilClient({ username }: { username: string }) {
       await logout();
       toast.success('Hesabınız kalıcı olarak silindi.');
       router.replace('/forum');
-    } catch (err: any) {
-      toast.error('Hesap silinirken hata: ' + (err.message || ''));
+    } catch (authErr: any) {
+      if (authErr.code === 'auth/wrong-password' || authErr.code === 'auth/invalid-credential') {
+        toast.error('Mevcut şifrenizi hatalı girdiniz. Hesap silinemedi.');
+      } else {
+        toast.error('Hesap silinirken hata: ' + (authErr.message || ''));
+      }
     } finally {
       setDeletingAccount(false);
     }
@@ -1968,23 +2013,61 @@ export default function ProfilClient({ username }: { username: string }) {
                       <p style={{ fontSize: '0.82rem', color: isDark ? '#94a3b8' : '#64748b', margin: '4px 0 12px', lineHeight: 1.5 }}>
                         Hesabınızı dondurduğunuzda profiliniz, gönderileriniz ve aktiviteleriniz diğer kullanıcılara gizlenir. Dilediğiniz zaman aynı şifrenizle giriş yaparak hesabınızı yeniden aktif edebilirsiniz.
                       </p>
-                      <button
-                        type="button"
-                        onClick={handleToggleFreeze}
-                        disabled={freezing}
-                        style={{
-                          background: pd.isFrozen ? '#16a34a' : '#0284c7',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: 8,
-                          padding: '9px 18px',
-                          fontWeight: 700,
-                          fontSize: '0.85rem',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {freezing ? 'İşleniyor...' : (pd.isFrozen ? 'Hesabımı Aktifleştir' : 'Hesabımı Dondur')}
-                      </button>
+                      {!freezeModalOpen ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (pd.isFrozen) {
+                              handleToggleFreeze();
+                            } else {
+                              setFreezeModalOpen(true);
+                            }
+                          }}
+                          disabled={freezing}
+                          style={{
+                            background: pd.isFrozen ? '#16a34a' : '#0284c7',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 8,
+                            padding: '9px 18px',
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {freezing ? 'İşleniyor...' : (pd.isFrozen ? 'Hesabımı Aktifleştir' : 'Hesabımı Dondur')}
+                        </button>
+                      ) : (
+                        <div style={{ marginTop: 10, padding: 14, background: isDark ? '#000000' : 'white', borderRadius: 8, border: `1px solid ${isDark ? '#0369a1' : '#bae6fd'}` }}>
+                          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: isDark ? '#38bdf8' : '#0369a1', margin: '0 0 8px' }}>
+                            Hesabınızı dondurmak için lütfen mevcut şifrenizi girin:
+                          </p>
+                          <input
+                            type="password"
+                            placeholder="Mevcut şifreniz"
+                            value={freezePassword}
+                            onChange={e => setFreezePassword(e.target.value)}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: `1.5px solid ${isDark ? '#0284c7' : '#38bdf8'}`, background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+                          />
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => { setFreezeModalOpen(false); setFreezePassword(''); }}
+                              style={{ flex: 1, padding: '8px', borderRadius: 6, border: '1px solid #cbd5e1', background: 'transparent', color: isDark ? '#e7e9ea' : '#475569', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
+                            >
+                              Vazgeç
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleToggleFreeze}
+                              disabled={freezing || !freezePassword.trim()}
+                              style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', background: '#0284c7', color: 'white', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: (freezing || !freezePassword.trim()) ? 0.6 : 1 }}
+                            >
+                              {freezing ? 'Doğrulanıyor...' : 'Dondurmayı Onayla'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2020,20 +2103,30 @@ export default function ProfilClient({ username }: { username: string }) {
                         </button>
                       ) : (
                         <div style={{ marginTop: 10, padding: 14, background: isDark ? '#000000' : 'white', borderRadius: 8, border: `1px solid ${isDark ? '#7f1d1d' : '#fca5a5'}` }}>
-                          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ef4444', margin: '0 0 8px' }}>
-                            Onaylamak için lütfen aşağıdaki kutuya büyük harflerle <strong>SİL</strong> yazın:
+                          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ef4444', margin: '0 0 6px' }}>
+                            Hesabınızı kalıcı olarak silmek için mevcut şifrenizi girin:
+                          </p>
+                          <input
+                            type="password"
+                            placeholder="Mevcut şifreniz"
+                            value={deletePassword}
+                            onChange={e => setDeletePassword(e.target.value)}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1.5px solid #ef4444', background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+                          />
+                          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ef4444', margin: '0 0 6px' }}>
+                            Onaylamak için aşağıdaki kutuya büyük harflerle <strong>SİL</strong> yazın:
                           </p>
                           <input
                             type="text"
                             placeholder="SİL"
                             value={deleteConfirmText}
                             onChange={e => setDeleteConfirmText(e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1.5px solid #ef4444', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1.5px solid #ef4444', background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
                           />
                           <div style={{ display: 'flex', gap: 8 }}>
                             <button
                               type="button"
-                              onClick={() => { setDeleteModalOpen(false); setDeleteConfirmText(''); }}
+                              onClick={() => { setDeleteModalOpen(false); setDeletePassword(''); setDeleteConfirmText(''); }}
                               style={{ flex: 1, padding: '8px', borderRadius: 6, border: '1px solid #cbd5e1', background: 'transparent', color: isDark ? '#e7e9ea' : '#475569', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
                             >
                               Vazgeç
@@ -2041,10 +2134,10 @@ export default function ProfilClient({ username }: { username: string }) {
                             <button
                               type="button"
                               onClick={handleDeleteAccount}
-                              disabled={deletingAccount || deleteConfirmText.trim().toUpperCase() !== 'SİL'}
-                              style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', background: '#dc2626', color: 'white', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: (deletingAccount || deleteConfirmText.trim().toUpperCase() !== 'SİL') ? 0.6 : 1 }}
+                              disabled={deletingAccount || !deletePassword.trim() || deleteConfirmText.trim().toUpperCase() !== 'SİL'}
+                              style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', background: '#dc2626', color: 'white', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: (deletingAccount || !deletePassword.trim() || deleteConfirmText.trim().toUpperCase() !== 'SİL') ? 0.6 : 1 }}
                             >
-                              {deletingAccount ? 'Siliniyor...' : 'Onayla ve Hesabı Sil'}
+                              {deletingAccount ? 'Doğrulanıyor...' : 'Onayla ve Hesabı Sil'}
                             </button>
                           </div>
                         </div>
