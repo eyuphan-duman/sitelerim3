@@ -20,7 +20,8 @@ const links = [
 ];
 
 export default function Navbar() {
-  const { user, userProfile, logout } = useAuth();
+  const { user, userProfile, emailVerified, logout } = useAuth();
+  const showUnverifiedBanner = Boolean(user && !user.isAnonymous && !emailVerified && !user.emailVerified);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -52,7 +53,10 @@ export default function Navbar() {
     <>
       <EmailVerificationBanner />
       {!isForumPage && (
-        <nav className={`navbar ${scrolled || forceSolid ? 'navbar-scrolled' : 'navbar-transparent'}`}>
+        <nav 
+          className={`navbar ${scrolled || forceSolid ? 'navbar-scrolled' : 'navbar-transparent'}`}
+          style={showUnverifiedBanner ? { top: scrolled ? 0 : 54, transition: 'all 0.3s ease' } : undefined}
+        >
           <div className="container-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, paddingBottom: 20 }}>
 
           {/* Logo */}

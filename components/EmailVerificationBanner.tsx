@@ -59,9 +59,13 @@ export default function EmailVerificationBanner({ isDark = false }: { isDark?: b
         flexWrap: 'wrap',
         fontSize: '0.88rem',
         fontWeight: 600,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        zIndex: 40,
-        position: 'relative',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+        zIndex: 99999,
+        position: 'sticky',
+        top: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 320px', minWidth: 260 }}>

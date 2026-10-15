@@ -326,7 +326,7 @@ export default function ThreadView({
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
     const isAdmin = adminEmails.map(em => em.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
-    if (!emailVerified && !isAdmin) return toast.error('Yeniden paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
+    if (!emailVerified) return toast.error('Yeniden paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     const targetPostId = p.originalPostId || p.id;
     const postRef = doc(db, 'forum', targetPostId);
     const existingRepostDocId = typeof p.repostsData?.[currentUser.uid] === 'string'
