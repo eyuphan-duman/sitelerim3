@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc, getDoc, getDocs } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check, Award, ExternalLink, GraduationCap, Users, Search, UserCheck, ShieldCheck, ArrowRight, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -12,6 +12,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
 import { DEFAULT_ABOUT_SETTINGS, AboutSettings } from '@/lib/aboutSettings';
+import { CURATED_15_FAQS } from '@/data/curated-faq-15';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -623,6 +624,46 @@ export default function AdminPage() {
       toast.error('Hata oluştu.');
     }
   };
+
+  const handlePublishCuratedFaqs = async () => {
+    if (!confirm('Mevcut soru-cevapları silip 15 yeni klinik SSS yazısını yayımlamak istediğinize emin misiniz?')) return;
+    setSubmitting(true);
+    const toastId = toast.loading('Eski soru-cevaplar temizleniyor ve 15 yeni yazı yayımlanıyor...');
+    try {
+      const snap = await getDocs(collection(db, 'faq'));
+      for (const d of snap.docs) {
+        await deleteDoc(doc(db, 'faq', d.id));
+      }
+
+      const strip = (h: string) => h.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
+      for (let i = 0; i < CURATED_15_FAQS.length; i++) {
+        const item = CURATED_15_FAQS[i];
+        const raw = strip(item.content);
+        const excerpt = raw.length > 220 ? raw.slice(0, 220) + '…' : raw;
+
+        await addDoc(collection(db, 'faq'), {
+          title: item.title,
+          category: item.category,
+          featuredImage: item.featuredImage,
+          content: item.content,
+          excerpt,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      toast.success('15 adet Soru-Cevap başarıyla yayımlandı!', { id: toastId });
+    } catch (e: any) {
+      toast.error('Hata oluştu: ' + (e?.message || ''), { id: toastId });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__publishCuratedFaqs = handlePublishCuratedFaqs;
+    }
+  }, []);
 
 
   const handleAddVideo = async (e: React.FormEvent) => {
@@ -2968,11 +3009,36 @@ export default function AdminPage() {
                 <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>
                   {editingFaqId ? 'Soru-Cevabı Güncelle' : 'Yeni Soru-Cevap Ekle'}
                 </h2>
-                {editingFaqId && (
-                  <button type="button" onClick={handleCancelEditFaq} style={{ marginLeft: 'auto', background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <X size={14}/> İptal Et
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    id="btn-publish-curated-faqs"
+                    type="button"
+                    onClick={handlePublishCuratedFaqs}
+                    disabled={submitting}
+                    style={{
+                      background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                      color: '#f8fafc',
+                      border: '1px solid #334155',
+                      padding: '7px 14px',
+                      borderRadius: 8,
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                    }}
+                    title="Mevcutları silip 15 profesyonel klinik SSS yazısını yayına alır"
+                  >
+                    <Sparkles size={14} color="#e8c187" /> 15 Uzman Soru-Cevabı Yayımla
                   </button>
-                )}
+                  {editingFaqId && (
+                    <button type="button" onClick={handleCancelEditFaq} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <X size={14}/> İptal Et
+                    </button>
+                  )}
+                </div>
               </div>
               <p style={{ fontSize: '0.84rem', color: '#64748b', marginBottom: 20, lineHeight: 1.5 }}>
                 Bu bölüm, insanların Google&apos;da arama yaparken sorduğu sorulara doğrudan cevap veren içerikler içindir (Yazılarım&apos;dan ayrı). Soruyu başlık olarak, cevabı da içerik olarak yazın.

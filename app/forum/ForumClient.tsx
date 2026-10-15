@@ -308,7 +308,8 @@ export default function ForumClient() {
     (userProfile?.isPsychologist && !userProfile?.psychologistStatus) ||
     userProfile?.role === 'psychologist'
   );
-  const isAdminUser = ADMIN_EMAILS.includes(user?.email || '');
+  const isAdminUser = ADMIN_EMAILS.includes(user?.email?.toLowerCase() || '');
+  const isEffectiveEmailVerified = emailVerified || isAdminUser;
   const photoLimitReached = !isPsychologistUser && !isAdminUser && (userProfile?.photoUploadsUsed || 0) >= 1;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -342,7 +343,7 @@ export default function ForumClient() {
     if (!user || (!form.body.trim() && !form.imageUrl)) return toast.error('Yazı veya görsel eklemelisiniz.');
     if (user.isAnonymous) return setAuthOpen(true);
     if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır (banlandı). Paylaşım yapamazsınız.');
-    if (!emailVerified) return toast.error('Paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
+    if (!isEffectiveEmailVerified) return toast.error('Paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     if (form.body.length > POST_CHAR_LIMIT) return toast.error(`Gönderi en fazla ${POST_CHAR_LIMIT} karakter olabilir.`);
     setPosting(true);
     const isPsychologist = isPsychologistUser;
@@ -388,7 +389,7 @@ export default function ForumClient() {
     e.stopPropagation();
     if (!user || user.isAnonymous) return setAuthOpen(true);
     if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır.');
-    if (!emailVerified) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
+    if (!isEffectiveEmailVerified) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
     const postRef = doc(db, 'forum', thread.id);
     const userReaction = thread.reactionsData?.[user.uid];
     if (userReaction === 'like' || userReaction === 'heart') {
@@ -974,7 +975,7 @@ export default function ForumClient() {
               }}
               currentUser={user}
               userProfile={userProfile}
-              emailVerified={emailVerified}
+              emailVerified={isEffectiveEmailVerified}
               photoLimitReached={photoLimitReached}
               adminEmails={ADMIN_EMAILS}
               isDark={isDark}
@@ -1252,7 +1253,7 @@ export default function ForumClient() {
                 </div>
               )}
 
-              {user && !user.isAnonymous && !userProfile?.isBanned && !emailVerified && (
+              {user && !user.isAnonymous && !userProfile?.isBanned && !isEffectiveEmailVerified && (
                 <div style={{
                   padding: '16px 20px',
                   background: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
@@ -1281,7 +1282,7 @@ export default function ForumClient() {
                 </div>
               )}
 
-              {user && !user.isAnonymous && !userProfile?.isBanned && emailVerified && (
+              {user && !user.isAnonymous && !userProfile?.isBanned && isEffectiveEmailVerified && (
                 <div style={{ padding: '20px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, display: 'flex', gap: 14, background: isDark ? '#000000' : 'white' }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0, overflow: 'hidden' }}>
                     {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}

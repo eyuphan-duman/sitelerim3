@@ -120,7 +120,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
 
   return (
     <div 
-      className={`fixed inset-0 z-[3000] flex items-center justify-center sm:p-4 transition-all duration-200 ${
+      className={`fixed inset-0 z-[3000] flex items-center justify-center p-4 transition-all duration-200 ${
         show ? 'bg-black/60' : 'bg-transparent'
       }`} 
       onClick={onClose}
@@ -134,7 +134,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
           color: dark ? '#e7e9ea' : '#0f172a',
           border: dark ? '1px solid #2f3336' : 'none',
         }}
-        className={`relative w-full h-full sm:w-[600px] sm:h-auto sm:min-h-[650px] sm:rounded-2xl shadow-2xl flex flex-col transition-all duration-300 ease-out overflow-y-auto ${
+        className={`relative w-full max-h-full sm:w-[600px] sm:min-h-[650px] rounded-2xl shadow-2xl flex flex-col transition-all duration-300 ease-out overflow-y-auto ${
           show ? 'scale-100 opacity-100 translate-y-0' : 'scale-[0.98] opacity-0 translate-y-4'
         }`}
       >

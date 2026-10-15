@@ -12,7 +12,7 @@ const links = [
   { href: '/', label: 'Anasayfa' },
   { href: '/ben-kimim', label: 'Hakkımda' },
   { href: '/yazilarim', label: 'Yazılarım' },
-  { href: '/sss', label: 'Sıkça Sorulan Sorular' },
+  { href: '/sss', label: 'SSS' },
   { href: '/videolarim', label: 'Videolarım' },
   { href: '/forum', label: 'Forum', badge: 'v2.0' },
   { href: '/iletisim', label: 'İletişim' },

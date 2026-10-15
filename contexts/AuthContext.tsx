@@ -32,6 +32,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      setEmailVerified(Boolean(u?.emailVerified));
+      const isAdmin = ADMIN_EMAILS.includes(u?.email?.toLowerCase() || '');
+      setEmailVerified(Boolean(u?.emailVerified) || isAdmin);
       if (u) {
         const ref = doc(db, 'users', u.uid);
         const snap = await getDoc(ref);
@@ -57,7 +60,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             data.username = fallbackUsername;
           }
 
-          const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
           const isAdmin = ADMIN_EMAILS.includes(u.email?.toLowerCase() || '');
           if (isAdmin) {
             if (!data.isPsychologist || data.psychologistStatus !== 'approved' || data.role !== 'psychologist') {
@@ -261,7 +263,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resendVerificationEmail = async () => {
     if (!auth.currentUser) throw new Error('Önce giriş yapmalısınız.');
-    if (auth.currentUser.emailVerified) throw new Error('E-posta adresiniz zaten doğrulanmış.');
+    const isAdmin = ADMIN_EMAILS.includes(auth.currentUser.email?.toLowerCase() || '');
+    if (auth.currentUser.emailVerified || isAdmin) throw new Error('E-posta adresiniz zaten doğrulanmış.');
     await sendEmailVerification(auth.currentUser);
   };
 
@@ -271,7 +274,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth.currentUser) return false;
     await auth.currentUser.reload();
     await auth.currentUser.getIdToken(true);
-    const verified = Boolean(auth.currentUser.emailVerified);
+    const isAdmin = ADMIN_EMAILS.includes(auth.currentUser.email?.toLowerCase() || '');
+    const verified = Boolean(auth.currentUser.emailVerified) || isAdmin;
     setEmailVerified(verified);
     return verified;
   };

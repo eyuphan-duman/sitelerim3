@@ -477,7 +477,8 @@ export default function ThreadView({
   const handleSubmitReply = async () => {
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
     if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır (banlandı). Yorum yapamazsınız.');
-    if (!emailVerified) return toast.error('Yorum yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
+    const isAdmin = adminEmails.map(e => e.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
+    if (!emailVerified && !isAdmin) return toast.error('Yorum yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     if (!replyText.trim() && !replyImageUrl) return;
     if (replyText.length > COMMENT_CHAR_LIMIT) return toast.error(`Yorum en fazla ${COMMENT_CHAR_LIMIT} karakter olabilir.`);
 
