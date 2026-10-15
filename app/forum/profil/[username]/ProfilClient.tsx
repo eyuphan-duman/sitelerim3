@@ -1659,7 +1659,7 @@ export default function ProfilClient({ username }: { username: string }) {
                 </button>
               </div>
             )}
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 14px', fontWeight: 500 }}>@{((pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, ''))}</p>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 14px', fontWeight: 500 }}>@{((pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, '').replace(/^@+/, ''))}</p>
             {pd.bio && <p style={{ fontSize: '1rem', color: isDark ? '#cbd5e1' : '#334155', lineHeight: 1.6, marginBottom: 14 }}>{pd.bio}</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, color: '#64748b', fontSize: '0.88rem', marginBottom: 16 }}>
               {pd.location && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={15} />{pd.location}</span>}

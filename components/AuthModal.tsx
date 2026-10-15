@@ -312,15 +312,20 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
     <>
       <Field
         id="auth_username"
-        label="Kullanıcı adı belirle (@kullaniciadi)"
+        label="Kullanıcı adı belirle"
         value={username}
-        onChange={setUsername}
+        onChange={(val) => setUsername(val.replace(/^@+/, ''))}
         autoComplete="username"
         invalid={Boolean(usernameError)}
       />
       <p className={`${styles.hint} ${usernameError ? styles.hintError : ''}`}>
-        {usernameError || 'Yalnızca sade İngilizce harfler (a-z), rakamlar (0-9) ve alt çizgi (_) kullanılabilir.'}
+        {usernameError || 'Başına @ koymanıza gerek yoktur, profilinizde sistem otomatik ekler. Yalnızca sade İngilizce harfler (a-z), rakamlar (0-9) ve alt çizgi (_).'}
       </p>
+      {username && !usernameError && (
+        <p className={styles.hint} style={{ color: '#10b981', fontWeight: 600, marginTop: -4 }}>
+          Profilinizde görünecek adınız: @{sanitizeUsername(username)}
+        </p>
+      )}
     </>
   );
 
