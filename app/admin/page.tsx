@@ -12,6 +12,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
 import { DEFAULT_ABOUT_SETTINGS, AboutSettings } from '@/lib/aboutSettings';
+import { calculateAge } from '@/lib/ageUtils';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -119,6 +120,8 @@ export default function AdminPage() {
           ...existing,
           ...a,
           id: a.id,
+          fullName: a.fullName || existing.fullName || existing.displayName || '',
+          birthDate: a.birthDate || existing.birthDate || '',
           diplomaUrl: a.diplomaUrl || existing.diplomaUrl || '',
           university: a.university || existing.university || '',
           title: a.title || existing.title || '',
@@ -2576,9 +2579,16 @@ export default function AdminPage() {
                                   {app.title || 'Psikolog'}
                                 </span>
                               </div>
-                              <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                                 <Mail size={14} />
                                 <span>{app.email}</span>
+                                {app.birthDate && (
+                                  <>
+                                    <span>·</span>
+                                    <Calendar size={14} />
+                                    <span>{app.birthDate} ({calculateAge(app.birthDate)} yaş)</span>
+                                  </>
+                                )}
                                 {app.university && (
                                   <>
                                     <span>·</span>

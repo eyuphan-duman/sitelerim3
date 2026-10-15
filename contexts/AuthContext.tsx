@@ -5,16 +5,20 @@ import { User, UserCredential, onAuthStateChanged, signInWithEmailAndPassword, c
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
+import { getBirthDateValidationError } from '@/lib/ageUtils';
 
-export interface PsychologistData {
+export interface UserRegistrationData {
+  fullName?: string;
+  birthDate?: string;
   isPsychologist?: boolean;
   role?: string;
   psychologistStatus?: 'pending' | 'approved' | 'rejected' | 'none';
   title?: string;
   university?: string;
   diplomaUrl?: string;
-  fullName?: string;
 }
+
+export type PsychologistData = UserRegistrationData;
 
 interface AuthContextType {
   user: User | null;
@@ -22,9 +26,9 @@ interface AuthContextType {
   userProfile?: any;
   emailVerified: boolean;
   signIn: (usernameOrEmail: string, password: string) => Promise<UserCredential>;
-  signUp: (username: string, email: string, password: string, psychologistData?: PsychologistData) => Promise<void>;
+  signUp: (username: string, email: string, password: string, extraData?: UserRegistrationData) => Promise<void>;
   startGoogleSignup: () => Promise<{ email: string; displayName: string }>;
-  completeGoogleSignup: (chosenUsername: string, password: string, termsAccepted: boolean) => Promise<void>;
+  completeGoogleSignup: (chosenUsername: string, password: string, termsAccepted: boolean, extraData?: UserRegistrationData) => Promise<void>;
   cancelGoogleSignup: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
   resetPassword: (usernameOrEmail: string) => Promise<string>;
@@ -101,10 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const createUserDocument = async (u: User, customUsername?: string, psychData?: PsychologistData) => {
+  const createUserDocument = async (u: User, customUsername?: string, extraData?: UserRegistrationData) => {
     const ref = doc(db, 'users', u.uid);
     const snap = await getDoc(ref);
-    const isPsychSignup = Boolean(psychData?.isPsychologist);
+    const isPsychSignup = Boolean(extraData?.isPsychologist);
     const rawUname = customUsername || u.displayName || u.email?.split('@')[0] || 'kullanici';
     let cleanUname = sanitizeUsername(rawUname);
     if (!cleanUname || cleanUname.length < 3) {
@@ -128,15 +132,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const docData: any = {
       uid: u.uid,
       username: cleanUname,
-      displayName: psychData?.fullName || customUsername || u.displayName || cleanUname,
+      displayName: extraData?.fullName || customUsername || u.displayName || cleanUname,
+      fullName: extraData?.fullName || '',
+      birthDate: extraData?.birthDate || '',
       email: u.email?.toLowerCase().trim() || '',
       photoURL: u.photoURL || '',
       role: isPsychSignup ? 'psychologist_pending' : (snap.exists() ? (snap.data().role || 'member') : 'member'),
       isPsychologist: false, // inactive until approved by admin
       psychologistStatus: isPsychSignup ? 'pending' : (snap.exists() ? (snap.data().psychologistStatus || 'none') : 'none'),
-      title: psychData?.title || (isPsychSignup ? 'Psikolog' : ''),
-      university: psychData?.university || '',
-      diplomaUrl: psychData?.diplomaUrl || '',
+      title: extraData?.title || (isPsychSignup ? 'Psikolog' : ''),
+      university: extraData?.university || '',
+      diplomaUrl: extraData?.diplomaUrl || '',
     };
 
     if (!snap.exists()) {
@@ -149,10 +155,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Document already exists (e.g. created by onAuthStateChanged race condition)
       const updatePayload: any = {};
       if (cleanUname && !snap.data().username) updatePayload.username = cleanUname;
-      if (psychData?.fullName) updatePayload.displayName = psychData.fullName;
-      if (psychData?.diplomaUrl) updatePayload.diplomaUrl = psychData.diplomaUrl;
-      if (psychData?.university) updatePayload.university = psychData.university;
-      if (psychData?.title) updatePayload.title = psychData.title;
+      if (extraData?.fullName) {
+        updatePayload.fullName = extraData.fullName;
+        updatePayload.displayName = extraData.fullName;
+      }
+      if (extraData?.birthDate) {
+        updatePayload.birthDate = extraData.birthDate;
+      }
+      if (extraData?.diplomaUrl) updatePayload.diplomaUrl = extraData.diplomaUrl;
+      if (extraData?.university) updatePayload.university = extraData.university;
+      if (extraData?.title) updatePayload.title = extraData.title;
       if (isPsychSignup) {
         updatePayload.role = 'psychologist_pending';
         updatePayload.psychologistStatus = 'pending';
@@ -166,12 +178,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isPsychSignup) {
       await setDoc(doc(db, 'psychologist_applications', u.uid), {
         uid: u.uid,
-        fullName: psychData?.fullName || customUsername || u.displayName || '',
+        fullName: extraData?.fullName || customUsername || u.displayName || '',
         username: cleanUname,
         email: u.email?.toLowerCase().trim() || '',
-        title: psychData?.title || 'Psikolog',
-        university: psychData?.university || '',
-        diplomaUrl: psychData?.diplomaUrl || '',
+        title: extraData?.title || 'Psikolog',
+        university: extraData?.university || '',
+        diplomaUrl: extraData?.diplomaUrl || '',
+        birthDate: extraData?.birthDate || '',
         status: 'pending',
         createdAt: serverTimestamp(),
       }, { merge: true });
@@ -192,11 +205,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return cred;
   };
 
-  const signUp = async (username: string, email: string, password: string, psychologistData?: PsychologistData) => {
+  const signUp = async (username: string, email: string, password: string, extraData?: UserRegistrationData) => {
     // 0. Sade İngilizce karakter kontrolü
     const validationError = getUsernameValidationError(username);
     if (validationError) {
       throw new Error(validationError);
+    }
+
+    if (extraData?.birthDate) {
+      const ageErr = getBirthDateValidationError(extraData.birthDate);
+      if (ageErr) throw new Error(ageErr);
     }
 
     const cleanUsername = sanitizeUsername(username);
@@ -214,9 +232,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-      const displayName = psychologistData?.fullName || cleanUsername;
+      const displayName = extraData?.fullName || cleanUsername;
       await updateProfile(cred.user, { displayName });
-      await createUserDocument(cred.user, cleanUsername, psychologistData);
+      await createUserDocument(cred.user, cleanUsername, extraData);
       try {
         await sendEmailVerification(cred.user);
       } catch (e) {
@@ -224,15 +242,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Explicit write to guarantee psychologist application and diplomaUrl persist
-      if (psychologistData?.isPsychologist) {
+      if (extraData?.isPsychologist) {
         const userDocRef = doc(db, 'users', cred.user.uid);
         await updateDoc(userDocRef, {
-          diplomaUrl: psychologistData.diplomaUrl || '',
-          university: psychologistData.university || '',
-          title: psychologistData.title || 'Psikolog',
+          diplomaUrl: extraData.diplomaUrl || '',
+          university: extraData.university || '',
+          title: extraData.title || 'Psikolog',
           role: 'psychologist_pending',
           psychologistStatus: 'pending',
           applicationDate: serverTimestamp(),
+          fullName: extraData.fullName || displayName,
+          birthDate: extraData.birthDate || '',
         });
 
         await setDoc(doc(db, 'psychologist_applications', cred.user.uid), {
@@ -240,9 +260,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fullName: displayName,
           username: cleanUsername,
           email: cleanEmail,
-          title: psychologistData.title || 'Psikolog',
-          university: psychologistData.university || '',
-          diplomaUrl: psychologistData.diplomaUrl || '',
+          title: extraData.title || 'Psikolog',
+          university: extraData.university || '',
+          diplomaUrl: extraData.diplomaUrl || '',
+          birthDate: extraData.birthDate || '',
           status: 'pending',
           createdAt: serverTimestamp(),
         }, { merge: true });
@@ -284,13 +305,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Step 2: username + password + terms, then the profile is created.
-  const completeGoogleSignup = async (chosenUsername: string, password: string, termsAccepted: boolean): Promise<void> => {
+  const completeGoogleSignup = async (chosenUsername: string, password: string, termsAccepted: boolean, extraData?: UserRegistrationData): Promise<void> => {
     const current = auth.currentUser;
     if (!current || !current.email) {
       throw new Error('Google oturumu bulunamadı. Lütfen tekrar deneyin.');
     }
     const validationError = getUsernameValidationError(chosenUsername);
     if (validationError) throw new Error(validationError);
+    if (extraData?.birthDate) {
+      const ageErr = getBirthDateValidationError(extraData.birthDate);
+      if (ageErr) throw new Error(ageErr);
+    }
     if (!password || password.length < 6) throw new Error('Şifre en az 6 karakter olmalıdır.');
     if (!termsAccepted) throw new Error('Lütfen kullanıcı sözleşmesini ve KVKK metnini onaylayın.');
 
@@ -306,7 +331,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await linkWithCredential(current, EmailAuthProvider.credential(current.email, password));
     }
 
-    await createUserDocument(current, cleanUsername);
+    if (extraData?.fullName) {
+      try {
+        await updateProfile(current, { displayName: extraData.fullName });
+      } catch {}
+    }
+
+    await createUserDocument(current, cleanUsername, extraData);
 
     if (!current.emailVerified) {
       try { await sendEmailVerification(current); } catch (e) { console.warn('sendEmailVerification:', e); }

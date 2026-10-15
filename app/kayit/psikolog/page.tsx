@@ -8,6 +8,7 @@ import { Award, Upload, CheckCircle2, ShieldCheck, ArrowLeft, ArrowRight, Loader
 import toast from 'react-hot-toast';
 import TermsModal from '@/components/TermsModal';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
+import { calculateAge, getMaxBirthDateFor18, getBirthDateValidationError } from '@/lib/ageUtils';
 
 export default function PsychologistRegisterPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function PsychologistRegisterPage() {
 
   const [form, setForm] = useState({
     fullName: '',
+    birthDate: '',
     username: '',
     email: '',
     password: '',
@@ -65,6 +67,17 @@ export default function PsychologistRegisterPage() {
       return;
     }
 
+    if (!form.birthDate) {
+      toast.error('Lütfen doğum tarihinizi girin.');
+      return;
+    }
+
+    const ageError = getBirthDateValidationError(form.birthDate);
+    if (ageError) {
+      toast.error(ageError);
+      return;
+    }
+
     if (!form.diplomaUrl) {
       toast.error('Lütfen psikolog doğrulaması için diploma belgenizi yükleyin.');
       return;
@@ -95,6 +108,7 @@ export default function PsychologistRegisterPage() {
           university: form.university,
           diplomaUrl: form.diplomaUrl,
           fullName: form.fullName,
+          birthDate: form.birthDate,
         }
       );
 
@@ -189,7 +203,7 @@ export default function PsychologistRegisterPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Ad Soyad & Kullanıcı Adı */}
+          {/* Ad Soyad & Doğum Tarihi */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 6 }}>
@@ -217,35 +231,76 @@ export default function PsychologistRegisterPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 6 }}>
-                Kullanıcı Adı *
+                Doğum Tarihi * (18 Yaş ve Üzeri)
               </label>
               <input
-                type="text"
+                type="date"
                 required
-                value={form.username}
-                onChange={e => setForm({ ...form, username: e.target.value.replace(/^@+/, '') })}
-                placeholder="Örn: ahmetyilmaz"
+                max={getMaxBirthDateFor18()}
+                value={form.birthDate}
+                onChange={e => setForm({ ...form, birthDate: e.target.value })}
                 style={{
                   width: '100%',
                   padding: '12px 14px',
                   borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.2)',
+                  border: form.birthDate && getBirthDateValidationError(form.birthDate) ? '1px solid #f87171' : '1px solid rgba(255,255,255,0.2)',
                   background: 'rgba(255,255,255,0.06)',
                   color: 'white',
                   fontSize: '0.95rem',
                   outline: 'none',
                   boxSizing: 'border-box',
+                  colorScheme: 'dark',
                 }}
               />
-              <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
-                Başına @ koymanıza gerek yoktur, profilinizde sistem otomatik ekler. Yalnızca harf (a-z), rakam ve alt çizgi (_).
-              </div>
-              {form.username && (
-                <div style={{ fontSize: '0.78rem', color: '#34d399', fontWeight: 600, marginTop: 3 }}>
-                  Profil adınız: @{sanitizeUsername(form.username)}
+              {form.birthDate && getBirthDateValidationError(form.birthDate) && (
+                <div style={{ fontSize: '0.74rem', color: '#f87171', marginTop: 4 }}>
+                  {getBirthDateValidationError(form.birthDate)}
+                </div>
+              )}
+              {form.birthDate && !getBirthDateValidationError(form.birthDate) && (
+                <div style={{ fontSize: '0.74rem', color: '#34d399', fontWeight: 600, marginTop: 4 }}>
+                  Yaş doğrulaması onaylandı ({calculateAge(form.birthDate)} yaşındasınız).
+                </div>
+              )}
+              {!form.birthDate && (
+                <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+                  Platforma yalnızca 18 yaş ve üzeri kişiler kayıt olabilir.
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Kullanıcı Adı */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 6 }}>
+              Kullanıcı Adı *
+            </label>
+            <input
+              type="text"
+              required
+              value={form.username}
+              onChange={e => setForm({ ...form, username: e.target.value.replace(/^@+/, '') })}
+              placeholder="Örn: ahmetyilmaz"
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.06)',
+                color: 'white',
+                fontSize: '0.95rem',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+              Başına @ koymanıza gerek yoktur, profilinizde sistem otomatik ekler. Yalnızca harf (a-z), rakam ve alt çizgi (_).
+            </div>
+            {form.username && (
+              <div style={{ fontSize: '0.78rem', color: '#34d399', fontWeight: 600, marginTop: 3 }}>
+                Profil adınız: @{sanitizeUsername(form.username)}
+              </div>
+            )}
           </div>
 
           {/* E-posta & Şifre */}

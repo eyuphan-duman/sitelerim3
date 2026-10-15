@@ -220,7 +220,8 @@
 }
 
 .input:focus ~ .label,
-.input:not(:placeholder-shown) ~ .label {
+.input:not(:placeholder-shown) ~ .label,
+.labelFloated {
   transform: translateY(-10px) scale(0.76);
 }
 

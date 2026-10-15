@@ -7,6 +7,7 @@ import { X as CloseIcon, Loader, Award, FileText, ShieldCheck, ArrowRight, Arrow
 import toast from 'react-hot-toast';
 import TermsModal from './TermsModal';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
+import { calculateAge, getMaxBirthDateFor18, getBirthDateValidationError } from '@/lib/ageUtils';
 import styles from './AuthModal.module.css';
 
 interface Props {
@@ -27,11 +28,14 @@ interface FieldProps {
   invalid?: boolean;
   minLength?: number;
   inputMode?: 'text' | 'email';
+  max?: string;
+  min?: string;
 }
 
-function Field({ id, label, type = 'text', value, onChange, autoComplete, invalid, minLength, inputMode }: FieldProps) {
+function Field({ id, label, type = 'text', value, onChange, autoComplete, invalid, minLength, inputMode, max, min }: FieldProps) {
   const [reveal, setReveal] = useState(false);
   const isPassword = type === 'password';
+  const isDate = type === 'date';
   return (
     <div className={styles.field}>
       <input
@@ -42,15 +46,18 @@ function Field({ id, label, type = 'text', value, onChange, autoComplete, invali
         className={`${styles.input} ${invalid ? styles.inputInvalid : ''}`}
         placeholder=" "
         autoComplete={autoComplete}
-        autoCapitalize="none"
+        autoCapitalize={id.includes('fullname') ? 'words' : 'none'}
         autoCorrect="off"
         spellCheck={false}
         required
         minLength={minLength}
+        max={max}
+        min={min}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        style={isDate ? { colorScheme: 'dark' } : undefined}
       />
-      <label htmlFor={id} className={styles.label}>{label}</label>
+      <label htmlFor={id} className={`${styles.label} ${(isDate || value) ? styles.labelFloated : ''}`}>{label}</label>
       {isPassword && (
         <button
           type="button"
@@ -87,6 +94,8 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
   const [detectedDark, setDetectedDark] = useState(false);
 
   const [identifier, setIdentifier] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -143,14 +152,19 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
 
   if (!isOpen) return null;
 
+  const maxBirthDate = getMaxBirthDateFor18();
+  const fullNameTrimmed = fullName.trim();
+  const fullNameOk = fullNameTrimmed.length >= 3;
+  const birthDateError = birthDate ? getBirthDateValidationError(birthDate) : null;
+  const birthDateOk = Boolean(birthDate) && !birthDateError;
   const usernameError = username ? getUsernameValidationError(username) : null;
   const usernameOk = Boolean(username) && !getUsernameValidationError(username);
   const passwordOk = password.length >= 6;
   const emailOk = /\S+@\S+\.\S+/.test(email);
 
   // Terms can only be confirmed last, after every other field is valid
-  const signupFieldsReady = usernameOk && emailOk && passwordOk;
-  const googleFieldsReady = usernameOk && passwordOk;
+  const signupFieldsReady = fullNameOk && birthDateOk && usernameOk && emailOk && passwordOk;
+  const googleFieldsReady = fullNameOk && birthDateOk && usernameOk && passwordOk;
   const fieldsReady = mode === 'google' ? googleFieldsReady : signupFieldsReady;
 
   const switchMode = (next: Mode) => {
@@ -195,6 +209,15 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
       toast.error('Lütfen kullanıcı sözleşmesini ve KVKK metnini onaylayın.');
       return;
     }
+    if (!fullName.trim() || fullName.trim().length < 3) {
+      toast.error('Lütfen adınızı ve soyadınızı eksiksiz girin.');
+      return;
+    }
+    const ageError = getBirthDateValidationError(birthDate);
+    if (ageError) {
+      toast.error(ageError);
+      return;
+    }
     const uError = getUsernameValidationError(username);
     if (uError) {
       toast.error(uError);
@@ -202,7 +225,10 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
     }
     setBusy(true);
     try {
-      await signUp(sanitizeUsername(username), email.trim(), password);
+      await signUp(sanitizeUsername(username), email.trim(), password, {
+        fullName: fullName.trim(),
+        birthDate,
+      });
       toast.success('Hesabın oluşturuldu! Forumda paylaşım ve etkileşim yapabilmek için lütfen e-postana gönderdiğimiz doğrulama linkine tıkla.', { duration: 8000 });
       setPassword('');
       setTermsAccepted(false);
@@ -223,6 +249,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
     try {
       const info = await startGoogleSignup();
       setGoogleEmail(info.email);
+      setFullName((prev) => prev || info.displayName || '');
       setUsername((prev) => prev || sanitizeUsername(info.displayName || info.email.split('@')[0] || ''));
       setPassword('');
       setTermsAccepted(false);
@@ -248,9 +275,21 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
       toast.error('Lütfen kullanıcı sözleşmesini ve KVKK metnini onaylayın.');
       return;
     }
+    if (!fullName.trim() || fullName.trim().length < 3) {
+      toast.error('Lütfen adınızı ve soyadınızı eksiksiz girin.');
+      return;
+    }
+    const ageError = getBirthDateValidationError(birthDate);
+    if (ageError) {
+      toast.error(ageError);
+      return;
+    }
     setBusy(true);
     try {
-      await completeGoogleSignup(username, password, termsAccepted);
+      await completeGoogleSignup(username, password, termsAccepted, {
+        fullName: fullName.trim(),
+        birthDate,
+      });
       toast.success('Hesabın oluşturuldu! Artık kullanıcı adın veya e-postan ve şifrenle giriş yapabilirsin.', { duration: 7000 });
       setPassword('');
       setTermsAccepted(false);
@@ -307,6 +346,43 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
   };
 
   /* ---------------- Reusable blocks ---------------- */
+
+  const nameAndAgeBlock = (
+    <>
+      <Field
+        id="auth_fullname"
+        label="İsim Soyisim *"
+        value={fullName}
+        onChange={setFullName}
+        autoComplete="name"
+        minLength={3}
+      />
+      <Field
+        id="auth_birthdate"
+        label="Doğum Tarihi * (18 Yaş ve Üzeri)"
+        type="date"
+        value={birthDate}
+        onChange={setBirthDate}
+        max={maxBirthDate}
+        invalid={Boolean(birthDateError)}
+      />
+      {birthDateError && (
+        <p className={`${styles.hint} ${styles.hintError}`} style={{ color: 'var(--am-danger)' }}>
+          {birthDateError}
+        </p>
+      )}
+      {birthDate && !birthDateError && (
+        <p className={styles.hint} style={{ color: '#10b981', fontWeight: 600, marginTop: -4 }}>
+          Yaş doğrulaması onaylandı ({calculateAge(birthDate)} yaşındasınız).
+        </p>
+      )}
+      {!birthDate && (
+        <p className={styles.hint} style={{ marginTop: -4 }}>
+          Platform kuralları gereği yalnızca 18 yaş ve üzeri kişiler kayıt olabilir.
+        </p>
+      )}
+    </>
+  );
 
   const usernameBlock = (
     <>
@@ -431,6 +507,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
               <div className={styles.divider}>veya e-posta ile kaydol</div>
 
               <form className={styles.form} onSubmit={handleSignup}>
+                {nameAndAgeBlock}
                 {usernameBlock}
                 <Field id="auth_email" label="E-posta adresi" type="email" inputMode="email" value={email} onChange={setEmail} autoComplete="email" />
                 <Field id="auth_new_password" label="Şifre (en az 6 karakter)" type="password" value={password} onChange={setPassword} autoComplete="new-password" minLength={6} />
@@ -450,12 +527,13 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
           {/* ---------------- GOOGLE STEP 2 ---------------- */}
           {mode === 'google' && (
             <>
-              <p className={styles.subtitle}>Google hesabın bağlandı. Kaydı bitirmek için kullanıcı adı ve şifre belirle, ardından sözleşmeyi onayla.</p>
+              <p className={styles.subtitle}>Google hesabın bağlandı. Kaydı bitirmek için bilgileri doldur, ardından sözleşmeyi onayla.</p>
               <div className={styles.chip}>
                 <CheckCircle2 size={18} className={styles.chipIcon} />
                 <span>{googleEmail}</span>
               </div>
               <form className={styles.form} onSubmit={handleGoogleComplete}>
+                {nameAndAgeBlock}
                 {usernameBlock}
                 <Field id="auth_google_password" label="Giriş şifresi belirle (en az 6 karakter)" type="password" value={password} onChange={setPassword} autoComplete="new-password" minLength={6} />
                 <p className={styles.hint}>Bu şifreyle daha sonra kullanıcı adın veya e-postanla giriş yapacaksın.</p>
