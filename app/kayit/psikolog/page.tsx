@@ -108,23 +108,33 @@ export default function PsychologistRegisterPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #070e1b 0%, #0d1e38 100%)', color: 'white', display: 'flex', flexDirection: 'column', padding: '110px 20px 50px', boxSizing: 'border-box' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #070e1b 0%, #0d1e38 100%)', color: 'white', display: 'flex', flexDirection: 'column', padding: '120px 16px 60px', boxSizing: 'border-box' }}>
       {/* Top back bar */}
-      <div style={{ maxWidth: 640, width: '100%', margin: '0 auto 24px' }}>
+      <div style={{ maxWidth: 640, width: '100%', margin: '0 auto 20px', display: 'flex', alignItems: 'center' }}>
         <Link
           href="/forum"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
-            color: 'rgba(255,255,255,0.7)',
+            color: '#facc15',
+            background: 'rgba(212, 175, 55, 0.12)',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            padding: '8px 16px',
+            borderRadius: 999,
             textDecoration: 'none',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-            transition: 'color 0.2s',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            transition: 'all 0.2s ease',
           }}
-          onMouseOver={e => e.currentTarget.style.color = 'var(--gold)'}
-          onMouseOut={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+          onMouseOver={e => {
+            e.currentTarget.style.background = 'rgba(212, 175, 55, 0.22)';
+            e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.5)';
+          }}
+          onMouseOut={e => {
+            e.currentTarget.style.background = 'rgba(212, 175, 55, 0.12)';
+            e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.3)';
+          }}
         >
           <ArrowLeft size={16} /> Topluluğa Dön
         </Link>

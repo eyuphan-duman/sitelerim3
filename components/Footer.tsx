@@ -132,7 +132,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {[
                 { href: '/forum', label: 'Forum & Topluluk' },
-                { href: '/kayit', label: 'Psikolog Kaydı & Başvuru' },
+                { href: '/kayit/psikolog', label: 'Psikolog Kaydı & Başvuru' },
                 { href: '/iletisim', label: 'Randevu & Danışmanlık' },
                 { href: '/gizlilik', label: 'Gizlilik ve Güvenlik' },
               ].map((l) => (

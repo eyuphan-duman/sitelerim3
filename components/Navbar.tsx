@@ -42,7 +42,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const forceSolid = pathname === '/videolarim' || pathname?.startsWith('/yazilarim') || pathname?.startsWith('/sss');
+  const forceSolid = pathname === '/videolarim' || pathname?.startsWith('/yazilarim') || pathname?.startsWith('/sss') || pathname?.startsWith('/kayit');
 
   // Completely hide main site Navbar on admin panel so only admin drawer navigation is used
   if (isAdminPage) {
