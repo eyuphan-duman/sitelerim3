@@ -1630,6 +1630,33 @@ export default function ProfilClient({ username }: { username: string }) {
               </div>
             )}
 
+            {/* Psychologist application pending banner for owner */}
+            {isOwn && pd.psychologistStatus === 'pending' && (
+              <div style={{
+                marginTop: 12,
+                padding: '12px 18px',
+                borderRadius: 12,
+                background: isDark ? 'rgba(212, 175, 55, 0.12)' : '#fefce8',
+                border: `1.5px solid ${isDark ? 'rgba(212, 175, 55, 0.35)' : '#fef08a'}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Award size={20} color={isDark ? '#facc15' : '#ca8a04'} />
+                  <div>
+                    <div style={{ fontWeight: 800, color: isDark ? '#fde047' : '#854d0e', fontSize: '0.88rem' }}>
+                      Uzman & Psikolog Başvurunuz İnceleniyor
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: isDark ? '#cbd5e1' : '#713f12', marginTop: 2 }}>
+                      Forum profiliniz aktif açılmıştır. Belgeleriniz yöneticimiz tarafından onaylandığında resmi Psikolog rozetiniz profilinizde ve paylaşımlarınızda otomatik olarak görünecektir.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Frozen banner for owner */}
             {isOwn && pd.isFrozen && (
               <div style={{ marginTop: 12, padding: '12px 18px', borderRadius: 10, background: isDark ? '#1e293b' : '#eff6ff', border: `1px solid ${isDark ? '#334155' : '#bfdbfe'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>

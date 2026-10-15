@@ -99,7 +99,7 @@ export default function PsychologistRegisterPage() {
       );
 
       toast.success('Psikolog başvurunuz başarıyla alındı! Lütfen e-postanıza gönderilen doğrulama linkine tıklayarak e-posta adresinizi doğrulayın. Belgeleriniz onaylandığında uzman rozetiniz aktifleşecektir.', { duration: 8000 });
-      router.push('/forum');
+      router.push(`/forum/profil/${encodeURIComponent(cleanUsername)}`);
     } catch (err: any) {
       toast.error('Kayıt oluşturulamadı: ' + (err.message || ''));
     } finally {
@@ -108,7 +108,7 @@ export default function PsychologistRegisterPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #070e1b 0%, #0d1e38 100%)', color: 'white', display: 'flex', flexDirection: 'column', padding: '40px 20px', boxSizing: 'border-box' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #070e1b 0%, #0d1e38 100%)', color: 'white', display: 'flex', flexDirection: 'column', padding: '110px 20px 50px', boxSizing: 'border-box' }}>
       {/* Top back bar */}
       <div style={{ maxWidth: 640, width: '100%', margin: '0 auto 24px' }}>
         <Link
@@ -213,7 +213,7 @@ export default function PsychologistRegisterPage() {
                 type="text"
                 required
                 value={form.username}
-                onChange={e => setForm({ ...form, username: e.target.value })}
+                onChange={e => setForm({ ...form, username: e.target.value.replace(/^@+/, '') })}
                 placeholder="Örn: ahmetyilmaz"
                 style={{
                   width: '100%',
@@ -228,8 +228,13 @@ export default function PsychologistRegisterPage() {
                 }}
               />
               <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
-                Sade İngilizce harfler (a-z), rakamlar (0-9) ve alt çizgi (_).
+                Başına @ koymanıza gerek yoktur, profilinizde sistem otomatik ekler. Yalnızca harf (a-z), rakam ve alt çizgi (_).
               </div>
+              {form.username && (
+                <div style={{ fontSize: '0.78rem', color: '#34d399', fontWeight: 600, marginTop: 3 }}>
+                  Profil adınız: @{sanitizeUsername(form.username)}
+                </div>
+              )}
             </div>
           </div>
 
