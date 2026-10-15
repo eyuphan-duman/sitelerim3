@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
-import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check, Award, ExternalLink, GraduationCap, Users, Search, UserCheck, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check, Award, ExternalLink, GraduationCap, Users, Search, UserCheck, ShieldCheck, ArrowRight, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -27,7 +27,7 @@ export default function AdminPage() {
   const [articles, setArticles] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'psychologists' | 'appointments' | 'posts' | 'videos' | 'messages'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'psychologists' | 'appointments' | 'posts' | 'faq' | 'videos' | 'messages'>('hero');
   const [psychApplications, setPsychApplications] = useState<any[]>([]);
   const [psychFilter, setPsychFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [psychSubTab, setPsychSubTab] = useState<'users' | 'applications'>('users');
@@ -36,6 +36,8 @@ export default function AdminPage() {
   const [userFilterRole, setUserFilterRole] = useState<'all' | 'psychologists' | 'members'>('all');
   const [targetTitle, setTargetTitle] = useState('Psikolog');
   const [grantingUid, setGrantingUid] = useState<string | null>(null);
+  const [banMenuUid, setBanMenuUid] = useState<string | null>(null);
+  const [processingBanUid, setProcessingBanUid] = useState<string | null>(null);
   const [subTab, setSubTab] = useState<'pending' | 'approved'>('pending');
   const [messages, setMessages] = useState<any[]>([]);
   const [editingMsg, setEditingMsg] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export default function AdminPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam === 'hero' || tabParam === 'about' || tabParam === 'psychologists' || tabParam === 'posts' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
+      if (tabParam === 'hero' || tabParam === 'about' || tabParam === 'psychologists' || tabParam === 'posts' || tabParam === 'faq' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
         setActiveTab(tabParam as any);
       }
     }
@@ -69,6 +71,9 @@ export default function AdminPage() {
   // Forms
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
   const [postForm, setPostForm] = useState({ title: '', category: '', featuredImage: '', content: '' });
+  const [faqs, setFaqs] = useState<any[]>([]);
+  const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
+  const [faqForm, setFaqForm] = useState({ title: '', category: '', content: '' });
   const [videoForm, setVideoForm] = useState({ title: '', category: '', desc: '', dur: '', views: '1', link: '' });
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -79,6 +84,7 @@ export default function AdminPage() {
 
     const u1 = onSnapshot(query(collection(db, 'appointments'), orderBy('createdAt', 'desc')), snap => setAppointments(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const u2 = onSnapshot(query(collection(db, 'articles'), orderBy('createdAt', 'desc')), snap => setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const u8 = onSnapshot(query(collection(db, 'faq'), orderBy('createdAt', 'desc')), snap => setFaqs(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const u3 = onSnapshot(query(collection(db, 'reels'), orderBy('createdAt', 'desc')), snap => setVideos(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const u4 = onSnapshot(query(collection(db, 'messages'), orderBy('createdAt', 'desc')), snap => setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const u5 = onSnapshot(doc(db, 'settings', 'hero'), snap => {
@@ -152,7 +158,7 @@ export default function AdminPage() {
       }).catch(() => {});
     }
 
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); uAbout(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); uAbout(); };
   }, [user]);
 
   const [adminUploadingDiploma, setAdminUploadingDiploma] = useState<string | null>(null);
@@ -332,6 +338,59 @@ export default function AdminPage() {
     }
   };
 
+  const BAN_DURATIONS: { key: string; label: string; ms: number | null }[] = [
+    { key: '1d', label: '1 Gün', ms: 24 * 60 * 60 * 1000 },
+    { key: '3d', label: '3 Gün', ms: 3 * 24 * 60 * 60 * 1000 },
+    { key: '7d', label: '7 Gün', ms: 7 * 24 * 60 * 60 * 1000 },
+    { key: '30d', label: '30 Gün', ms: 30 * 24 * 60 * 60 * 1000 },
+    { key: 'permanent', label: 'Kalıcı', ms: null },
+  ];
+
+  const isUserCurrentlyBanned = (u: any) => {
+    if (!u?.isBanned) return false;
+    if (!u.banUntil) return true; // permanent
+    const until = typeof u.banUntil?.toDate === 'function' ? u.banUntil.toDate() : new Date(u.banUntil);
+    return until.getTime() > Date.now();
+  };
+
+  const handleBanUser = async (targetUser: any, durationKey: string) => {
+    const durationDef = BAN_DURATIONS.find(d => d.key === durationKey);
+    if (!durationDef) return;
+    const name = targetUser.displayName || targetUser.username || 'Bu kullanıcı';
+    if (!confirm(`${name} kullanıcısını ${durationDef.key === 'permanent' ? 'kalıcı olarak' : durationDef.label + ' süreyle'} banlamak istediğinize emin misiniz?`)) return;
+    setProcessingBanUid(targetUser.id);
+    try {
+      await updateDoc(doc(db, 'users', targetUser.id), {
+        isBanned: true,
+        banUntil: durationDef.ms ? new Date(Date.now() + durationDef.ms) : null,
+        banDuration: durationDef.key,
+        bannedAt: serverTimestamp(),
+      });
+      toast.success(`${name} ${durationDef.key === 'permanent' ? 'kalıcı olarak' : durationDef.label + ' süreyle'} banlandı.`);
+      setBanMenuUid(null);
+    } catch (err: any) {
+      toast.error('Banlama işlemi başarısız: ' + (err.message || ''));
+    } finally {
+      setProcessingBanUid(null);
+    }
+  };
+
+  const handleUnbanUser = async (targetUser: any) => {
+    setProcessingBanUid(targetUser.id);
+    try {
+      await updateDoc(doc(db, 'users', targetUser.id), {
+        isBanned: false,
+        banUntil: null,
+        banDuration: null,
+      });
+      toast.success(`${targetUser.displayName || targetUser.username || 'Kullanıcının'} banı kaldırıldı.`);
+    } catch (err: any) {
+      toast.error('İşlem başarısız: ' + (err.message || ''));
+    } finally {
+      setProcessingBanUid(null);
+    }
+  };
+
   const updateAppointment = async (id: string, newStatus: string) => {
     try { await updateDoc(doc(db, 'appointments', id), { status: newStatus }); toast.success('Randevu ' + newStatus); }
     catch { toast.error('İşlem başarısız.'); }
@@ -506,6 +565,65 @@ export default function AdminPage() {
     }
   };
 
+  const handleAddFaq = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!faqForm.title.trim() || !faqForm.content || faqForm.content === '<p><br></p>') {
+      toast.error('Soru başlığı ve cevap zorunludur.'); return;
+    }
+    setSubmitting(true);
+    try {
+      const strip = (h: string) => h.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
+      const raw = strip(faqForm.content);
+      const excerpt = raw.length > 220 ? raw.slice(0, 220) + '…' : raw;
+
+      if (editingFaqId) {
+        await updateDoc(doc(db, 'faq', editingFaqId), {
+          ...faqForm,
+          excerpt,
+          updatedAt: serverTimestamp()
+        });
+        toast.success('Soru-cevap güncellendi!');
+        setEditingFaqId(null);
+      } else {
+        await addDoc(collection(db, 'faq'), {
+          ...faqForm,
+          excerpt,
+          createdAt: serverTimestamp()
+        });
+        toast.success('Soru-cevap yayımlandı!');
+      }
+
+      setFaqForm({ title: '', category: '', content: '' });
+    } catch (e: any) {
+      toast.error('Hata oluştu: ' + (e?.message || ''));
+    }
+    finally { setSubmitting(false); }
+  };
+
+  const handleStartEditFaq = (f: any) => {
+    setFaqForm({ title: f.title || '', category: f.category || '', content: f.content || '' });
+    setEditingFaqId(f.id);
+    setActiveTab('faq');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast.success('Soru-cevap düzenleme moduna alındı.');
+  };
+
+  const handleCancelEditFaq = () => {
+    setEditingFaqId(null);
+    setFaqForm({ title: '', category: '', content: '' });
+  };
+
+  const deleteFaq = async (id: string) => {
+    if (!confirm('Bu soru-cevabı silmek istediğinize emin misiniz?')) return;
+    try {
+      await deleteDoc(doc(db, 'faq', id));
+      if (editingFaqId === id) handleCancelEditFaq();
+      toast.success('Silindi.');
+    } catch {
+      toast.error('Hata oluştu.');
+    }
+  };
+
 
   const handleAddVideo = async (e: React.FormEvent) => {
     e.preventDefault(); 
@@ -555,6 +673,7 @@ export default function AdminPage() {
     { id: 'psychologists', label: 'Psikologlar & Yetkiler', icon: <Award size={18}/> },
     { id: 'appointments', label: 'Randevular', icon: <Calendar size={18}/> },
     { id: 'posts', label: 'Yazılarım', icon: <FileText size={18}/> },
+    { id: 'faq', label: 'Sıkça Sorulan Sorular', icon: <HelpCircle size={18}/> },
     { id: 'videos', label: 'Videolarım', icon: <Video size={18}/> },
     { id: 'messages', label: 'Mesajlar', icon: <Mail size={18}/> },
   ] as const;
@@ -2032,6 +2151,11 @@ export default function AdminPage() {
                       {filtered.map(u => {
                         const isPsych = Boolean(u.isPsychologist || u.role === 'psychologist');
                         const isBusy = grantingUid === u.id;
+                        const isBanned = isUserCurrentlyBanned(u);
+                        const isBanBusy = processingBanUid === u.id;
+                        const banLabel = u.banDuration === 'permanent' || !u.banUntil
+                          ? 'Kalıcı'
+                          : (BAN_DURATIONS.find(d => d.key === u.banDuration)?.label || 'Süreli');
 
                         return (
                           <div
@@ -2094,6 +2218,22 @@ export default function AdminPage() {
                                     </span>
                                   )}
                                   <span style={{ color: '#64748b', fontSize: '0.82rem' }}>@{u.username || 'kullanici'}</span>
+                                  {isBanned && (
+                                    <span style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      background: '#fef2f2',
+                                      border: '1px solid #fecaca',
+                                      color: '#ef4444',
+                                      fontSize: '0.68rem',
+                                      fontWeight: 800,
+                                      padding: '2px 8px',
+                                      borderRadius: 999
+                                    }}>
+                                      Banlı · {banLabel}
+                                    </span>
+                                  )}
                                 </div>
                                 <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 2 }}>
                                   {u.email || 'E-posta belirtilmemiş'}
@@ -2152,6 +2292,107 @@ export default function AdminPage() {
                                   <Award size={14} />
                                   <span>{isBusy ? 'İşleniyor...' : `"${targetTitle}" Başlığı Ver`}</span>
                                 </button>
+                              )}
+
+                              {isBanned ? (
+                                <button
+                                  type="button"
+                                  disabled={isBanBusy}
+                                  onClick={() => handleUnbanUser(u)}
+                                  style={{
+                                    background: '#f0fdf4',
+                                    border: '1px solid #bbf7d0',
+                                    color: '#16a34a',
+                                    padding: '8px 16px',
+                                    borderRadius: 6,
+                                    fontWeight: 700,
+                                    fontSize: '0.82rem',
+                                    cursor: isBanBusy ? 'wait' : 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  title="Banı kaldır"
+                                >
+                                  <span>{isBanBusy ? 'İşleniyor...' : 'Banı Kaldır'}</span>
+                                </button>
+                              ) : (
+                                <div style={{ position: 'relative' }}>
+                                  <button
+                                    type="button"
+                                    disabled={isBanBusy}
+                                    onClick={() => setBanMenuUid(banMenuUid === u.id ? null : u.id)}
+                                    style={{
+                                      background: '#fef2f2',
+                                      border: '1px solid #fecaca',
+                                      color: '#ef4444',
+                                      padding: '8px 16px',
+                                      borderRadius: 6,
+                                      fontWeight: 700,
+                                      fontSize: '0.82rem',
+                                      cursor: isBanBusy ? 'wait' : 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 6,
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    title="Kullanıcıyı banla"
+                                  >
+                                    <span>{isBanBusy ? 'İşleniyor...' : 'Banla'}</span>
+                                  </button>
+
+                                  {banMenuUid === u.id && (
+                                    <>
+                                      <div
+                                        style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+                                        onClick={() => setBanMenuUid(null)}
+                                      />
+                                      <div style={{
+                                        position: 'absolute',
+                                        right: 0,
+                                        top: '100%',
+                                        marginTop: 4,
+                                        zIndex: 101,
+                                        background: 'white',
+                                        border: '1px solid #e2e8f0',
+                                        borderRadius: 10,
+                                        boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
+                                        padding: 6,
+                                        minWidth: 160,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 2,
+                                      }}>
+                                        {BAN_DURATIONS.map(d => (
+                                          <button
+                                            key={d.key}
+                                            type="button"
+                                            onClick={() => handleBanUser(u, d.key)}
+                                            style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              padding: '8px 12px',
+                                              background: 'transparent',
+                                              border: 'none',
+                                              color: d.key === 'permanent' ? '#ef4444' : 'var(--navy)',
+                                              fontSize: '0.84rem',
+                                              fontWeight: 600,
+                                              borderRadius: 8,
+                                              cursor: 'pointer',
+                                              textAlign: 'left',
+                                              width: '100%',
+                                            }}
+                                            onMouseEnter={e => (e.currentTarget.style.background = '#f1f5f9')}
+                                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                          >
+                                            {d.label}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>
@@ -2712,6 +2953,75 @@ export default function AdminPage() {
                   </div>
                 ))}
                 {articles.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>Henüz makale yok.</p>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FAQ TAB */}
+        {activeTab === 'faq' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+            {/* New FAQ Form */}
+            <div className="admin-card-inner" style={{ background: 'white', padding: 32, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
+                <HelpCircle size={20} color="var(--gold-dim)"/>
+                <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>
+                  {editingFaqId ? 'Soru-Cevabı Güncelle' : 'Yeni Soru-Cevap Ekle'}
+                </h2>
+                {editingFaqId && (
+                  <button type="button" onClick={handleCancelEditFaq} style={{ marginLeft: 'auto', background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <X size={14}/> İptal Et
+                  </button>
+                )}
+              </div>
+              <p style={{ fontSize: '0.84rem', color: '#64748b', marginBottom: 20, lineHeight: 1.5 }}>
+                Bu bölüm, insanların Google&apos;da arama yaparken sorduğu sorulara doğrudan cevap veren içerikler içindir (Yazılarım&apos;dan ayrı). Soruyu başlık olarak, cevabı da içerik olarak yazın.
+              </p>
+              <form onSubmit={handleAddFaq} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div className="admin-post-form-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+                  <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Soru (Başlık)</label><input required className="input-field" value={faqForm.title} onChange={e=>setFaqForm({...faqForm, title: e.target.value})} placeholder="Örn: Online Terapi Etkili mi?"/></div>
+                  <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kategori</label><input className="input-field" value={faqForm.category} onChange={e=>setFaqForm({...faqForm, category: e.target.value})} placeholder="Örn: Terapi Süreci"/></div>
+                </div>
+                <div>
+                  <div className="editor-container" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                    <RichTextEditor
+                      value={faqForm.content}
+                      onChange={val=>setFaqForm({...faqForm, content: val})}
+                      placeholder="Cevabı buraya yazın..."
+                    />
+                  </div>
+                </div>
+                <button disabled={submitting} type="submit" className="btn-gold justify-center mt-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {editingFaqId ? <Save size={16}/> : <Plus size={16}/>}
+                  {submitting ? 'Kaydediliyor…' : (editingFaqId ? 'Güncelle' : 'Yayımla')}
+                </button>
+              </form>
+            </div>
+
+            {/* Published FAQs */}
+            <div>
+              <h2 style={{ fontSize: '1.2rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)', marginBottom: 20 }}>Yayımlanan Soru-Cevaplar</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
+                {faqs.map(f => (
+                  <div key={f.id} style={{ background: 'white', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+                      {f.category && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--gold-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{f.category}</span>}
+                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.35 }}>{f.title}</h3>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 12 }}>
+                        <button onClick={()=>handleStartEditFaq(f)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600, color: '#2563eb', cursor: 'pointer' }}>
+                          <Edit3 size={13}/> Düzenle
+                        </button>
+                        <a href={`/sss/${f.id}`} target="_blank" style={{ padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, color: '#64748b', display: 'flex', alignItems: 'center', textDecoration: 'none' }} title="Sitede Gör">
+                          <Eye size={14}/>
+                        </a>
+                        <button onClick={()=>deleteFaq(f.id)} style={{ padding: '8px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                          <Trash2 size={14}/>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {faqs.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>Henüz soru-cevap eklenmedi.</p>}
               </div>
             </div>
           </div>

@@ -62,7 +62,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
         onClose();
       } else if (mode === 'signup') {
         await signUp(form.username.toLowerCase().replace(/\s+/g,''), form.email.trim(), form.password);
-        toast.success('Hesabın başarıyla oluşturuldu!');
+        toast.success('Hesabın oluşturuldu! Forumda paylaşım yapabilmek için e-postana gönderdiğimiz doğrulama linkine tıkla.', { duration: 6000 });
         onClose();
       } else if (mode === 'forgot') {
         const identifier = form.username.trim() || form.email.trim();

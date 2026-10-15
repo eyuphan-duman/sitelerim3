@@ -88,21 +88,49 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
 };
 
+const sameAsLinks = [
+  "https://www.instagram.com/pskfurkanmanav/",
+  "https://www.youtube.com/@pskfurkanmanav",
+  "https://www.linkedin.com/in/pskfurkanmanav/",
+];
+
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "Person",
-  "name": "Furkan Manav",
-  "jobTitle": "Psikolog",
-  "url": "https://pskfurkanmanav.com",
-  "sameAs": [
-    "https://www.instagram.com/furkanmanav", // Örnek sosyal medya linkleri
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": "https://pskfurkanmanav.com/#person",
+      "name": "Furkan Manav",
+      "jobTitle": "Psikolog",
+      "url": "https://pskfurkanmanav.com",
+      "image": "https://pskfurkanmanav.com/pskfurkanmanav.jpeg",
+      "sameAs": sameAsLinks,
+      "description": "Varoluşçu ve psikanalitik yaklaşımla psikoterapi, derinlemesine psikoloji yazıları ve forum tartışmaları.",
+      "worksFor": { "@id": "https://pskfurkanmanav.com/#psychologist" },
+    },
+    {
+      "@type": "Psychologist",
+      "@id": "https://pskfurkanmanav.com/#psychologist",
+      "name": "Psikolog Furkan Manav",
+      "image": "https://pskfurkanmanav.com/pskfurkanmanav.jpeg",
+      "url": "https://pskfurkanmanav.com",
+      "telephone": "+905078751503",
+      "email": "pskfurkan.manav@gmail.com",
+      "priceRange": "$$",
+      "sameAs": sameAsLinks,
+      "areaServed": [
+        { "@type": "City", "name": "Çankaya, Ankara" },
+        { "@type": "City", "name": "Polatlı, Ankara" },
+        { "@type": "Place", "name": "Online (Türkiye geneli)" },
+      ],
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Çankaya & Polatlı, Ankara",
+        "addressCountry": "TR",
+      },
+      "description": "Varoluşçu ve psikanalitik yaklaşımla yüz yüze (Çankaya & Polatlı) ve online psikoterapi hizmeti.",
+    },
   ],
-  "description": "Varoluşçu ve psikanalitik yaklaşımla psikoterapi, derinlemesine psikoloji yazıları ve forum tartışmaları.",
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "Ankara",
-    "addressCountry": "TR"
-  }
 };
 
 export default function RootLayout({
@@ -114,7 +142,6 @@ export default function RootLayout({
     <html lang="tr" className={`${inter.variable} ${playfair.variable} ${crimson.variable} ${montserrat.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        <link rel="canonical" href="https://pskfurkanmanav.com" />
         <link rel="preload" as="image" href="/hero-bg.jpg" fetchPriority="high" />
         <link rel="preconnect" href="https://firestore.googleapis.com" />
         <link rel="dns-prefetch" href="https://firestore.googleapis.com" />

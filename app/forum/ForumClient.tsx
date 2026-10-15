@@ -48,8 +48,10 @@ const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
 
 
+const POST_CHAR_LIMIT = 140;
+
 export default function ForumClient() {
-  const { user, userProfile, logout } = useAuth();
+  const { user, userProfile, logout, emailVerified, resendVerificationEmail } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -301,9 +303,22 @@ export default function ForumClient() {
       .slice(0, 6);
   })();
 
+  const isPsychologistUser = Boolean(
+    (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+    (userProfile?.isPsychologist && !userProfile?.psychologistStatus) ||
+    userProfile?.role === 'psychologist'
+  );
+  const isAdminUser = ADMIN_EMAILS.includes(user?.email || '');
+  const photoLimitReached = !isPsychologistUser && !isAdminUser && (userProfile?.photoUploadsUsed || 0) >= 1;
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (photoLimitReached) {
+      toast.error('Fotoğraf yükleme hakkınızı kullandınız. Rozetli (psikolog) kullanıcılar hariç her üye yalnızca 1 fotoğraf yükleyebilir.');
+      if (e.target) e.target.value = '';
+      return;
+    }
     setUploadingImage(true);
     const toastId = toast.loading('Görsel Cloudinary\'ye yükleniyor...');
     try {
@@ -327,11 +342,11 @@ export default function ForumClient() {
     if (!user || (!form.body.trim() && !form.imageUrl)) return toast.error('Yazı veya görsel eklemelisiniz.');
     if (user.isAnonymous) return setAuthOpen(true);
     if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır (banlandı). Paylaşım yapamazsınız.');
+    if (!emailVerified) return toast.error('Paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
+    if (form.body.length > POST_CHAR_LIMIT) return toast.error(`Gönderi en fazla ${POST_CHAR_LIMIT} karakter olabilir.`);
     setPosting(true);
-    const isPsychologist = Boolean(
-      (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
-      (userProfile?.isPsychologist && !userProfile?.psychologistStatus)
-    );
+    const isPsychologist = isPsychologistUser;
+    const usesNewPhoto = Boolean(form.imageUrl) && !isPsychologist && !isAdminUser;
     try {
       const newPostRef = await addDoc(collection(db, 'forum'), {
         body: form.body,
@@ -345,6 +360,10 @@ export default function ForumClient() {
         createdAt: serverTimestamp(),
         reactionsData: {}
       });
+
+      if (usesNewPhoto) {
+        try { await updateDoc(doc(db, 'users', user.uid), { photoUploadsUsed: increment(1) }); } catch {}
+      }
 
       // Notify mentioned users
       try {
@@ -369,6 +388,7 @@ export default function ForumClient() {
     e.stopPropagation();
     if (!user || user.isAnonymous) return setAuthOpen(true);
     if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır.');
+    if (!emailVerified) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
     const postRef = doc(db, 'forum', thread.id);
     const userReaction = thread.reactionsData?.[user.uid];
     if (userReaction === 'like' || userReaction === 'heart') {
@@ -954,6 +974,8 @@ export default function ForumClient() {
               }}
               currentUser={user}
               userProfile={userProfile}
+              emailVerified={emailVerified}
+              photoLimitReached={photoLimitReached}
               adminEmails={ADMIN_EMAILS}
               isDark={isDark}
               onBack={closeThread}
@@ -1230,14 +1252,46 @@ export default function ForumClient() {
                 </div>
               )}
 
-              {user && !user.isAnonymous && !userProfile?.isBanned && (
+              {user && !user.isAnonymous && !userProfile?.isBanned && !emailVerified && (
+                <div style={{
+                  padding: '16px 20px',
+                  background: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
+                  borderBottom: '1px solid #f59e0b',
+                  color: isDark ? '#fcd34d' : '#92400e',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                  fontWeight: 700,
+                  fontSize: '0.92rem'
+                }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    Forumda paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor. Gelen kutunuzu (ve spam klasörünü) kontrol edin.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try { await resendVerificationEmail(); toast.success('Doğrulama e-postası tekrar gönderildi.'); }
+                      catch (err: any) { toast.error(err.message || 'Gönderilemedi.'); }
+                    }}
+                    style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontSize: '0.84rem', whiteSpace: 'nowrap' }}
+                  >
+                    Tekrar Gönder
+                  </button>
+                </div>
+              )}
+
+              {user && !user.isAnonymous && !userProfile?.isBanned && emailVerified && (
                 <div style={{ padding: '20px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, display: 'flex', gap: 14, background: isDark ? '#000000' : 'white' }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0, overflow: 'hidden' }}>
                     {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <textarea placeholder="Ne düşünüyorsunuz? Psikoloji topluluğuyla paylaşın..." value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} style={{ width: '100%', border: 'none', fontSize: '1.05rem', color: isDark ? '#e7e9ea' : '#0f172a', minHeight: 72, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5 }} />
-                    
+                    <textarea placeholder="Ne düşünüyorsunuz? Psikoloji topluluğuyla paylaşın..." value={form.body} maxLength={POST_CHAR_LIMIT} onChange={e => setForm({ ...form, body: e.target.value.slice(0, POST_CHAR_LIMIT) })} style={{ width: '100%', border: 'none', fontSize: '1.05rem', color: isDark ? '#e7e9ea' : '#0f172a', minHeight: 72, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5 }} />
+                    <div style={{ textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: form.body.length >= POST_CHAR_LIMIT ? '#ef4444' : (isDark ? '#71767b' : '#94a3b8') }}>
+                      {form.body.length}/{POST_CHAR_LIMIT}
+                    </div>
+
                     {form.imageUrl && (
                       <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 12, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, marginBottom: 12 }}>
                         <img src={form.imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1253,7 +1307,7 @@ export default function ForumClient() {
                           {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c} style={{ background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a' }}>{c}</option>)}
                         </select>
 
-                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isDark ? '#16181c' : '#f1f5f9', border: isDark ? '1px solid #2f3336' : 'none', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', color: isDark ? '#e7e9ea' : '#475569', cursor: 'pointer', fontWeight: 600 }} title="Görsel ekle">
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isDark ? '#16181c' : '#f1f5f9', border: isDark ? '1px solid #2f3336' : 'none', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', color: photoLimitReached ? (isDark ? '#4b5563' : '#cbd5e1') : (isDark ? '#e7e9ea' : '#475569'), cursor: photoLimitReached ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: photoLimitReached ? 0.6 : 1 }} title={photoLimitReached ? 'Fotoğraf yükleme hakkınızı kullandınız' : 'Görsel ekle'}>
                           {uploadingImage ? (
                             <>
                               <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
@@ -1262,10 +1316,10 @@ export default function ForumClient() {
                           ) : (
                             <>
                               <Camera size={14} />
-                              <span>Görsel Ekle</span>
+                              <span>{photoLimitReached ? 'Hak Kullanıldı' : 'Görsel Ekle'}</span>
                             </>
                           )}
-                          <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage} />
+                          <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage || photoLimitReached} />
                         </label>
                       </div>
 
@@ -1678,13 +1732,17 @@ export default function ForumClient() {
                 <div style={{ fontWeight: 800, fontSize: '0.95rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
                   {userProfile?.displayName || user?.displayName || 'Kullanıcı'}
                 </div>
-                <textarea 
+                <textarea
                   autoFocus
-                  placeholder="Ne yenilikler var? Düşüncelerini paylaş..." 
-                  value={form.body} 
-                  onChange={e => setForm({ ...form, body: e.target.value })} 
-                  style={{ width: '100%', border: 'none', fontSize: '1rem', color: isDark ? '#e7e9ea' : '#0f172a', minHeight: 120, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5, marginTop: 8 }} 
+                  placeholder="Ne yenilikler var? Düşüncelerini paylaş..."
+                  value={form.body}
+                  maxLength={POST_CHAR_LIMIT}
+                  onChange={e => setForm({ ...form, body: e.target.value.slice(0, POST_CHAR_LIMIT) })}
+                  style={{ width: '100%', border: 'none', fontSize: '1rem', color: isDark ? '#e7e9ea' : '#0f172a', minHeight: 120, resize: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', lineHeight: 1.5, marginTop: 8 }}
                 />
+                <div style={{ textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: form.body.length >= POST_CHAR_LIMIT ? '#ef4444' : (isDark ? '#71767b' : '#94a3b8') }}>
+                  {form.body.length}/{POST_CHAR_LIMIT}
+                </div>
 
                 {form.imageUrl && (
                   <div style={{ position: 'relative', width: 140, height: 140, borderRadius: 16, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, marginBottom: 14 }}>
@@ -1700,7 +1758,7 @@ export default function ForumClient() {
                     {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c} style={{ background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a' }}>{c}</option>)}
                   </select>
 
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isDark ? '#16181c' : '#f1f5f9', border: isDark ? '1px solid #2f3336' : 'none', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: isDark ? '#e7e9ea' : '#475569', cursor: 'pointer', fontWeight: 600 }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: isDark ? '#16181c' : '#f1f5f9', border: isDark ? '1px solid #2f3336' : 'none', padding: '6px 14px', borderRadius: 999, fontSize: '0.85rem', color: photoLimitReached ? (isDark ? '#4b5563' : '#cbd5e1') : (isDark ? '#e7e9ea' : '#475569'), cursor: photoLimitReached ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: photoLimitReached ? 0.6 : 1 }} title={photoLimitReached ? 'Fotoğraf yükleme hakkınızı kullandınız' : 'Görsel ekle'}>
                     {uploadingImage ? (
                       <>
                         <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
@@ -1709,10 +1767,10 @@ export default function ForumClient() {
                     ) : (
                       <>
                         <Camera size={14} />
-                        <span>Görsel Ekle</span>
+                        <span>{photoLimitReached ? 'Hak Kullanıldı' : 'Görsel Ekle'}</span>
                       </>
                     )}
-                    <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage} />
+                    <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploadingImage || photoLimitReached} />
                   </label>
                 </div>
               </div>

@@ -109,6 +109,7 @@ export default function Footer() {
                 { href: '/', label: 'Anasayfa' },
                 { href: '/ben-kimim', label: 'Hakkımda' },
                 { href: '/yazilarim', label: 'Yazılarım' },
+                { href: '/sss', label: 'Sıkça Sorulan Sorular' },
                 { href: '/videolarim', label: 'Videolarım' },
               ].map((l) => (
                 <li key={l.href}>

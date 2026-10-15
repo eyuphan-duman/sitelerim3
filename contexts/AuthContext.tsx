@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 
@@ -19,11 +19,14 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   userProfile?: any;
+  emailVerified: boolean;
   signIn: (usernameOrEmail: string, password: string) => Promise<void>;
   signUp: (username: string, email: string, password: string, psychologistData?: PsychologistData) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
   resetPassword: (usernameOrEmail: string) => Promise<string>;
+  resendVerificationEmail: () => Promise<void>;
+  refreshEmailVerification: () => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -34,10 +37,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
+      setEmailVerified(Boolean(u?.emailVerified));
       if (u) {
         const ref = doc(db, 'users', u.uid);
         const snap = await getDoc(ref);
@@ -174,6 +179,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const displayName = psychologistData?.fullName || username;
       await updateProfile(cred.user, { displayName });
       await createUserDocument(cred.user, cleanUsername, psychologistData);
+      try {
+        await sendEmailVerification(cred.user);
+      } catch (e) {
+        console.error('Error sending verification email:', e);
+      }
 
       // Explicit write to guarantee psychologist application and diplomaUrl persist
       if (psychologistData?.isPsychologist) {
@@ -249,8 +259,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
   };
 
+  const resendVerificationEmail = async () => {
+    if (!auth.currentUser) throw new Error('Önce giriş yapmalısınız.');
+    if (auth.currentUser.emailVerified) throw new Error('E-posta adresiniz zaten doğrulanmış.');
+    await sendEmailVerification(auth.currentUser);
+  };
+
+  // Firebase caches emailVerified on the ID token; reload + force token refresh
+  // so the app (and Firestore rules) see verification status right after the user confirms it.
+  const refreshEmailVerification = async (): Promise<boolean> => {
+    if (!auth.currentUser) return false;
+    await auth.currentUser.reload();
+    await auth.currentUser.getIdToken(true);
+    const verified = Boolean(auth.currentUser.emailVerified);
+    setEmailVerified(verified);
+    return verified;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signIn, signUp, signInWithGoogle, signInAsGuest, resetPassword, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, emailVerified, signIn, signUp, signInWithGoogle, signInAsGuest, resetPassword, resendVerificationEmail, refreshEmailVerification, logout }}>
       {children}
     </AuthContext.Provider>
   );

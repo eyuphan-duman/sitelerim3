@@ -12,6 +12,7 @@ const links = [
   { href: '/', label: 'Anasayfa' },
   { href: '/ben-kimim', label: 'Hakkımda' },
   { href: '/yazilarim', label: 'Yazılarım' },
+  { href: '/sss', label: 'Sıkça Sorulan Sorular' },
   { href: '/videolarim', label: 'Videolarım' },
   { href: '/forum', label: 'Forum', badge: 'v2.0' },
   { href: '/iletisim', label: 'İletişim' },
@@ -39,7 +40,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const forceSolid = pathname === '/videolarim' || pathname?.startsWith('/yazilarim');
+  const forceSolid = pathname === '/videolarim' || pathname?.startsWith('/yazilarim') || pathname?.startsWith('/sss');
 
   // Completely hide main site Navbar on admin panel so only admin drawer navigation is used
   if (isAdminPage) {

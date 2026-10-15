@@ -7,14 +7,16 @@ import {
   ArrowLeft, MessageCircle, Heart, ThumbsDown, Repeat2, Bookmark, 
   Share2, Trash2, Camera, Loader, CheckCircle, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag
 } from 'lucide-react';
-import { 
-  doc, updateDoc, deleteField, increment, collection, 
+import {
+  doc, updateDoc, deleteField, increment, collection,
   addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc,
   getDocs, where, setDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import toast from 'react-hot-toast';
 import { notifyMentions } from '@/lib/mentionUtils';
+
+const COMMENT_CHAR_LIMIT = 140;
 
 export function renderTextWithMentions(text: string) {
   if (!text) return null;
@@ -120,6 +122,8 @@ interface ThreadViewProps {
   post: any;
   currentUser: any;
   userProfile?: any;
+  emailVerified?: boolean;
+  photoLimitReached?: boolean;
   adminEmails: string[];
   isDark?: boolean;
   onBack: () => void;
@@ -131,6 +135,8 @@ export default function ThreadView({
   post,
   currentUser,
   userProfile,
+  emailVerified,
+  photoLimitReached,
   adminEmails,
   isDark,
   onBack,
@@ -446,6 +452,11 @@ export default function ThreadView({
   const handleReplyImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (photoLimitReached) {
+      toast.error('Fotoğraf yükleme hakkınızı kullandınız. Rozetli (psikolog) kullanıcılar hariç her üye yalnızca 1 fotoğraf yükleyebilir.');
+      if (e.target) e.target.value = '';
+      return;
+    }
     setUploadingImage(true);
     try {
       const fd = new FormData();
@@ -466,7 +477,9 @@ export default function ThreadView({
   const handleSubmitReply = async () => {
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
     if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır (banlandı). Yorum yapamazsınız.');
+    if (!emailVerified) return toast.error('Yorum yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     if (!replyText.trim() && !replyImageUrl) return;
+    if (replyText.length > COMMENT_CHAR_LIMIT) return toast.error(`Yorum en fazla ${COMMENT_CHAR_LIMIT} karakter olabilir.`);
 
     setSubmittingReply(true);
     try {
@@ -475,6 +488,7 @@ export default function ThreadView({
         (userProfile?.isPsychologist && !userProfile?.psychologistStatus) ||
         userProfile?.role === 'psychologist'
       );
+      const usesNewPhoto = Boolean(replyImageUrl) && !isPsychologist;
 
       await addDoc(collection(db, 'forum', p.id, 'comments'), {
         authorName: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
@@ -490,6 +504,10 @@ export default function ThreadView({
         bookmarksData: {},
         uid: currentUser.uid
       });
+
+      if (usesNewPhoto) {
+        try { await updateDoc(doc(db, 'users', currentUser.uid), { photoUploadsUsed: increment(1) }); } catch {}
+      }
 
       await updateDoc(doc(db, 'forum', p.id), {
         commentCount: increment(1)
@@ -1258,7 +1276,8 @@ export default function ThreadView({
             ref={replyInputRef}
             rows={2}
             value={replyText}
-            onChange={e => setReplyText(e.target.value)}
+            maxLength={COMMENT_CHAR_LIMIT}
+            onChange={e => setReplyText(e.target.value.slice(0, COMMENT_CHAR_LIMIT))}
             placeholder="Yanıtını gönder"
             style={{
               width: '100%',
@@ -1273,6 +1292,9 @@ export default function ThreadView({
               padding: '6px 0'
             }}
           />
+          <div style={{ textAlign: 'right', fontSize: '0.74rem', fontWeight: 700, color: replyText.length >= COMMENT_CHAR_LIMIT ? '#ef4444' : (isDark ? '#71767b' : '#94a3b8') }}>
+            {replyText.length}/{COMMENT_CHAR_LIMIT}
+          </div>
 
           {replyImageUrl && (
             <div style={{ position: 'relative', width: 90, height: 90, borderRadius: 10, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, margin: '8px 0' }}>
@@ -1313,20 +1335,21 @@ export default function ThreadView({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
-                color: isDark ? '#71767b' : '#64748b',
-                cursor: uploadingImage ? 'wait' : 'pointer',
+                color: photoLimitReached ? (isDark ? '#4b5563' : '#cbd5e1') : (isDark ? '#71767b' : '#64748b'),
+                cursor: photoLimitReached ? 'not-allowed' : (uploadingImage ? 'wait' : 'pointer'),
                 fontSize: '0.82rem',
                 fontWeight: 600,
                 padding: '6px 8px',
-                borderRadius: 8
+                borderRadius: 8,
+                opacity: photoLimitReached ? 0.6 : 1
               }}
-              title="Görsel ekle"
+              title={photoLimitReached ? 'Fotoğraf yükleme hakkınızı kullandınız' : 'Görsel ekle'}
             >
-              {uploadingImage ? <Loader size={17} className="animate-spin" /> : <ImageIcon size={18} color="#1d9bf0" />}
+              {uploadingImage ? <Loader size={17} className="animate-spin" /> : <ImageIcon size={18} color={photoLimitReached ? undefined : '#1d9bf0'} />}
               <input
                 type="file"
                 accept="image/*"
-                disabled={uploadingImage}
+                disabled={uploadingImage || photoLimitReached}
                 style={{ display: 'none' }}
                 onChange={handleReplyImageUpload}
               />

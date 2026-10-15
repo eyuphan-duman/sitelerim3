@@ -122,7 +122,7 @@ export default function QuickContact() {
           border-radius: 50%;
           display: flex;
           align-items: center;
-          justifyContent: center;
+          justify-content: center;
           border: none;
           cursor: pointer;
           box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
@@ -141,7 +141,7 @@ export default function QuickContact() {
           color: var(--navy);
           display: flex;
           align-items: center;
-          justifyContent: center;
+          justify-content: center;
           border: 1px solid rgba(255, 255, 255, 0.1);
           cursor: pointer;
           box-shadow: 0 6px 22px rgba(201, 169, 110, 0.35);

@@ -23,7 +23,34 @@ service cloud.firestore {
 
     function notBanned() {
       return !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
-        myProfile().get('isBanned', false) != true;
+        myProfile().get('isBanned', false) != true ||
+        // Süreli ban: bitiş zamanı geçmişse artık banlı sayılmaz
+        (myProfile().get('banUntil', null) != null && myProfile().get('banUntil', null) < request.time);
+    }
+
+    function isEmailVerified() {
+      return isAdmin() || request.auth.token.email_verified == true;
+    }
+
+    function isVerifiedPsychologist() {
+      return myProfile().get('isPsychologist', false) == true &&
+        myProfile().get('psychologistStatus', 'approved') == 'approved';
+    }
+
+    // 560 bayt ~ en kötü ihtimalle 140 çok baytlı (örn. Türkçe) karakter için güvenli üst sınır;
+    // asıl 140 karakter sınırı istemci tarafında uygulanır, burası kötüye kullanıma karşı yedek sınırdır.
+    function withinPostLimits() {
+      return request.resource.data.get('body', '').size() <= 560 &&
+        (request.resource.data.get('imageUrl', '') == '' ||
+          isVerifiedPsychologist() ||
+          myProfile().get('photoUploadsUsed', 0) < 1);
+    }
+
+    function withinCommentLimits() {
+      return request.resource.data.get('text', '').size() <= 560 &&
+        (request.resource.data.get('imageUrl', '') == '' ||
+          isVerifiedPsychologist() ||
+          myProfile().get('photoUploadsUsed', 0) < 1);
     }
 
     // Psikolog rozeti yalnızca onaylı psikologlar tarafından taşınabilir
@@ -63,7 +90,8 @@ service cloud.firestore {
     // ───────── Kullanıcılar ─────────
     // Kullanıcının kendisinin değiştiremeyeceği yetki alanları
     function protectedUserKeys() {
-      return ['isPsychologist', 'psychologistStatus', 'role', 'isBanned', 'reviewedAt', 'uid'];
+      return ['isPsychologist', 'psychologistStatus', 'role', 'isBanned', 'reviewedAt', 'uid',
+        'banUntil', 'banDuration', 'bannedAt', 'photoUploadsUsed'];
     }
 
     // Kullanıcı yalnızca "psikolog başvurusu beklemede" durumuna geçebilir
@@ -86,7 +114,9 @@ service cloud.firestore {
       allow update: if isAdmin() || (
         isSelf(uid) && (
           !changedKeys().hasAny(protectedUserKeys()) ||
-          (!changedKeys().hasAny(['isBanned', 'uid', 'reviewedAt']) && selfPsychApplication())
+          (!changedKeys().hasAny(['isBanned', 'uid', 'reviewedAt']) && selfPsychApplication()) ||
+          // Fotoğraf hakkı sayacı yalnızca tek tek ve yukarı yönde kendi kendine güncellenebilir
+          (changedKeys().hasOnly(['photoUploadsUsed']) && counterStep('photoUploadsUsed', [1]))
         )
       );
 
@@ -104,6 +134,8 @@ service cloud.firestore {
       allow create: if signedIn() &&
         request.resource.data.uid == request.auth.uid &&
         notBanned() &&
+        isEmailVerified() &&
+        withinPostLimits() &&
         validPsychBadge();
 
       allow update: if isAdmin() ||
@@ -123,6 +155,8 @@ service cloud.firestore {
         allow create: if signedIn() &&
           request.resource.data.uid == request.auth.uid &&
           notBanned() &&
+          isEmailVerified() &&
+          withinCommentLimits() &&
           validPsychBadge();
 
         allow update: if isAdmin() ||
@@ -206,6 +240,11 @@ service cloud.firestore {
     }
 
     match /posts/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /faq/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
