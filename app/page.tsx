@@ -971,60 +971,81 @@ export default function HomePage() {
             .article-carousel-card:hover .article-card-arrow-icon {
               transform: translateX(4px);
             }
-            /* Desktop: hide mobile card elements */
-            .article-card-mobile-img { display: none; }
-            .article-card-desktop-img { display: block; }
-            .article-card-excerpt-desktop { display: -webkit-box; }
+            .article-card-img-wrap {
+              height: 220px;
+              width: 100%;
+              position: relative;
+              overflow: hidden;
+              background: #f1f5f9;
+              flex-shrink: 0;
+            }
+            .article-card-excerpt-desktop {
+              display: -webkit-box;
+              -webkit-line-clamp: 3;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
+            }
             .article-card-cta-desktop { display: flex; }
             .article-nav-desktop { display: flex; }
 
             @media (max-width: 768px) {
               .article-carousel-card {
-                flex: 0 0 280px !important;
-                border-radius: 14px !important;
-                min-height: 0 !important;
+                flex: 0 0 300px !important;
+                border-radius: 16px !important;
+                min-height: auto !important;
               }
               .articles-carousel-container {
-                gap: 12px !important;
+                gap: 14px !important;
                 padding-left: 16px !important;
                 padding-right: 16px !important;
-                padding-bottom: 12px !important;
+                padding-bottom: 16px !important;
                 padding-top: 4px !important;
               }
-              .article-card-desktop-img {
-                height: 110px !important;
-              }
-              .article-card-desktop-img .article-card-placeholder {
-                height: 110px !important;
+              .article-card-img-wrap {
+                height: 160px !important;
               }
               .article-card-content-inner {
-                padding: 14px 16px !important;
+                padding: 16px 16px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                flex: 1 !important;
               }
               .article-card-content-inner h3 {
-                font-size: 1rem !important;
-                margin-bottom: 6px !important;
+                font-size: 1.12rem !important;
+                font-weight: 700 !important;
+                line-height: 1.35 !important;
+                margin-bottom: 8px !important;
+                display: -webkit-box !important;
                 -webkit-line-clamp: 2 !important;
+                -webkit-box-orient: vertical !important;
+                overflow: hidden !important;
+                color: var(--navy) !important;
               }
               .article-card-excerpt-desktop {
                 display: -webkit-box !important;
                 -webkit-line-clamp: 2 !important;
-                font-size: 0.8rem !important;
-                line-height: 1.5 !important;
-                margin-bottom: 10px !important;
+                -webkit-box-orient: vertical !important;
+                overflow: hidden !important;
+                font-size: 0.84rem !important;
+                line-height: 1.55 !important;
+                margin-bottom: 12px !important;
+                color: #475569 !important;
               }
               .article-card-cta-desktop {
-                padding-top: 10px !important;
-                margin-top: 8px !important;
+                padding-top: 12px !important;
+                margin-top: auto !important;
+                border-top: 1px solid #f1f5f9 !important;
               }
               .article-card-meta {
-                margin-bottom: 8px !important;
+                margin-bottom: 10px !important;
+                display: flex !important;
               }
               .article-card-meta span {
-                font-size: 0.65rem !important;
-                padding: 2px 8px !important;
+                font-size: 0.68rem !important;
+                padding: 3px 9px !important;
               }
               .article-card-date {
-                font-size: 0.7rem !important;
+                font-size: 0.72rem !important;
               }
               .article-nav-desktop {
                 display: none !important;
@@ -1037,7 +1058,7 @@ export default function HomePage() {
                 font-size: 1.5rem !important;
               }
               .articles-section-header .eyebrow {
-                font-size: 0.6rem !important;
+                font-size: 0.65rem !important;
                 margin-bottom: 6px !important;
               }
               .article-see-all-mobile {
@@ -1114,18 +1135,16 @@ export default function HomePage() {
                 return (
                   <Link href={`/yazilarim/${a.id}`} key={a.id} className="article-carousel-card">
                     {/* Image / Header banner */}
-                    <div className="article-card-desktop-img">
+                    <div className="article-card-img-wrap">
                       {a.featuredImage ? (
-                        <div style={{ height: 220, width: '100%', position: 'relative', overflow: 'hidden', background: '#f1f5f9' }}>
-                          <img 
-                            src={a.featuredImage} 
-                            alt={a.title} 
-                            className="article-img-zoom"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease', display: 'block' }} 
-                          />
-                        </div>
+                        <img 
+                          src={a.featuredImage} 
+                          alt={a.title} 
+                          className="article-img-zoom"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease', display: 'block' }} 
+                        />
                       ) : (
-                        <div className="article-card-placeholder" style={{ height: 160, width: '100%', background: 'linear-gradient(135deg, #0a1628 0%, #1e293b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div className="article-card-placeholder" style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #0a1628 0%, #1e293b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                           <div style={{ position: 'absolute', inset: 0, opacity: 0.15, background: 'radial-gradient(circle at center, var(--gold) 0%, transparent 70%)' }} />
                           <BookOpen size={38} color="var(--gold)" style={{ opacity: 0.85 }} />
                         </div>
