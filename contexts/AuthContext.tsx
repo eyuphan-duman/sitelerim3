@@ -52,8 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      const userEmail = (u?.email || '').toLowerCase().trim();
+      const isAdminEmail = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail);
       setUser(u);
-      setEmailVerified(Boolean(u?.emailVerified));
+      setEmailVerified(Boolean(u?.emailVerified) || isAdminEmail);
       if (u) {
         const ref = doc(db, 'users', u.uid);
         const snap = await getDoc(ref);
@@ -68,8 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             data.username = fallbackUsername;
           }
 
-          const isAdmin = ADMIN_EMAILS.includes(u.email?.toLowerCase() || '');
+          const isAdmin = isAdminEmail || data.role === 'admin';
           if (isAdmin) {
+            setEmailVerified(true);
             if (!data.isPsychologist || data.psychologistStatus !== 'approved' || data.role !== 'psychologist') {
               try {
                 await updateDoc(ref, {
@@ -399,7 +402,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth.currentUser) return false;
     await auth.currentUser.reload();
     await auth.currentUser.getIdToken(true);
-    const verified = Boolean(auth.currentUser.emailVerified);
+    const userEmail = (auth.currentUser.email || '').toLowerCase().trim();
+    const isAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail) || userProfile?.role === 'admin';
+    const verified = Boolean(auth.currentUser.emailVerified) || isAdmin;
     setEmailVerified(verified);
     return verified;
   };

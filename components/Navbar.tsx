@@ -21,7 +21,9 @@ const links = [
 
 export default function Navbar() {
   const { user, userProfile, emailVerified, logout } = useAuth();
-  const showUnverifiedBanner = Boolean(user && !user.isAnonymous && !emailVerified && !user.emailVerified);
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const isAdmin = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'].includes(userEmail) || userProfile?.role === 'admin';
+  const showUnverifiedBanner = Boolean(user && !user.isAnonymous && !isAdmin && !emailVerified && !user.emailVerified);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);

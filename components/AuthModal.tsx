@@ -183,7 +183,9 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
     setBusy(true);
     try {
       const cred: any = await signIn(id, password);
-      if (cred?.user && !cred.user.emailVerified) {
+      const userEmail = (cred?.user?.email || '').toLowerCase().trim();
+      const isAdmin = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'].includes(userEmail);
+      if (cred?.user && !cred.user.emailVerified && !isAdmin) {
         toast('Giriş başarılı! Ancak e-posta adresiniz henüz doğrulanmamış. Lütfen gelen kutunuzdaki onay linkine tıklayın.', { icon: '✉️', duration: 7000 });
       } else {
         toast.success('Giriş başarılı, hoş geldin!');

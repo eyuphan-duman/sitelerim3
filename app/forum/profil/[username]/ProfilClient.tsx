@@ -1228,6 +1228,7 @@ export default function ProfilClient({ username }: { username: string }) {
   }
 
   const isOwn = Boolean(user && pd && user.uid === pd.uid);
+  const isAdmin = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'].includes((user?.email || '').toLowerCase().trim()) || userProfile?.role === 'admin';
   const myUsername = userProfile?.username || (user?.displayName || '').toLowerCase().replace(/\s+/g, '') || (user?.email ? user.email.split('@')[0].toLowerCase().replace(/\s+/g, '') : '') || user?.uid || '';
   const joined = pd.createdAt?.toDate?.().toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) || '';
 
@@ -1587,7 +1588,7 @@ export default function ProfilClient({ username }: { username: string }) {
             </div>
 
             {/* Unverified Email Warning Banner for account owner */}
-            {isOwn && !emailVerified && !user?.emailVerified && (
+            {isOwn && !isAdmin && !emailVerified && !user?.emailVerified && (
               <div style={{
                 marginTop: 14,
                 padding: '12px 18px',
