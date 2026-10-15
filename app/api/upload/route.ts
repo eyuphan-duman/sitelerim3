@@ -4,14 +4,34 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import fs from 'fs';
 
+// İzin verilen dosya türleri ve MB cinsinden azami boyutları
+const ALLOWED_TYPES: Record<string, number> = {
+  'image/jpeg': 10, 'image/png': 10, 'image/webp': 10, 'image/gif': 10, 'image/avif': 10,
+  'application/pdf': 10,
+  'video/mp4': 100, 'video/webm': 100, 'video/quicktime': 100,
+};
+
+const ALLOWED_EXT = /\.(jpe?g|png|webp|gif|avif|pdf|mp4|webm|mov)$/i;
+
 export async function POST(request: Request) {
   try {
     const data = await request.formData();
     const file: File | null = (data.get('file') || data.get('upload')) as unknown as File;
-    const folder = (data.get('folder') as string) || 'manav-platform';
+    const rawFolder = (data.get('folder') as string) || 'manav-platform';
 
-    if (!file) {
+    if (!file || typeof file === 'string') {
       return NextResponse.json({ success: false, error: 'Dosya bulunamadı' }, { status: 400 });
+    }
+
+    // Klasör yalnızca manav-platform altında ve güvenli karakterlerle olabilir
+    const folder = /^manav-platform(\/[a-z0-9_-]{1,40}){0,2}$/i.test(rawFolder) ? rawFolder : 'manav-platform';
+
+    const maxMb = ALLOWED_TYPES[file.type];
+    if (!maxMb || !ALLOWED_EXT.test(file.name)) {
+      return NextResponse.json({ success: false, error: 'Bu dosya türü desteklenmiyor. Yalnızca resim, PDF veya video yükleyebilirsiniz.' }, { status: 415 });
+    }
+    if (file.size > maxMb * 1024 * 1024) {
+      return NextResponse.json({ success: false, error: `Dosya çok büyük (en fazla ${maxMb} MB).` }, { status: 413 });
     }
 
     const bytes = await file.arrayBuffer();
@@ -62,6 +82,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, url, fallback: true });
   } catch (error: any) {
     console.error('Yükleme hatası:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Yükleme sırasında hata oluştu' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Yükleme sırasında hata oluştu' }, { status: 500 });
   }
 }

@@ -3,7 +3,19 @@ import nodemailer from 'nodemailer';
 
 export async function POST(req: Request) {
   try {
-    const { name, email, subject, message } = await req.json();
+    const body = await req.json();
+    const clean = (v: unknown, max: number) =>
+      typeof v === 'string' ? v.replace(/[\r\n]+/g, ' ').trim().slice(0, max) : '';
+
+    // Başlıklara satır sonu enjekte edilmesini engelle ve uzunlukları sınırla
+    const name = clean(body?.name, 100).replace(/["<>]/g, '');
+    const email = clean(body?.email, 200);
+    const subject = clean(body?.subject, 200);
+    const message = typeof body?.message === 'string' ? body.message.trim().slice(0, 5000) : '';
+
+    if (!name || !message || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ success: false, message: 'Geçersiz form verisi.' }, { status: 400 });
+    }
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',

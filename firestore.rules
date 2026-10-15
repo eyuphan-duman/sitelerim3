@@ -1,17 +1,233 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // İletişim formu mesajları kuralları:
-    // Kayıtlı olmayan (misafir) kullanıcılar dahil herkes mesaj gönderebilir (create).
-    // Ancak mesajları okuma, güncelleme ve silme işlemleri sadece giriş yapmış kullanıcılar/yöneticiler tarafından yapılabilir.
-    match /messages/{messageId} {
-      allow create: if true;
-      allow read, update, delete: if request.auth != null;
+
+    // ───────── Yardımcı fonksiyonlar ─────────
+    function signedIn() {
+      return request.auth != null;
     }
 
-    // Diğer tüm koleksiyonlar için mevcut kuralları koru veya genel izinleri açık tut:
+    function isAdmin() {
+      return signedIn() &&
+        request.auth.token.email != null &&
+        request.auth.token.email.lower() in ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function notBanned() {
+      return !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+        myProfile().get('isBanned', false) != true;
+    }
+
+    // Psikolog rozeti yalnızca onaylı psikologlar tarafından taşınabilir
+    function validPsychBadge() {
+      return request.resource.data.get('authorIsPsychologist', false) == false ||
+        isAdmin() ||
+        (myProfile().get('isPsychologist', false) == true &&
+         myProfile().get('psychologistStatus', 'approved') == 'approved');
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // Bir map alanında yalnızca kullanıcının kendi uid anahtarı değişebilir
+    function onlyOwnKeyIn(field) {
+      return request.resource.data.get(field, {})
+        .diff(resource.data.get(field, {}))
+        .affectedKeys().hasOnly([request.auth.uid]);
+    }
+
+    function counterStep(field, allowed) {
+      return (request.resource.data.get(field, 0) - resource.data.get(field, 0)) in allowed;
+    }
+
+    // Başkasının gönderisi/yorumu üzerinde izin verilen etkileşimler:
+    // beğeni, repost, kaydetme, yorum sayacı (±1), görüntülenme (+1)
+    function validInteraction() {
+      return changedKeys().hasOnly(['reactionsData', 'repostsData', 'bookmarksData', 'commentCount', 'viewsCount']) &&
+        onlyOwnKeyIn('reactionsData') &&
+        onlyOwnKeyIn('repostsData') &&
+        onlyOwnKeyIn('bookmarksData') &&
+        counterStep('commentCount', [-1, 0, 1]) &&
+        counterStep('viewsCount', [0, 1]);
+    }
+
+    // ───────── Kullanıcılar ─────────
+    // Kullanıcının kendisinin değiştiremeyeceği yetki alanları
+    function protectedUserKeys() {
+      return ['isPsychologist', 'psychologistStatus', 'role', 'isBanned', 'reviewedAt', 'uid'];
+    }
+
+    // Kullanıcı yalnızca "psikolog başvurusu beklemede" durumuna geçebilir
+    function selfPsychApplication() {
+      return request.resource.data.get('isPsychologist', false) == false &&
+        request.resource.data.get('psychologistStatus', 'none') in ['pending', 'none'] &&
+        request.resource.data.get('role', 'member') in ['member', 'psychologist_pending'];
+    }
+
+    match /users/{uid} {
+      // Forum, profil ve kullanıcı adıyla giriş bu verilere ihtiyaç duyar
+      allow read: if true;
+
+      allow create: if isAdmin() || (
+        isSelf(uid) &&
+        request.resource.data.get('isBanned', false) == false &&
+        selfPsychApplication()
+      );
+
+      allow update: if isAdmin() || (
+        isSelf(uid) && (
+          !changedKeys().hasAny(protectedUserKeys()) ||
+          (!changedKeys().hasAny(['isBanned', 'uid', 'reviewedAt']) && selfPsychApplication())
+        )
+      );
+
+      allow delete: if isAdmin();
+
+      match /bookmarks/{postId} {
+        allow read, write: if isSelf(uid) || isAdmin();
+      }
+    }
+
+    // ───────── Forum ─────────
+    match /forum/{postId} {
+      allow read: if true;
+
+      allow create: if signedIn() &&
+        request.resource.data.uid == request.auth.uid &&
+        notBanned() &&
+        validPsychBadge();
+
+      allow update: if isAdmin() ||
+        (signedIn() && resource.data.uid == request.auth.uid &&
+          request.resource.data.uid == resource.data.uid &&
+          (!changedKeys().hasAny(['authorIsPsychologist']) || validPsychBadge())) ||
+        (signedIn() && validInteraction()) ||
+        // Ziyaretçilerin görüntülenme sayacı
+        (changedKeys().hasOnly(['viewsCount']) && counterStep('viewsCount', [1]));
+
+      allow delete: if isAdmin() ||
+        (signedIn() && resource.data.uid == request.auth.uid);
+
+      match /comments/{commentId} {
+        allow read: if true;
+
+        allow create: if signedIn() &&
+          request.resource.data.uid == request.auth.uid &&
+          notBanned() &&
+          validPsychBadge();
+
+        allow update: if isAdmin() ||
+          (signedIn() && resource.data.uid == request.auth.uid &&
+            request.resource.data.uid == resource.data.uid &&
+            !changedKeys().hasAny(['authorIsPsychologist'])) ||
+          (signedIn() && validInteraction());
+
+        // Yorum sahibi, gönderi sahibi veya admin silebilir
+        allow delete: if isAdmin() ||
+          (signedIn() && (
+            resource.data.uid == request.auth.uid ||
+            get(/databases/$(database)/documents/forum/$(postId)).data.uid == request.auth.uid
+          ));
+      }
+    }
+
+    // ───────── Takip ─────────
+    match /follows/{followId} {
+      allow read: if true;
+      allow create: if signedIn() &&
+        request.resource.data.followerId == request.auth.uid &&
+        followId == request.auth.uid + '_' + request.resource.data.followingId;
+      // Takip eden takibi bırakabilir, takip edilen takipçiyi çıkarabilir
+      allow delete: if isAdmin() ||
+        (signedIn() && (resource.data.followerId == request.auth.uid ||
+                        resource.data.followingId == request.auth.uid));
+      allow update: if false;
+    }
+
+    // ───────── Bildirimler ─────────
+    match /notifications/{notifId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.toUid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid;
+      allow update: if signedIn() && resource.data.toUid == request.auth.uid &&
+        changedKeys().hasOnly(['read']);
+      allow delete: if isAdmin() ||
+        (signedIn() && (resource.data.toUid == request.auth.uid ||
+                        resource.data.fromUid == request.auth.uid));
+    }
+
+    // ───────── Şikayetler ─────────
+    match /reports/{reportId} {
+      allow create: if request.resource.data.status == 'pending' &&
+        request.resource.data.reason is string &&
+        request.resource.data.reason.size() <= 2000;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ───────── İletişim mesajları ─────────
+    // Herkes gönderebilir, yalnızca admin okuyabilir/yönetebilir
+    match /messages/{messageId} {
+      allow create: if request.resource.data.status == 'unread' &&
+        request.resource.data.get('message', '') is string &&
+        request.resource.data.get('message', '').size() <= 5000;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ───────── Psikolog başvuruları ─────────
+    match /psychologist_applications/{uid} {
+      allow read: if isAdmin() || isSelf(uid);
+      allow create, update: if isAdmin() ||
+        (isSelf(uid) && request.resource.data.get('status', 'pending') == 'pending');
+      allow delete: if isAdmin();
+    }
+
+    // ───────── Randevular ─────────
+    match /appointments/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // ───────── Site içeriği (yalnızca admin yazabilir) ─────────
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /reels/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /posts/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /articles/{articleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if signedIn() &&
+          request.resource.data.userId == request.auth.uid &&
+          notBanned();
+        allow update: if false;
+        allow delete: if isAdmin() ||
+          (signedIn() && resource.data.userId == request.auth.uid);
+      }
+    }
+
+    // Tanımlanmamış her şey kapalı
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
