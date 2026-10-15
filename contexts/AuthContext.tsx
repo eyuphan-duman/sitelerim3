@@ -24,6 +24,7 @@ interface AuthContextType {
   signIn: (usernameOrEmail: string, password: string) => Promise<UserCredential>;
   signUp: (username: string, email: string, password: string, psychologistData?: PsychologistData) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signUpWithGoogle: (chosenUsername: string, termsAccepted: boolean) => Promise<void>;
   signInAsGuest: () => Promise<void>;
   resetPassword: (usernameOrEmail: string) => Promise<string>;
   resendVerificationEmail: () => Promise<void>;
@@ -81,8 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           setUserProfile(data);
         } else {
-          // If no doc at all, create one
-          await createUserDocument(u);
+          // If no doc in Firestore, do NOT auto-create a member doc here without user registration/terms!
+          setUserProfile(null);
         }
       } else {
         setUserProfile(null);
@@ -97,7 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getRedirectResult(auth)
       .then(async (result) => {
         if (result?.user) {
-          await createUserDocument(result.user);
+          const ref = doc(db, 'users', result.user.uid);
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            setUserProfile(snap.data());
+          }
         }
       })
       .catch((err) => {
@@ -272,14 +277,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = async (): Promise<void> => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      if (result?.user) {
-        await createUserDocument(result.user);
+      if (!result?.user) return;
+
+      const userDocRef = doc(db, 'users', result.user.uid);
+      const snap = await getDoc(userDocRef);
+
+      if (!snap.exists()) {
+        // User has NOT completed registration in our system yet!
+        const googleEmail = result.user.email || '';
+        const googleName = result.user.displayName || '';
+        await signOut(auth);
+
+        const notRegError: any = new Error('NOT_REGISTERED');
+        notRegError.code = 'auth/user-not-registered';
+        notRegError.email = googleEmail;
+        notRegError.displayName = googleName;
+        throw notRegError;
       }
+
+      setUserProfile(snap.data());
     } catch (err: any) {
       console.warn('Google signInWithPopup error code:', err?.code, err?.message);
-      // Fall back to redirect if popup was blocked by browser
       if (err.code === 'auth/popup-blocked') {
         console.info('Falling back to signInWithRedirect due to popup-blocked');
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
+      throw err;
+    }
+  };
+
+  const signUpWithGoogle = async (chosenUsername: string, termsAccepted: boolean): Promise<void> => {
+    if (!termsAccepted) {
+      throw new Error('Lütfen kayıt sözleşmesini ve KVKK aydınlatma metnini onaylayın.');
+    }
+
+    const validationError = getUsernameValidationError(chosenUsername);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    const cleanUsername = sanitizeUsername(chosenUsername);
+    const userQ = query(collection(db, 'users'), where('username', '==', cleanUsername));
+    const userSnap = await getDocs(userQ);
+    if (!userSnap.empty) {
+      throw new Error('Bu kullanıcı adı zaten alınmış. Lütfen başka bir kullanıcı adı belirleyin.');
+    }
+
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      if (!result?.user) return;
+
+      const userDocRef = doc(db, 'users', result.user.uid);
+      const snap = await getDoc(userDocRef);
+
+      if (snap.exists()) {
+        // Already registered previously, just set user profile
+        setUserProfile(snap.data());
+        return;
+      }
+
+      // Create new profile with the user-chosen username & terms
+      await createUserDocument(result.user, cleanUsername);
+
+      // Send verification email to user's Google email address
+      try {
+        await sendEmailVerification(result.user);
+      } catch (e) {
+        console.warn('sendEmailVerification on Google user:', e);
+      }
+
+      // Refresh local profile state
+      const newSnap = await getDoc(userDocRef);
+      if (newSnap.exists()) {
+        setUserProfile(newSnap.data());
+      }
+    } catch (err: any) {
+      if (err.code === 'auth/popup-blocked') {
         await signInWithRedirect(auth, googleProvider);
         return;
       }
@@ -335,7 +409,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, emailVerified, signIn, signUp, signInWithGoogle, signInAsGuest, resetPassword, resendVerificationEmail, refreshEmailVerification, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, emailVerified, signIn, signUp, signInWithGoogle, signUpWithGoogle, signInAsGuest, resetPassword, resendVerificationEmail, refreshEmailVerification, logout }}>
       {children}
     </AuthContext.Provider>
   );

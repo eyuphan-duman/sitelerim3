@@ -15,7 +15,7 @@ interface Props {
 }
 
 export default function AuthModal({ isOpen, onClose, isDark }: Props) {
-  const { signIn, signUp, signInWithGoogle, signInAsGuest, resetPassword } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signUpWithGoogle, signInAsGuest, resetPassword } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ username: '', email: '', password: '' });
@@ -106,25 +106,59 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
   const handleGoogle = async () => {
     setLoading(true);
     try {
-      await signInWithGoogle();
-      toast.success('Google ile başarıyla giriş yapıldı!');
-      onClose();
+      if (mode === 'signin') {
+        await signInWithGoogle();
+        toast.success('Giriş başarılı, hoş geldin!');
+        onClose();
+      } else {
+        // mode === 'signup'
+        if (!termsAccepted) {
+          toast.error('Lütfen kayıt sözleşmesini ve KVKK aydınlatma metnini onaylayın.');
+          setLoading(false);
+          return;
+        }
+        if (!form.username.trim()) {
+          toast.error('Lütfen forumda kullanacağınız bir kullanıcı adı belirleyin.');
+          setLoading(false);
+          return;
+        }
+        const uError = getUsernameValidationError(form.username);
+        if (uError) {
+          toast.error(uError);
+          setLoading(false);
+          return;
+        }
+        await signUpWithGoogle(form.username, termsAccepted);
+        toast.success('Hesabın oluşturuldu! E-postana gönderdiğimiz doğrulama linkine tıklayarak hesabını onaylayabilirsin.', { duration: 8000 });
+        onClose();
+      }
     } catch (err: any) {
       console.error('Google Auth Error:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, no error toast needed
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         return;
       }
-      if (err.code === 'auth/cancelled-popup-request') {
+      if (err.code === 'auth/user-not-registered') {
+        // User has NOT created an account yet! Switch to signup mode & prefill
+        setMode('signup');
+        const suggestedName = sanitizeUsername(err.displayName || err.email?.split('@')[0] || '');
+        setForm((prev) => ({
+          ...prev,
+          email: err.email || prev.email,
+          username: prev.username || suggestedName,
+        }));
+        toast('Bu Google hesabıyla henüz bir kayıt bulunmuyor. Lütfen kullanıcı adınızı belirleyin, sözleşmeyi onaylayın ve Google ile kaydolun.', {
+          icon: 'ℹ️',
+          duration: 7000,
+        });
         return;
       }
-      let msg = err.message || 'Google girişi başarısız.';
+      let msg = err.message || 'Google işlemi başarısız.';
       if (err.code === 'auth/unauthorized-domain') {
         msg = 'Bu alan adı Firebase Yetkili Alan Adları listesinde tanımlı değil. (Firebase Console -> Auth -> Settings -> Authorized Domains).';
       } else if (err.code === 'auth/operation-not-allowed') {
         msg = 'Firebase Konsolunda Google ile giriş sağlayıcısı henüz aktif edilmemiş.';
       } else if (err.code === 'auth/account-exists-with-different-credential') {
-        msg = 'Bu e-posta adresi ile zaten farklı bir yöntemle kayıt olunmuş.';
+        msg = 'Bu e-posta adresi ile zaten farklı bir yöntemle kayıt olunmuş. Lütfen şifrenizle giriş yapın.';
       } else if (err.code === 'auth/popup-blocked') {
         msg = 'Tarayıcınız açılır pencereyi engelledi. Yönlendirme deneniyor...';
       }
