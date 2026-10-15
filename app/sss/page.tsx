@@ -20,6 +20,16 @@ function FaqCard({ faq }: { faq: any }) {
 
   return (
     <Link href={`/sss/${faq.id}`} className="article-card group" style={{ textDecoration: 'none' }}>
+      {faq.featuredImage && (
+        <div className="article-card-image">
+          <img
+            src={faq.featuredImage}
+            alt={faq.title}
+            loading="lazy"
+          />
+        </div>
+      )}
+
       <div className="article-card-body">
         <div className="article-card-meta">
           {faq.category && (

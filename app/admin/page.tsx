@@ -73,7 +73,7 @@ export default function AdminPage() {
   const [postForm, setPostForm] = useState({ title: '', category: '', featuredImage: '', content: '' });
   const [faqs, setFaqs] = useState<any[]>([]);
   const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
-  const [faqForm, setFaqForm] = useState({ title: '', category: '', content: '' });
+  const [faqForm, setFaqForm] = useState({ title: '', category: '', featuredImage: '', content: '' });
   const [videoForm, setVideoForm] = useState({ title: '', category: '', desc: '', dur: '', views: '1', link: '' });
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -593,7 +593,7 @@ export default function AdminPage() {
         toast.success('Soru-cevap yayımlandı!');
       }
 
-      setFaqForm({ title: '', category: '', content: '' });
+      setFaqForm({ title: '', category: '', featuredImage: '', content: '' });
     } catch (e: any) {
       toast.error('Hata oluştu: ' + (e?.message || ''));
     }
@@ -601,7 +601,7 @@ export default function AdminPage() {
   };
 
   const handleStartEditFaq = (f: any) => {
-    setFaqForm({ title: f.title || '', category: f.category || '', content: f.content || '' });
+    setFaqForm({ title: f.title || '', category: f.category || '', featuredImage: f.featuredImage || '', content: f.content || '' });
     setEditingFaqId(f.id);
     setActiveTab('faq');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -610,7 +610,7 @@ export default function AdminPage() {
 
   const handleCancelEditFaq = () => {
     setEditingFaqId(null);
-    setFaqForm({ title: '', category: '', content: '' });
+    setFaqForm({ title: '', category: '', featuredImage: '', content: '' });
   };
 
   const deleteFaq = async (id: string) => {
@@ -2983,6 +2983,45 @@ export default function AdminPage() {
                   <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kategori</label><input className="input-field" value={faqForm.category} onChange={e=>setFaqForm({...faqForm, category: e.target.value})} placeholder="Örn: Terapi Süreci"/></div>
                 </div>
                 <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kapak Görseli (Cloudinary / URL, opsiyonel)</label>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <input className="input-field" style={{ flex: 1 }} value={faqForm.featuredImage} onChange={e=>setFaqForm({...faqForm, featuredImage: e.target.value})} placeholder="https://… veya dosya seçip yükleyin"/>
+                    <label style={{ background: '#2563eb', color: 'white', padding: '10px 16px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap' }} title="Cloudinary'ye görsel yükle">
+                      <Upload size={16} /> Yükle
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const t = toast.loading('Görsel Cloudinary\'ye yükleniyor...');
+                        try {
+                          const fd = new FormData();
+                          fd.append('file', file);
+                          fd.append('folder', 'manav-platform/faq');
+                          const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                          const data = await res.json();
+                          if (!data.success) throw new Error(data.error);
+                          setFaqForm(prev => ({ ...prev, featuredImage: data.url }));
+                          toast.success('Görsel yüklendi!', { id: t });
+                        } catch (err: any) {
+                          toast.error('Hata: ' + err.message, { id: t });
+                        }
+                      }} />
+                    </label>
+                  </div>
+                  {faqForm.featuredImage && (
+                    <div style={{ marginTop: 12, position: 'relative', width: '100%', maxWidth: 360, height: 180, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                      <img src={faqForm.featuredImage} alt="Kapak Görseli Önizleme" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button
+                        type="button"
+                        onClick={() => setFaqForm(prev => ({ ...prev, featuredImage: '' }))}
+                        style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.65)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        title="Görseli kaldır"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div>
                   <div className="editor-container" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
                     <RichTextEditor
                       value={faqForm.content}
@@ -3004,6 +3043,7 @@ export default function AdminPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
                 {faqs.map(f => (
                   <div key={f.id} style={{ background: 'white', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    {f.featuredImage && <img src={f.featuredImage} alt={f.title} style={{ width: '100%', height: 140, objectFit: 'cover' }}/>}
                     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                       {f.category && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--gold-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{f.category}</span>}
                       <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.35 }}>{f.title}</h3>

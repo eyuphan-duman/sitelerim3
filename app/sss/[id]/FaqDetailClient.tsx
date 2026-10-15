@@ -57,6 +57,13 @@ export default function FaqDetailClient({ id, initialFaq: faq }: Props) {
           )}
         </header>
 
+        {/* ── COVER IMAGE ── */}
+        {faq.featuredImage && (
+          <div className="yz-detail-cover-minimal">
+            <img src={faq.featuredImage} alt={faq.title} />
+          </div>
+        )}
+
         {/* ── CONTENT ── */}
         <div className="yz-detail-content-wrapper">
           <div

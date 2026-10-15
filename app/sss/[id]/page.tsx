@@ -62,6 +62,7 @@ export async function generateMetadata({ params }: { params: any }): Promise<Met
     : stripHtml(faq.content).slice(0, 160);
   const url = `${SITE_URL}/sss/${id}`;
   const fullTitle = `${faq.title} | Psikolog Furkan Manav`;
+  const image = faq.featuredImage || DEFAULT_IMAGE;
 
   return {
     title: fullTitle,
@@ -73,14 +74,14 @@ export async function generateMetadata({ params }: { params: any }): Promise<Met
       description,
       url,
       type: 'article',
-      images: [{ url: DEFAULT_IMAGE, width: 1200, height: 630, alt: faq.title }],
+      images: [{ url: image, width: 1200, height: 630, alt: faq.title }],
       publishedTime: toIsoDate(faq.createdAt || faq.date),
     },
     twitter: {
       card: 'summary_large_image',
       title: fullTitle,
       description,
-      images: [DEFAULT_IMAGE],
+      images: [image],
     },
   };
 }
