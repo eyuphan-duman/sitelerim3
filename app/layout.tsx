@@ -182,6 +182,7 @@ export default function RootLayout({
 
           <Toaster
             position="top-right"
+            containerStyle={{ zIndex: 999999 }}
             toastOptions={{
               style: {
                 fontFamily: "Inter, sans-serif",

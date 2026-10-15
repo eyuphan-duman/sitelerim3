@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, UserCredential, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import { User, UserCredential, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
@@ -92,17 +92,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
+  // Handle redirect result if signInWithRedirect was used (e.g. mobile or popup-blocked browsers)
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          await createUserDocument(result.user);
+        }
+      })
+      .catch((err) => {
+        // Ignore expected or empty redirect errors
+        if (err?.code !== 'auth/credential-already-in-use') {
+          console.warn('Firebase getRedirectResult info:', err?.message || err);
+        }
+      });
+  }, []);
+
   const createUserDocument = async (u: User, customUsername?: string, psychData?: PsychologistData) => {
     const ref = doc(db, 'users', u.uid);
     const snap = await getDoc(ref);
     const isPsychSignup = Boolean(psychData?.isPsychologist);
     const rawUname = customUsername || u.displayName || u.email?.split('@')[0] || 'kullanici';
-    const cleanUname = sanitizeUsername(rawUname) || `user_${u.uid.slice(0, 6)}`;
+    let cleanUname = sanitizeUsername(rawUname);
+    if (!cleanUname || cleanUname.length < 3) {
+      cleanUname = `user_${u.uid.slice(0, 6).toLowerCase()}`;
+    }
+
+    // Ensure username uniqueness if new document or if existing doc has no username
+    if (!snap.exists() || !snap.data().username) {
+      try {
+        const existingQ = query(collection(db, 'users'), where('username', '==', cleanUname));
+        const existingSnap = await getDocs(existingQ);
+        const isTakenByOther = existingSnap.docs.some((d) => d.id !== u.uid);
+        if (isTakenByOther) {
+          cleanUname = `${cleanUname.slice(0, 18)}_${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+      } catch (err) {
+        console.warn('Username check notice:', err);
+      }
+    }
 
     const docData: any = {
       uid: u.uid,
       username: cleanUname,
-      displayName: psychData?.fullName || customUsername || u.displayName || '',
+      displayName: psychData?.fullName || customUsername || u.displayName || cleanUname,
       email: u.email?.toLowerCase().trim() || '',
       photoURL: u.photoURL || '',
       role: isPsychSignup ? 'psychologist_pending' : (snap.exists() ? (snap.data().role || 'member') : 'member'),
@@ -236,9 +269,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async () => {
-    const result = await signInWithPopup(auth, googleProvider);
-    await createUserDocument(result.user);
+  const signInWithGoogle = async (): Promise<void> => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      if (result?.user) {
+        await createUserDocument(result.user);
+      }
+    } catch (err: any) {
+      console.warn('Google signInWithPopup error code:', err?.code, err?.message);
+      // Fall back to redirect if popup was blocked by browser
+      if (err.code === 'auth/popup-blocked') {
+        console.info('Falling back to signInWithRedirect due to popup-blocked');
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
+      throw err;
+    }
   };
 
   const signInAsGuest = async () => {

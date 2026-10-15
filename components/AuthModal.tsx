@@ -107,11 +107,28 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
     setLoading(true);
     try {
       await signInWithGoogle();
-      toast.success('Google ile giriş yapıldı!');
+      toast.success('Google ile başarıyla giriş yapıldı!');
       onClose();
     } catch (err: any) {
-      console.error(err);
-      toast.error('Google girişi başarısız: ' + (err.message || 'Lütfen Firebase ayarlarını kontrol edin.'));
+      console.error('Google Auth Error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, no error toast needed
+        return;
+      }
+      if (err.code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      let msg = err.message || 'Google girişi başarısız.';
+      if (err.code === 'auth/unauthorized-domain') {
+        msg = 'Bu alan adı Firebase Yetkili Alan Adları listesinde tanımlı değil. (Firebase Console -> Auth -> Settings -> Authorized Domains).';
+      } else if (err.code === 'auth/operation-not-allowed') {
+        msg = 'Firebase Konsolunda Google ile giriş sağlayıcısı henüz aktif edilmemiş.';
+      } else if (err.code === 'auth/account-exists-with-different-credential') {
+        msg = 'Bu e-posta adresi ile zaten farklı bir yöntemle kayıt olunmuş.';
+      } else if (err.code === 'auth/popup-blocked') {
+        msg = 'Tarayıcınız açılır pencereyi engelledi. Yönlendirme deneniyor...';
+      }
+      toast.error(msg, { duration: 6000 });
     } finally {
       setLoading(false);
     }
