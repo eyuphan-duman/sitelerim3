@@ -284,8 +284,7 @@ export default function ThreadView({
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
-    const isAdmin = adminEmails.map(em => em.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
-    if (!emailVerified && !isAdmin) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
+    if (!emailVerified) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
     const postRef = doc(db, 'forum', p.id);
     if (hasLiked) {
       await updateDoc(postRef, { [`reactionsData.${currentUser.uid}`]: deleteField() });
@@ -314,8 +313,7 @@ export default function ThreadView({
   const handleDislike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
-    const isAdmin = adminEmails.map(em => em.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
-    if (!emailVerified && !isAdmin) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
+    if (!emailVerified) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
     const postRef = doc(db, 'forum', p.id);
     if (hasDisliked) {
       await updateDoc(postRef, { [`reactionsData.${currentUser.uid}`]: deleteField() });
@@ -411,8 +409,7 @@ export default function ThreadView({
   const handleBookmark = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
-    const isAdmin = adminEmails.map(em => em.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
-    if (!emailVerified && !isAdmin) return toast.error('Yer işareti ekleyebilmek için e-posta adresinizi doğrulamanız gerekiyor.');
+    if (!emailVerified) return toast.error('Yer işareti ekleyebilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     const targetPostId = p.originalPostId || p.id;
     const postRef = doc(db, 'forum', targetPostId);
     const userBookmarkRef = doc(db, 'users', currentUser.uid, 'bookmarks', targetPostId);
@@ -486,8 +483,7 @@ export default function ThreadView({
   const handleSubmitReply = async () => {
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
     if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır (banlandı). Yorum yapamazsınız.');
-    const isAdmin = adminEmails.map(e => e.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
-    if (!emailVerified && !isAdmin) return toast.error('Yorum yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
+    if (!emailVerified) return toast.error('Yorum yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     if (!replyText.trim() && !replyImageUrl) return;
     if (replyText.length > COMMENT_CHAR_LIMIT) return toast.error(`Yorum en fazla ${COMMENT_CHAR_LIMIT} karakter olabilir.`);
 

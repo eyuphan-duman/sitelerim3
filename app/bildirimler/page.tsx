@@ -7,10 +7,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   Bell, MessageCircle, Heart, ArrowLeft, Home, Search, Users, 
   Bookmark, Hash, TrendingUp, Sparkles, CheckCheck, Repeat2, 
-  Clock, ArrowRight, User, Sun, Moon, Plus 
+  Clock, ArrowRight, User, Sun, Moon, Plus, Settings 
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import EmailVerificationBanner from '@/components/EmailVerificationBanner';
 
 interface Notification {
   id: string;
@@ -90,8 +91,18 @@ export default function BildirimlerPage() {
         setIsDark(e.newValue === 'dark');
       }
     };
+    const onCustom = () => {
+      try {
+        const saved = localStorage.getItem('forum_theme');
+        if (saved) setIsDark(saved === 'dark');
+      } catch {}
+    };
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener('forum_theme_change', onCustom);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('forum_theme_change', onCustom);
+    };
   }, []);
 
   const toggleDarkMode = () => {
@@ -318,10 +329,10 @@ export default function BildirimlerPage() {
             { label: 'Beğenilenler', action: () => skipSplashAndGo(user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername)}?tab=likes` : '/forum'), active: false, icon: <Heart size={20} /> },
             { label: 'Bildirimler', action: () => {}, active: true, icon: <Bell size={20} />, badge: unreadCount },
             { 
-              label: isDark ? 'Açık Mod' : 'Karanlık Mod', 
-              action: toggleDarkMode, 
+              label: 'Ayarlar', 
+              action: () => skipSplashAndGo(user && !user.isAnonymous ? `/forum/profil/${encodeURIComponent(myUsername)}?settings=open` : '/forum'), 
               active: false, 
-              icon: isDark ? <Sun size={20} color="#fbbf24" /> : <Moon size={20} /> 
+              icon: <Settings size={20} /> 
             },
             { 
               label: 'Profilim', 
@@ -363,6 +374,7 @@ export default function BildirimlerPage() {
 
         {/* ── CENTER COLUMN ── */}
         <main style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: '100vh', background: isDark ? '#000000' : 'white', paddingBottom: 80, boxSizing: 'border-box' }}>
+          <EmailVerificationBanner isDark={isDark} />
           {/* Top Header */}
           <div style={{ position: 'sticky', top: 0, background: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, zIndex: 20, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -398,30 +410,6 @@ export default function BildirimlerPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* Dark mode button in header */}
-              <button
-                type="button"
-                onClick={toggleDarkMode}
-                style={{
-                  background: isDark ? '#16181c' : '#f1f5f9',
-                  border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                  borderRadius: 999,
-                  width: 36,
-                  height: 36,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: isDark ? '#fbbf24' : '#475569',
-                  transition: 'all 0.2s ease',
-                  flexShrink: 0,
-                }}
-                title={isDark ? 'Aydınlık moda geç' : 'Karanlık moda geç'}
-                aria-label="Karanlık Mod Değiştir"
-              >
-                {isDark ? <Sun size={17} strokeWidth={2} /> : <Moon size={17} strokeWidth={2} />}
-              </button>
-
               {unreadCount > 0 && (
                 <button
                   type="button"

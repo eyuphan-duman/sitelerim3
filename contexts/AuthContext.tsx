@@ -45,8 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      const isAdmin = ADMIN_EMAILS.includes(u?.email?.toLowerCase() || '');
-      setEmailVerified(Boolean(u?.emailVerified) || isAdmin);
+      setEmailVerified(Boolean(u?.emailVerified));
       if (u) {
         const ref = doc(db, 'users', u.uid);
         const snap = await getDoc(ref);
@@ -274,8 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resendVerificationEmail = async () => {
     if (!auth.currentUser) throw new Error('Önce giriş yapmalısınız.');
-    const isAdmin = ADMIN_EMAILS.includes(auth.currentUser.email?.toLowerCase() || '');
-    if (auth.currentUser.emailVerified || isAdmin) throw new Error('E-posta adresiniz zaten doğrulanmış.');
+    if (auth.currentUser.emailVerified) throw new Error('E-posta adresiniz zaten doğrulanmış.');
     await sendEmailVerification(auth.currentUser);
   };
 
@@ -285,8 +283,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth.currentUser) return false;
     await auth.currentUser.reload();
     await auth.currentUser.getIdToken(true);
-    const isAdmin = ADMIN_EMAILS.includes(auth.currentUser.email?.toLowerCase() || '');
-    const verified = Boolean(auth.currentUser.emailVerified) || isAdmin;
+    const verified = Boolean(auth.currentUser.emailVerified);
     setEmailVerified(verified);
     return verified;
   };

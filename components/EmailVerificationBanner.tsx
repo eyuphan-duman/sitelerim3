@@ -13,9 +13,7 @@ export default function EmailVerificationBanner({ isDark = false }: { isDark?: b
   const [checking, setChecking] = useState(false);
 
   if (!user || user.isAnonymous) return null;
-
-  const isAdmin = ADMIN_EMAILS.includes(user.email?.toLowerCase() || '');
-  if (emailVerified || isAdmin) return null;
+  if (emailVerified || Boolean(user.emailVerified)) return null;
 
   const handleResend = async () => {
     setResending(true);

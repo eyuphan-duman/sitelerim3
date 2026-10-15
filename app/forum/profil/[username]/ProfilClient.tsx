@@ -10,7 +10,7 @@ import {
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
   Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User,
   Settings, Lock, EyeOff, Shield, SlidersHorizontal, Plus, Award, Key, AlertTriangle, Snowflake, ArrowRight,
-  MoreHorizontal, Flag, LogOut
+  MoreHorizontal, Flag, LogOut, Sun, Moon, Mail, Send, RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -452,7 +452,7 @@ function PostCard({
 }
 
 export default function ProfilClient({ username }: { username: string }) {
-  const { user, userProfile, logout } = useAuth();
+  const { user, userProfile, emailVerified, resendVerificationEmail, refreshEmailVerification, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pd, setPd] = useState<any>(null);
@@ -468,7 +468,9 @@ export default function ProfilClient({ username }: { username: string }) {
   const [followings, setFollowings] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'profile' | 'security' | 'privacy' | 'badge' | 'danger'>('profile');
+  const [settingsTab, setSettingsTab] = useState<'profile' | 'security' | 'appearance' | 'privacy' | 'badge' | 'danger'>('profile');
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [checkingVerification, setCheckingVerification] = useState(false);
   const [ed, setEd] = useState({ 
     displayName: '', 
     username: '', 
@@ -802,7 +804,17 @@ export default function ProfilClient({ username }: { username: string }) {
 
   useEffect(() => {
     const isViewerOwn = Boolean(user && pd && user.uid === pd.uid);
+    const s = searchParams.get('settings');
     const t = searchParams.get('tab');
+    if (s === 'open' || s === '1' || t === 'settings') {
+      if (isViewerOwn) {
+        setSettingsOpen(true);
+        const sec = searchParams.get('section');
+        if (sec && ['profile', 'security', 'appearance', 'privacy', 'badge', 'danger'].includes(sec)) {
+          setSettingsTab(sec as any);
+        }
+      }
+    }
     if (t === 'bookmarks') {
       if (isViewerOwn) {
         setTab('bookmarks');
@@ -1334,31 +1346,48 @@ export default function ProfilClient({ username }: { username: string }) {
             { label: 'Arama', href: '/forum?search=open', active: false, icon: <Search size={20} /> },
             { label: 'Beğenilenler', href: `/forum/profil/${myUsername || username}?tab=likes`, active: tab === 'likes', icon: <Heart size={20} /> },
             { label: 'Bildirimler', href: '/bildirimler', active: false, icon: <Bell size={20} />, badge: unreadCount },
+            { label: 'Ayarlar', action: () => setSettingsOpen(true), active: settingsOpen, icon: <Settings size={20} /> },
             { label: 'Profilim', href: `/forum/profil/${myUsername || username}`, active: isOwn && tab !== 'bookmarks' && tab !== 'likes', icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: isOwn && tab !== 'bookmarks' && tab !== 'likes' ? (isDark ? '#38bdf8' : '#334155') : (isDark ? '#1d9bf0' : '#0f172a'), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> },
           ].map(item => (
-            <Link 
-              key={item.label} 
-              href={item.href} 
-              onClick={() => {
-                if (item.href.startsWith('/forum')) {
-                  try {
-                    sessionStorage.setItem('forum_skip_splash', 'true');
-                    sessionStorage.setItem('forum_splash_shown', '1');
-                  } catch (e) {}
-                }
-              }}
-              style={{ textDecoration: 'none' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? (isDark ? '#e7e9ea' : '#0f172a') : 'transparent', color: item.active ? (isDark ? '#000000' : 'white') : (isDark ? '#e7e9ea' : '#475569'), fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  {item.icon}
-                  <span>{item.label}</span>
+            item.action ? (
+              <button 
+                key={item.label}
+                type="button"
+                onClick={item.action}
+                style={{ width: '100%', border: 'none', background: 'transparent', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? (isDark ? '#e7e9ea' : '#0f172a') : 'transparent', color: item.active ? (isDark ? '#000000' : 'white') : (isDark ? '#e7e9ea' : '#475569'), fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
                 </div>
-                {item.badge && item.badge > 0 ? (
-                  <span style={{ background: '#ef4444', color: 'white', fontSize: '0.68rem', fontWeight: 800, padding: '2px 7px', borderRadius: 999 }}>{item.badge}</span>
-                ) : null}
-              </div>
-            </Link>
+              </button>
+            ) : (
+              <Link 
+                key={item.label} 
+                href={item.href || '#'} 
+                onClick={() => {
+                  if (item.href?.startsWith('/forum')) {
+                    try {
+                      sessionStorage.setItem('forum_skip_splash', 'true');
+                      sessionStorage.setItem('forum_splash_shown', '1');
+                    } catch (e) {}
+                  }
+                }}
+                style={{ textDecoration: 'none' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? (isDark ? '#e7e9ea' : '#0f172a') : 'transparent', color: item.active ? (isDark ? '#000000' : 'white') : (isDark ? '#e7e9ea' : '#475569'), fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && item.badge > 0 ? (
+                    <span style={{ background: '#ef4444', color: 'white', fontSize: '0.68rem', fontWeight: 800, padding: '2px 7px', borderRadius: 999 }}>{item.badge}</span>
+                  ) : null}
+                </div>
+              </Link>
+            )
           ))}
 
           <div style={{ margin: '16px 0 8px', padding: '0 8px', fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Kategoriler</div>
@@ -1556,6 +1585,50 @@ export default function ProfilClient({ username }: { username: string }) {
                 </span>
               )}
             </div>
+
+            {/* Unverified Email Warning Banner for account owner */}
+            {isOwn && !emailVerified && !user?.emailVerified && (
+              <div style={{
+                marginTop: 14,
+                padding: '12px 18px',
+                borderRadius: 12,
+                background: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
+                border: `1.5px solid ${isDark ? 'rgba(245, 158, 11, 0.4)' : '#fde68a'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Mail size={18} color="#d97706" />
+                  <div>
+                    <div style={{ fontWeight: 800, color: isDark ? '#fbbf24' : '#92400e', fontSize: '0.88rem' }}>
+                      E-posta Adresiniz Doğrulanmamış ({user?.email})
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: isDark ? '#fef3c7' : '#b45309' }}>
+                      Paylaşım yapmak ve topluluğu aktif kullanmak için e-postanızı doğrulayın.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setSettingsTab('security'); setSettingsOpen(true); }}
+                  style={{
+                    background: isDark ? '#d97706' : '#f59e0b',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '6px 14px',
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Doğrula / Ayarlar
+                </button>
+              </div>
+            )}
 
             {/* Frozen banner for owner */}
             {isOwn && pd.isFrozen && (
@@ -1916,7 +1989,7 @@ export default function ProfilClient({ username }: { username: string }) {
             <div 
               style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', 
+                gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', 
                 gap: 4, 
                 background: isDark ? '#000000' : '#f1f5f9',
                 padding: 4,
@@ -1927,7 +2000,8 @@ export default function ProfilClient({ username }: { username: string }) {
             >
               {[
                 { id: 'profile', short: 'Profil', full: 'Profil Bilgileri', icon: <User size={14} /> },
-                { id: 'security', short: 'Şifre', full: 'Şifre Değiştir', icon: <Key size={14} /> },
+                { id: 'security', short: 'Şifre & Mail', full: 'Şifre ve E-posta Doğrulama', icon: <Key size={14} /> },
+                { id: 'appearance', short: 'Görünüm', full: 'Tema ve Görünüm Ayarları', icon: <Sun size={14} /> },
                 { id: 'privacy', short: 'Gizlilik', full: 'Gizlilik Ayarları', icon: <Shield size={14} /> },
                 { id: 'badge', short: 'Rozet', full: 'Psikolog Rozeti', icon: <Award size={14} /> },
                 { id: 'danger', short: 'Hesap', full: 'Hesap Durumu', icon: <AlertTriangle size={14} /> },
@@ -2050,6 +2124,104 @@ export default function ProfilClient({ username }: { username: string }) {
             {/* TAB 2: ŞİFRE DEĞİŞTİRME & GÜVENLİK */}
             {settingsTab === 'security' && (
               <div>
+                {/* E-posta Doğrulama Kartı */}
+                <div style={{ marginBottom: 20, padding: '16px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Mail size={18} color={emailVerified ? '#16a34a' : '#d97706'} />
+                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
+                        E-posta Doğrulama Durumu
+                      </span>
+                    </div>
+                    {emailVerified ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: isDark ? 'rgba(34,197,94,0.15)' : '#dcfce7', color: '#16a34a', padding: '3px 10px', borderRadius: 999, fontSize: '0.74rem', fontWeight: 800 }}>
+                        <CheckCircle size={12} /> Doğrulandı
+                      </span>
+                    ) : (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: isDark ? 'rgba(245,158,11,0.15)' : '#fef3c7', color: '#d97706', padding: '3px 10px', borderRadius: 999, fontSize: '0.74rem', fontWeight: 800 }}>
+                        <AlertTriangle size={12} /> Doğrulanmadı
+                      </span>
+                    )}
+                  </div>
+
+                  <p style={{ fontSize: '0.82rem', color: isDark ? '#94a3b8' : '#64748b', margin: '0 0 12px', lineHeight: 1.5 }}>
+                    Kayıtlı e-posta adresiniz: <strong>{user?.email}</strong>
+                    {!emailVerified && ' — Forumda paylaşım yapmak, yorum yazmak ve etkileşimde bulunabilmek için e-posta adresinizi doğrulamanız gerekmektedir.'}
+                  </p>
+
+                  {!emailVerified && (
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        disabled={sendingVerification}
+                        onClick={async () => {
+                          setSendingVerification(true);
+                          try {
+                            await resendVerificationEmail();
+                            toast.success('Doğrulama bağlantısı e-posta adresinize gönderildi! Lütfen gelen kutunuzu ve spam klasörünüzü kontrol edin.');
+                          } catch (err: any) {
+                            toast.error(err.message || 'Gönderilemedi');
+                          } finally {
+                            setSendingVerification(false);
+                          }
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: isDark ? '#d97706' : '#f59e0b',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 8,
+                          padding: '8px 14px',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: sendingVerification ? 'wait' : 'pointer'
+                        }}
+                      >
+                        <Send size={13} />
+                        <span>{sendingVerification ? 'Gönderiliyor...' : 'Doğrulama E-postası Gönder'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={checkingVerification}
+                        onClick={async () => {
+                          setCheckingVerification(true);
+                          try {
+                            const verified = await refreshEmailVerification();
+                            if (verified) {
+                              toast.success('Harika! E-posta adresiniz başarıyla doğrulandı.');
+                            } else {
+                              toast.error('E-posta henüz doğrulanmamış görünüyor. Lütfen e-postanızdaki linke tıkladıktan sonra tekrar deneyin.');
+                            }
+                          } catch (err: any) {
+                            toast.error('Kontrol edilemedi: ' + err.message);
+                          } finally {
+                            setCheckingVerification(false);
+                          }
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: isDark ? 'rgba(255,255,255,0.06)' : 'white',
+                          color: isDark ? '#e7e9ea' : '#0f172a',
+                          border: `1px solid ${isDark ? '#2f3336' : '#cbd5e1'}`,
+                          borderRadius: 8,
+                          padding: '8px 14px',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: checkingVerification ? 'wait' : 'pointer'
+                        }}
+                      >
+                        <RefreshCw size={13} className={checkingVerification ? 'animate-spin' : ''} />
+                        <span>{checkingVerification ? 'Kontrol Ediliyor...' : 'Doğruladım (Durumu Yenile)'}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <form onSubmit={handleChangePassword}>
                   <div style={{ marginBottom: 14 }}>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Mevcut Şifre</label>
@@ -2115,6 +2287,98 @@ export default function ProfilClient({ username }: { username: string }) {
                   >
                     {sendingResetEmail ? 'E-posta Gönderiliyor...' : 'Şifre Sıfırlama E-postası Gönder'}
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: TEMA & GÖRÜNÜM AYARLARI */}
+            {settingsTab === 'appearance' && (
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1.05rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 6 }}>
+                  Tema ve Görünüm Ayarları
+                </div>
+                <p style={{ fontSize: '0.86rem', color: isDark ? '#94a3b8' : '#64748b', margin: '0 0 20px', lineHeight: 1.6 }}>
+                  Platform arayüzünü istediğiniz gibi açık veya karanlık temada kullanabilirsiniz. Seçtiğiniz tema tercihiniz bu tarayıcıda otomatik olarak hatırlanır.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                  {/* Aydınlık Mod Kartı */}
+                  <div
+                    onClick={() => {
+                      setIsDark(false);
+                      try {
+                        localStorage.setItem('forum_theme', 'light');
+                        window.dispatchEvent(new CustomEvent('forum_theme_change', { detail: 'light' }));
+                      } catch {}
+                      document.documentElement.classList.remove('forum-dark-body');
+                      toast.success('Aydınlık mod aktif edildi');
+                    }}
+                    style={{
+                      border: !isDark ? '2.5px solid #1d9bf0' : `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                      background: !isDark ? (isDark ? 'rgba(29, 155, 240, 0.12)' : '#f0f9ff') : (isDark ? '#080808' : '#ffffff'),
+                      borderRadius: 14,
+                      padding: '20px 18px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.2s',
+                      position: 'relative',
+                      boxShadow: !isDark ? '0 4px 14px rgba(29, 155, 240, 0.15)' : 'none'
+                    }}
+                  >
+                    {!isDark && (
+                      <span style={{ position: 'absolute', top: 12, right: 12, color: '#1d9bf0' }}>
+                        <CheckCircle size={20} />
+                      </span>
+                    )}
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                      <Sun size={26} />
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: '1rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 4 }}>
+                      Aydınlık Mod
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#64748b', lineHeight: 1.4 }}>
+                      Gündüz ve aydınlık ortamlar için ferah, açık zeminli klasik arayüz.
+                    </div>
+                  </div>
+
+                  {/* Karanlık Mod Kartı */}
+                  <div
+                    onClick={() => {
+                      setIsDark(true);
+                      try {
+                        localStorage.setItem('forum_theme', 'dark');
+                        window.dispatchEvent(new CustomEvent('forum_theme_change', { detail: 'dark' }));
+                      } catch {}
+                      document.documentElement.classList.add('forum-dark-body');
+                      toast.success('Karanlık mod aktif edildi');
+                    }}
+                    style={{
+                      border: isDark ? '2.5px solid #1d9bf0' : `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                      background: isDark ? 'rgba(29, 155, 240, 0.15)' : '#ffffff',
+                      borderRadius: 14,
+                      padding: '20px 18px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.2s',
+                      position: 'relative',
+                      boxShadow: isDark ? '0 4px 14px rgba(29, 155, 240, 0.2)' : 'none'
+                    }}
+                  >
+                    {isDark && (
+                      <span style={{ position: 'absolute', top: 12, right: 12, color: '#1d9bf0' }}>
+                        <CheckCircle size={20} />
+                      </span>
+                    )}
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#0f172a', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                      <Moon size={26} />
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: '1rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 4 }}>
+                      Karanlık Mod
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#64748b', lineHeight: 1.4 }}>
+                      Gece ve loş ortamlar için gözü yormayan modern derin siyah tema.
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

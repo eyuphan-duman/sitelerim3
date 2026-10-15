@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ThreadView from '@/components/forum/ThreadView';
-import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark, Heart, Sun, Moon, Plus, Menu, LogOut, Award } from 'lucide-react';
+import { Search, TrendingUp, Hash, Bell, Users, Home, X, PenSquare, FileText, MessageCircle, ArrowRight, Film, Camera, Loader2, Sparkles, MessageSquare, User, Bookmark, Heart, Sun, Moon, Plus, Menu, LogOut, Award, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -114,16 +114,23 @@ export default function ForumClient() {
   const [isDark, setIsDark] = useState<boolean>(false);
 
   useEffect(() => {
-    try {
-      const savedTheme = localStorage.getItem('forum_theme');
-      if (savedTheme) {
-        setIsDark(savedTheme === 'dark');
-      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        setIsDark(true);
-      }
-    } catch (e) {
-      // ignore
-    }
+    const syncTheme = () => {
+      try {
+        const savedTheme = localStorage.getItem('forum_theme');
+        if (savedTheme) {
+          setIsDark(savedTheme === 'dark');
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          setIsDark(true);
+        }
+      } catch (e) {}
+    };
+    syncTheme();
+    window.addEventListener('storage', syncTheme);
+    window.addEventListener('forum_theme_change', syncTheme);
+    return () => {
+      window.removeEventListener('storage', syncTheme);
+      window.removeEventListener('forum_theme_change', syncTheme);
+    };
   }, []);
 
   const toggleDarkMode = () => {
@@ -311,7 +318,7 @@ export default function ForumClient() {
     userProfile?.role === 'psychologist'
   );
   const isAdminUser = ADMIN_EMAILS.includes(user?.email?.toLowerCase() || '');
-  const isEffectiveEmailVerified = emailVerified || isAdminUser;
+  const isEffectiveEmailVerified = Boolean(emailVerified);
   const photoLimitReached = !isPsychologistUser && !isAdminUser && (userProfile?.photoUploadsUsed || 0) >= 1;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -720,6 +727,9 @@ export default function ForumClient() {
         </div>
       )}
 
+      {/* Top Email Verification Notice */}
+      <EmailVerificationBanner isDark={isDark} />
+
       {/* ─── THREADS-STYLE MOBILE TOP HEADER ─── */}
       <header className="forum-mobile-header" style={{
         position: 'sticky',
@@ -896,10 +906,10 @@ export default function ForumClient() {
             { label: 'Beğenilenler', action: () => !user?.uid ? setAuthOpen(true) : router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?tab=likes` : '/forum'), active: false, icon: <Heart size={20} /> },
             { label: 'Bildirimler', action: () => !user?.uid ? setAuthOpen(true) : router.push('/bildirimler'), active: false, icon: <Bell size={20} />, badge: unreadCount },
             { 
-              label: isDark ? 'Açık Mod' : 'Karanlık Mod', 
-              action: toggleDarkMode, 
+              label: 'Ayarlar', 
+              action: () => !user?.uid ? setAuthOpen(true) : router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?settings=open` : '/forum'), 
               active: false, 
-              icon: isDark ? <Sun size={20} color="#fbbf24" /> : <Moon size={20} /> 
+              icon: <Settings size={20} /> 
             },
             { 
               label: 'Profilim', 
@@ -972,7 +982,6 @@ export default function ForumClient() {
 
         {/* MAIN FEED / THREAD VIEW */}
         <main style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: '100vh', background: isDark ? '#000000' : 'white', paddingBottom: 80 }}>
-          <EmailVerificationBanner isDark={isDark} />
           {activeThread ? (
             <ThreadView
               post={{
@@ -1071,30 +1080,6 @@ export default function ForumClient() {
                     </button>
                   )}
                 </div>
-
-                {/* X-Style Dark Mode Toggle Button */}
-                <button
-                  type="button"
-                  onClick={toggleDarkMode}
-                  style={{
-                    background: isDark ? '#16181c' : '#f1f5f9',
-                    border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                    borderRadius: 999,
-                    width: 38,
-                    height: 38,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    color: isDark ? '#fbbf24' : '#475569',
-                    transition: 'all 0.2s ease',
-                    flexShrink: 0,
-                  }}
-                  title={isDark ? 'Aydınlık moda geç' : 'Karanlık moda geç (X Tarzı)'}
-                  aria-label="Karanlık Mod Değiştir"
-                >
-                  {isDark ? <Sun size={19} strokeWidth={2} /> : <Moon size={19} strokeWidth={2} />}
-                </button>
               </div>
 
               {/* Tabs */}
@@ -1844,34 +1829,6 @@ export default function ForumClient() {
               </button>
             </div>
 
-            {/* Quick theme switch */}
-            <div style={{ marginBottom: 20 }}>
-              <button 
-                type="button" 
-                onClick={toggleDarkMode}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 14px',
-                  borderRadius: 12,
-                  background: isDark ? '#16181c' : '#f8fafc',
-                  border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                  color: isDark ? '#e7e9ea' : '#0f172a',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.88rem',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {isDark ? <Sun size={18} color="#fbbf24" /> : <Moon size={18} color="#64748b" />}
-                  <span>{isDark ? 'Açık Mod' : 'Karanlık Mod'}</span>
-                </div>
-                <span style={{ fontSize: '0.75rem', color: isDark ? '#71767b' : '#94a3b8' }}>Değiştir</span>
-              </button>
-            </div>
-
             {/* Navigation List matching user screenshot */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 20 }}>
               {[
@@ -1938,6 +1895,16 @@ export default function ForumClient() {
                     setMobileDrawerOpen(false);
                     if (!user?.uid) setAuthOpen(true); 
                     else router.push('/bildirimler'); 
+                  },
+                  active: false
+                },
+                { 
+                  label: 'Ayarlar', 
+                  icon: <Settings size={22} strokeWidth={2.2} />, 
+                  action: () => { 
+                    setMobileDrawerOpen(false);
+                    if (!user?.uid) setAuthOpen(true); 
+                    else router.push(myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}?settings=open` : '/forum'); 
                   },
                   active: false
                 },
