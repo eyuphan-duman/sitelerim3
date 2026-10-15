@@ -185,6 +185,15 @@ export default function ForumClient() {
 
   const filtered = (() => {
     let list = threads.filter(t => !t.isRepost);
+    // Hide posts by banned or frozen users, and hide private accounts completely from public feed/search
+    list = list.filter(t => {
+      const author = usersMap[t.uid];
+      if (author?.isBanned) return false;
+      if (author?.isFrozen || author?.isDeleted) return false;
+      // Private profiles: share cannot be seen anywhere including main feed; only on their own profile
+      if (author?.isPrivate && t.uid !== user?.uid) return false;
+      return true;
+    });
     if (filter !== 'Tümü') list = list.filter(t => t.category === filter);
     if (feedTab === 'following') list = list.filter(t => followingUids.includes(t.uid));
     if (feedTab === 'bookmarks') list = list.filter(t => Boolean(t.bookmarksData?.[user?.uid || '']));
@@ -317,6 +326,7 @@ export default function ForumClient() {
   const handlePost = async () => {
     if (!user || (!form.body.trim() && !form.imageUrl)) return toast.error('Yazı veya görsel eklemelisiniz.');
     if (user.isAnonymous) return setAuthOpen(true);
+    if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır (banlandı). Paylaşım yapamazsınız.');
     setPosting(true);
     const isPsychologist = Boolean(
       (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
@@ -358,6 +368,7 @@ export default function ForumClient() {
   const handleLike = async (e: React.MouseEvent, thread: Post) => {
     e.stopPropagation();
     if (!user || user.isAnonymous) return setAuthOpen(true);
+    if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır.');
     const postRef = doc(db, 'forum', thread.id);
     const userReaction = thread.reactionsData?.[user.uid];
     if (userReaction === 'like' || userReaction === 'heart') {
@@ -882,15 +893,49 @@ export default function ForumClient() {
             </button>
           ))}
           {user && !user.isAnonymous && (
-            <Link href={myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum'} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 12, textDecoration: 'none', marginTop: 'auto', background: isDark ? '#16181c' : '#f8fafc', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, overflow: 'hidden' }}>
-                {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem' }}>{userProfile?.displayName || user.displayName}</div>
-                <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.8rem' }}>@{myUsername}</div>
-              </div>
-            </Link>
+            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Link href={myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum'} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, textDecoration: 'none', background: isDark ? '#16181c' : '#f8fafc', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, overflow: 'hidden', flexShrink: 0 }}>
+                  {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.displayName || user.displayName}</div>
+                  <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{myUsername}</div>
+                </div>
+              </Link>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await logout();
+                    toast.success('Çıkış yapıldı');
+                  } catch (e: any) {
+                    toast.error('Çıkış yapılamadı: ' + e.message);
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  border: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #fee2e2',
+                  background: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                  color: isDark ? '#f87171' : '#dc2626',
+                  fontSize: '0.86rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2')}
+                onMouseOut={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2')}
+              >
+                <LogOut size={16} />
+                <span>Çıkış Yap</span>
+              </button>
+            </div>
           )}
         </aside>
 
@@ -1167,7 +1212,25 @@ export default function ForumClient() {
               </div>
 
               {/* Compose */}
-              {user && !user.isAnonymous && (
+              {userProfile?.isBanned && (
+                <div style={{
+                  padding: '16px 20px',
+                  background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
+                  borderBottom: '1px solid #ef4444',
+                  color: isDark ? '#fca5a5' : '#b91c1c',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  fontWeight: 700,
+                  fontSize: '0.92rem'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    Hesabınız yönetici tarafından askıya alınmıştır (banlandı). Forumda gönderi paylaşamaz, yorum yapamaz veya etkileşimde bulunamazsınız.
+                  </div>
+                </div>
+              )}
+
+              {user && !user.isAnonymous && !userProfile?.isBanned && (
                 <div style={{ padding: '20px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, display: 'flex', gap: 14, background: isDark ? '#000000' : 'white' }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0, overflow: 'hidden' }}>
                     {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}

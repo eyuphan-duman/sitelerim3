@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, MessageCircle, Heart, ThumbsDown, Repeat2, Bookmark, 
-  Share2, Trash2, Camera, Loader, CheckCircle, Image as ImageIcon, X, MoreHorizontal 
+  Share2, Trash2, Camera, Loader, CheckCircle, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag
 } from 'lucide-react';
 import { 
   doc, updateDoc, deleteField, increment, collection, 
@@ -152,6 +152,41 @@ export default function ThreadView({
   const [authorProfilePhoto, setAuthorProfilePhoto] = useState<string>(
     post?.authorPhotoURL || (currentUser?.uid === post?.uid ? (userProfile?.photoURL || currentUser?.photoURL) : '')
   );
+
+  // 3-dots menu & Report modal states
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportReason.trim()) {
+      return toast.error('Lütfen şikayet sebebinizi belirtin.');
+    }
+    setSubmittingReport(true);
+    try {
+      await addDoc(collection(db, 'reports'), {
+        postId: p.id,
+        postBody: p.body || '',
+        postAuthorUid: p.uid,
+        postAuthorName: p.authorName || 'Kullanıcı',
+        postAuthorUsername: username,
+        reportedByUid: currentUser?.uid || 'misafir',
+        reportedByEmail: currentUser?.email || '',
+        reason: reportReason.trim(),
+        createdAt: serverTimestamp(),
+        status: 'pending',
+      });
+      toast.success('Şikayetiniz yöneticilere iletildi.');
+      setReportModalOpen(false);
+      setReportReason('');
+    } catch (err: any) {
+      toast.error('Şikayet iletilemedi: ' + (err.message || ''));
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
 
   useEffect(() => {
     const authorUid = post?.uid || currentPost?.uid;
@@ -430,6 +465,7 @@ export default function ThreadView({
 
   const handleSubmitReply = async () => {
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
+    if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır (banlandı). Yorum yapamazsınız.');
     if (!replyText.trim() && !replyImageUrl) return;
 
     setSubmittingReply(true);
@@ -784,10 +820,15 @@ export default function ThreadView({
                 {p.category}
               </span>
             )}
-            {canDeletePost && (
+            
+            {/* 3-dots Menu Button & Dropdown */}
+            <div style={{ position: 'relative' }}>
               <button
                 type="button"
-                onClick={handleDeletePost}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(!menuOpen);
+                }}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -796,15 +837,134 @@ export default function ThreadView({
                   padding: 6,
                   borderRadius: 6,
                   display: 'flex',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  transition: 'all 0.15s'
                 }}
-                onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
-                onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#94a3b8')}
-                title="Gönderiyi Sil"
+                title="Seçenekler"
+                aria-label="Seçenekler"
               >
-                <Trash2 size={16} />
+                <MoreHorizontal size={18} />
               </button>
-            )}
+
+              {menuOpen && (
+                <>
+                  <div 
+                    style={{ position: 'fixed', inset: 0, zIndex: 100 }} 
+                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} 
+                  />
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: '100%',
+                      marginTop: 4,
+                      zIndex: 101,
+                      background: isDark ? '#16181c' : '#ffffff',
+                      border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                      borderRadius: 12,
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+                      padding: 6,
+                      minWidth: 160,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        const url = `${window.location.origin}/forum?thread=${p.id}`;
+                        navigator.clipboard.writeText(url);
+                        toast.success('Bağlantı kopyalandı!');
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: isDark ? '#e7e9ea' : '#0f172a',
+                        fontSize: '0.84rem',
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#22252a' : '#f1f5f9')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <LinkIcon size={14} />
+                      <span>Linki Kopyala</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        setReportModalOpen(true);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: isDark ? '#f87171' : '#dc2626',
+                        fontSize: '0.84rem',
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <Flag size={14} />
+                      <span>Şikayet Et</span>
+                    </button>
+
+                    {canDeletePost && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpen(false);
+                          handleDeletePost();
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '8px 12px',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#ef4444',
+                          fontSize: '0.84rem',
+                          fontWeight: 600,
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#1f1315' : '#fee2e2')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <Trash2 size={14} />
+                        <span>Gönderiyi Sil</span>
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1522,6 +1682,118 @@ export default function ThreadView({
           })
         )}
       </div>
+
+      {/* ─── REPORT MODAL ─── */}
+      {reportModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.72)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setReportModalOpen(false)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: isDark ? '#121212' : '#ffffff',
+              border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 460,
+              padding: 24,
+              boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Flag size={20} color="#ef4444" />
+                <h3 style={{ fontWeight: 800, fontSize: '1.15rem', color: isDark ? '#e7e9ea' : '#0f172a', margin: 0 }}>
+                  Gönderiyi Şikayet Et
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReportModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: isDark ? '#71767b' : '#64748b', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.84rem', color: isDark ? '#94a3b8' : '#64748b', marginBottom: 14, lineHeight: 1.5 }}>
+              Bu gönderinin topluluk kurallarını ihlal ettiğini düşünüyorsanız lütfen sebebi açıklayın. Şikayetiniz yöneticilerimize iletilecektir.
+            </p>
+
+            <form onSubmit={handleReportSubmit}>
+              <textarea
+                autoFocus
+                required
+                value={reportReason}
+                onChange={e => setReportReason(e.target.value)}
+                placeholder="Şikayet sebebinizi yazın (ör. spam, hakaret, yanıltıcı bilgi, taciz)..."
+                style={{
+                  width: '100%',
+                  minHeight: 100,
+                  padding: 12,
+                  borderRadius: 10,
+                  border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                  background: isDark ? '#000000' : '#ffffff',
+                  color: isDark ? '#e7e9ea' : '#0f172a',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  resize: 'none',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  marginBottom: 16,
+                }}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: `1px solid ${isDark ? '#2f3336' : '#cbd5e1'}`,
+                    background: 'transparent',
+                    color: isDark ? '#e7e9ea' : '#475569',
+                    fontWeight: 600,
+                    fontSize: '0.84rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Vazgeç
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReport || !reportReason.trim()}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#ef4444',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '0.84rem',
+                    cursor: 'pointer',
+                    opacity: submittingReport || !reportReason.trim() ? 0.6 : 1,
+                  }}
+                >
+                  {submittingReport ? 'Gönderiliyor...' : 'Şikayeti Gönder'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

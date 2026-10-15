@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, onSnapshot, updateDoc, serverTimestamp, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, onSnapshot, updateDoc, serverTimestamp, limit, addDoc } from 'firebase/firestore';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, deleteUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +9,8 @@ import {
   MessageCircle, Heart, Trash2, Home, Users, Film, FileText, 
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
   Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User,
-  Settings, Lock, EyeOff, Shield, SlidersHorizontal, Plus, Award, Key, AlertTriangle, Snowflake, ArrowRight
+  Settings, Lock, EyeOff, Shield, SlidersHorizontal, Plus, Award, Key, AlertTriangle, Snowflake, ArrowRight,
+  MoreHorizontal, Flag, LogOut
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -85,6 +86,40 @@ function PostCard({
     return () => unsub();
   }, [p.uid, p.authorPhotoURL, p.isRepost, p.originalAuthorPhotoURL, pd?.uid, pd?.photoURL, pd?.username, p.authorUsername]);
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportReason.trim()) {
+      return toast.error('Lütfen şikayet sebebinizi belirtin.');
+    }
+    setSubmittingReport(true);
+    try {
+      await addDoc(collection(db, 'reports'), {
+        postId: p.id,
+        postBody: p.body || '',
+        postAuthorUid: p.uid,
+        postAuthorName: authorName,
+        postAuthorUsername: authorUsername,
+        reportedByUid: pd?.uid || 'misafir',
+        reportedByEmail: userEmail || '',
+        reason: reportReason.trim(),
+        createdAt: serverTimestamp(),
+        status: 'pending',
+      });
+      toast.success('Şikayetiniz yöneticilere iletildi.');
+      setReportModalOpen(false);
+      setReportReason('');
+    } catch (err: any) {
+      toast.error('Şikayet iletilemedi: ' + (err.message || ''));
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
   return (
     <div 
       className="profile-card-item"
@@ -134,11 +169,151 @@ function PostCard({
               <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(p.createdAt)}</span>
               {p.category && <span style={{ background: isDark ? '#16181c' : '#f1f5f9', color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em', border: isDark ? '1px solid #2f3336' : 'none' }}>{p.category}</span>}
             </div>
-            {(isOwn && !repostedBy) && (
-              <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDark ? '#71767b' : '#94a3b8', display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, transition: 'all 0.15s' }} onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = isDark ? '#1f1315' : '#fef2f2'; }} onMouseOut={e => { e.currentTarget.style.color = isDark ? '#71767b' : '#94a3b8'; e.currentTarget.style.background = 'none'; }} title="Gönderiyi Sil">
-                <Trash2 size={14} />
+
+            {/* 3-dots Menu */}
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(!menuOpen);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: isDark ? '#71767b' : '#94a3b8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px 6px',
+                  borderRadius: 6,
+                  transition: 'all 0.15s'
+                }}
+                title="Seçenekler"
+                aria-label="Seçenekler"
+              >
+                <MoreHorizontal size={18} />
               </button>
-            )}
+
+              {menuOpen && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
+                  />
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: '100%',
+                      marginTop: 4,
+                      zIndex: 101,
+                      background: isDark ? '#16181c' : '#ffffff',
+                      border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                      borderRadius: 12,
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+                      padding: 6,
+                      minWidth: 160,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        const url = `${window.location.origin}/forum?thread=${p.id}`;
+                        navigator.clipboard.writeText(url);
+                        toast.success('Bağlantı kopyalandı!');
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: isDark ? '#e7e9ea' : '#0f172a',
+                        fontSize: '0.84rem',
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#22252a' : '#f1f5f9')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <LinkIcon size={14} />
+                      <span>Linki Kopyala</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        setReportModalOpen(true);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: isDark ? '#f87171' : '#dc2626',
+                        fontSize: '0.84rem',
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <Flag size={14} />
+                      <span>Şikayet Et</span>
+                    </button>
+
+                    {((isOwn && !repostedBy) || ADMIN.includes(userEmail)) && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpen(false);
+                          onDelete(p.id);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '8px 12px',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#ef4444',
+                          fontSize: '0.84rem',
+                          fontWeight: 600,
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#1f1315' : '#fee2e2')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <Trash2 size={14} />
+                        <span>Gönderiyi Sil</span>
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           <p style={{ color: isDark ? '#d1d5db' : '#334155', fontSize: '0.97rem', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
             {renderTextWithMentions(p.body)}
@@ -157,6 +332,119 @@ function PostCard({
           </div>
         </div>
       </div>
+
+      {/* Report Modal */}
+      {reportModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.72)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={(e) => { e.stopPropagation(); setReportModalOpen(false); }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: isDark ? '#121212' : '#ffffff',
+              border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 460,
+              padding: 24,
+              boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
+              cursor: 'default',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Flag size={20} color="#ef4444" />
+                <h3 style={{ fontWeight: 800, fontSize: '1.15rem', color: isDark ? '#e7e9ea' : '#0f172a', margin: 0 }}>
+                  Gönderiyi Şikayet Et
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReportModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: isDark ? '#71767b' : '#64748b', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.84rem', color: isDark ? '#94a3b8' : '#64748b', marginBottom: 14, lineHeight: 1.5 }}>
+              Bu gönderinin topluluk kurallarını ihlal ettiğini düşünüyorsanız lütfen sebebi açıklayın. Şikayetiniz yöneticilerimize iletilecektir.
+            </p>
+
+            <form onSubmit={handleReportSubmit}>
+              <textarea
+                autoFocus
+                required
+                value={reportReason}
+                onChange={e => setReportReason(e.target.value)}
+                placeholder="Şikayet sebebinizi yazın (ör. spam, hakaret, yanıltıcı bilgi, taciz)..."
+                style={{
+                  width: '100%',
+                  minHeight: 100,
+                  padding: 12,
+                  borderRadius: 10,
+                  border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
+                  background: isDark ? '#000000' : '#ffffff',
+                  color: isDark ? '#e7e9ea' : '#0f172a',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  resize: 'none',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  marginBottom: 16,
+                }}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: `1px solid ${isDark ? '#2f3336' : '#cbd5e1'}`,
+                    background: 'transparent',
+                    color: isDark ? '#e7e9ea' : '#475569',
+                    fontWeight: 600,
+                    fontSize: '0.84rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Vazgeç
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReport || !reportReason.trim()}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#ef4444',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '0.84rem',
+                    cursor: 'pointer',
+                    opacity: submittingReport || !reportReason.trim() ? 0.6 : 1,
+                  }}
+                >
+                  {submittingReport ? 'Gönderiliyor...' : 'Şikayeti Gönder'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1060,15 +1348,50 @@ export default function ProfilClient({ username }: { username: string }) {
           ))}
 
           {user && !user.isAnonymous && (
-            <Link href={`/forum/profil/${myUsername}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 12, textDecoration: 'none', marginTop: 'auto', background: isDark ? '#16181c' : '#f8fafc', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, overflow: 'hidden', flexShrink: 0 }}>
-                {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.displayName || user.displayName}</div>
-                <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.8rem' }}>@{myUsername}</div>
-              </div>
-            </Link>
+            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Link href={`/forum/profil/${myUsername}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, textDecoration: 'none', background: isDark ? '#16181c' : '#f8fafc', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, overflow: 'hidden', flexShrink: 0 }}>
+                  {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.displayName || user.displayName}</div>
+                  <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{myUsername}</div>
+                </div>
+              </Link>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await logout();
+                    toast.success('Çıkış yapıldı');
+                    router.push('/forum');
+                  } catch (e: any) {
+                    toast.error('Çıkış yapılamadı: ' + e.message);
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  border: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #fee2e2',
+                  background: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                  color: isDark ? '#f87171' : '#dc2626',
+                  fontSize: '0.86rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2')}
+                onMouseOut={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2')}
+              >
+                <LogOut size={16} />
+                <span>Çıkış Yap</span>
+              </button>
+            </div>
           )}
         </aside>
 
@@ -2002,6 +2325,55 @@ export default function ProfilClient({ username }: { username: string }) {
             {/* TAB 5: HESAP DURUMU (DONDURMA & SİLME) */}
             {settingsTab === 'danger' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Sign out card */}
+                <div style={{ padding: '18px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <LogOut size={20} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
+                          Oturumu Kapat
+                        </div>
+                        <p style={{ fontSize: '0.82rem', color: isDark ? '#94a3b8' : '#64748b', margin: '2px 0 0' }}>
+                          Bu cihazdaki forum oturumunuzu güvenle sonlandırın.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setSettingsOpen(false);
+                        setEditOpen(false);
+                        try {
+                          await logout();
+                          toast.success('Başarıyla çıkış yapıldı');
+                          router.push('/forum');
+                        } catch (err: any) {
+                          toast.error('Çıkış yapılamadı: ' + err.message);
+                        }
+                      }}
+                      style={{
+                        background: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        padding: '9px 20px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                    >
+                      <LogOut size={15} />
+                      <span>Çıkış Yap</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Freeze account card */}
                 <div style={{ padding: '18px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
