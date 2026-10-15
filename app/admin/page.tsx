@@ -12,7 +12,6 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
 import { DEFAULT_ABOUT_SETTINGS, AboutSettings } from '@/lib/aboutSettings';
-import { CURATED_15_FAQS } from '@/data/curated-faq-15';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -512,11 +511,24 @@ export default function AdminPage() {
 
       if (editingArticleId) {
         await updateDoc(doc(db, 'articles', editingArticleId), {
-          ...postForm,
+          title: postForm.title,
+          category: postForm.category || '',
+          featuredImage: postForm.featuredImage || '',
+          content: postForm.content,
           excerpt,
           updatedAt: serverTimestamp()
         });
-        toast.success('Makale güncellendi!');
+        try {
+          await updateDoc(doc(db, 'posts', editingArticleId), {
+            title: postForm.title,
+            category: postForm.category || '',
+            featuredImage: postForm.featuredImage || '',
+            content: postForm.content,
+            excerpt,
+            updatedAt: serverTimestamp()
+          });
+        } catch {}
+        toast.success('Makale başarıyla güncellendi!');
         setEditingArticleId(null);
       } else {
         await addDoc(collection(db, 'articles'), {
@@ -543,7 +555,11 @@ export default function AdminPage() {
     });
     setEditingArticleId(a.id);
     setActiveTab('posts');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      const el = document.getElementById('post-form-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
     toast.success('Makale düzenleme moduna alındı.');
   };
 
@@ -579,15 +595,21 @@ export default function AdminPage() {
 
       if (editingFaqId) {
         await updateDoc(doc(db, 'faq', editingFaqId), {
-          ...faqForm,
+          title: faqForm.title,
+          category: faqForm.category || '',
+          featuredImage: faqForm.featuredImage || '',
+          content: faqForm.content,
           excerpt,
           updatedAt: serverTimestamp()
         });
-        toast.success('Soru-cevap güncellendi!');
+        toast.success('Soru-cevap başarıyla güncellendi!');
         setEditingFaqId(null);
       } else {
         await addDoc(collection(db, 'faq'), {
-          ...faqForm,
+          title: faqForm.title,
+          category: faqForm.category || '',
+          featuredImage: faqForm.featuredImage || '',
+          content: faqForm.content,
           excerpt,
           createdAt: serverTimestamp()
         });
@@ -602,10 +624,19 @@ export default function AdminPage() {
   };
 
   const handleStartEditFaq = (f: any) => {
-    setFaqForm({ title: f.title || '', category: f.category || '', featuredImage: f.featuredImage || '', content: f.content || '' });
+    setFaqForm({
+      title: f.title || '',
+      category: f.category || '',
+      featuredImage: f.featuredImage || '',
+      content: f.content || ''
+    });
     setEditingFaqId(f.id);
     setActiveTab('faq');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      const el = document.getElementById('faq-form-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
     toast.success('Soru-cevap düzenleme moduna alındı.');
   };
 
@@ -624,46 +655,6 @@ export default function AdminPage() {
       toast.error('Hata oluştu.');
     }
   };
-
-  const handlePublishCuratedFaqs = async () => {
-    if (!confirm('Mevcut soru-cevapları silip 15 yeni klinik SSS yazısını yayımlamak istediğinize emin misiniz?')) return;
-    setSubmitting(true);
-    const toastId = toast.loading('Eski soru-cevaplar temizleniyor ve 15 yeni yazı yayımlanıyor...');
-    try {
-      const snap = await getDocs(collection(db, 'faq'));
-      for (const d of snap.docs) {
-        await deleteDoc(doc(db, 'faq', d.id));
-      }
-
-      const strip = (h: string) => h.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').trim();
-      for (let i = 0; i < CURATED_15_FAQS.length; i++) {
-        const item = CURATED_15_FAQS[i];
-        const raw = strip(item.content);
-        const excerpt = raw.length > 220 ? raw.slice(0, 220) + '…' : raw;
-
-        await addDoc(collection(db, 'faq'), {
-          title: item.title,
-          category: item.category,
-          featuredImage: item.featuredImage,
-          content: item.content,
-          excerpt,
-          createdAt: serverTimestamp()
-        });
-      }
-
-      toast.success('15 adet Soru-Cevap başarıyla yayımlandı!', { id: toastId });
-    } catch (e: any) {
-      toast.error('Hata oluştu: ' + (e?.message || ''), { id: toastId });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).__publishCuratedFaqs = handlePublishCuratedFaqs;
-    }
-  }, []);
 
 
   const handleAddVideo = async (e: React.FormEvent) => {
@@ -2896,7 +2887,7 @@ export default function AdminPage() {
         {activeTab === 'posts' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
             {/* New Article Form */}
-            <div className="admin-card-inner" style={{ background: 'white', padding: 32, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+            <div id="post-form-section" className="admin-card-inner" style={{ background: 'white', padding: 32, borderRadius: 12, border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
                 <PenTool size={20} color="var(--gold-dim)"/>
                 <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>
@@ -2956,6 +2947,7 @@ export default function AdminPage() {
                 <div>
                   <div className="editor-container" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
                     <RichTextEditor 
+                      key={editingArticleId || 'article-new-editor'}
                       value={postForm.content} 
                       onChange={val=>setPostForm({...postForm, content: val})} 
                       placeholder="Makale içeriğini buraya yazın..."
@@ -3003,42 +2995,17 @@ export default function AdminPage() {
         {activeTab === 'faq' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
             {/* New FAQ Form */}
-            <div className="admin-card-inner" style={{ background: 'white', padding: 32, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+            <div id="faq-form-section" className="admin-card-inner" style={{ background: 'white', padding: 32, borderRadius: 12, border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
                 <HelpCircle size={20} color="var(--gold-dim)"/>
                 <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>
                   {editingFaqId ? 'Soru-Cevabı Güncelle' : 'Yeni Soru-Cevap Ekle'}
                 </h2>
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <button
-                    id="btn-publish-curated-faqs"
-                    type="button"
-                    onClick={handlePublishCuratedFaqs}
-                    disabled={submitting}
-                    style={{
-                      background: 'linear-gradient(135deg, #1e293b, #0f172a)',
-                      color: '#f8fafc',
-                      border: '1px solid #334155',
-                      padding: '7px 14px',
-                      borderRadius: 8,
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-                    }}
-                    title="Mevcutları silip 15 profesyonel klinik SSS yazısını yayına alır"
-                  >
-                    <Sparkles size={14} color="#e8c187" /> 15 Uzman Soru-Cevabı Yayımla
+                {editingFaqId && (
+                  <button type="button" onClick={handleCancelEditFaq} style={{ marginLeft: 'auto', background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <X size={14}/> İptal Et
                   </button>
-                  {editingFaqId && (
-                    <button type="button" onClick={handleCancelEditFaq} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <X size={14}/> İptal Et
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
               <p style={{ fontSize: '0.84rem', color: '#64748b', marginBottom: 20, lineHeight: 1.5 }}>
                 Bu bölüm, insanların Google&apos;da arama yaparken sorduğu sorulara doğrudan cevap veren içerikler içindir (Yazılarım&apos;dan ayrı). Soruyu başlık olarak, cevabı da içerik olarak yazın.
@@ -3090,6 +3057,7 @@ export default function AdminPage() {
                 <div>
                   <div className="editor-container" style={{ background: 'white', borderRadius: 12, boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
                     <RichTextEditor
+                      key={editingFaqId || 'faq-editor-new'}
                       value={faqForm.content}
                       onChange={val=>setFaqForm({...faqForm, content: val})}
                       placeholder="Cevabı buraya yazın..."

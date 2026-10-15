@@ -58,6 +58,18 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     loadQuill();
   }, []);
 
+  useEffect(() => {
+    if (quillRef.current) {
+      const editor = quillRef.current.getEditor ? quillRef.current.getEditor() : null;
+      if (editor && typeof value === 'string') {
+        const currentHtml = editor.root.innerHTML;
+        if (value !== currentHtml && (value || currentHtml !== '<p><br></p>')) {
+          editor.root.innerHTML = value;
+        }
+      }
+    }
+  }, [value]);
+
   const resizeSelectedImage = (delta: number) => {
     const quill = quillRef.current?.getEditor();
     if (!quill) return;
