@@ -112,7 +112,10 @@ export default function PsychologistRegisterPage() {
         }
       );
 
-      toast.success('Psikolog başvurunuz başarıyla alındı! Lütfen e-postanıza gönderilen doğrulama linkine tıklayarak e-posta adresinizi doğrulayın. Belgeleriniz onaylandığında uzman rozetiniz aktifleşecektir.', { duration: 8000 });
+      toast.success(
+        'Psikolog başvurunuz ve kaydınız başarıyla alındı! Üyeliğinizi tamamlamak için ' + form.email + ' adresine onay bağlantısı gönderdik. Lütfen linke tıklayarak e-postanızı onaylayın, ardından giriş yapabilirsiniz.',
+        { duration: 10000 }
+      );
       router.push(`/forum/profil/${encodeURIComponent(cleanUsername)}`);
     } catch (err: any) {
       toast.error('Kayıt oluşturulamadı: ' + (err.message || ''));

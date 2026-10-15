@@ -1249,36 +1249,7 @@ export default function ForumClient() {
                 </div>
               )}
 
-              {user && !user.isAnonymous && !userProfile?.isBanned && !isEffectiveEmailVerified && (
-                <div style={{
-                  padding: '16px 20px',
-                  background: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
-                  borderBottom: '1px solid #f59e0b',
-                  color: isDark ? '#fcd34d' : '#92400e',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  flexWrap: 'wrap',
-                  fontWeight: 700,
-                  fontSize: '0.92rem'
-                }}>
-                  <div style={{ flex: 1, minWidth: 200 }}>
-                    Forumda paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor. Gelen kutunuzu (ve spam klasörünü) kontrol edin.
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try { await resendVerificationEmail(); toast.success('Doğrulama e-postası tekrar gönderildi.'); }
-                      catch (err: any) { toast.error(err.message || 'Gönderilemedi.'); }
-                    }}
-                    style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 999, fontWeight: 700, cursor: 'pointer', fontSize: '0.84rem', whiteSpace: 'nowrap' }}
-                  >
-                    Tekrar Gönder
-                  </button>
-                </div>
-              )}
-
-              {user && !user.isAnonymous && !userProfile?.isBanned && isEffectiveEmailVerified && (
+              {user && !user.isAnonymous && !userProfile?.isBanned && (
                 <div style={{ padding: '20px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, display: 'flex', gap: 14, background: isDark ? '#000000' : 'white' }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0, overflow: 'hidden' }}>
                     {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}

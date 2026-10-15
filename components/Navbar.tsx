@@ -7,7 +7,6 @@ import AuthModal from './AuthModal';
 import { Menu, X, LogOut, Bell } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import EmailVerificationBanner from './EmailVerificationBanner';
 
 const links = [
   { href: '/', label: 'Anasayfa' },
@@ -21,9 +20,6 @@ const links = [
 
 export default function Navbar() {
   const { user, userProfile, emailVerified, logout } = useAuth();
-  const userEmail = (user?.email || '').toLowerCase().trim();
-  const isAdmin = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'].includes(userEmail) || userProfile?.role === 'admin';
-  const showUnverifiedBanner = Boolean(user && !user.isAnonymous && !isAdmin && !emailVerified && !user.emailVerified);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -53,11 +49,9 @@ export default function Navbar() {
 
   return (
     <>
-      <EmailVerificationBanner />
       {!isForumPage && (
         <nav 
           className={`navbar ${scrolled || forceSolid ? 'navbar-scrolled' : 'navbar-transparent'}`}
-          style={showUnverifiedBanner ? { top: scrolled ? 0 : 54, transition: 'all 0.3s ease' } : undefined}
         >
           <div className="container-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, paddingBottom: 20 }}>
 

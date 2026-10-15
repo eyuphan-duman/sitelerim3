@@ -33,6 +33,7 @@ interface AuthContextType {
   signInAsGuest: () => Promise<void>;
   resetPassword: (usernameOrEmail: string) => Promise<string>;
   resendVerificationEmail: () => Promise<void>;
+  resendVerificationByCredentials: (usernameOrEmail: string, password?: string) => Promise<void>;
   refreshEmailVerification: () => Promise<boolean>;
   logout: () => Promise<void>;
 }
@@ -54,6 +55,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       const userEmail = (u?.email || '').toLowerCase().trim();
       const isAdminEmail = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail);
+
+      // Force sign-out for any unverified non-admin user so unverified sessions cannot persist
+      if (u && !u.isAnonymous && !u.emailVerified && !isAdminEmail && !googleSignupRef.current) {
+        try { await signOut(auth); } catch {}
+        setUser(null);
+        setUserProfile(null);
+        setEmailVerified(false);
+        setLoading(false);
+        return;
+      }
+
       setUser(u);
       setEmailVerified(Boolean(u?.emailVerified) || isAdminEmail);
       if (u) {
@@ -205,6 +217,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authEmail = snap.docs[0].data().email;
     }
     const cred = await signInWithEmailAndPassword(auth, authEmail, password);
+    const userEmail = (cred.user.email || '').toLowerCase().trim();
+    const isAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail);
+
+    if (!cred.user.emailVerified && !isAdmin) {
+      await signOut(auth);
+      const err: any = new Error(`E-posta adresiniz (${cred.user.email}) henüz doğrulanmamış. Üyeliğinizi tamamlamak için lütfen gelen kutunuzdaki onay linkine tıklayın.`);
+      err.code = 'auth/unverified-email';
+      err.email = cred.user.email;
+      throw err;
+    }
+
     return cred;
   };
 
@@ -272,11 +295,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }, { merge: true });
       }
 
-      // Update state immediately
-      const userDocRef = doc(db, 'users', cred.user.uid);
-      const userSnap2 = await getDoc(userDocRef);
-      if (userSnap2.exists()) {
-        setUserProfile(userSnap2.data());
+      const isAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === cleanEmail);
+      if (!isAdmin) {
+        // Sign out immediately: membership is not complete until email verification
+        await signOut(auth);
+        setUser(null);
+        setUserProfile(null);
+        setEmailVerified(false);
+      } else {
+        // Update state immediately for admin
+        const userDocRef = doc(db, 'users', cred.user.uid);
+        const userSnap2 = await getDoc(userDocRef);
+        if (userSnap2.exists()) {
+          setUserProfile(userSnap2.data());
+        }
       }
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
@@ -342,14 +374,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     await createUserDocument(current, cleanUsername, extraData);
 
-    if (!current.emailVerified) {
+    const userEmail = (current.email || '').toLowerCase().trim();
+    const isAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail);
+
+    if (!current.emailVerified && !isAdmin) {
       try { await sendEmailVerification(current); } catch (e) { console.warn('sendEmailVerification:', e); }
+      googleSignupRef.current = false;
+      await signOut(auth);
+      setUser(null);
+      setUserProfile(null);
+      setEmailVerified(false);
+      const err: any = new Error(`E-posta adresinize (${current.email}) doğrulama bağlantısı gönderildi. Üyeliğinizi tamamlamak için lütfen e-postanızı onaylayın, ardından giriş yapın.`);
+      err.code = 'auth/unverified-email';
+      throw err;
     }
 
     googleSignupRef.current = false;
     const newSnap = await getDoc(doc(db, 'users', current.uid));
     if (newSnap.exists()) setUserProfile(newSnap.data());
-    setEmailVerified(Boolean(current.emailVerified));
+    setEmailVerified(Boolean(current.emailVerified) || isAdmin);
   };
 
   const cancelGoogleSignup = async (): Promise<void> => {
@@ -396,6 +439,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await sendEmailVerification(auth.currentUser);
   };
 
+  const resendVerificationByCredentials = async (usernameOrEmail: string, password?: string): Promise<void> => {
+    let authEmail = usernameOrEmail.trim();
+    if (!authEmail.includes('@')) {
+      const cleanUname = sanitizeUsername(authEmail);
+      const q = query(collection(db, 'users'), where('username', '==', cleanUname));
+      const snap = await getDocs(q);
+      if (snap.empty) throw new Error('Kullanıcı bulunamadı.');
+      authEmail = snap.docs[0].data().email;
+    }
+    if (!password) {
+      throw new Error('Doğrulama bağlantısını tekrar göndermek için lütfen şifrenizi girin.');
+    }
+    const cred = await signInWithEmailAndPassword(auth, authEmail, password);
+    try {
+      await sendEmailVerification(cred.user);
+    } finally {
+      await signOut(auth);
+    }
+  };
+
   // Firebase caches emailVerified on the ID token; reload + force token refresh
   // so the app (and Firestore rules) see verification status right after the user confirms it.
   const refreshEmailVerification = async (): Promise<boolean> => {
@@ -410,7 +473,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, emailVerified, signIn, signUp, startGoogleSignup, completeGoogleSignup, cancelGoogleSignup, signInAsGuest, resetPassword, resendVerificationEmail, refreshEmailVerification, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, emailVerified, signIn, signUp, startGoogleSignup, completeGoogleSignup, cancelGoogleSignup, signInAsGuest, resetPassword, resendVerificationEmail, resendVerificationByCredentials, refreshEmailVerification, logout }}>
       {children}
     </AuthContext.Provider>
   );

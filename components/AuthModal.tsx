@@ -85,7 +85,16 @@ function GoogleLogo() {
 }
 
 export default function AuthModal({ isOpen, onClose, isDark }: Props) {
-  const { signIn, signUp, startGoogleSignup, completeGoogleSignup, cancelGoogleSignup, signInAsGuest, resetPassword } = useAuth();
+  const {
+    signIn,
+    signUp,
+    startGoogleSignup,
+    completeGoogleSignup,
+    cancelGoogleSignup,
+    signInAsGuest,
+    resetPassword,
+    resendVerificationByCredentials,
+  } = useAuth();
 
   const [mode, setMode] = useState<Mode>('signin');
   const [busy, setBusy] = useState(false);
@@ -103,6 +112,8 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [resetSentEmail, setResetSentEmail] = useState<string | null>(null);
+  const [unverifiedNotice, setUnverifiedNotice] = useState<{ message: string; identifier: string } | null>(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
 
   useEffect(() => {
     if (typeof isDark === 'boolean') {
@@ -172,6 +183,9 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
     setPassword('');
     setTermsAccepted(false);
     setResetSentEmail(null);
+    if (next !== 'signin') {
+      setUnverifiedNotice(null);
+    }
   };
 
   /* ---------------- Handlers ---------------- */
@@ -181,19 +195,21 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
     const id = identifier.trim();
     if (!id || !password) return;
     setBusy(true);
+    setUnverifiedNotice(null);
     try {
-      const cred: any = await signIn(id, password);
-      const userEmail = (cred?.user?.email || '').toLowerCase().trim();
-      const isAdmin = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'].includes(userEmail);
-      if (cred?.user && !cred.user.emailVerified && !isAdmin) {
-        toast('Giriş başarılı! Ancak e-posta adresiniz henüz doğrulanmamış. Lütfen gelen kutunuzdaki onay linkine tıklayın.', { icon: '✉️', duration: 7000 });
-      } else {
-        toast.success('Giriş başarılı, hoş geldin!');
-      }
+      await signIn(id, password);
+      toast.success('Giriş başarılı, hoş geldin!');
       setPassword('');
       onClose();
     } catch (err: any) {
       console.error('Sign in error:', err);
+      if (err.code === 'auth/unverified-email') {
+        setUnverifiedNotice({
+          message: err.message || 'E-posta adresiniz henüz doğrulanmamış. Üyeliğinizi tamamlamak için lütfen gelen kutunuzdaki onay bağlantısına tıklayın.',
+          identifier: id,
+        });
+        return;
+      }
       let msg = err.message || 'Giriş yapılamadı.';
       if (err.code === 'auth/user-not-found') msg = 'Bu kullanıcı adına veya e-posta adresine ait hesap bulunamadı.';
       else if (err.code === 'auth/invalid-email') msg = 'Geçersiz bir e-posta adresi girildi.';
@@ -231,10 +247,18 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
         fullName: fullName.trim(),
         birthDate,
       });
-      toast.success('Hesabın oluşturuldu! Forumda paylaşım ve etkileşim yapabilmek için lütfen e-postana gönderdiğimiz doğrulama linkine tıkla.', { duration: 8000 });
+      toast.success(
+        'Kaydınız alındı! Üyeliğinizi tamamlamak için ' + email.trim() + ' adresine onay bağlantısı gönderdik. Lütfen linke tıklayarak e-postanızı onaylayın, ardından giriş yapın.',
+        { duration: 10000 }
+      );
       setPassword('');
       setTermsAccepted(false);
-      onClose();
+      setIdentifier(username.trim() || email.trim());
+      setMode('signin');
+      setUnverifiedNotice({
+        message: `${email.trim()} adresine doğrulama bağlantısı gönderildi. Giriş yapabilmek için lütfen e-postanızı onaylayın.`,
+        identifier: username.trim() || email.trim(),
+      });
     } catch (err: any) {
       console.error('Sign up error:', err);
       toast.error(err.message || 'Kayıt oluşturulamadı.');
@@ -299,6 +323,18 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
       onClose();
     } catch (err: any) {
       console.error('Google complete error:', err);
+      if (err.code === 'auth/unverified-email') {
+        toast.success(err.message || 'Doğrulama bağlantısı e-posta adresinize gönderildi. Lütfen e-postanızı onaylayın, ardından giriş yapın.', { duration: 9000 });
+        setPassword('');
+        setTermsAccepted(false);
+        setIdentifier(username.trim() || googleEmail);
+        setMode('signin');
+        setUnverifiedNotice({
+          message: err.message || 'E-posta adresinize doğrulama bağlantısı gönderildi. Giriş yapabilmek için lütfen onaylayın.',
+          identifier: username.trim() || googleEmail,
+        });
+        return;
+      }
       let msg = err.message || 'Kayıt tamamlanamadı.';
       if (err.code === 'auth/weak-password') msg = 'Şifre en az 6 karakter olmalıdır.';
       else if (err.code === 'auth/requires-recent-login') msg = 'Oturum süresi doldu. Lütfen Google ile kaydı baştan başlat.';
@@ -467,6 +503,57 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
           {/* ---------------- SIGN IN ---------------- */}
           {mode === 'signin' && (
             <>
+              {unverifiedNotice && (
+                <div style={{
+                  padding: '14px 16px',
+                  borderRadius: 12,
+                  background: dark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
+                  border: '1.5px solid #f59e0b',
+                  color: dark ? '#fcd34d' : '#92400e',
+                  fontSize: '0.88rem',
+                  marginBottom: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  textAlign: 'left',
+                }}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>✉️</span>
+                    <span style={{ lineHeight: 1.45, fontWeight: 600, flex: 1 }}>{unverifiedNotice.message}</span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={resendingVerification}
+                    onClick={async () => {
+                      setResendingVerification(true);
+                      try {
+                        await resendVerificationByCredentials(unverifiedNotice.identifier, password);
+                        toast.success('Doğrulama bağlantısı e-postanıza tekrar gönderildi! Lütfen gelen kutunuzu ve spam klasörünü kontrol edin.');
+                      } catch (resendErr: any) {
+                        toast.error(resendErr.message || 'Doğrulama e-postası gönderilemedi.');
+                      } finally {
+                        setResendingVerification(false);
+                      }
+                    }}
+                    style={{
+                      alignSelf: 'flex-start',
+                      background: '#f59e0b',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '8px 14px',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      cursor: resendingVerification ? 'not-allowed' : 'pointer',
+                      opacity: resendingVerification ? 0.7 : 1,
+                      transition: 'opacity 0.2s',
+                    }}
+                  >
+                    {resendingVerification ? 'Gönderiliyor...' : 'Doğrulama Bağlantısını Tekrar Gönder'}
+                  </button>
+                </div>
+              )}
+
               <form className={styles.form} onSubmit={handleSignin}>
                 <Field id="auth_identifier" label="Kullanıcı adı veya e-posta" value={identifier} onChange={setIdentifier} autoComplete="username" />
                 <Field id="auth_password" label="Şifre" type="password" value={password} onChange={setPassword} autoComplete="current-password" />
