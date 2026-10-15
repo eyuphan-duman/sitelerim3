@@ -113,8 +113,8 @@ export default function PsychologistRegisterPage() {
       );
 
       toast.success(
-        'Psikolog başvurunuz ve kaydınız başarıyla alındı! Üyeliğinizi tamamlamak için ' + form.email + ' adresine onay bağlantısı gönderdik. Lütfen linke tıklayarak e-postanızı onaylayın, ardından giriş yapabilirsiniz.',
-        { duration: 10000 }
+        'Psikolog başvurunuz ve kaydınız başarıyla alındı! Üyeliğinizi tamamlamak için ' + form.email + ' adresine onay bağlantısı gönderdik. Lütfen gelen kutunuzu ve SPAM (gereksiz) klasörünüzü kontrol ediniz; e-postanızı onayladıktan sonra giriş yapabilirsiniz.',
+        { duration: 12000 }
       );
       router.push(`/forum/profil/${encodeURIComponent(cleanUsername)}`);
     } catch (err: any) {

@@ -205,7 +205,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
       console.error('Sign in error:', err);
       if (err.code === 'auth/unverified-email') {
         setUnverifiedNotice({
-          message: err.message || 'E-posta adresiniz henüz doğrulanmamış. Üyeliğinizi tamamlamak için lütfen gelen kutunuzdaki onay bağlantısına tıklayın.',
+          message: err.message || 'E-posta adresiniz henüz doğrulanmamış. Üyeliğinizi tamamlamak için lütfen gelen kutunuzu ve spam (gereksiz) klasörünüzü kontrol ediniz; doğrulama maili oraya gitmektedir.',
           identifier: id,
         });
         return;
@@ -248,15 +248,15 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
         birthDate,
       });
       toast.success(
-        'Kaydınız alındı! Üyeliğinizi tamamlamak için ' + email.trim() + ' adresine onay bağlantısı gönderdik. Lütfen linke tıklayarak e-postanızı onaylayın, ardından giriş yapın.',
-        { duration: 10000 }
+        'Kaydınız alındı! Üyeliğinizi tamamlamak için ' + email.trim() + ' adresine onay bağlantısı gönderdik. Lütfen e-postanızın gelen kutusunu ve SPAM (gereksiz) klasörünü kontrol ediniz; doğrulama maili oraya gitmektedir.',
+        { duration: 12000 }
       );
       setPassword('');
       setTermsAccepted(false);
       setIdentifier(username.trim() || email.trim());
       setMode('signin');
       setUnverifiedNotice({
-        message: `${email.trim()} adresine doğrulama bağlantısı gönderildi. Giriş yapabilmek için lütfen e-postanızı onaylayın.`,
+        message: `${email.trim()} adresine doğrulama bağlantısı gönderildi. Lütfen gelen kutunuzu ve spam (gereksiz) klasörünüzü kontrol ediniz; doğrulama maili oraya gitmektedir. Onayladıktan sonra giriş yapabilirsiniz.`,
         identifier: username.trim() || email.trim(),
       });
     } catch (err: any) {
@@ -324,13 +324,13 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
     } catch (err: any) {
       console.error('Google complete error:', err);
       if (err.code === 'auth/unverified-email') {
-        toast.success(err.message || 'Doğrulama bağlantısı e-posta adresinize gönderildi. Lütfen e-postanızı onaylayın, ardından giriş yapın.', { duration: 9000 });
+        toast.success(err.message || 'Doğrulama bağlantısı e-posta adresinize gönderildi. Lütfen gelen kutunuzu ve spam (gereksiz) klasörünüzü kontrol ediniz; e-postanızı onayladıktan sonra giriş yapabilirsiniz.', { duration: 12000 });
         setPassword('');
         setTermsAccepted(false);
         setIdentifier(username.trim() || googleEmail);
         setMode('signin');
         setUnverifiedNotice({
-          message: err.message || 'E-posta adresinize doğrulama bağlantısı gönderildi. Giriş yapabilmek için lütfen onaylayın.',
+          message: err.message || 'E-posta adresinize doğrulama bağlantısı gönderildi. Lütfen gelen kutunuzu ve spam (gereksiz) klasörünüzü kontrol ediniz; doğrulama maili oraya gitmektedir. Onayladıktan sonra giriş yapabilirsiniz.',
           identifier: username.trim() || googleEmail,
         });
         return;

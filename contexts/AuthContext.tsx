@@ -42,6 +42,16 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
+const getActionCodeSettings = () => {
+  const origin = typeof window !== 'undefined' && window.location.origin
+    ? window.location.origin
+    : 'https://www.pskfurkanmanav.com';
+  return {
+    url: `${origin}/auth/verify`,
+    handleCodeInApp: true,
+  };
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -222,7 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!cred.user.emailVerified && !isAdmin) {
       await signOut(auth);
-      const err: any = new Error(`E-posta adresiniz (${cred.user.email}) henüz doğrulanmamış. Üyeliğinizi tamamlamak için lütfen gelen kutunuzdaki onay linkine tıklayın.`);
+      const err: any = new Error(`E-posta adresiniz (${cred.user.email}) henüz doğrulanmamış. Üyeliğinizi tamamlamak için lütfen gelen kutunuzu ve spam (gereksiz) klasörünüzü kontrol ediniz; doğrulama maili oraya gitmektedir.`);
       err.code = 'auth/unverified-email';
       err.email = cred.user.email;
       throw err;
@@ -262,7 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateProfile(cred.user, { displayName });
       await createUserDocument(cred.user, cleanUsername, extraData);
       try {
-        await sendEmailVerification(cred.user);
+        await sendEmailVerification(cred.user, getActionCodeSettings());
       } catch (e) {
         console.error('Error sending verification email:', e);
       }
@@ -378,13 +388,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail);
 
     if (!current.emailVerified && !isAdmin) {
-      try { await sendEmailVerification(current); } catch (e) { console.warn('sendEmailVerification:', e); }
+      try { await sendEmailVerification(current, getActionCodeSettings()); } catch (e) { console.warn('sendEmailVerification:', e); }
       googleSignupRef.current = false;
       await signOut(auth);
       setUser(null);
       setUserProfile(null);
       setEmailVerified(false);
-      const err: any = new Error(`E-posta adresinize (${current.email}) doğrulama bağlantısı gönderildi. Üyeliğinizi tamamlamak için lütfen e-postanızı onaylayın, ardından giriş yapın.`);
+      const err: any = new Error(`E-posta adresinize (${current.email}) doğrulama bağlantısı gönderildi. Lütfen gelen kutunuzu ve spam (gereksiz) klasörünüzü kontrol ediniz; e-postanızı onayladıktan sonra giriş yapabilirsiniz.`);
       err.code = 'auth/unverified-email';
       throw err;
     }
@@ -436,7 +446,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resendVerificationEmail = async () => {
     if (!auth.currentUser) throw new Error('Önce giriş yapmalısınız.');
     if (auth.currentUser.emailVerified) throw new Error('E-posta adresiniz zaten doğrulanmış.');
-    await sendEmailVerification(auth.currentUser);
+    await sendEmailVerification(auth.currentUser, getActionCodeSettings());
   };
 
   const resendVerificationByCredentials = async (usernameOrEmail: string, password?: string): Promise<void> => {
@@ -453,7 +463,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     const cred = await signInWithEmailAndPassword(auth, authEmail, password);
     try {
-      await sendEmailVerification(cred.user);
+      await sendEmailVerification(cred.user, getActionCodeSettings());
     } finally {
       await signOut(auth);
     }
