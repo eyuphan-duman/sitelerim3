@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Award, Upload, CheckCircle2, ShieldCheck, ArrowLeft, ArrowRight, Loader, FileText, ExternalLink, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TermsModal from '@/components/TermsModal';
+import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
 
 export default function PsychologistRegisterPage() {
   const router = useRouter();
@@ -74,10 +75,17 @@ export default function PsychologistRegisterPage() {
       return;
     }
 
+    const uError = getUsernameValidationError(form.username);
+    if (uError) {
+      toast.error(uError);
+      return;
+    }
+    const cleanUsername = sanitizeUsername(form.username);
+
     setSubmitting(true);
     try {
       await signUp(
-        form.username,
+        cleanUsername,
         form.email,
         form.password,
         {
@@ -90,7 +98,7 @@ export default function PsychologistRegisterPage() {
         }
       );
 
-      toast.success('Psikolog başvurunuz başarıyla alındı! Belgeleriniz incelenip yönetici tarafından onaylandıktan sonra uzman rozetiniz aktifleşecektir.', { duration: 6000 });
+      toast.success('Psikolog başvurunuz başarıyla alındı! Lütfen e-postanıza gönderilen doğrulama linkine tıklayarak e-posta adresinizi doğrulayın. Belgeleriniz onaylandığında uzman rozetiniz aktifleşecektir.', { duration: 8000 });
       router.push('/forum');
     } catch (err: any) {
       toast.error('Kayıt oluşturulamadı: ' + (err.message || ''));
@@ -219,6 +227,9 @@ export default function PsychologistRegisterPage() {
                   boxSizing: 'border-box',
                 }}
               />
+              <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+                Sade İngilizce harfler (a-z), rakamlar (0-9) ve alt çizgi (_).
+              </div>
             </div>
           </div>
 

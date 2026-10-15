@@ -1,5 +1,6 @@
 import { collection, query, where, getDocs, addDoc, serverTimestamp, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { sanitizeUsername } from '@/lib/usernameUtils';
 
 export async function notifyMentions({
   text,
@@ -14,15 +15,15 @@ export async function notifyMentions({
 }) {
   if (!text || !currentUser || currentUser.isAnonymous) return;
   
-  // Extract all @username mentions (supports letters, numbers, Turkish chars, underscore, dot)
-  const matches = text.match(/@([a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_\.]+)/g);
+  // Extract all @username mentions (plain English letters, numbers, underscore)
+  const matches = text.match(/@([a-zA-Z0-9_]+)/g);
   if (!matches) return;
 
-  const myUsername = (userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || '').toLowerCase();
+  const myUsername = sanitizeUsername(userProfile?.username || currentUser.displayName || '');
   
   // Get unique usernames, exclude own username
   const uniqueUsernames = Array.from(
-    new Set(matches.map(m => m.slice(1).toLowerCase().trim()))
+    new Set(matches.map(m => sanitizeUsername(m)))
   ).filter(u => u && u !== myUsername);
 
   for (const uname of uniqueUsernames) {

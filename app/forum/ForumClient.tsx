@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { notifyMentions } from '@/lib/mentionUtils';
+import EmailVerificationBanner from '@/components/EmailVerificationBanner';
 
 interface Post {
   id: string;
@@ -27,6 +28,7 @@ interface Post {
   bookmarksData?: Record<string, any>;
   authorPhotoURL?: string;
   authorIsPsychologist?: boolean;
+  authorHideBadge?: boolean;
   imageUrl?: string;
   isRepost?: boolean;
   originalPostId?: string;
@@ -346,7 +348,7 @@ export default function ForumClient() {
     if (!isEffectiveEmailVerified) return toast.error('Paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     if (form.body.length > POST_CHAR_LIMIT) return toast.error(`Gönderi en fazla ${POST_CHAR_LIMIT} karakter olabilir.`);
     setPosting(true);
-    const isPsychologist = isPsychologistUser;
+    const isPsychologist = Boolean(isPsychologistUser && !userProfile?.hideBadge);
     const usesNewPhoto = Boolean(form.imageUrl) && !isPsychologist && !isAdminUser;
     try {
       const newPostRef = await addDoc(collection(db, 'forum'), {
@@ -356,6 +358,7 @@ export default function ForumClient() {
         authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
         authorUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
         authorIsPsychologist: isPsychologist,
+        authorHideBadge: Boolean(userProfile?.hideBadge),
         uid: user.uid,
         commentCount: 0,
         createdAt: serverTimestamp(),
@@ -419,6 +422,7 @@ export default function ForumClient() {
   const handleDislike = async (e: React.MouseEvent, thread: Post) => {
     e.stopPropagation();
     if (!user || user.isAnonymous) return setAuthOpen(true);
+    if (!isEffectiveEmailVerified) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
     const postRef = doc(db, 'forum', thread.id);
     const userReaction = thread.reactionsData?.[user.uid];
     if (userReaction === 'dislike') {
@@ -431,6 +435,7 @@ export default function ForumClient() {
   const handleRepost = async (e: React.MouseEvent, thread: Post) => {
     e.stopPropagation();
     if (!user || user.isAnonymous) return setAuthOpen(true);
+    if (!isEffectiveEmailVerified) return toast.error('Yeniden paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     const targetPostId = thread.originalPostId || thread.id;
     const postRef = doc(db, 'forum', targetPostId);
     const hasReposted = Boolean(thread.repostsData?.[user.uid]);
@@ -458,9 +463,9 @@ export default function ForumClient() {
       toast.success('Yeniden paylaşım geri alındı');
     } else {
       const isPsychologist = Boolean(
-        (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+        ((userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
         (userProfile?.isPsychologist && !userProfile?.psychologistStatus) ||
-        userProfile?.role === 'psychologist'
+        userProfile?.role === 'psychologist') && !userProfile?.hideBadge
       );
 
       const repostDoc = await addDoc(collection(db, 'forum'), {
@@ -473,6 +478,7 @@ export default function ForumClient() {
         authorUsername: userProfile?.username || (user.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
         authorPhotoURL: userProfile?.photoURL || user.photoURL || '',
         isPsychologist: isPsychologist,
+        authorHideBadge: Boolean(userProfile?.hideBadge),
         commentCount: 0,
         reactionsData: {},
         repostsData: {},
@@ -513,6 +519,7 @@ export default function ForumClient() {
   const handleBookmark = async (e: React.MouseEvent, thread: Post) => {
     e.stopPropagation();
     if (!user || user.isAnonymous) return setAuthOpen(true);
+    if (!isEffectiveEmailVerified) return toast.error('Yer işareti ekleyebilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     const targetPostId = thread.originalPostId || thread.id;
     const postRef = doc(db, 'forum', targetPostId);
     const userBookmarkRef = doc(db, 'users', user.uid, 'bookmarks', targetPostId);
@@ -603,14 +610,17 @@ export default function ForumClient() {
   const submitComment = async (text: string, imageUrl?: string) => {
     if (!user || (!text.trim() && !imageUrl) || !activeThread) return;
     if (user.isAnonymous) return setAuthOpen(true);
+    if (!isEffectiveEmailVerified) return toast.error('Yorum yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     const isPsychologist = Boolean(
-      (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
-      (userProfile?.isPsychologist && !userProfile?.psychologistStatus)
+      ((userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+      (userProfile?.isPsychologist && !userProfile?.psychologistStatus)) &&
+      !userProfile?.hideBadge
     );
     await addDoc(collection(db, 'forum', activeThread.id, 'comments'), {
       authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
       authorUsername: userProfile?.username || '',
       authorIsPsychologist: isPsychologist,
+      authorHideBadge: Boolean(userProfile?.hideBadge),
       text,
       imageUrl: imageUrl || '',
       createdAt: serverTimestamp(),
@@ -962,12 +972,13 @@ export default function ForumClient() {
 
         {/* MAIN FEED / THREAD VIEW */}
         <main style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: '100vh', background: isDark ? '#000000' : 'white', paddingBottom: 80 }}>
+          <EmailVerificationBanner isDark={isDark} />
           {activeThread ? (
             <ThreadView
               post={{
                 ...activeThread,
                 authorPhotoURL: usersMap[activeThread.uid]?.photoURL || activeThread.authorPhotoURL,
-                authorIsPsychologist: Boolean(
+                authorIsPsychologist: !activeThread.authorHideBadge && !usersMap[activeThread.uid]?.hideBadge && Boolean(
                   activeThread.authorIsPsychologist ||
                   usersMap[activeThread.uid]?.isPsychologist ||
                   usersMap[activeThread.uid]?.role === 'psychologist'
@@ -1388,9 +1399,11 @@ export default function ForumClient() {
               ) : (
                 filtered.map(t => {
                   const isAuthorPsych = Boolean(
-                    t.authorIsPsychologist ||
-                    (usersMap[t.uid]?.isPsychologist && usersMap[t.uid]?.psychologistStatus === 'approved') ||
-                    (usersMap[t.uid]?.isPsychologist && !usersMap[t.uid]?.psychologistStatus)
+                    !t.authorHideBadge && !usersMap[t.uid]?.hideBadge && (
+                      t.authorIsPsychologist ||
+                      (usersMap[t.uid]?.isPsychologist && usersMap[t.uid]?.psychologistStatus === 'approved') ||
+                      (usersMap[t.uid]?.isPsychologist && !usersMap[t.uid]?.psychologistStatus)
+                    )
                   );
                   return (
                     <ForumPost

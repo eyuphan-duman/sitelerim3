@@ -17,13 +17,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { formatTimeAgo, renderTextWithMentions } from '@/components/forum/ThreadView';
 import ForumLoadingScreen from '@/components/forum/ForumLoadingScreen';
+import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
+import EmailVerificationBanner from '@/components/EmailVerificationBanner';
 
 interface Post { 
   id: string; body: string; authorName: string; authorUsername?: string; uid: string; 
   createdAt: any; commentCount: number; reactionsData?: Record<string, string>; 
   repostsData?: Record<string, any>; bookmarksData?: Record<string, any>;
   category?: string; imageUrl?: string; authorPhotoURL?: string;
-  authorIsPsychologist?: boolean; isPsychologist?: boolean;
+  authorIsPsychologist?: boolean; isPsychologist?: boolean; authorHideBadge?: boolean;
   isRepost?: boolean; originalPostId?: string; originalAuthorName?: string;
   originalAuthorUsername?: string; originalAuthorPhotoURL?: string; originalAuthorIsPsychologist?: boolean;
 }
@@ -61,7 +63,7 @@ function PostCard({
   const isRepost = Boolean(p.isRepost);
   const authorName = (isRepost && p.originalAuthorName) ? p.originalAuthorName : (p.authorName || 'Kullanıcı');
   const authorUsername = (isRepost && p.originalAuthorUsername) ? p.originalAuthorUsername : (p.authorUsername || authorName.toLowerCase().replace(/\s+/g, '') || 'kullanici');
-  const isPsych = Boolean(isRepost && p.originalAuthorIsPsychologist !== undefined ? p.originalAuthorIsPsychologist : p.authorIsPsychologist);
+  const isPsych = !p.authorHideBadge && (p.uid === pd?.uid ? !pd?.hideBadge : true) && Boolean(isRepost && p.originalAuthorIsPsychologist !== undefined ? p.originalAuthorIsPsychologist : p.authorIsPsychologist);
 
   const initialPhoto = (isRepost && p.originalAuthorPhotoURL) 
     ? p.originalAuthorPhotoURL 
@@ -488,6 +490,7 @@ export default function ProfilClient({ username }: { username: string }) {
   const photoRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
   const [uploadingDiploma, setUploadingDiploma] = useState(false);
+  const [togglingBadge, setTogglingBadge] = useState(false);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -569,6 +572,28 @@ export default function ProfilClient({ username }: { username: string }) {
       toast.error('Belge yüklenirken hata oluştu: ' + (err.message || ''));
     } finally {
       setUploadingDiploma(false);
+    }
+  };
+
+  const handleToggleBadge = async () => {
+    if (!user || !pd) return;
+    setTogglingBadge(true);
+    try {
+      const nextHideBadge = !Boolean(pd.hideBadge);
+      await updateDoc(doc(db, 'users', user.uid), {
+        hideBadge: nextHideBadge,
+        updatedAt: serverTimestamp(),
+      });
+      setPd((prev: any) => ({ ...prev, hideBadge: nextHideBadge }));
+      if (nextHideBadge) {
+        toast.success('Psikolog rozetiniz profilinizden ve paylaşımlarınızdan gizlendi / kaldırıldı.');
+      } else {
+        toast.success('Psikolog rozetiniz tekrar görünür hale getirildi!');
+      }
+    } catch (err: any) {
+      toast.error('Rozet ayarı güncellenirken hata oluştu: ' + (err.message || ''));
+    } finally {
+      setTogglingBadge(false);
     }
   };
 
@@ -937,16 +962,14 @@ export default function ProfilClient({ username }: { username: string }) {
     if (!user || !pd) return; 
     setSaving(true);
     try { 
-      const cleanUsername = (ed.username || pd.username || '')
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9_\.]/g, '');
-
-      if (!cleanUsername || cleanUsername.length < 3) {
-        toast.error('Kullanıcı adı en az 3 karakter olmalıdır.');
+      const targetUsername = (ed.username || pd.username || '').trim();
+      const valError = getUsernameValidationError(targetUsername);
+      if (valError) {
+        toast.error(valError);
         setSaving(false);
         return;
       }
+      const cleanUsername = sanitizeUsername(targetUsername);
 
       if (cleanUsername !== (pd.username || '').toLowerCase()) {
         const checkSnap = await getDocs(
@@ -1397,6 +1420,7 @@ export default function ProfilClient({ username }: { username: string }) {
 
         {/* ── CENTER COLUMN (PROFILE) ── */}
         <main className="profile-main-col" style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: '100vh', background: isDark ? '#000000' : 'white', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+          <EmailVerificationBanner isDark={isDark} />
           
           {/* Header (normal scroll, non-sticky) */}
           <div style={{ background: isDark ? '#000000' : 'white', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -1510,7 +1534,7 @@ export default function ProfilClient({ username }: { username: string }) {
           <div className="profile-bio-wrap" style={{ padding: '0 24px 24px', minWidth: 0, boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{pd.displayName || pd.username}</h1>
-              {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && (
+              {Boolean(((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && !pd.hideBadge) && (
                 <span
                   style={{
                     display: 'inline-flex',
@@ -1960,12 +1984,12 @@ export default function ProfilClient({ username }: { username: string }) {
                       type="text" 
                       placeholder="kullaniciadi" 
                       value={ed.username} 
-                      onChange={e => setEd({ ...ed, username: e.target.value.toLowerCase().replace(/[^a-z0-9_\.]/g, '') })} 
+                      onChange={e => setEd({ ...ed, username: sanitizeUsername(e.target.value) })} 
                       style={{ width: '100%', border: 'none', background: 'transparent', padding: '11px 6px', fontSize: '0.93rem', outline: 'none', color: isDark ? '#e7e9ea' : '#0f172a', boxSizing: 'border-box' }} 
                     />
                   </div>
                   <span style={{ fontSize: '0.75rem', color: isDark ? '#71767b' : '#64748b', marginTop: 4, display: 'block' }}>
-                    Kullanıcı adınız etiketlemelerde (@kullaniciadi) ve profil linkinizde kullanılır.
+                    Yalnızca sade İngilizce harfler (a-z), rakamlar (0-9) ve alt çizgi (_) kullanılabilir. Etiketlemelerde (@kullaniciadi) kullanılır.
                   </span>
                 </div>
 
@@ -2235,16 +2259,53 @@ export default function ProfilClient({ username }: { username: string }) {
             {settingsTab === 'badge' && (
               <div>
                 {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) ? (
-                  <div style={{ padding: '20px', background: isDark ? '#064e3b' : '#f0fdf4', borderRadius: 12, border: `1.5px solid ${isDark ? '#047857' : '#bbf7d0'}`, textAlign: 'center' }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#16a34a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                      <CheckCircle size={28} />
+                  <div style={{ padding: '22px', background: isDark ? '#16181c' : '#f8fafc', borderRadius: 14, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, textAlign: 'center' }}>
+                    <div style={{ width: 52, height: 52, borderRadius: '50%', background: pd.hideBadge ? (isDark ? '#334155' : '#cbd5e1') : '#16a34a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', transition: 'all 0.2s' }}>
+                      {pd.hideBadge ? <EyeOff size={28} /> : <CheckCircle size={28} />}
                     </div>
-                    <div style={{ fontWeight: 800, fontSize: '1.05rem', color: isDark ? '#a7f3d0' : '#166534', marginBottom: 6 }}>
-                      Onaylı Psikolog Rozetiniz Aktif
+                    
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 8 }}>
+                      {pd.hideBadge ? 'Psikolog Rozetiniz Şu Anda Kaldırılmış (Gizli)' : 'Onaylı Psikolog Rozetiniz Aktif'}
                     </div>
-                    <p style={{ fontSize: '0.85rem', color: isDark ? '#a7f3d0' : '#15803d', margin: 0, lineHeight: 1.5 }}>
-                      Profilinizde ve forumdaki tüm yazı ve yanıtlarınızda altın renkli resmi <strong>{pd.title || 'Psikolog'}</strong> rozetiniz gösterilmektedir.
+
+                    <p style={{ fontSize: '0.88rem', color: isDark ? '#94a3b8' : '#64748b', margin: '0 auto 20px', lineHeight: 1.6, maxWidth: 420 }}>
+                      {pd.hideBadge 
+                        ? 'Rozetiniz profilinizde ve forum gönderilerinizde gizlendi. Psikolog statünüzü kaybetmediniz; dilediğiniz an tek dokunuşla rozetinizi tekrar görünür yapabilirsiniz.'
+                        : `Profilinizde ve forumdaki tüm yazı ve yanıtlarınızda altın renkli resmi ${pd.title || 'Psikolog'} rozetiniz gösterilmektedir. Dilediğiniz takdirde rozetinizi kendiniz kaldırabilir veya gizleyebilirsiniz.`
+                      }
                     </p>
+
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+                      <button
+                        type="button"
+                        onClick={handleToggleBadge}
+                        disabled={togglingBadge}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '11px 22px',
+                          borderRadius: 999,
+                          fontWeight: 700,
+                          fontSize: '0.88rem',
+                          cursor: togglingBadge ? 'wait' : 'pointer',
+                          background: pd.hideBadge ? (isDark ? '#1d9bf0' : '#0f172a') : (isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2'),
+                          color: pd.hideBadge ? 'white' : (isDark ? '#f87171' : '#b91c1c'),
+                          border: pd.hideBadge ? 'none' : (isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #fecaca'),
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {pd.hideBadge ? <CheckCircle size={16} /> : <EyeOff size={16} />}
+                        <span>
+                          {togglingBadge 
+                            ? 'Güncelleniyor...' 
+                            : pd.hideBadge 
+                              ? 'Rozeti Tekrar Aktifleştir (Görünür Yap)' 
+                              : 'Rozeti Kaldır / Gizle'
+                          }
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 ) : pd.psychologistStatus === 'pending' ? (
                   <div style={{ padding: '20px', background: isDark ? '#422006' : '#fefce8', borderRadius: 12, border: `1.5px solid ${isDark ? '#854d0e' : '#fef08a'}`, textAlign: 'center' }}>

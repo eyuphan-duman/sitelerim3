@@ -284,6 +284,8 @@ export default function ThreadView({
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
+    const isAdmin = adminEmails.map(em => em.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
+    if (!emailVerified && !isAdmin) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
     const postRef = doc(db, 'forum', p.id);
     if (hasLiked) {
       await updateDoc(postRef, { [`reactionsData.${currentUser.uid}`]: deleteField() });
@@ -312,6 +314,8 @@ export default function ThreadView({
   const handleDislike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
+    const isAdmin = adminEmails.map(em => em.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
+    if (!emailVerified && !isAdmin) return toast.error('Bu işlem için e-posta adresinizi doğrulamanız gerekiyor.');
     const postRef = doc(db, 'forum', p.id);
     if (hasDisliked) {
       await updateDoc(postRef, { [`reactionsData.${currentUser.uid}`]: deleteField() });
@@ -323,6 +327,8 @@ export default function ThreadView({
   const handleRepost = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
+    const isAdmin = adminEmails.map(em => em.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
+    if (!emailVerified && !isAdmin) return toast.error('Yeniden paylaşım yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     const targetPostId = p.originalPostId || p.id;
     const postRef = doc(db, 'forum', targetPostId);
     const existingRepostDocId = typeof p.repostsData?.[currentUser.uid] === 'string'
@@ -349,9 +355,9 @@ export default function ThreadView({
       toast.success('Yeniden paylaşım geri alındı');
     } else {
       const isPsychologist = Boolean(
-        (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+        ((userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
         (userProfile?.isPsychologist && !userProfile?.psychologistStatus) ||
-        userProfile?.role === 'psychologist'
+        userProfile?.role === 'psychologist') && !userProfile?.hideBadge
       );
 
       const repostDoc = await addDoc(collection(db, 'forum'), {
@@ -364,6 +370,7 @@ export default function ThreadView({
         authorUsername: userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
         authorPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
         isPsychologist: isPsychologist,
+        authorHideBadge: Boolean(userProfile?.hideBadge),
         commentCount: 0,
         reactionsData: {},
         repostsData: {},
@@ -404,6 +411,8 @@ export default function ThreadView({
   const handleBookmark = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
+    const isAdmin = adminEmails.map(em => em.toLowerCase()).includes(currentUser?.email?.toLowerCase() || '');
+    if (!emailVerified && !isAdmin) return toast.error('Yer işareti ekleyebilmek için e-posta adresinizi doğrulamanız gerekiyor.');
     const targetPostId = p.originalPostId || p.id;
     const postRef = doc(db, 'forum', targetPostId);
     const userBookmarkRef = doc(db, 'users', currentUser.uid, 'bookmarks', targetPostId);
@@ -485,9 +494,9 @@ export default function ThreadView({
     setSubmittingReply(true);
     try {
       const isPsychologist = Boolean(
-        (userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
+        ((userProfile?.isPsychologist && userProfile?.psychologistStatus === 'approved') ||
         (userProfile?.isPsychologist && !userProfile?.psychologistStatus) ||
-        userProfile?.role === 'psychologist'
+        userProfile?.role === 'psychologist') && !userProfile?.hideBadge
       );
       const usesNewPhoto = Boolean(replyImageUrl) && !isPsychologist;
 
@@ -495,6 +504,7 @@ export default function ThreadView({
         authorName: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
         authorUsername: userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
         authorIsPsychologist: isPsychologist,
+        authorHideBadge: Boolean(userProfile?.hideBadge),
         authorPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
         text: replyText.trim(),
         imageUrl: replyImageUrl || '',
@@ -799,7 +809,7 @@ export default function ThreadView({
                 >
                   {p.authorName}
                 </Link>
-                {p.authorIsPsychologist && (
+                {p.authorIsPsychologist && !p.authorHideBadge && (
                   <span style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -1440,7 +1450,7 @@ export default function ThreadView({
                       >
                         {c.authorName}
                       </Link>
-                      {c.authorIsPsychologist && (
+                      {c.authorIsPsychologist && !c.authorHideBadge && (
                         <span style={{
                           display: 'inline-flex',
                           alignItems: 'center',

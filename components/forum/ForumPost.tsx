@@ -27,6 +27,7 @@ interface Post {
   authorPhotoURL?: string;
   imageUrl?: string;
   authorIsPsychologist?: boolean;
+  authorHideBadge?: boolean;
   isRepost?: boolean;
   originalPostId?: string;
   originalAuthorName?: string;
@@ -69,7 +70,7 @@ export default function ForumPost({
   const displayAuthorUsername = isRepost && post.originalAuthorUsername ? post.originalAuthorUsername : (post.authorUsername || (displayAuthorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici');
   const displayAuthorPhoto = isRepost && post.originalAuthorPhotoURL ? post.originalAuthorPhotoURL : post.authorPhotoURL;
   const canDelete = (currentUserUid && currentUserUid === post.uid) || adminEmails.includes(currentUserEmail || '');
-  const hasPsychBadge = Boolean(isPsychologist || post.authorIsPsychologist || (isRepost && post.originalAuthorIsPsychologist));
+  const hasPsychBadge = !post.authorHideBadge && Boolean(isPsychologist || post.authorIsPsychologist || (isRepost && post.originalAuthorIsPsychologist));
 
   const [liveAuthorPhoto, setLiveAuthorPhoto] = useState<string | undefined>(displayAuthorPhoto);
 

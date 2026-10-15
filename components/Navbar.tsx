@@ -7,6 +7,7 @@ import AuthModal from './AuthModal';
 import { Menu, X, LogOut, Bell } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import EmailVerificationBanner from './EmailVerificationBanner';
 
 const links = [
   { href: '/', label: 'Anasayfa' },
@@ -49,6 +50,7 @@ export default function Navbar() {
 
   return (
     <>
+      <EmailVerificationBanner />
       {!isForumPage && (
         <nav className={`navbar ${scrolled || forceSolid ? 'navbar-scrolled' : 'navbar-transparent'}`}>
           <div className="container-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, paddingBottom: 20 }}>

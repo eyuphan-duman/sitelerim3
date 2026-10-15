@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { X as CloseIcon, Loader, Award, FileText, ShieldCheck, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TermsModal from './TermsModal';
+import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
 
 interface Props {
   isOpen: boolean;
@@ -57,12 +58,24 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
     try {
       if (mode === 'signin') {
         const identifier = form.username.trim() || form.email.trim();
-        await signIn(identifier, form.password);
-        toast.success('Giriş başarılı, hoş geldin!');
+        const cred: any = await signIn(identifier, form.password);
+        const isAdmin = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'].includes(cred?.user?.email?.toLowerCase() || '');
+        if (cred?.user && !cred.user.emailVerified && !isAdmin) {
+          toast('Giriş başarılı! Ancak e-posta adresiniz henüz doğrulanmamış. Lütfen gelen kutunuzdaki onay linkine tıklayın.', { icon: '✉️', duration: 7000 });
+        } else {
+          toast.success('Giriş başarılı, hoş geldin!');
+        }
         onClose();
       } else if (mode === 'signup') {
-        await signUp(form.username.toLowerCase().replace(/\s+/g,''), form.email.trim(), form.password);
-        toast.success('Hesabın oluşturuldu! Forumda paylaşım yapabilmek için e-postana gönderdiğimiz doğrulama linkine tıkla.', { duration: 6000 });
+        const uError = getUsernameValidationError(form.username);
+        if (uError) {
+          toast.error(uError);
+          setLoading(false);
+          return;
+        }
+        const cleanUname = sanitizeUsername(form.username);
+        await signUp(cleanUname, form.email.trim(), form.password);
+        toast.success('Hesabın oluşturuldu! Forumda paylaşım ve etkileşim yapabilmek için lütfen e-postana gönderdiğimiz doğrulama linkine tıkla.', { duration: 8000 });
         onClose();
       } else if (mode === 'forgot') {
         const identifier = form.username.trim() || form.email.trim();
@@ -394,9 +407,14 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                       style={{ color: dark ? '#71767b' : '#6b7280' }}
                       className="absolute text-[16px] transform duration-150 top-4 left-2 z-10 origin-[0] scale-[0.8] -translate-y-3 peer-focus:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-[0.8] peer-focus:-translate-y-3 cursor-text pointer-events-none"
                     >
-                      {mode === 'signin' ? 'Kullanıcı Adı veya E-posta' : 'Kullanıcı Adı belirle'}
+                      {mode === 'signin' ? 'Kullanıcı Adı veya E-posta' : 'Kullanıcı Adı belirle (@kullaniciadi)'}
                     </label>
                   </div>
+                  {mode === 'signup' && (
+                    <div style={{ fontSize: '0.75rem', color: dark ? '#94a3b8' : '#64748b', marginTop: -8, paddingLeft: 4 }}>
+                      Yalnızca sade İngilizce harfler (a-z), rakamlar (0-9) ve alt çizgi (_) kullanılabilir.
+                    </div>
+                  )}
 
                   {/* --- EMAIL FIELD --- (Only for signup) */}
                   {mode === 'signup' && (

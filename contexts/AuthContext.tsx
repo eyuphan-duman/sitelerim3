@@ -1,9 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import { User, UserCredential, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
+import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
 
 export interface PsychologistData {
   isPsychologist?: boolean;
@@ -20,7 +21,7 @@ interface AuthContextType {
   loading: boolean;
   userProfile?: any;
   emailVerified: boolean;
-  signIn: (usernameOrEmail: string, password: string) => Promise<void>;
+  signIn: (usernameOrEmail: string, password: string) => Promise<UserCredential>;
   signUp: (username: string, email: string, password: string, psychologistData?: PsychologistData) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
@@ -96,10 +97,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const ref = doc(db, 'users', u.uid);
     const snap = await getDoc(ref);
     const isPsychSignup = Boolean(psychData?.isPsychologist);
+    const rawUname = customUsername || u.displayName || u.email?.split('@')[0] || 'kullanici';
+    const cleanUname = sanitizeUsername(rawUname) || `user_${u.uid.slice(0, 6)}`;
 
     const docData: any = {
       uid: u.uid,
-      username: customUsername || u.displayName || u.email?.split('@')[0],
+      username: cleanUname,
       displayName: psychData?.fullName || customUsername || u.displayName || '',
       email: u.email?.toLowerCase().trim() || '',
       photoURL: u.photoURL || '',
@@ -120,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       // Document already exists (e.g. created by onAuthStateChanged race condition)
       const updatePayload: any = {};
-      if (customUsername && !snap.data().username) updatePayload.username = customUsername;
+      if (cleanUname && !snap.data().username) updatePayload.username = cleanUname;
       if (psychData?.fullName) updatePayload.displayName = psychData.fullName;
       if (psychData?.diplomaUrl) updatePayload.diplomaUrl = psychData.diplomaUrl;
       if (psychData?.university) updatePayload.university = psychData.university;
@@ -139,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await setDoc(doc(db, 'psychologist_applications', u.uid), {
         uid: u.uid,
         fullName: psychData?.fullName || customUsername || u.displayName || '',
-        username: customUsername || '',
+        username: cleanUname,
         email: u.email?.toLowerCase().trim() || '',
         title: psychData?.title || 'Psikolog',
         university: psychData?.university || '',
@@ -154,16 +157,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let authEmail = usernameOrEmail.trim();
     // Check if it's not an email, assume it's a username
     if (!authEmail.includes('@')) {
-      const q = query(collection(db, 'users'), where('username', '==', authEmail.toLowerCase()));
+      const cleanUname = sanitizeUsername(authEmail);
+      const q = query(collection(db, 'users'), where('username', '==', cleanUname));
       const snap = await getDocs(q);
       if (snap.empty) throw new Error('Kullanıcı bulunamadı.');
       authEmail = snap.docs[0].data().email;
     }
-    await signInWithEmailAndPassword(auth, authEmail, password);
+    const cred = await signInWithEmailAndPassword(auth, authEmail, password);
+    return cred;
   };
 
   const signUp = async (username: string, email: string, password: string, psychologistData?: PsychologistData) => {
-    const cleanUsername = username.toLowerCase().replace(/\s+/g, '');
+    // 0. Sade İngilizce karakter kontrolü
+    const validationError = getUsernameValidationError(username);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    const cleanUsername = sanitizeUsername(username);
     const cleanEmail = email.toLowerCase().trim();
 
     // 1. Kullanıcı adı kontrolü
@@ -178,7 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-      const displayName = psychologistData?.fullName || username;
+      const displayName = psychologistData?.fullName || cleanUsername;
       await updateProfile(cred.user, { displayName });
       await createUserDocument(cred.user, cleanUsername, psychologistData);
       try {

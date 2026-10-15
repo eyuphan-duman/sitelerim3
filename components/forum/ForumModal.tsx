@@ -10,6 +10,7 @@ interface Post {
   authorPhotoURL?: string;
   imageUrl?: string;
   authorIsPsychologist?: boolean;
+  authorHideBadge?: boolean;
 }
 interface Comment {
   id: string; authorName: string; authorUsername?: string;
@@ -17,6 +18,7 @@ interface Comment {
   authorPhotoURL?: string;
   imageUrl?: string;
   authorIsPsychologist?: boolean;
+  authorHideBadge?: boolean;
 }
 interface Props {
   post: Post; comments: Comment[];
@@ -107,7 +109,7 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '1rem' }}>{post.authorName}</span>
-                  {post.authorIsPsychologist && (
+                  {post.authorIsPsychologist && !post.authorHideBadge && (
                     <span style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -207,7 +209,7 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                       <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>{c.authorName}</span>
-                      {c.authorIsPsychologist && (
+                      {c.authorIsPsychologist && !c.authorHideBadge && (
                         <span style={{
                           display: 'inline-flex',
                           alignItems: 'center',
