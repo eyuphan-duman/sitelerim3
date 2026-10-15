@@ -17,7 +17,7 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
 
   return (
     <div
-      className="fixed inset-0 z-[4000] flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-[100001] flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm animate-fadeIn"
       onClick={onClose}
     >
       <div

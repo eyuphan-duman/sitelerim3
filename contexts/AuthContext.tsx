@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, UserCredential, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { User, UserCredential, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, EmailAuthProvider, linkWithCredential, signOut, updateProfile, signInAnonymously, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
@@ -23,8 +23,9 @@ interface AuthContextType {
   emailVerified: boolean;
   signIn: (usernameOrEmail: string, password: string) => Promise<UserCredential>;
   signUp: (username: string, email: string, password: string, psychologistData?: PsychologistData) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-  signUpWithGoogle: (chosenUsername: string, termsAccepted: boolean) => Promise<void>;
+  startGoogleSignup: () => Promise<{ email: string; displayName: string }>;
+  completeGoogleSignup: (chosenUsername: string, password: string, termsAccepted: boolean) => Promise<void>;
+  cancelGoogleSignup: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
   resetPassword: (usernameOrEmail: string) => Promise<string>;
   resendVerificationEmail: () => Promise<void>;
@@ -42,6 +43,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [userProfile, setUserProfile] = useState<any>(null);
   const [emailVerified, setEmailVerified] = useState(false);
+  // True while a Google signup is between the popup and the final profile creation
+  const googleSignupRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -82,8 +85,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           setUserProfile(data);
         } else {
-          // If no doc in Firestore, do NOT auto-create a member doc here without user registration/terms!
+          // Never auto-create a profile without registration/terms.
           setUserProfile(null);
+          // A Google session without a profile means an abandoned signup: close it.
+          const isGoogleUser = u.providerData.some((p) => p.providerId === 'google.com');
+          if (isGoogleUser && !u.isAnonymous && !googleSignupRef.current) {
+            try { await signOut(auth); } catch {}
+          }
         }
       } else {
         setUserProfile(null);
@@ -91,26 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
-
-  // Handle redirect result if signInWithRedirect was used (e.g. mobile or popup-blocked browsers)
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result?.user) {
-          const ref = doc(db, 'users', result.user.uid);
-          const snap = await getDoc(ref);
-          if (snap.exists()) {
-            setUserProfile(snap.data());
-          }
-        }
-      })
-      .catch((err) => {
-        // Ignore expected or empty redirect errors
-        if (err?.code !== 'auth/credential-already-in-use') {
-          console.warn('Firebase getRedirectResult info:', err?.message || err);
-        }
-      });
   }, []);
 
   const createUserDocument = async (u: User, customUsername?: string, psychData?: PsychologistData) => {
@@ -274,91 +262,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async (): Promise<void> => {
+  // Step 1: open the Google popup immediately (must run inside the click handler
+  // without any awaited work before it, otherwise browsers delay or block the popup).
+  const startGoogleSignup = async (): Promise<{ email: string; displayName: string }> => {
+    googleSignupRef.current = true;
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      if (!result?.user) return;
-
-      const userDocRef = doc(db, 'users', result.user.uid);
-      const snap = await getDoc(userDocRef);
-
-      if (!snap.exists()) {
-        // User has NOT completed registration in our system yet!
-        const googleEmail = result.user.email || '';
-        const googleName = result.user.displayName || '';
+      const snap = await getDoc(doc(db, 'users', result.user.uid));
+      if (snap.exists()) {
+        googleSignupRef.current = false;
         await signOut(auth);
-
-        const notRegError: any = new Error('NOT_REGISTERED');
-        notRegError.code = 'auth/user-not-registered';
-        notRegError.email = googleEmail;
-        notRegError.displayName = googleName;
-        throw notRegError;
+        const err: any = new Error('Bu Google hesabıyla zaten kayıt olunmuş. Lütfen kullanıcı adı veya e-posta ve şifrenle giriş yap.');
+        err.code = 'auth/already-registered';
+        throw err;
       }
-
-      setUserProfile(snap.data());
-    } catch (err: any) {
-      console.warn('Google signInWithPopup error code:', err?.code, err?.message);
-      if (err.code === 'auth/popup-blocked') {
-        console.info('Falling back to signInWithRedirect due to popup-blocked');
-        await signInWithRedirect(auth, googleProvider);
-        return;
-      }
+      return { email: result.user.email || '', displayName: result.user.displayName || '' };
+    } catch (err) {
+      googleSignupRef.current = false;
       throw err;
     }
   };
 
-  const signUpWithGoogle = async (chosenUsername: string, termsAccepted: boolean): Promise<void> => {
-    if (!termsAccepted) {
-      throw new Error('Lütfen kayıt sözleşmesini ve KVKK aydınlatma metnini onaylayın.');
+  // Step 2: username + password + terms, then the profile is created.
+  const completeGoogleSignup = async (chosenUsername: string, password: string, termsAccepted: boolean): Promise<void> => {
+    const current = auth.currentUser;
+    if (!current || !current.email) {
+      throw new Error('Google oturumu bulunamadı. Lütfen tekrar deneyin.');
     }
-
     const validationError = getUsernameValidationError(chosenUsername);
-    if (validationError) {
-      throw new Error(validationError);
-    }
+    if (validationError) throw new Error(validationError);
+    if (!password || password.length < 6) throw new Error('Şifre en az 6 karakter olmalıdır.');
+    if (!termsAccepted) throw new Error('Lütfen kullanıcı sözleşmesini ve KVKK metnini onaylayın.');
 
     const cleanUsername = sanitizeUsername(chosenUsername);
-    const userQ = query(collection(db, 'users'), where('username', '==', cleanUsername));
-    const userSnap = await getDocs(userQ);
-    if (!userSnap.empty) {
+    const taken = await getDocs(query(collection(db, 'users'), where('username', '==', cleanUsername)));
+    if (!taken.empty) {
       throw new Error('Bu kullanıcı adı zaten alınmış. Lütfen başka bir kullanıcı adı belirleyin.');
     }
 
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      if (!result?.user) return;
-
-      const userDocRef = doc(db, 'users', result.user.uid);
-      const snap = await getDoc(userDocRef);
-
-      if (snap.exists()) {
-        // Already registered previously, just set user profile
-        setUserProfile(snap.data());
-        return;
-      }
-
-      // Create new profile with the user-chosen username & terms
-      await createUserDocument(result.user, cleanUsername);
-
-      // Send verification email to user's Google email address
-      try {
-        await sendEmailVerification(result.user);
-      } catch (e) {
-        console.warn('sendEmailVerification on Google user:', e);
-      }
-
-      // Refresh local profile state
-      const newSnap = await getDoc(userDocRef);
-      if (newSnap.exists()) {
-        setUserProfile(newSnap.data());
-      }
-    } catch (err: any) {
-      if (err.code === 'auth/popup-blocked') {
-        await signInWithRedirect(auth, googleProvider);
-        return;
-      }
-      throw err;
+    // Add an email/password credential so the user can log in with username/email + password
+    const alreadyHasPassword = current.providerData.some((p) => p.providerId === 'password');
+    if (!alreadyHasPassword) {
+      await linkWithCredential(current, EmailAuthProvider.credential(current.email, password));
     }
+
+    await createUserDocument(current, cleanUsername);
+
+    if (!current.emailVerified) {
+      try { await sendEmailVerification(current); } catch (e) { console.warn('sendEmailVerification:', e); }
+    }
+
+    googleSignupRef.current = false;
+    const newSnap = await getDoc(doc(db, 'users', current.uid));
+    if (newSnap.exists()) setUserProfile(newSnap.data());
+    setEmailVerified(Boolean(current.emailVerified));
+  };
+
+  const cancelGoogleSignup = async (): Promise<void> => {
+    googleSignupRef.current = false;
+    const current = auth.currentUser;
+    if (!current) return;
+    const snap = await getDoc(doc(db, 'users', current.uid));
+    if (!snap.exists()) await signOut(auth);
   };
 
   const signInAsGuest = async () => {
@@ -409,7 +374,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, emailVerified, signIn, signUp, signInWithGoogle, signUpWithGoogle, signInAsGuest, resetPassword, resendVerificationEmail, refreshEmailVerification, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, emailVerified, signIn, signUp, startGoogleSignup, completeGoogleSignup, cancelGoogleSignup, signInAsGuest, resetPassword, resendVerificationEmail, refreshEmailVerification, logout }}>
       {children}
     </AuthContext.Provider>
   );
