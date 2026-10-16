@@ -253,7 +253,7 @@ function VerifyContent() {
                   {verifiedEmail}
                 </strong>
               )}
-              Manav Forum üyeliğiniz başarıyla tamamlandı. Artık kullanıcı adınız veya e-posta adresiniz ve şifreniz ile giriş yapabilir, topluluğa katılabilirsiniz.
+              Logos üyeliğiniz başarıyla tamamlandı. Artık kullanıcı adınız veya e-posta adresiniz ve şifreniz ile giriş yapabilir, topluluğa katılabilirsiniz.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

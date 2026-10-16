@@ -81,29 +81,15 @@ export default function ForumLoadingScreen({ text = 'Topluluk Yükleniyor...', i
           }}
         >
           <img
-            src="/forum-logo.png"
-            alt="Manav Forum"
+            src="/logos-dark.png"
+            alt="Logos Psikoloji Forumu"
             style={{
-              height: 64,
+              height: 96,
               width: 'auto',
               maxWidth: '82vw',
               objectFit: 'contain',
             }}
           />
-        </div>
-
-        {/* Subtitle / Status */}
-        <div
-          style={{
-            fontSize: '0.85rem',
-            letterSpacing: '0.24em',
-            textTransform: 'uppercase',
-            color: 'rgba(231, 233, 234, 0.7)',
-            fontWeight: 600,
-            marginBottom: 16,
-          }}
-        >
-          Psikoloji Topluluğu
         </div>
 
         {/* Minimalist Progress Track */}

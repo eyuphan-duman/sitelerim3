@@ -14,7 +14,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import EmailVerificationBanner from '@/components/EmailVerificationBanner';
-import { Avatar, useForumTheme } from './ui';
+import { Avatar, LogosMark, useForumTheme } from './ui';
 import { WhoToFollowPanel } from './WhoToFollow';
 import { loadRecentPosts } from './social';
 import './forum.css';
@@ -139,9 +139,10 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
       <EmailVerificationBanner isDark={isDark} />
 
       <div className="fx-shell">
-        <nav className="fx-nav" aria-label="Forum menüsü">
+        <nav className="fx-nav" aria-label="Logos menüsü">
           <Link href="/" className="fx-logo" title="Web sitesine dön">
-            <img src="/forum-logo.png" alt="Manav Forum" />
+            <span className="fx-logo-full"><LogosMark height={44} /></span>
+            <span className="fx-logo-icon"><LogosMark variant="icon" height={34} /></span>
           </Link>
 
           {items.map(({ key, label, icon: Icon, badge }) => (
@@ -272,9 +273,9 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
                 </Link>
               ) : (
                 <>
-                  <img src="/forum-logo.png" alt="Manav Forum" style={{ height: 30, width: 'auto' }} />
+                  <LogosMark height={40} />
                   <p style={{ color: 'var(--fx-ink-2)', fontSize: '.92rem', lineHeight: 1.5, margin: '12px 0 14px' }}>
-                    Psikoloji ve psikanaliz üzerine soru sor, tartış, uzmanlardan yanıt al.
+                    Logos'ta psikoloji ve psikanaliz üzerine soru sor, tartış, uzmanlardan yanıt al.
                   </p>
                   <button type="button" className="fx-btn fx-btn-primary" style={{ width: '100%' }} onClick={() => { setDrawerOpen(false); setAuthOpen(true); }}>
                     Giriş yap veya kayıt ol

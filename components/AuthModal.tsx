@@ -492,7 +492,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
             <CloseIcon size={20} />
           </button>
           <div className={styles.logoWrap}>
-            <img src="/forum-logo.png" alt="Manav Forum" className={styles.logo} />
+            <img src={dark ? '/logos-dark.png' : '/logos-light.png'} alt="Logos Psikoloji Forumu" className={styles.logo} />
           </div>
           <span />
         </div>

@@ -133,3 +133,19 @@ export function useForumTheme(): [boolean, () => void, (dark: boolean) => void] 
   const toggle = React.useCallback(() => set(!isDark), [isDark, set]);
   return [isDark, toggle, set];
 }
+
+/**
+ * Logos logosu. Tema verilmezse iki sürüm de basılır ve CSS forum temasına göre doğru olanı gösterir
+ * (açık temada lacivert yazılı, koyu temada beyaz yazılı).
+ */
+export function LogosMark({ variant = 'full', theme, height }: { variant?: 'full' | 'icon'; theme?: 'light' | 'dark'; height?: number }) {
+  const src = (t: 'light' | 'dark') => (variant === 'icon' ? `/logos-icon-${t}.png` : `/logos-${t}.png`);
+  const style = height ? { height } : undefined;
+  if (theme) return <img className="fx-brand-img" src={src(theme)} alt="Logos Psikoloji Forumu" style={style} />;
+  return (
+    <span className="fx-brand" style={style}>
+      <img className="fx-brand-img is-light" src={src('light')} alt="Logos Psikoloji Forumu" />
+      <img className="fx-brand-img is-dark" src={src('dark')} alt="" aria-hidden="true" />
+    </span>
+  );
+}

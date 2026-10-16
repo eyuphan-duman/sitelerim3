@@ -15,7 +15,7 @@ const links: { href: string; label: string; badge?: string }[] = [
   { href: '/yazilarim', label: 'Yazılarım' },
   { href: '/sss', label: 'SSS' },
   { href: '/videolarim', label: 'Videolarım' },
-  { href: '/forum', label: 'Forum' },
+  { href: '/forum', label: 'Logos' },
   { href: '/iletisim', label: 'İletişim' },
 ];
 

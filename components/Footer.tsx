@@ -131,7 +131,7 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3">
               {[
-                { href: '/forum', label: 'Forum & Topluluk' },
+                { href: '/forum', label: 'Logos Forum' },
                 { href: '/kayit/psikolog', label: 'Psikolog Kaydı & Başvuru' },
                 { href: '/iletisim', label: 'Randevu & Danışmanlık' },
                 { href: '/gizlilik', label: 'Gizlilik ve Güvenlik' },

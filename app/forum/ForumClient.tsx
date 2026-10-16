@@ -7,7 +7,7 @@ import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ThreadView from '@/components/forum/ThreadView';
 import { Search, Bell, Users, Home, X, Loader2, User, Bookmark, Heart, Sun, Moon, Menu, LogOut, Settings, Feather, ArrowLeft, Image as ImageIcon } from 'lucide-react';
-import { Avatar, CharRing, useForumTheme } from '@/components/forum/ui';
+import { Avatar, CharRing, LogosMark, useForumTheme } from '@/components/forum/ui';
 import ForumShell from '@/components/forum/ForumShell';
 import PersonRow from '@/components/forum/PersonRow';
 import { WhoToFollowStrip } from '@/components/forum/WhoToFollow';
@@ -79,7 +79,7 @@ export default function ForumClient() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [composeModalOpen, setComposeModalOpen] = useState(false);
 
-  // Animated "MANAV FORUM" Splash / Loading screen state (skipped on back navigation)
+  // Logos açılış ekranı / Loading screen state (skipped on back navigation)
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -810,7 +810,7 @@ export default function ForumClient() {
             pointerEvents: splashFading ? 'none' : 'auto',
           }}
         >
-          <img src="/forum-logo.png" alt="Manav Forum" style={{ height: 64, width: 'auto', maxWidth: '80vw', objectFit: 'contain', filter: 'brightness(1.15)' }} />
+          <LogosMark theme="dark" height={96} />
         </div>
       )}
 
@@ -873,7 +873,7 @@ export default function ForumClient() {
                       {isMember ? <Avatar src={myPhoto} name={myName} size={32} /> : <Menu size={22} />}
                     </button>
                     <button type="button" className="fx-mhead-logo" onClick={goHome} aria-label="Akışın başına dön" style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer' }}>
-                      <img src="/forum-logo.png" alt="Manav Forum" />
+                      <LogosMark height={34} />
                     </button>
                     <button type="button" className="fx-icon-btn" onClick={toggleDarkMode} aria-label={isDark ? 'Açık temaya geç' : 'Koyu temaya geç'}>
                       {isDark ? <Sun size={20} /> : <Moon size={20} />}

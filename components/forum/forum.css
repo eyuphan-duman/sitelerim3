@@ -116,9 +116,10 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   border-radius: 999px;
   align-self: flex-start;
 }
-.fx-logo img { height: 32px; width: auto; display: block; }
+.fx-logo-icon { display: none; }
+.fx-logo-full, .fx-logo-icon { display: flex; }
+.fx-logo .fx-logo-icon { display: none; }
 .fx-logo:hover { background: var(--fx-hover); }
-[data-forum-dark="true"] .fx-logo img { filter: brightness(1.15); }
 
 .fx-nav-item {
   display: flex;
@@ -880,7 +881,8 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   [data-forum-page] { --fx-aside-w: 310px; --fx-nav-w: 88px; }
   .fx-nav { align-items: center; padding: 10px 8px 16px; }
   .fx-logo { align-self: center; padding: 0 10px; }
-  .fx-logo img { height: 30px; width: 30px; object-fit: cover; object-position: left center; }
+  .fx-logo .fx-logo-full { display: none; }
+  .fx-logo .fx-logo-icon { display: flex; }
   .fx-nav-item { align-self: center; padding: 12px; }
   .fx-nav-item span.fx-nav-label { display: none; }
   .fx-post-cta { width: 52px; padding: 0; }
@@ -913,8 +915,6 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
     padding: 0 8px;
   }
   .fx-mhead-logo { justify-self: center; display: flex; }
-  .fx-mhead-logo img { height: 26px; width: auto; display: block; }
-  [data-forum-dark="true"] .fx-mhead-logo img { filter: brightness(1.15); }
   .fx-mhead .fx-icon-btn { color: var(--fx-ink); width: 40px; height: 40px; }
 
   .fx-tab.is-active::after { width: 44px; }
@@ -1402,3 +1402,11 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   .fx-settings-nav .fx-modal-head .fx-icon-btn { display: none; }
   .fx-settings-nav .fx-modal-head { padding-left: 16px; }
 }
+
+/* ─── Logos logosu: temaya göre sürüm ─── */
+.fx-brand { display: inline-flex; align-items: center; }
+.fx-brand-img { display: block; height: 100%; width: auto; }
+.fx-brand .is-dark { display: none; }
+[data-forum-dark="true"] .fx-brand .is-light { display: none; }
+[data-forum-dark="true"] .fx-brand .is-dark { display: block; }
+.fx-logo { height: 60px; padding: 0 8px; }

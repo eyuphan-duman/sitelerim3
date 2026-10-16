@@ -1150,12 +1150,12 @@ export default function HomePage() {
         <div className="container-main">
           <div className="home-forum-head">
             <div>
-              <div className="eyebrow" style={{ marginBottom: 12, color: '#8a5814' }}>Topluluk</div>
-              <h2>Forumda konuşulanlar</h2>
+              <div className="eyebrow" style={{ marginBottom: 12, color: '#8a5814' }}>Logos · Psikoloji forumu</div>
+              <h2>Logos'ta konuşulanlar</h2>
               <p>Merak ettiğini sor, başkalarının sorularına katıl. Psikologların yanıtları altın rozetle işaretlenir.</p>
             </div>
             <Link href="/forum" className="btn-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              Foruma git <ArrowRight size={14} />
+              Logos'a git <ArrowRight size={14} />
             </Link>
           </div>
 
@@ -1196,7 +1196,7 @@ export default function HomePage() {
               )}
             </div>
           ) : (
-            <div className="home-forum-empty">Forumda ilk soruyu sen sor; sohbet oradan başlasın.</div>
+            <div className="home-forum-empty">Logos'ta ilk soruyu sen sor; sohbet oradan başlasın.</div>
           )}
         </div>
       </section>
