@@ -240,12 +240,6 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
         </div>
       )}
 
-      {!hideFab && (
-        <button type="button" className="fx-fab" onClick={compose} aria-label="Gönderi paylaş">
-          <Feather size={24} />
-        </button>
-      )}
-
       <nav className="fx-tabbar" aria-label="Mobil menü">
         {([
           { key: 'home', icon: Home, label: 'Ana sayfa' },

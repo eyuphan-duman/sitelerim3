@@ -919,7 +919,9 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 
   .fx-tab.is-active::after { width: 44px; }
 
-  .fx-compose-desktop { display: none; }
+  .fx-compose { padding: 12px 14px 8px; }
+  .fx-compose textarea { font-size: 1.05rem; min-height: 44px; }
+  .fx-select { max-width: 150px; }
 
   .fx-post { padding: 12px 14px 4px; }
   .fx-post-grid { grid-template-columns: 38px 1fr; gap: 10px; }
