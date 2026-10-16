@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SearchProvider } from "@/contexts/SearchContext";
+import GlobalSearchModal from "@/components/GlobalSearchModal";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import QuickContact from "@/components/QuickContact";
@@ -197,27 +199,30 @@ export default function RootLayout({
           `}
         </Script>
         <AuthProvider>
-          <AnalyticsTracker />
+          <SearchProvider>
+            <AnalyticsTracker />
+            <GlobalSearchModal />
 
-          <Toaster
-            position="top-right"
-            containerStyle={{ zIndex: 999999 }}
-            toastOptions={{
-              style: {
-                fontFamily: "Inter, sans-serif",
-                fontSize: "0.875rem",
-                background: "#1c1c1e",
-                color: "#e8dcc8",
-                border: "1px solid rgba(184,150,90,0.3)",
-              },
-            }}
-          />
-          <Navbar />
-          <SwipeBackNavigation />
-          <main>{children}</main>
-          <Footer />
-          <QuickContact />
-          <CookieConsent />
+            <Toaster
+              position="top-right"
+              containerStyle={{ zIndex: 999999 }}
+              toastOptions={{
+                style: {
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: "0.875rem",
+                  background: "#1c1c1e",
+                  color: "#e8dcc8",
+                  border: "1px solid rgba(184,150,90,0.3)",
+                },
+              }}
+            />
+            <Navbar />
+            <SwipeBackNavigation />
+            <main>{children}</main>
+            <Footer />
+            <QuickContact />
+            <CookieConsent />
+          </SearchProvider>
         </AuthProvider>
 
       </body>

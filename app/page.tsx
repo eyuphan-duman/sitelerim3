@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSearch } from '@/contexts/SearchContext';
 import toast from 'react-hot-toast';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
 import { QUOTES } from '@/data/quotes';
@@ -61,12 +62,8 @@ const truncateText = (text: string, limit: number) => {
 export default function HomePage() {
   const { user } = useAuth();
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
-  const [searchOpen, setSearchOpen] = useState(false);
+  const { openSearch } = useSearch();
   const [latestArticles, setLatestArticles] = useState<any[]>([]);
-  const [searchQ, setSearchQ] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
   const articlesCarouselRef = useRef<HTMLDivElement>(null);
   const [dailyQuote, setDailyQuote] = useState(QUOTES[0]);
   const [randomVideos, setRandomVideos] = useState<any[]>([]);
@@ -200,54 +197,7 @@ export default function HomePage() {
 
 
 
-  useEffect(() => {
-    if (!searchOpen) { setSearchQ(''); setSearchResults([]); return; }
-    setTimeout(() => searchRef.current?.focus(), 100);
-  }, [searchOpen]);
 
-  useEffect(() => {
-    if (!searchQ.trim()) { setSearchResults([]); return; }
-    const timer = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const q = searchQ.toLowerCase();
-        const [forumSnap, usersSnap] = await Promise.all([
-          getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(50))),
-          getDocs(query(collection(db, 'users'), limit(50))),
-        ]);
-        const results: any[] = [];
-        
-        // Static content search
-        const staticPages = [
-          { title: 'Hakkımda', excerpt: 'Varoluşçu-Psikanalitik yönelimli bir psikolog olarak, kişinin kendi iç dünyasını keşfetmesine alan açmayı hedefliyorum.', type: 'page', href: '/ben-kimim' },
-          { title: 'İletişim & Randevu', excerpt: 'Terapötik sürece başlamak veya detaylı bilgi almak için iletişime geçebilirsiniz. Polatlı / Ankara.', type: 'page', href: '/iletisim' },
-          { title: 'Videolarım', excerpt: 'Psikoloji, psikanaliz ve varoluşçuluk üzerine hazırladığım video içerikleri.', type: 'page', href: '/videolarim' }
-        ];
-        
-        staticPages.forEach(p => {
-          if (p.title.toLowerCase().includes(q) || p.excerpt.toLowerCase().includes(q)) {
-            results.push({ ...p, id: p.href });
-          }
-        });
-
-
-        forumSnap.docs.forEach(d => {
-          const data = d.data();
-          if ((data.body||'').toLowerCase().includes(q) || (data.authorName||'').toLowerCase().includes(q) || (data.category||'').toLowerCase().includes(q))
-            results.push({ id: d.id, type: 'forum', title: data.authorName, excerpt: data.body?.slice(0, 100), category: data.category, href: '/forum?thread=' + d.id });
-        });
-        usersSnap.docs.forEach(d => {
-          const data = d.data();
-          if ((data.displayName||'').toLowerCase().includes(q) || (data.username||'').toLowerCase().includes(q) || (data.bio||'').toLowerCase().includes(q))
-            results.push({ id: d.id, type: 'profile', title: data.displayName || 'Kullanıcı', excerpt: data.bio?.slice(0, 100) || `@${data.username}`, href: `/forum/profil/${data.username}` });
-        });
-        
-        setSearchResults(results.slice(0, 10));
-      } catch (e) { console.error(e); }
-      finally { setSearching(false); }
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [searchQ]);
 
 
 
@@ -437,15 +387,15 @@ export default function HomePage() {
                 {/* Search bar */}
                 <div className="fade-up fade-up-4" style={{ marginBottom: 40 }}>
                   <button
-                    onClick={() => setSearchOpen(true)}
+                    onClick={openSearch}
                     aria-label="Arama Yap"
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: '14px 24px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', width: '100%', maxWidth: 420, transition: 'all 0.2s' }}
-                    onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = 'white'; }}
-                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: '14px 24px', cursor: 'pointer', color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', width: '100%', maxWidth: 420, transition: 'all 0.2s' }}
+                    onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = 'var(--gold)'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
                   >
-                    <Search size={16} />
-                    <span>{heroSettings.slide1.searchPlaceholder}</span>
-                    <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', borderRadius: 6, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em' }}>⌘K</span>
+                    <Search size={16} color="var(--gold)" />
+                    <span>{heroSettings.slide1.searchPlaceholder || "SSS, Yazılar veya forumda ara..."}</span>
+                    <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', borderRadius: 6, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em' }}>Ctrl K</span>
                   </button>
                 </div>
               </div>
@@ -1293,87 +1243,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ══════════════════ GLOBAL SEARCH MODAL ══════════════════ */}
-      {searchOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,22,40,0.85)', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10vh', padding: '10vh 20px 20px' }}
-          onClick={() => setSearchOpen(false)}
-        >
-          <div style={{ width: '100%', maxWidth: 640, background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
-            {/* Search input */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
-              <Search size={20} color="#64748b" />
-              <input
-                ref={searchRef}
-                value={searchQ}
-                onChange={e => setSearchQ(e.target.value)}
-                placeholder="Yazı, forum gönderisi, konu ara..."
-                style={{ flex: 1, border: 'none', outline: 'none', fontSize: '1.05rem', color: '#0f172a', background: 'transparent' }}
-              />
-              {searching && <div style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#0f172a', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />}
-              <button 
-                type="button"
-                onClick={() => setSearchOpen(false)} 
-                aria-label="Aramayı Kapat"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-
-            {/* Results */}
-            {searchResults.length > 0 && (
-              <div style={{ maxHeight: 420, overflowY: 'auto' }}>
-                {searchResults.map((r, i) => (
-                  <Link key={i} href={r.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', gap: 14, padding: '14px 20px', borderBottom: '1px solid #f8fafc', textDecoration: 'none', transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: r.type === 'profile' ? 'linear-gradient(135deg,#f59e0b,#d97706)' : r.type === 'post' ? 'linear-gradient(135deg,#0f172a,#1e293b)' : r.type === 'page' ? 'linear-gradient(135deg,#0ea5e9,#2563eb)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {r.type === 'profile' ? <User size={16} color="white" /> : r.type === 'post' ? <FileText size={16} color="white" /> : r.type === 'page' ? <ArrowRight size={16} color="white" /> : <MessageCircle size={16} color="white" />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                        <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
-                        <span style={{ background: r.type === 'profile' ? '#fef3c7' : r.type === 'post' ? '#f1f5f9' : r.type === 'page' ? '#e0f2fe' : '#ede9fe', color: r.type === 'profile' ? '#b45309' : r.type === 'post' ? '#475569' : r.type === 'page' ? '#0369a1' : '#7c3aed', fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', flexShrink: 0 }}>{r.type === 'profile' ? 'Kullanıcı' : r.type === 'post' ? 'Yazı' : r.type === 'page' ? 'Sayfa' : (r.category || 'Forum')}</span>
-                      </div>
-                      <p style={{ fontSize: '0.83rem', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{r.excerpt}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {searchQ && !searching && searchResults.length === 0 && (
-              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b' }}>
-                <Search size={36} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-                <p style={{ fontWeight: 700 }}>"<em>{searchQ}</em>" için sonuç bulunamadı</p>
-              </div>
-            )}
-
-            {!searchQ && (
-              <div style={{ padding: '24px 20px' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Hızlı Bağlantılar</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {[
-                    { label: 'Videolarım', href: '/videolarim', icon: Film },
-                    { label: 'Forum', href: '/forum', icon: MessageCircle },
-                    { label: 'Hakkımda', href: '/ben-kimim', icon: User },
-                    { label: 'İletişim', href: '/iletisim', icon: Mail }
-                  ].map(l => {
-                    const IconComp = l.icon;
-                    return (
-                      <Link key={l.href} href={l.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, textDecoration: 'none', color: '#334155', fontSize: '0.92rem', fontWeight: 500, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = '#f8fafc')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                        <IconComp size={16} color="var(--gold)" />
-                        <span>{l.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.78rem', marginTop: 16 }}>ESC veya dışarı tıklayarak kapat</p>
-        </div>
-      )}
     </>
   );
 }

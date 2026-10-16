@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSearch } from '@/contexts/SearchContext';
 import AuthModal from './AuthModal';
-import { Menu, X, LogOut, Bell } from 'lucide-react';
+import { Menu, X, LogOut, Bell, Search } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -20,6 +21,7 @@ const links = [
 
 export default function Navbar() {
   const { user, userProfile, emailVerified, logout } = useAuth();
+  const { openSearch } = useSearch();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -79,8 +81,50 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Auth */}
+          {/* Search & Auth */}
           <div className="hidden lg:flex" style={{ alignItems: 'center', gap: 14 }}>
+            <button
+              type="button"
+              onClick={openSearch}
+              aria-label="Sitede ve SSS'de Ara"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(201, 169, 110, 0.25)',
+                borderRadius: 9999,
+                padding: '6px 14px',
+                color: 'rgba(255, 255, 255, 0.75)',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => {
+                e.currentTarget.style.borderColor = 'var(--gold)';
+                e.currentTarget.style.color = '#fff';
+                e.currentTarget.style.background = 'rgba(201, 169, 110, 0.12)';
+              }}
+              onMouseOut={e => {
+                e.currentTarget.style.borderColor = 'rgba(201, 169, 110, 0.25)';
+                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.75)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+              }}
+            >
+              <Search size={14} color="var(--gold)" />
+              <span>Ara...</span>
+              <kbd style={{
+                fontSize: '0.65rem',
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 4,
+                padding: '1px 5px',
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: 'monospace',
+                marginLeft: 2,
+              }}>Ctrl K</kbd>
+            </button>
+
             {user ? (
               <>
                 {!user.isAnonymous && (
@@ -117,16 +161,26 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile toggle */}
-          <button 
-            type="button"
-            className="lg:hidden" 
-            onClick={() => setOpen(!open)} 
-            style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer', padding: 10, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            aria-label={open ? "Menüyü Kapat" : "Menüyü Aç"}
-          >
-            {open ? <X size={22}/> : <Menu size={22}/>}
-          </button>
+          {/* Mobile buttons: Search + Menu toggle */}
+          <div className="lg:hidden" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <button 
+              type="button"
+              onClick={openSearch} 
+              style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer', padding: 10, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              aria-label="Sitede Ara"
+            >
+              <Search size={21} color="var(--gold)" />
+            </button>
+            <button 
+              type="button"
+              className="lg:hidden" 
+              onClick={() => setOpen(!open)} 
+              style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer', padding: 10, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              aria-label={open ? "Menüyü Kapat" : "Menüyü Aç"}
+            >
+              {open ? <X size={22}/> : <Menu size={22}/>}
+            </button>
+          </div>
         </div>
 
         </nav>
@@ -136,6 +190,31 @@ export default function Navbar() {
       {!isForumPage && open && (
         <div style={{ position: 'fixed', top: 64, left: 0, right: 0, background: '#0a1628', borderTop: '1px solid var(--border)', padding: '24px 28px 32px', zIndex: 999999 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Quick search button in mobile drawer */}
+            <button
+              type="button"
+              onClick={() => { setOpen(false); openSearch(); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                padding: '11px 16px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(201, 169, 110, 0.3)',
+                borderRadius: 12,
+                color: 'rgba(255, 255, 255, 0.85)',
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                marginBottom: 4,
+                textAlign: 'left',
+              }}
+            >
+              <Search size={18} color="var(--gold)" />
+              <span style={{ flex: 1 }}>SSS, Yazılar ve Forumda Ara...</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--gold)', fontWeight: 700 }}>Ara</span>
+            </button>
+
             {links.map(l => (
               <Link key={l.href} href={l.href} className="nav-link" style={{ fontSize: '1rem', padding: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(201,169,110,0.1)' }} onClick={() => setOpen(false)}>
                 {l.label}
