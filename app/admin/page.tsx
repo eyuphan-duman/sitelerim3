@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
 import { DEFAULT_ABOUT_SETTINGS, AboutSettings } from '@/lib/aboutSettings';
 import { calculateAge } from '@/lib/ageUtils';
+import { LOCAL_FAQ } from '@/data/local-faq';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -624,6 +625,33 @@ export default function AdminPage() {
       toast.error('Hata oluştu: ' + (e?.message || ''));
     }
     finally { setSubmitting(false); }
+  };
+
+  const handleSyncLocalFaqs = async () => {
+    const existingTitles = new Set(faqs.map(f => f.title?.trim().toLowerCase()));
+    const toAdd = LOCAL_FAQ.filter(l => !existingTitles.has(l.title?.trim().toLowerCase()));
+
+    if (toAdd.length === 0) {
+      toast.success('Tüm yerel soru-cevaplar zaten veritabanında senkronize.');
+      return;
+    }
+
+    const t = toast.loading(`${toAdd.length} soru-cevap veritabanına aktarılıyor...`);
+    try {
+      for (const item of toAdd) {
+        await addDoc(collection(db, 'faq'), {
+          title: item.title,
+          category: item.category || '',
+          featuredImage: item.featuredImage || '',
+          content: item.content,
+          excerpt: item.excerpt || '',
+          createdAt: serverTimestamp()
+        });
+      }
+      toast.success(`${toAdd.length} yeni soru-cevap başarıyla veritabanına aktarıldı!`, { id: t });
+    } catch (e: any) {
+      toast.error('Aktarma sırasında hata oluştu: ' + (e?.message || ''), { id: t });
+    }
   };
 
   const handleStartEditFaq = (f: any) => {
@@ -3083,7 +3111,19 @@ export default function AdminPage() {
 
             {/* Published FAQs */}
             <div>
-              <h2 style={{ fontSize: '1.2rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)', marginBottom: 20 }}>Yayımlanan Soru-Cevaplar</h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                <h2 style={{ fontSize: '1.2rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)', margin: 0 }}>
+                  Yayımlanan Soru-Cevaplar ({faqs.length})
+                </h2>
+                <button
+                  type="button"
+                  onClick={handleSyncLocalFaqs}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', padding: '8px 14px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}
+                  title="Yeni eklenen yerel soru-cevapları Firestore veritabanına kopyalar"
+                >
+                  <Sparkles size={14} /> 15 Yeni Yerel SSS&apos;i Veritabanına Aktar
+                </button>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
                 {faqs.map(f => (
                   <div key={f.id} style={{ background: 'white', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

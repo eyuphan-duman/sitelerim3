@@ -24,7 +24,9 @@ export default function CookieConsent() {
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('consent', 'update', {
         'analytics_storage': accepted ? 'granted' : 'denied',
-        'ad_storage': accepted ? 'granted' : 'denied'
+        'ad_storage': accepted ? 'granted' : 'denied',
+        'ad_user_data': accepted ? 'granted' : 'denied',
+        'ad_personalization': accepted ? 'granted' : 'denied'
       });
     }
   };

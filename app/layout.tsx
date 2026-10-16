@@ -8,6 +8,7 @@ import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import CookieConsent from "@/components/CookieConsent";
 import SwipeBackNavigation from "@/components/SwipeBackNavigation";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 import { Inter, Playfair_Display, Crimson_Text, Montserrat } from "next/font/google";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -165,20 +166,38 @@ export default function RootLayout({
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
-            
-            // Varsayılan olarak tüm takipleri reddet
-            gtag('consent', 'default', {
-              'analytics_storage': 'denied',
-              'ad_storage': 'denied',
-              'wait_for_update': 500
-            });
+
+            // Kullanıcının daha önce çerez onayını kaydedip kaydetmediğini kontrol et
+            var savedConsent = null;
+            try { savedConsent = localStorage.getItem('cookie-consent'); } catch(e){}
+
+            if (savedConsent === 'false') {
+              gtag('consent', 'default', {
+                'analytics_storage': 'denied',
+                'ad_storage': 'denied',
+                'ad_user_data': 'denied',
+                'ad_personalization': 'denied'
+              });
+            } else {
+              // İstatistiklerin doğru toplanabilmesi için analitik depolamaya varsayılan olarak izin verilir
+              gtag('consent', 'default', {
+                'analytics_storage': 'granted',
+                'ad_storage': savedConsent === 'true' ? 'granted' : 'denied',
+                'ad_user_data': savedConsent === 'true' ? 'granted' : 'denied',
+                'ad_personalization': savedConsent === 'true' ? 'granted' : 'denied'
+              });
+            }
 
             gtag('js', new Date());
-            gtag('config', 'G-T1ZW5FQ031');
+            gtag('config', 'G-T1ZW5FQ031', {
+              page_path: window.location.pathname,
+              cookie_flags: 'SameSite=None;Secure'
+            });
             gtag('config', 'AW-18148915526');
           `}
         </Script>
         <AuthProvider>
+          <AnalyticsTracker />
 
           <Toaster
             position="top-right"

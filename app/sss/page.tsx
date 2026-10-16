@@ -86,7 +86,13 @@ export default function SssPage() {
         console.error(e);
       }
 
-      const combined = [...fbFaqs, ...LOCAL_FAQ].sort((a: any, b: any) => {
+      const existingIds = new Set(fbFaqs.map(f => f.id));
+      const existingTitles = new Set(fbFaqs.map(f => f.title?.trim().toLowerCase()));
+      const uniqueLocal = LOCAL_FAQ.filter(
+        l => !existingIds.has(l.id) && !existingTitles.has(l.title?.trim().toLowerCase())
+      );
+
+      const combined = [...fbFaqs, ...uniqueLocal].sort((a: any, b: any) => {
         const dateA = new Date(a.createdAt || a.date).getTime();
         const dateB = new Date(b.createdAt || b.date).getTime();
         return dateB - dateA;
@@ -98,8 +104,28 @@ export default function SssPage() {
     fetch();
   }, []);
 
+  const stripHtml = (html: string) =>
+    (html || '').replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(f => ({
+      '@type': 'Question',
+      name: f.title,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: stripHtml(f.excerpt || f.content).slice(0, 300),
+      },
+    })),
+  };
+
   return (
     <div className="yz-page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* ── HERO ── */}
       <header className="yz-hero">
         <div className="yz-hero-inner">
