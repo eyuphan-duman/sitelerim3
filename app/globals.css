@@ -2887,145 +2887,145 @@ body:has([data-forum-page]) .navbar {
 }
 
 /* Body dark mode when forum dark mode is active */
-body:has([data-forum-dark="true"]),
+body:has([data-forum-dark="true"]:not(:has(.fx-shell))),
 body.forum-dark-body,
 html.forum-dark-body {
   background-color: #000000 !important;
   color: #e7e9ea !important;
 }
 
-body:has([data-forum-dark="true"]) .navbar,
+body:has([data-forum-dark="true"]:not(:has(.fx-shell))) .navbar,
 body.forum-dark-body .navbar {
   background: rgba(0, 0, 0, 0.95) !important;
   border-bottom: 1px solid #2f3336 !important;
 }
 
 /* Base Forum Dark Mode Theme */
-[data-forum-dark="true"] {
+[data-forum-dark="true"]:not(:has(.fx-shell)) {
   background-color: #000000 !important;
   color: #e7e9ea !important;
 }
 
-[data-forum-dark="true"] .forum-grid-3col {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-grid-3col {
   background-color: #000000 !important;
 }
 
 /* Sidebars */
-[data-forum-dark="true"] .forum-sidebar-left,
-[data-forum-dark="true"] .profile-sidebar-left {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-left,
+[data-forum-dark="true"]:not(:has(.fx-shell)) .profile-sidebar-left {
   background-color: #000000 !important;
   border-color: #2f3336 !important;
 }
 
-[data-forum-dark="true"] .forum-sidebar-left h1,
-[data-forum-dark="true"] .profile-sidebar-left h1 {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-left h1,
+[data-forum-dark="true"]:not(:has(.fx-shell)) .profile-sidebar-left h1 {
   color: #e7e9ea !important;
 }
 
-[data-forum-dark="true"] .forum-sidebar-left p,
-[data-forum-dark="true"] .profile-sidebar-left p {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-left p,
+[data-forum-dark="true"]:not(:has(.fx-shell)) .profile-sidebar-left p {
   color: #71767b !important;
 }
 
-[data-forum-dark="true"] .forum-sidebar-left button,
-[data-forum-dark="true"] .profile-sidebar-left a > div {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-left button,
+[data-forum-dark="true"]:not(:has(.fx-shell)) .profile-sidebar-left a > div {
   color: #e7e9ea;
 }
 
-[data-forum-dark="true"] .forum-sidebar-left button:hover {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-left button:hover {
   background: rgba(231, 233, 234, 0.08) !important;
 }
 
-[data-forum-dark="true"] .forum-sidebar-right,
-[data-forum-dark="true"] .profile-sidebar-right {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-right,
+[data-forum-dark="true"]:not(:has(.fx-shell)) .profile-sidebar-right {
   border-color: #2f3336 !important;
 }
 
 /* Main Feed Column */
-[data-forum-dark="true"] main {
+[data-forum-dark="true"]:not(:has(.fx-shell)) main {
   background-color: #000000 !important;
   border-color: #2f3336 !important;
 }
 
 /* Post Cards */
-[data-forum-dark="true"] article {
+[data-forum-dark="true"]:not(:has(.fx-shell)) article {
   background-color: #000000 !important;
   border-color: #2f3336 !important;
   color: #e7e9ea !important;
 }
 
-[data-forum-dark="true"] article:hover {
+[data-forum-dark="true"]:not(:has(.fx-shell)) article:hover {
   background-color: rgba(255, 255, 255, 0.03) !important;
 }
 
-[data-forum-dark="true"] article a {
+[data-forum-dark="true"]:not(:has(.fx-shell)) article a {
   color: #e7e9ea !important;
 }
 
-[data-forum-dark="true"] article h2,
-[data-forum-dark="true"] article h3 {
+[data-forum-dark="true"]:not(:has(.fx-shell)) article h2,
+[data-forum-dark="true"]:not(:has(.fx-shell)) article h3 {
   color: #e7e9ea !important;
 }
 
-[data-forum-dark="true"] article p {
+[data-forum-dark="true"]:not(:has(.fx-shell)) article p {
   color: #d1d5db !important;
 }
 
-[data-forum-dark="true"] article span {
+[data-forum-dark="true"]:not(:has(.fx-shell)) article span {
   color: #71767b;
 }
 
 /* Right Sidebar Trend Box & Widgets */
-[data-forum-dark="true"] .forum-sidebar-right > div {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-right > div {
   background-color: #16181c !important;
   border-color: #2f3336 !important;
 }
 
-[data-forum-dark="true"] .forum-sidebar-right h3 {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-right h3 {
   color: #e7e9ea !important;
 }
 
-[data-forum-dark="true"] .forum-sidebar-right button {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-right button {
   border-color: #2f3336 !important;
 }
 
-[data-forum-dark="true"] .forum-sidebar-right button:hover {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-sidebar-right button:hover {
   background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
 /* Thread View & Sticky Headers */
-[data-forum-dark="true"] .thread-header,
-[data-forum-dark="true"] div[style*="backdropFilter"] {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .thread-header,
+[data-forum-dark="true"]:not(:has(.fx-shell)) div[style*="backdropFilter"] {
   background-color: rgba(0, 0, 0, 0.85) !important;
   border-color: #2f3336 !important;
 }
 
 /* Inputs & Textareas */
-[data-forum-dark="true"] input,
-[data-forum-dark="true"] textarea {
+[data-forum-dark="true"]:not(:has(.fx-shell)) input,
+[data-forum-dark="true"]:not(:has(.fx-shell)) textarea {
   color: #e7e9ea !important;
 }
 
-[data-forum-dark="true"] textarea::placeholder,
-[data-forum-dark="true"] input::placeholder {
+[data-forum-dark="true"]:not(:has(.fx-shell)) textarea::placeholder,
+[data-forum-dark="true"]:not(:has(.fx-shell)) input::placeholder {
   color: #71767b !important;
 }
 
 /* Mobile Category Pills */
-[data-forum-dark="true"] .forum-mobile-cats {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-mobile-cats {
   background-color: #000000 !important;
   border-color: #2f3336 !important;
 }
 
 /* Mobile Bottom Nav */
-[data-forum-dark="true"] .forum-mobile-bottom-nav {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-mobile-bottom-nav {
   background-color: rgba(0, 0, 0, 0.95) !important;
   border-color: #2f3336 !important;
   box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.7) !important;
 }
 
-[data-forum-dark="true"] .forum-mobile-bottom-nav button,
-[data-forum-dark="true"] .forum-mobile-bottom-nav a {
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-mobile-bottom-nav button,
+[data-forum-dark="true"]:not(:has(.fx-shell)) .forum-mobile-bottom-nav a {
   color: #71767b !important;
 }
 

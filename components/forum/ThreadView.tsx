@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { 
-  ArrowLeft, MessageCircle, Heart, ThumbsDown, Repeat2, Bookmark, 
-  Share2, Trash2, Camera, Loader, CheckCircle, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag
+import {
+  ArrowLeft, MessageCircle, Heart, ThumbsDown, Repeat2, Bookmark,
+  Share, Trash2, Loader, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag
 } from 'lucide-react';
+import { Avatar, VerifiedMark, CharRing, ReportDialog, compactCount } from './ui';
 import {
   doc, updateDoc, deleteField, increment, collection,
   addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc,
@@ -29,13 +30,7 @@ export function renderTextWithMentions(text: string) {
           key={i}
           href={`/forum/profil/${encodeURIComponent(cleanUsername)}`}
           onClick={(e) => e.stopPropagation()}
-          style={{
-            color: '#1d9bf0',
-            fontWeight: 600,
-            textDecoration: 'none'
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-          onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+          className="fx-mention"
         >
           {part}
         </Link>
@@ -48,13 +43,7 @@ export function renderTextWithMentions(text: string) {
           key={i}
           href={`/forum?tag=${encodeURIComponent(cleanTag)}`}
           onClick={(e) => e.stopPropagation()}
-          style={{
-            color: '#1d9bf0',
-            fontWeight: 600,
-            textDecoration: 'none'
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-          onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+          className="fx-mention"
         >
           {part}
         </Link>
@@ -109,9 +98,9 @@ export function formatTimeAgo(val: any): string {
 
     const diff = Math.floor((Date.now() - d.getTime()) / 1000);
     if (diff < 60) return 'az önce';
-    if (diff < 3600) return `${Math.floor(diff / 60)}d`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}s`;
-    if (diff < 604800) return `${Math.floor(diff / 86400)}g`;
+    if (diff < 3600) return `${Math.floor(diff / 60)} dk`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} sa`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)} g`;
     return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
   } catch {
     return 'şimdi';
@@ -652,1177 +641,289 @@ export default function ThreadView({
     }
   };
 
+  const isMember = Boolean(currentUser && !currentUser.isAnonymous);
+  const authorPhoto = authorProfilePhoto || p.authorPhotoURL || (currentUser?.uid === p.uid ? (userProfile?.photoURL || currentUser?.photoURL) : '');
+  const myPhoto = userProfile?.photoURL || currentUser?.photoURL || '';
+  const myName = userProfile?.displayName || currentUser?.displayName || '';
+  const timeLabel = formatPostTime(p.createdAt);
+
+  const notifText: Record<string, string> = {
+    reaction: 'bu gönderini beğendi.',
+    repost: 'bu gönderini yeniden paylaştı.',
+    comment: 'bu gönderine yanıt verdi.',
+    mention: 'bu gönderide senden bahsetti.',
+  };
+
+  const stats = [
+    { n: commentsCount, label: 'Yanıt' },
+    { n: repostsCount, label: 'Yeniden paylaşım' },
+    { n: likesCount, label: 'Beğeni' },
+    { n: bookmarksCount, label: 'Kayıt' },
+  ].filter(s => s.n > 0);
+
   return (
-    <div style={{ background: isDark ? '#000000' : '#ffffff', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
-      
-      {/* ── TOP HEADER (← Gönderi) ── */}
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        background: isDark ? 'rgba(0, 0, 0, 0.88)' : 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
-        height: 54,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 16px',
-        gap: 20
-      }}>
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 8,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: isDark ? '#e7e9ea' : '#0f172a',
-            transition: 'background 0.15s'
-          }}
-          onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9')}
-          onMouseOut={e => (e.currentTarget.style.background = 'none')}
-          title="Geri"
-          aria-label="Geri"
-        >
-          <ArrowLeft size={20} strokeWidth={2.4} />
+    <div className="fx-thread">
+      <div className="fx-thead">
+        <button type="button" className="fx-icon-btn" onClick={onBack} aria-label="Geri" style={{ color: 'var(--fx-ink)' }}>
+          <ArrowLeft size={20} />
         </button>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
-          Gönderi
-        </h2>
+        <h2>Gönderi</h2>
       </div>
 
-      {/* ── NOTIFICATION CONTEXT BANNER (if arrived from a notification) ── */}
       {notifFromUser && !dismissNotif && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          padding: '11px 18px',
-          background: isDark ? 'rgba(56, 189, 248, 0.12)' : '#f0f9ff',
-          borderBottom: `1px solid ${isDark ? 'rgba(56, 189, 248, 0.25)' : '#bae6fd'}`,
-          fontSize: '0.88rem',
-          color: isDark ? '#e7e9ea' : '#0369a1'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            {notifType === 'reaction' && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
-                <Heart size={14} fill="#ef4444" />
-              </span>
-            )}
-            {notifType === 'repost' && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: '50%', background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a' }}>
-                <Repeat2 size={15} />
-              </span>
-            )}
-            {notifType === 'comment' && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
-                <MessageCircle size={14} />
-              </span>
-            )}
-            {notifType === 'mention' && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', color: '#6366f1', fontWeight: 800, fontSize: '0.8rem' }}>
-                @
-              </span>
-            )}
-            <span>
-              <Link 
-                href={`/forum/profil/${encodeURIComponent(notifFromUser)}`}
-                style={{ fontWeight: 800, color: isDark ? '#38bdf8' : '#0284c7', textDecoration: 'underline' }}
-              >
-                {notifFromUser}
-              </Link>{' '}
-              {notifType === 'reaction' && 'bu gönderinizi beğendi.'}
-              {notifType === 'repost' && 'bu gönderinizi yeniden paylaştı.'}
-              {notifType === 'comment' && 'bu gönderinize yorum yaptı.'}
-              {notifType === 'mention' && 'bu gönderide sizden bahsetti.'}
-              {!['reaction', 'repost', 'comment', 'mention'].includes(notifType || '') && 'bu gönderiniz ile etkileşime geçti.'}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setDismissNotif(true)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: isDark ? '#71767b' : '#64748b',
-              cursor: 'pointer',
-              padding: 4,
-              display: 'flex',
-              alignItems: 'center'
-            }}
-            title="Kapat"
-            aria-label="Kapat"
-          >
-            <X size={16} />
-          </button>
+        <div className="fx-notice">
+          <span>
+            <Link href={`/forum/profil/${encodeURIComponent(notifFromUser)}`}>@{notifFromUser}</Link>{' '}
+            {notifText[notifType || ''] || 'bu gönderinle etkileşime geçti.'}
+          </span>
+          <button type="button" className="fx-icon-btn" onClick={() => setDismissNotif(true)} aria-label="Kapat"><X size={16} /></button>
         </div>
       )}
 
-      {/* ── MAIN POST CONTAINER ── */}
-      <article style={{ padding: '16px 20px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, background: isDark ? '#000000' : 'white' }}>
-        
-        {/* Author Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Link href={`/forum/profil/${encodeURIComponent(username)}`} style={{ textDecoration: 'none' }}>
-              <div style={{
-                width: 44,
-                height: 44,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #0f172a, #1e293b)',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: '1rem',
-                overflow: 'hidden',
-                flexShrink: 0,
-              }}>
-                {authorProfilePhoto || p.authorPhotoURL || (currentUser?.uid === p.uid ? (userProfile?.photoURL || currentUser?.photoURL) : '') ? (
-                  <img 
-                    src={authorProfilePhoto || p.authorPhotoURL || (currentUser?.uid === p.uid ? (userProfile?.photoURL || currentUser?.photoURL) : '')} 
-                    alt="" 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                  />
-                ) : (
-                  (p.authorName || 'U')[0].toUpperCase()
-                )}
-              </div>
-            </Link>
-
-            <div style={{ lineHeight: 1.3 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Link
-                  href={`/forum/profil/${encodeURIComponent(username)}`}
-                  style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.98rem', textDecoration: 'none' }}
-                >
-                  {p.authorName}
-                </Link>
-                {p.authorIsPsychologist && !p.authorHideBadge && (
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    background: isDark ? 'rgba(212, 175, 55, 0.18)' : 'rgba(212, 175, 55, 0.12)',
-                    color: isDark ? '#fbbf24' : '#926100',
-                    border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.5)' : 'rgba(212, 175, 55, 0.45)'}`,
-                    padding: '1px 8px',
-                    borderRadius: 999,
-                    fontSize: '0.68rem',
-                    fontWeight: 800,
-                  }}>
-                    <CheckCircle size={10} color={isDark ? '#fbbf24' : '#926100'} />
-                    <span>Psikolog</span>
-                  </span>
-                )}
-              </div>
-              <div style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.86rem' }}>
-                @{username}
-              </div>
+      <article className="fx-detail">
+        <div className="fx-detail-head">
+          <Link href={`/forum/profil/${encodeURIComponent(username)}`} aria-label={p.authorName}>
+            <Avatar src={authorPhoto} name={p.authorName} size={44} />
+          </Link>
+          <div className="fx-detail-who">
+            <div className="fx-post-meta-main">
+              <Link href={`/forum/profil/${encodeURIComponent(username)}`} className="fx-name">{p.authorName}</Link>
+              {(post.authorIsPsychologist || p.authorIsPsychologist) && !p.authorHideBadge && <VerifiedMark />}
             </div>
+            <div className="fx-handle">@{username}</div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {p.category && (
-              <span style={{
-                background: isDark ? '#16181c' : '#f1f5f9',
-                color: isDark ? '#94a3b8' : '#64748b',
-                border: isDark ? '1px solid #2f3336' : 'none',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                padding: '3px 10px',
-                borderRadius: 999,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em'
-              }}>
-                {p.category}
-              </span>
+          <div className="fx-menu-wrap">
+            <button type="button" className="fx-icon-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Diğer seçenekler" aria-expanded={menuOpen}>
+              <MoreHorizontal size={18} />
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fx-menu-backdrop" onClick={() => setMenuOpen(false)} />
+                <div className="fx-menu" role="menu">
+                  <button type="button" role="menuitem" onClick={(e) => { setMenuOpen(false); handleShare(e); }}>
+                    <LinkIcon size={17} /> Bağlantıyı kopyala
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setReportModalOpen(true); }}>
+                    <Flag size={17} /> Gönderiyi şikayet et
+                  </button>
+                  {canDeletePost && (
+                    <button type="button" role="menuitem" className="is-danger" onClick={() => { setMenuOpen(false); handleDeletePost(); }}>
+                      <Trash2 size={17} /> Sil
+                    </button>
+                  )}
+                </div>
+              </>
             )}
-            
-            {/* 3-dots Menu Button & Dropdown */}
-            <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(!menuOpen);
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: isDark ? '#71767b' : '#94a3b8',
-                  cursor: 'pointer',
-                  padding: 6,
-                  borderRadius: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  transition: 'all 0.15s'
-                }}
-                title="Seçenekler"
-                aria-label="Seçenekler"
-              >
-                <MoreHorizontal size={18} />
-              </button>
-
-              {menuOpen && (
-                <>
-                  <div 
-                    style={{ position: 'fixed', inset: 0, zIndex: 100 }} 
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} 
-                  />
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      top: '100%',
-                      marginTop: 4,
-                      zIndex: 101,
-                      background: isDark ? '#16181c' : '#ffffff',
-                      border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                      borderRadius: 12,
-                      boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
-                      padding: 6,
-                      minWidth: 160,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        const url = `${window.location.origin}/forum?thread=${p.id}`;
-                        navigator.clipboard.writeText(url);
-                        toast.success('Bağlantı kopyalandı!');
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '8px 12px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: isDark ? '#e7e9ea' : '#0f172a',
-                        fontSize: '0.84rem',
-                        fontWeight: 600,
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#22252a' : '#f1f5f9')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <LinkIcon size={14} />
-                      <span>Linki Kopyala</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        setReportModalOpen(true);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '8px 12px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: isDark ? '#f87171' : '#dc2626',
-                        fontSize: '0.84rem',
-                        fontWeight: 600,
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <Flag size={14} />
-                      <span>Şikayet Et</span>
-                    </button>
-
-                    {canDeletePost && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuOpen(false);
-                          handleDeletePost();
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          padding: '8px 12px',
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#ef4444',
-                          fontSize: '0.84rem',
-                          fontWeight: 600,
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#1f1315' : '#fee2e2')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <Trash2 size={14} />
-                        <span>Gönderiyi Sil</span>
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
 
-        {/* Post Title & Body */}
-        {p.title && (
-          <h1 style={{
-            fontSize: '1.25rem',
-            fontWeight: 800,
-            color: isDark ? '#e7e9ea' : '#0f172a',
-            marginBottom: 10,
-            lineHeight: 1.35,
-            wordBreak: 'break-word'
-          }}>
-            {p.title}
-          </h1>
-        )}
+        {p.title && <h3 className="fx-detail-title">{p.title}</h3>}
+        {p.body && <p className="fx-detail-text">{renderTextWithMentions(p.body)}</p>}
 
-        <div style={{
-          fontSize: '1.05rem',
-          lineHeight: 1.6,
-          color: isDark ? '#e7e9ea' : '#0f172a',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-          marginBottom: p.imageUrl ? 12 : 16
-        }}>
-          {renderTextWithMentions(p.body)}
-        </div>
-
-        {/* Attached Image */}
         {p.imageUrl && (
-          <div style={{
-            marginBottom: 16,
-            borderRadius: 16,
-            overflow: 'hidden',
-            maxHeight: 480,
-            border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-            background: isDark ? '#0f1012' : '#f8fafc'
-          }}>
-            <img
-              src={p.imageUrl}
-              alt=""
-              style={{ width: '100%', maxHeight: 480, objectFit: 'cover', display: 'block' }}
-            />
+          <div className="fx-post-media">
+            <img src={p.imageUrl} alt="" />
           </div>
         )}
 
-        {/* Timestamp & Views */}
-        <div style={{
-          padding: '12px 0',
-          borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
-          color: isDark ? '#71767b' : '#64748b',
-          fontSize: '0.86rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          flexWrap: 'wrap'
-        }}>
-          {formatPostTime(p.createdAt) && (
-            <span>{formatPostTime(p.createdAt)} ·</span>
+        <div className="fx-detail-meta">
+          {timeLabel && <><time>{timeLabel}</time><span aria-hidden="true">·</span></>}
+          <time>{formatPostDate(p.createdAt)}</time>
+          <span aria-hidden="true">·</span>
+          <span><b>{viewsCount}</b> görüntülenme</span>
+          {p.category && (
+            <>
+              <span aria-hidden="true">·</span>
+              <Link href={`/forum?cat=${encodeURIComponent(p.category)}`} className="fx-mention">{p.category}</Link>
+            </>
           )}
-          <span>{formatPostDate(p.createdAt)}</span>
-          <span>·</span>
-          <span><strong>{viewsCount}</strong> Görüntüleme</span>
         </div>
 
-        {/* ── ACTION BAR (Replies, Repost, Like, Dislike, Bookmark, Share) ── */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 4px 6px',
-          color: isDark ? '#71767b' : '#64748b'
-        }}>
-          {/* 1. Reply */}
-          <button
-            type="button"
-            onClick={() => replyInputRef.current?.focus()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: isDark ? '#71767b' : '#64748b',
-              fontSize: '0.84rem',
-              fontWeight: 500,
-              padding: '6px 8px',
-              borderRadius: 999,
-              transition: 'color 0.15s'
-            }}
-            onMouseOver={e => (e.currentTarget.style.color = '#1d9bf0')}
-            onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-            title="Yanıtla"
-          >
-            <MessageCircle size={18} strokeWidth={1.8} />
-            <span>{commentsCount}</span>
-          </button>
+        {stats.length > 0 && (
+          <div className="fx-detail-stats">
+            {stats.map(s => <span key={s.label}><b>{s.n}</b> {s.label}</span>)}
+          </div>
+        )}
 
-          {/* 2. Repost */}
-          <button
-            type="button"
-            onClick={handleRepost}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: hasReposted ? '#16a34a' : (isDark ? '#71767b' : '#64748b'),
-              fontSize: '0.84rem',
-              fontWeight: hasReposted ? 700 : 500,
-              padding: '6px 8px',
-              borderRadius: 999,
-              transition: 'color 0.15s'
-            }}
-            onMouseOver={e => !hasReposted && (e.currentTarget.style.color = '#16a34a')}
-            onMouseOut={e => !hasReposted && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-            title="Yeniden Paylaş"
-          >
-            <Repeat2 size={19} strokeWidth={hasReposted ? 2.4 : 1.8} />
-            <span>{repostsCount}</span>
+        <div className="fx-actions fx-detail-actions" role="group" aria-label="Gönderi etkileşimleri">
+          <button type="button" className="fx-act" onClick={() => (isMember ? replyInputRef.current?.focus() : onOpenAuth())} aria-label="Yanıtla">
+            <span className="fx-act-ic"><MessageCircle size={21} strokeWidth={1.8} /></span>
           </button>
-
-          {/* 3. Like */}
-          <button
-            type="button"
-            onClick={handleLike}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: hasLiked ? '#ef4444' : (isDark ? '#71767b' : '#64748b'),
-              fontSize: '0.84rem',
-              fontWeight: hasLiked ? 700 : 500,
-              padding: '6px 8px',
-              borderRadius: 999,
-              transition: 'color 0.15s'
-            }}
-            onMouseOver={e => !hasLiked && (e.currentTarget.style.color = '#ef4444')}
-            onMouseOut={e => !hasLiked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-            title="Beğen"
-          >
-            <Heart size={18} strokeWidth={hasLiked ? 2.4 : 1.8} fill={hasLiked ? '#ef4444' : 'none'} />
-            <span>{likesCount}</span>
+          <button type="button" data-kind="repost" className={`fx-act ${hasReposted ? 'is-on' : ''}`} onClick={handleRepost} aria-pressed={hasReposted} aria-label="Yeniden paylaş">
+            <span className="fx-act-ic"><Repeat2 size={22} strokeWidth={hasReposted ? 2.4 : 1.8} /></span>
           </button>
-
-          {/* 4. Dislike */}
-          <button
-            type="button"
-            onClick={handleDislike}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: hasDisliked ? '#3b82f6' : (isDark ? '#71767b' : '#64748b'),
-              fontSize: '0.84rem',
-              fontWeight: hasDisliked ? 700 : 500,
-              padding: '6px 8px',
-              borderRadius: 999,
-              transition: 'color 0.15s'
-            }}
-            onMouseOver={e => !hasDisliked && (e.currentTarget.style.color = '#3b82f6')}
-            onMouseOut={e => !hasDisliked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-            title="Beğenme"
-          >
-            <ThumbsDown size={18} strokeWidth={hasDisliked ? 2.4 : 1.8} fill={hasDisliked ? '#3b82f6' : 'none'} />
-            <span>{dislikesCount}</span>
+          <button type="button" data-kind="like" className={`fx-act ${hasLiked ? 'is-on' : ''}`} onClick={handleLike} aria-pressed={hasLiked} aria-label="Beğen">
+            <span className="fx-act-ic"><Heart size={21} strokeWidth={hasLiked ? 0 : 1.8} fill={hasLiked ? 'currentColor' : 'none'} /></span>
           </button>
-
-          {/* 5. Bookmark */}
-          <button
-            type="button"
-            onClick={handleBookmark}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: hasBookmarked ? '#d97706' : (isDark ? '#71767b' : '#64748b'),
-              fontSize: '0.84rem',
-              fontWeight: hasBookmarked ? 700 : 500,
-              padding: '6px 8px',
-              borderRadius: 999,
-              transition: 'color 0.15s'
-            }}
-            onMouseOver={e => !hasBookmarked && (e.currentTarget.style.color = '#d97706')}
-            onMouseOut={e => !hasBookmarked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-            title="Kaydet"
-          >
-            <Bookmark size={18} strokeWidth={hasBookmarked ? 2.4 : 1.8} fill={hasBookmarked ? '#d97706' : 'none'} />
-            <span>{bookmarksCount}</span>
+          <button type="button" data-kind="down" className={`fx-act ${hasDisliked ? 'is-on' : ''}`} onClick={handleDislike} aria-pressed={hasDisliked} aria-label={`Katılmıyorum${dislikesCount ? `, ${dislikesCount}` : ''}`}>
+            <span className="fx-act-ic"><ThumbsDown size={20} strokeWidth={1.8} fill={hasDisliked ? 'currentColor' : 'none'} /></span>
           </button>
-
-          {/* 6. Share */}
-          <button
-            type="button"
-            onClick={handleShare}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: isDark ? '#71767b' : '#64748b',
-              padding: '6px 8px',
-              borderRadius: 999,
-              display: 'flex',
-              alignItems: 'center',
-              transition: 'color 0.15s'
-            }}
-            onMouseOver={e => (e.currentTarget.style.color = isDark ? '#e7e9ea' : '#0f172a')}
-            onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-            title="Paylaş"
-          >
-            <Share2 size={18} strokeWidth={1.8} />
+          <button type="button" data-kind="save" className={`fx-act ${hasBookmarked ? 'is-on' : ''}`} onClick={handleBookmark} aria-pressed={hasBookmarked} aria-label="Kaydet">
+            <span className="fx-act-ic"><Bookmark size={21} strokeWidth={hasBookmarked ? 0 : 1.8} fill={hasBookmarked ? 'currentColor' : 'none'} /></span>
+          </button>
+          <button type="button" className="fx-act" onClick={handleShare} aria-label="Bağlantıyı kopyala">
+            <span className="fx-act-ic"><Share size={20} strokeWidth={1.8} /></span>
           </button>
         </div>
       </article>
 
-      {/* ── REPLY BOX (Yanıtını gönder) ── */}
-      <div style={{
-        padding: '16px 20px',
-        borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
-        display: 'flex',
-        gap: 12,
-        alignItems: 'flex-start',
-        background: isDark ? '#080808' : '#fafafa'
-      }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #0f172a, #1e293b)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 800,
-          fontSize: '0.95rem',
-          flexShrink: 0,
-          overflow: 'hidden',
-          marginTop: 2
-        }}>
-          {userProfile?.photoURL ? (
-            <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            (userProfile?.displayName || currentUser?.displayName || 'U')[0].toUpperCase()
-          )}
-        </div>
-
-        <div style={{ flex: 1 }}>
-          {/* Replying to indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontSize: '0.84rem', color: isDark ? '#71767b' : '#64748b' }}>
-            <span>Yanıt olarak</span>
-            <Link
-              href={`/forum/profil/${encodeURIComponent(replyToUser || username)}`}
-              style={{ color: '#1d9bf0', textDecoration: 'none', fontWeight: 600 }}
-            >
-              @{replyToUser || username}
-            </Link>
-            {replyToUser && replyToUser !== username && (
-              <button
-                type="button"
-                onClick={() => setReplyToUser(username)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: isDark ? '#71767b' : '#94a3b8',
-                  cursor: 'pointer',
-                  padding: 2,
-                  marginLeft: 4,
-                  display: 'inline-flex',
-                  alignItems: 'center'
-                }}
-                title="İptal et"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
-
-          <textarea
-            ref={replyInputRef}
-            rows={2}
-            value={replyText}
-            maxLength={COMMENT_CHAR_LIMIT}
-            onChange={e => setReplyText(e.target.value.slice(0, COMMENT_CHAR_LIMIT))}
-            placeholder="Yanıtını gönder"
-            style={{
-              width: '100%',
-              border: 'none',
-              background: 'transparent',
-              outline: 'none',
-              fontSize: '1rem',
-              color: isDark ? '#e7e9ea' : '#0f172a',
-              resize: 'none',
-              fontFamily: 'inherit',
-              lineHeight: 1.5,
-              padding: '6px 0'
-            }}
-          />
-          <div style={{ textAlign: 'right', fontSize: '0.74rem', fontWeight: 700, color: replyText.length >= COMMENT_CHAR_LIMIT ? '#ef4444' : (isDark ? '#71767b' : '#94a3b8') }}>
-            {replyText.length}/{COMMENT_CHAR_LIMIT}
-          </div>
-
-          {replyImageUrl && (
-            <div style={{ position: 'relative', width: 90, height: 90, borderRadius: 10, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, margin: '8px 0' }}>
-              <img src={replyImageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <button
-                type="button"
-                onClick={() => setReplyImageUrl('')}
-                style={{
-                  position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  background: 'rgba(0,0,0,0.6)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: 20,
-                  height: 20,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <X size={12} />
-              </button>
+      {isMember ? (
+        <div className="fx-compose fx-reply">
+          <Avatar src={myPhoto} name={myName} size={40} />
+          <div className="fx-compose-body">
+            <div className="fx-reply-to">
+              <Link href={`/forum/profil/${encodeURIComponent(replyToUser || username)}`} className="fx-mention">@{replyToUser || username}</Link>
+              <span> adlı kişiye yanıt</span>
+              {replyToUser && replyToUser !== username && (
+                <button type="button" className="fx-text-btn" onClick={() => setReplyToUser(username)}>gönderiye dön</button>
+              )}
             </div>
-          )}
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: 8,
-            borderTop: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`
-          }}>
-            <label
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                color: photoLimitReached ? (isDark ? '#4b5563' : '#cbd5e1') : (isDark ? '#71767b' : '#64748b'),
-                cursor: photoLimitReached ? 'not-allowed' : (uploadingImage ? 'wait' : 'pointer'),
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                padding: '6px 8px',
-                borderRadius: 8,
-                opacity: photoLimitReached ? 0.6 : 1
-              }}
-              title={photoLimitReached ? 'Fotoğraf yükleme hakkınızı kullandınız' : 'Görsel ekle'}
-            >
-              {uploadingImage ? <Loader size={17} className="animate-spin" /> : <ImageIcon size={18} color={photoLimitReached ? undefined : '#1d9bf0'} />}
-              <input
-                type="file"
-                accept="image/*"
-                disabled={uploadingImage || photoLimitReached}
-                style={{ display: 'none' }}
-                onChange={handleReplyImageUpload}
-              />
-            </label>
-
-            <button
-              type="button"
-              disabled={submittingReply || uploadingImage || (!replyText.trim() && !replyImageUrl)}
-              onClick={handleSubmitReply}
-              style={{
-                background: (replyText.trim() || replyImageUrl) 
-                  ? (isDark ? '#ffffff' : '#0f172a') 
-                  : (isDark ? '#262a30' : '#e2e8f0'),
-                color: (replyText.trim() || replyImageUrl) 
-                  ? (isDark ? '#000000' : '#ffffff') 
-                  : (isDark ? '#71767b' : '#94a3b8'),
-                border: 'none',
-                padding: '8px 20px',
-                borderRadius: 999,
-                fontWeight: 700,
-                fontSize: '0.88rem',
-                cursor: (replyText.trim() || replyImageUrl) ? 'pointer' : 'default',
-                transition: 'all 0.15s'
-              }}
-            >
-              {submittingReply ? 'Gönderiliyor...' : 'Yanıtla'}
-            </button>
+            <textarea
+              ref={replyInputRef}
+              rows={2}
+              value={replyText}
+              maxLength={COMMENT_CHAR_LIMIT}
+              onChange={e => setReplyText(e.target.value.slice(0, COMMENT_CHAR_LIMIT))}
+              placeholder="Yanıtını yaz"
+              aria-label="Yanıt metni"
+            />
+            {replyImageUrl && (
+              <div className="fx-compose-preview">
+                <img src={replyImageUrl} alt="Eklenen görsel" />
+                <button type="button" onClick={() => setReplyImageUrl('')} aria-label="Görseli kaldır"><X size={16} /></button>
+              </div>
+            )}
+            <div className="fx-compose-bar">
+              <div className="fx-compose-tools">
+                <label className="fx-tool" aria-disabled={photoLimitReached || uploadingImage} title={photoLimitReached ? 'Görsel ekleme hakkını kullandın' : 'Görsel ekle'}>
+                  {uploadingImage ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <ImageIcon size={19} />}
+                  <input type="file" accept="image/*" onChange={handleReplyImageUpload} hidden disabled={uploadingImage || photoLimitReached} />
+                </label>
+              </div>
+              <div className="fx-compose-send">
+                <CharRing length={replyText.length} limit={COMMENT_CHAR_LIMIT} />
+                <button
+                  type="button"
+                  className="fx-btn fx-btn-primary"
+                  onClick={handleSubmitReply}
+                  disabled={submittingReply || (!replyText.trim() && !replyImageUrl)}
+                >
+                  {submittingReply ? 'Gönderiliyor…' : 'Yanıtla'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="fx-reply-guest">
+          <span>Yanıt yazmak için giriş yap.</span>
+          <button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={onOpenAuth}>Giriş yap</button>
+        </div>
+      )}
 
-      {/* ── THREADED REPLIES LIST ── */}
-      <div style={{ flex: 1, paddingBottom: 100, background: isDark ? '#000000' : 'white' }}>
+      <section aria-label="Yanıtlar">
         {comments.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: isDark ? '#71767b' : '#94a3b8' }}>
-            <p style={{ margin: 0, fontSize: '0.92rem' }}>Henüz yanıt yok. İlk yanıtı sen gönder!</p>
-          </div>
+          <div className="fx-end">Henüz yanıt yok. İlk yanıtı sen yaz.</div>
         ) : (
           comments.map(c => {
             const commentAuthorUsername = c.authorUsername || (c.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
             const canDeleteComment = (currentUser?.uid && currentUser.uid === c.uid) || isAdmin;
-            const commentLiked = c.reactionsData?.[currentUser?.uid || ''] === 'like';
-            const commentLikesCount = Object.values(c.reactionsData || {}).filter(v => v === 'like').length;
+            const uid = currentUser?.uid || '';
+            const liked = c.reactionsData?.[uid] === 'like';
+            const disliked = c.reactionsData?.[uid] === 'dislike';
+            const reposted = Boolean(c.repostsData?.[uid]);
+            const saved = Boolean(c.bookmarksData?.[uid]);
+            const likeN = Object.values(c.reactionsData || {}).filter(v => v === 'like').length;
+            const downN = Object.values(c.reactionsData || {}).filter(v => v === 'dislike').length;
+            const repostN = Object.values(c.repostsData || {}).filter(Boolean).length;
+            const saveN = Object.values(c.bookmarksData || {}).filter(Boolean).length;
+            const replyTarget = c.replyToUsername || username;
+            const guard = (fn: () => void) => () => (isMember ? fn() : onOpenAuth());
 
             return (
-              <div
-                key={c.id}
-                style={{
-                  display: 'flex',
-                  gap: 12,
-                  padding: '16px 20px',
-                  borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
-                  background: isDark ? '#000000' : 'white'
-                }}
-              >
-                {/* Comment author avatar */}
-                <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #334155, #0f172a)',
-                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    flexShrink: 0,
-                    overflow: 'hidden'
-                  }}>
-                    {c.authorPhotoURL ? (
-                      <img src={c.authorPhotoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      (c.authorName || 'U')[0].toUpperCase()
-                    )}
-                  </div>
-                </Link>
-
-                {/* Comment content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <Link
-                        href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`}
-                        style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.92rem', textDecoration: 'none' }}
-                      >
-                        {c.authorName}
-                      </Link>
-                      {c.authorIsPsychologist && !c.authorHideBadge && (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 2,
-                          background: isDark ? 'rgba(212, 175, 55, 0.18)' : 'rgba(212, 175, 55, 0.12)',
-                          color: isDark ? '#fbbf24' : '#926100',
-                          border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.5)' : 'rgba(212, 175, 55, 0.45)'}`,
-                          padding: '1px 6px',
-                          borderRadius: 999,
-                          fontSize: '0.64rem',
-                          fontWeight: 800,
-                        }}>
-                          <CheckCircle size={9} color={isDark ? '#fbbf24' : '#926100'} />
-                          <span>Psikolog</span>
-                        </span>
+              <div key={c.id} className="fx-post fx-comment">
+                <div className="fx-post-grid">
+                  <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} aria-label={c.authorName}>
+                    <Avatar src={c.authorPhotoURL} name={c.authorName} size={40} />
+                  </Link>
+                  <div className="fx-post-body">
+                    <div className="fx-post-meta">
+                      <div className="fx-post-meta-main">
+                        <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} className="fx-name">{c.authorName}</Link>
+                        {c.authorIsPsychologist && !c.authorHideBadge && <VerifiedMark />}
+                        <span className="fx-handle">@{commentAuthorUsername}</span>
+                        <span className="fx-sep" aria-hidden="true">·</span>
+                        <time className="fx-time" title={formatPostDate(c.createdAt)}>{formatTimeAgo(c.createdAt)}</time>
+                      </div>
+                      {canDeleteComment && (
+                        <button type="button" className="fx-icon-btn fx-comment-del" onClick={() => handleDeleteComment(c.id)} aria-label="Yanıtı sil" title="Yanıtı sil">
+                          <Trash2 size={16} />
+                        </button>
                       )}
-                      <span style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.82rem' }}>@{commentAuthorUsername}</span>
-                      <span style={{ color: isDark ? '#3e4144' : '#cbd5e1', fontSize: '0.82rem' }}>·</span>
-                      <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.8rem' }}>{formatTimeAgo(c.createdAt)}</span>
                     </div>
 
-                    {canDeleteComment && (
+                    {replyTarget !== username && (
+                      <div className="fx-reply-to">
+                        <Link href={`/forum/profil/${encodeURIComponent(replyTarget)}`} className="fx-mention">@{replyTarget}</Link> adlı kişiye yanıt
+                      </div>
+                    )}
+
+                    {c.text && <p className="fx-post-text">{renderTextWithMentions(c.text)}</p>}
+                    {c.imageUrl && (
+                      <div className="fx-post-media">
+                        <img src={c.imageUrl} alt="" loading="lazy" />
+                      </div>
+                    )}
+
+                    <div className="fx-actions" role="group" aria-label="Yanıt etkileşimleri">
+                      <button type="button" className="fx-act" onClick={guard(() => { setReplyToUser(commentAuthorUsername); replyInputRef.current?.focus(); })} aria-label="Yanıtla">
+                        <span className="fx-act-ic"><MessageCircle size={17} strokeWidth={1.8} /></span>
+                      </button>
+                      <button type="button" data-kind="repost" className={`fx-act ${reposted ? 'is-on' : ''}`} onClick={() => handleCommentRepost(c)} aria-pressed={reposted} aria-label="Yeniden paylaş">
+                        <span className="fx-act-ic"><Repeat2 size={18} strokeWidth={reposted ? 2.4 : 1.8} /></span>
+                        <span className="fx-act-n">{compactCount(repostN)}</span>
+                      </button>
+                      <button type="button" data-kind="like" className={`fx-act ${liked ? 'is-on' : ''}`} onClick={() => handleCommentLike(c.id, c.reactionsData)} aria-pressed={liked} aria-label="Beğen">
+                        <span className="fx-act-ic"><Heart size={17} strokeWidth={liked ? 0 : 1.8} fill={liked ? 'currentColor' : 'none'} /></span>
+                        <span className="fx-act-n">{compactCount(likeN)}</span>
+                      </button>
+                      <button type="button" data-kind="down" className={`fx-act ${disliked ? 'is-on' : ''}`} onClick={() => handleCommentDislike(c.id, c.reactionsData)} aria-pressed={disliked} aria-label="Katılmıyorum">
+                        <span className="fx-act-ic"><ThumbsDown size={16} strokeWidth={1.8} fill={disliked ? 'currentColor' : 'none'} /></span>
+                        <span className="fx-act-n">{compactCount(downN)}</span>
+                      </button>
+                      <button type="button" data-kind="save" className={`fx-act ${saved ? 'is-on' : ''}`} onClick={() => handleCommentBookmark(c.id, c.bookmarksData)} aria-pressed={saved} aria-label="Kaydet">
+                        <span className="fx-act-ic"><Bookmark size={17} strokeWidth={saved ? 0 : 1.8} fill={saved ? 'currentColor' : 'none'} /></span>
+                        <span className="fx-act-n">{compactCount(saveN)}</span>
+                      </button>
                       <button
                         type="button"
-                        onClick={() => handleDeleteComment(c.id)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: isDark ? '#71767b' : '#94a3b8',
-                          cursor: 'pointer',
-                          padding: 4,
-                          display: 'flex',
-                          alignItems: 'center'
+                        className="fx-act"
+                        onClick={async () => {
+                          try { await navigator.clipboard.writeText(`${window.location.origin}/forum?thread=${p.id}`); toast.success('Bağlantı kopyalandı'); }
+                          catch { toast.error('Bağlantı kopyalanamadı'); }
                         }}
-                        onMouseOver={e => (e.currentTarget.style.color = '#ef4444')}
-                        onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#94a3b8')}
-                        title="Yanıtı Sil"
+                        aria-label="Bağlantıyı kopyala"
                       >
-                        <Trash2 size={14} />
+                        <span className="fx-act-ic"><Share size={16} strokeWidth={1.8} /></span>
                       </button>
-                    )}
-                  </div>
-
-                  {/* Replying to @user indicator in blue */}
-                  <div style={{ fontSize: '0.82rem', color: isDark ? '#71767b' : '#64748b', margin: '2px 0 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span>Yanıt olarak</span>
-                    <Link
-                      href={`/forum/profil/${encodeURIComponent(c.replyToUsername || username)}`}
-                      style={{ color: '#1d9bf0', textDecoration: 'none', fontWeight: 600 }}
-                      onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
-                      onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
-                    >
-                      @{c.replyToUsername || username}
-                    </Link>
-                  </div>
-
-                  {/* Comment text with blue @mentions */}
-                  {c.text && (
-                    <p style={{
-                      color: isDark ? '#e7e9ea' : '#0f172a',
-                      fontSize: '0.95rem',
-                      lineHeight: 1.55,
-                      margin: '4px 0 0',
-                      wordBreak: 'break-word',
-                      whiteSpace: 'pre-wrap'
-                    }}>
-                      {renderTextWithMentions(c.text)}
-                    </p>
-                  )}
-
-                  {/* Comment image */}
-                  {c.imageUrl && (
-                    <div style={{
-                      marginTop: 8,
-                      borderRadius: 12,
-                      overflow: 'hidden',
-                      maxHeight: 260,
-                      border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                      background: isDark ? '#0f1012' : '#f8fafc'
-                    }}>
-                      <img src={c.imageUrl} alt="" style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }} />
                     </div>
-                  )}
-
-                  {/* ── COMMENT ACTION BUTTONS: Yanıtla, Yeniden Paylaş, Like, Dislike, Kaydet, Paylaş ── */}
-                  {(() => {
-                    const commentLiked = c.reactionsData?.[currentUser?.uid || ''] === 'like';
-                    const commentDisliked = c.reactionsData?.[currentUser?.uid || ''] === 'dislike';
-                    const commentReposted = Boolean(c.repostsData?.[currentUser?.uid || '']);
-                    const commentBookmarked = Boolean(c.bookmarksData?.[currentUser?.uid || '']);
-
-                    const commentLikesCount = Object.values(c.reactionsData || {}).filter(v => v === 'like').length;
-                    const commentDislikesCount = Object.values(c.reactionsData || {}).filter(v => v === 'dislike').length;
-                    const commentRepostsCount = Object.values(c.repostsData || {}).filter(Boolean).length;
-                    const commentBookmarksCount = Object.values(c.bookmarksData || {}).filter(Boolean).length;
-
-                    return (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        maxWidth: 380,
-                        marginTop: 10,
-                        color: isDark ? '#71767b' : '#64748b'
-                      }}>
-                        {/* 1. Yanıtla */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setReplyToUser(commentAuthorUsername);
-                            replyInputRef.current?.focus();
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 5,
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: isDark ? '#71767b' : '#64748b',
-                            fontSize: '0.8rem',
-                            padding: '4px 6px',
-                            borderRadius: 6
-                          }}
-                          onMouseOver={e => (e.currentTarget.style.color = '#1d9bf0')}
-                          onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-                          title="Yanıtla"
-                        >
-                          <MessageCircle size={15} strokeWidth={1.8} />
-                          <span>0</span>
-                        </button>
-
-                        {/* 2. Yeniden Paylaş (Repost) */}
-                        <button
-                          type="button"
-                          onClick={() => handleCommentRepost(c)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 5,
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: commentReposted ? '#16a34a' : (isDark ? '#71767b' : '#64748b'),
-                            fontWeight: commentReposted ? 700 : 500,
-                            fontSize: '0.8rem',
-                            padding: '4px 6px',
-                            borderRadius: 6
-                          }}
-                          onMouseOver={e => !commentReposted && (e.currentTarget.style.color = '#16a34a')}
-                          onMouseOut={e => !commentReposted && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-                          title="Yeniden Paylaş"
-                        >
-                          <Repeat2 size={16} strokeWidth={commentReposted ? 2.4 : 1.8} />
-                          <span>{commentRepostsCount}</span>
-                        </button>
-
-                        {/* 3. Beğen (Like) */}
-                        <button
-                          type="button"
-                          onClick={() => handleCommentLike(c.id, c.reactionsData)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 5,
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: commentLiked ? '#ef4444' : (isDark ? '#71767b' : '#64748b'),
-                            fontWeight: commentLiked ? 700 : 500,
-                            fontSize: '0.8rem',
-                            padding: '4px 6px',
-                            borderRadius: 6
-                          }}
-                          onMouseOver={e => !commentLiked && (e.currentTarget.style.color = '#ef4444')}
-                          onMouseOut={e => !commentLiked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-                          title="Beğen"
-                        >
-                          <Heart size={15} strokeWidth={commentLiked ? 2.4 : 1.8} fill={commentLiked ? '#ef4444' : 'none'} />
-                          <span>{commentLikesCount}</span>
-                        </button>
-
-                        {/* 4. Beğenme (Dislike) */}
-                        <button
-                          type="button"
-                          onClick={() => handleCommentDislike(c.id, c.reactionsData)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 5,
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: commentDisliked ? '#3b82f6' : (isDark ? '#71767b' : '#64748b'),
-                            fontWeight: commentDisliked ? 700 : 500,
-                            fontSize: '0.8rem',
-                            padding: '4px 6px',
-                            borderRadius: 6
-                          }}
-                          onMouseOver={e => !commentDisliked && (e.currentTarget.style.color = '#3b82f6')}
-                          onMouseOut={e => !commentDisliked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-                          title="Beğenme"
-                        >
-                          <ThumbsDown size={15} strokeWidth={commentDisliked ? 2.4 : 1.8} fill={commentDisliked ? '#3b82f6' : 'none'} />
-                          <span>{commentDislikesCount}</span>
-                        </button>
-
-                        {/* 5. Kaydet (Bookmark) */}
-                        <button
-                          type="button"
-                          onClick={() => handleCommentBookmark(c.id, c.bookmarksData)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 5,
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: commentBookmarked ? '#d97706' : (isDark ? '#71767b' : '#64748b'),
-                            fontWeight: commentBookmarked ? 700 : 500,
-                            fontSize: '0.8rem',
-                            padding: '4px 6px',
-                            borderRadius: 6
-                          }}
-                          onMouseOver={e => !commentBookmarked && (e.currentTarget.style.color = '#d97706')}
-                          onMouseOut={e => !commentBookmarked && (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-                          title="Kaydet"
-                        >
-                          <Bookmark size={15} strokeWidth={commentBookmarked ? 2.4 : 1.8} fill={commentBookmarked ? '#d97706' : 'none'} />
-                          <span>{commentBookmarksCount}</span>
-                        </button>
-
-                        {/* 6. Paylaş */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const url = `${window.location.origin}/forum?thread=${p.id}`;
-                            navigator.clipboard.writeText(url);
-                            toast.success('Bağlantı kopyalandı');
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: isDark ? '#71767b' : '#64748b',
-                            padding: '4px 6px',
-                            borderRadius: 6,
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                          onMouseOver={e => (e.currentTarget.style.color = isDark ? '#e7e9ea' : '#0f172a')}
-                          onMouseOut={e => (e.currentTarget.style.color = isDark ? '#71767b' : '#64748b')}
-                          title="Paylaş"
-                        >
-                          <Share2 size={15} strokeWidth={1.8} />
-                        </button>
-                      </div>
-                    );
-                  })()}
+                  </div>
                 </div>
               </div>
             );
           })
         )}
-      </div>
+      </section>
 
-      {/* ─── REPORT MODAL ─── */}
       {reportModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            background: 'rgba(0, 0, 0, 0.72)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
-          onClick={() => setReportModalOpen(false)}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: isDark ? '#121212' : '#ffffff',
-              border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-              borderRadius: 16,
-              width: '100%',
-              maxWidth: 460,
-              padding: 24,
-              boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Flag size={20} color="#ef4444" />
-                <h3 style={{ fontWeight: 800, fontSize: '1.15rem', color: isDark ? '#e7e9ea' : '#0f172a', margin: 0 }}>
-                  Gönderiyi Şikayet Et
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReportModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: isDark ? '#71767b' : '#64748b', cursor: 'pointer', padding: 4 }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <p style={{ fontSize: '0.84rem', color: isDark ? '#94a3b8' : '#64748b', marginBottom: 14, lineHeight: 1.5 }}>
-              Bu gönderinin topluluk kurallarını ihlal ettiğini düşünüyorsanız lütfen sebebi açıklayın. Şikayetiniz yöneticilerimize iletilecektir.
-            </p>
-
-            <form onSubmit={handleReportSubmit}>
-              <textarea
-                autoFocus
-                required
-                value={reportReason}
-                onChange={e => setReportReason(e.target.value)}
-                placeholder="Şikayet sebebinizi yazın (ör. spam, hakaret, yanıltıcı bilgi, taciz)..."
-                style={{
-                  width: '100%',
-                  minHeight: 100,
-                  padding: 12,
-                  borderRadius: 10,
-                  border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                  background: isDark ? '#000000' : '#ffffff',
-                  color: isDark ? '#e7e9ea' : '#0f172a',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  resize: 'none',
-                  boxSizing: 'border-box',
-                  fontFamily: 'inherit',
-                  marginBottom: 16,
-                }}
-              />
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setReportModalOpen(false)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: `1px solid ${isDark ? '#2f3336' : '#cbd5e1'}`,
-                    background: 'transparent',
-                    color: isDark ? '#e7e9ea' : '#475569',
-                    fontWeight: 600,
-                    fontSize: '0.84rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Vazgeç
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingReport || !reportReason.trim()}
-                  style={{
-                    padding: '8px 20px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: '#ef4444',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: '0.84rem',
-                    cursor: 'pointer',
-                    opacity: submittingReport || !reportReason.trim() ? 0.6 : 1,
-                  }}
-                >
-                  {submittingReport ? 'Gönderiliyor...' : 'Şikayeti Gönder'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ReportDialog
+          reason={reportReason}
+          setReason={setReportReason}
+          submitting={submittingReport}
+          onClose={() => setReportModalOpen(false)}
+          onSubmit={handleReportSubmit}
+        />
       )}
     </div>
   );

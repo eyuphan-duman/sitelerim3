@@ -1,4 +1,5 @@
 import Script from "next/script";
+import "@/components/forum/forum.css";
 
 export default function ForumLayout({
   children,

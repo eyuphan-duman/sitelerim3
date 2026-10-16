@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  MessageCircle, Trash2, Heart, ThumbsDown, Repeat2, 
-  Bookmark, Share2, CheckCircle, MoreHorizontal, Link as LinkIcon, Flag, X
+import {
+  MessageCircle, Trash2, Heart, ThumbsDown, Repeat2,
+  Bookmark, Share, MoreHorizontal, Link as LinkIcon, Flag
 } from 'lucide-react';
 import { doc, onSnapshot, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { formatPostDate, formatTimeAgo, renderTextWithMentions } from './ThreadView';
+import { formatTimeAgo, formatPostDate, renderTextWithMentions } from './ThreadView';
+import { Avatar, VerifiedMark, ReportDialog, compactCount } from './ui';
 import toast from 'react-hot-toast';
 
 interface Post {
@@ -49,6 +50,7 @@ interface Props {
   onRepost?: (e: React.MouseEvent, p: Post) => void;
   onBookmark?: (e: React.MouseEvent, p: Post) => void;
   onDelete: (id: string) => void;
+  onTopic?: (category: string) => void;
 }
 
 export default function ForumPost({
@@ -57,13 +59,13 @@ export default function ForumPost({
   currentUserEmail,
   adminEmails,
   isPsychologist,
-  isDark,
   onOpen,
   onLike,
   onDislike,
   onRepost,
   onBookmark,
-  onDelete
+  onDelete,
+  onTopic,
 }: Props) {
   const isRepost = Boolean(post.isRepost);
   const displayAuthorName = isRepost && post.originalAuthorName ? post.originalAuthorName : (post.authorName || 'Kullanıcı');
@@ -71,13 +73,12 @@ export default function ForumPost({
   const displayAuthorPhoto = isRepost && post.originalAuthorPhotoURL ? post.originalAuthorPhotoURL : post.authorPhotoURL;
   const canDelete = (currentUserUid && currentUserUid === post.uid) || adminEmails.includes(currentUserEmail || '');
   const hasPsychBadge = !post.authorHideBadge && Boolean(isPsychologist || post.authorIsPsychologist || (isRepost && post.originalAuthorIsPsychologist));
+  const profileHref = `/forum/profil/${encodeURIComponent(displayAuthorUsername)}`;
 
   const [liveAuthorPhoto, setLiveAuthorPhoto] = useState<string | undefined>(displayAuthorPhoto);
 
   useEffect(() => {
-    if (displayAuthorPhoto) {
-      setLiveAuthorPhoto(displayAuthorPhoto);
-    }
+    if (displayAuthorPhoto) setLiveAuthorPhoto(displayAuthorPhoto);
   }, [displayAuthorPhoto]);
 
   useEffect(() => {
@@ -85,31 +86,26 @@ export default function ForumPost({
     const targetUid = post.uid;
     if (!targetUid) return;
     const unsub = onSnapshot(doc(db, 'users', targetUid), snap => {
-      if (snap.exists() && snap.data()?.photoURL) {
-        setLiveAuthorPhoto(snap.data().photoURL);
-      }
+      if (snap.exists() && snap.data()?.photoURL) setLiveAuthorPhoto(snap.data().photoURL);
     });
     return () => unsub();
   }, [post.uid, displayAuthorPhoto]);
 
-  // Reaction & state flags
   const userReaction = post.reactionsData?.[currentUserUid || ''];
   const hasLiked = userReaction === 'like' || userReaction === 'heart';
   const hasDisliked = userReaction === 'dislike';
   const hasReposted = Boolean(post.repostsData?.[currentUserUid || '']);
   const hasBookmarked = Boolean(post.bookmarksData?.[currentUserUid || '']);
 
-  // 3-dots menu & Report modal states
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [popped, setPopped] = useState<string | null>(null);
 
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reportReason.trim()) {
-      return toast.error('Lütfen şikayet sebebinizi belirtin.');
-    }
+    if (!reportReason.trim()) return toast.error('Şikayet sebebini yazın.');
     setSubmittingReport(true);
     try {
       await addDoc(collection(db, 'reports'), {
@@ -124,618 +120,151 @@ export default function ForumPost({
         createdAt: serverTimestamp(),
         status: 'pending',
       });
-      toast.success('Şikayetiniz yöneticilere iletildi.');
+      toast.success('Şikayetin yöneticilere iletildi.');
       setReportModalOpen(false);
       setReportReason('');
     } catch (err: any) {
-      toast.error('Şikayet iletilemedi: ' + (err.message || ''));
+      toast.error('Şikayet gönderilemedi: ' + (err.message || ''));
     } finally {
       setSubmittingReport(false);
     }
   };
 
-  // Counts
   const likesCount = Object.values(post.reactionsData || {}).filter(v => v === 'like' || v === 'heart').length;
   const dislikesCount = Object.values(post.reactionsData || {}).filter(v => v === 'dislike').length;
   const repostsCount = Object.values(post.repostsData || {}).filter(Boolean).length;
   const bookmarksCount = Object.values(post.bookmarksData || {}).filter(Boolean).length;
   const commentsCount = post.commentCount || 0;
 
-  const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const copyLink = () => {
     try {
-      const url = `${window.location.origin}/forum?thread=${post.originalPostId || post.id}`;
-      navigator.clipboard.writeText(url);
-      toast.success('Gönderi bağlantısı kopyalandı');
+      navigator.clipboard.writeText(`${window.location.origin}/forum?thread=${post.originalPostId || post.id}`);
+      toast.success('Bağlantı kopyalandı');
     } catch {
       toast.error('Bağlantı kopyalanamadı');
     }
   };
 
+  const act = (kind: string, fn?: (e: React.MouseEvent, p: Post) => void) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPopped(kind);
+    fn?.(e, post);
+  };
+
   return (
     <>
-    <article
-      style={{
-        padding: '18px 20px',
-        borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`,
-        transition: 'background 0.15s ease',
-        background: isDark ? '#000000' : 'white',
-        cursor: 'pointer'
-      }}
-      onClick={() => onOpen(post)}
-      onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.03)' : '#fafbfc')}
-      onMouseOut={e => (e.currentTarget.style.background = isDark ? '#000000' : 'white')}
-    >
-      {/* Repost Header Badge */}
-      {isRepost && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          color: '#16a34a',
-          fontSize: '0.8rem',
-          fontWeight: 700,
-          marginBottom: 8,
-          paddingLeft: 46
-        }}>
-          <Repeat2 size={15} strokeWidth={2.4} />
-          <Link
-            href={`/forum/profil/${encodeURIComponent(post.authorUsername || '')}`}
-            onClick={e => e.stopPropagation()}
-            style={{ color: '#16a34a', textDecoration: 'none' }}
-            onMouseOver={e => (e.currentTarget.style.textDecoration = 'underline')}
-            onMouseOut={e => (e.currentTarget.style.textDecoration = 'none')}
-          >
-            {post.authorName} yeniden paylaştı
+      <article className="fx-post" onClick={() => onOpen(post)}>
+        {isRepost && (
+          <div className="fx-post-social">
+            <Repeat2 size={15} strokeWidth={2.2} />
+            <Link href={`/forum/profil/${encodeURIComponent(post.authorUsername || '')}`} onClick={e => e.stopPropagation()}>
+              {currentUserUid === post.uid ? 'Yeniden paylaştın' : `${post.authorName} yeniden paylaştı`}
+            </Link>
+          </div>
+        )}
+
+        <div className="fx-post-grid">
+          <Link href={profileHref} onClick={e => e.stopPropagation()} aria-label={displayAuthorName}>
+            <Avatar src={liveAuthorPhoto || displayAuthorPhoto} name={displayAuthorName} size={40} />
           </Link>
-        </div>
-      )}
 
-      <div style={{ display: 'flex', gap: 14 }}>
-        
-        {/* User avatar */}
-        <Link href={`/forum/profil/${encodeURIComponent(displayAuthorUsername)}`} onClick={e => e.stopPropagation()}>
-          <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #0f172a, #1e293b)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '1rem',
-            flexShrink: 0,
-            cursor: 'pointer',
-            overflow: 'hidden'
-          }}>
-            {(liveAuthorPhoto || displayAuthorPhoto) ? (
-              <img src={liveAuthorPhoto || displayAuthorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              (displayAuthorName || 'U')[0].toUpperCase()
-            )}
-          </div>
-        </Link>
-
-        {/* Content column */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          
-          {/* Header row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Link
-                href={`/forum/profil/${encodeURIComponent(displayAuthorUsername)}`}
-                onClick={e => e.stopPropagation()}
-                style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.94rem', textDecoration: 'none' }}
-              >
-                {displayAuthorName}
-              </Link>
-
-              {hasPsychBadge && (
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 3,
-                  background: isDark ? 'rgba(212, 175, 55, 0.18)' : 'rgba(212, 175, 55, 0.12)',
-                  color: isDark ? '#fbbf24' : '#926100',
-                  border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.5)' : 'rgba(212, 175, 55, 0.45)'}`,
-                  padding: '1px 7px',
-                  borderRadius: 999,
-                  fontSize: '0.66rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.02em',
-                }}>
-                  <CheckCircle size={10} color={isDark ? '#fbbf24' : '#926100'} />
-                  <span>Psikolog</span>
-                </span>
-              )}
-
-              <span style={{ color: isDark ? '#71767b' : '#64748b', fontSize: '0.84rem' }}>@{displayAuthorUsername}</span>
-              <span style={{ color: isDark ? '#3e4144' : '#cbd5e1', fontSize: '0.84rem' }}>·</span>
-              <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(post.createdAt)}</span>
-
-              {post.category && (
-                <span style={{
-                  background: isDark ? '#16181c' : '#f1f5f9',
-                  color: isDark ? '#94a3b8' : '#64748b',
-                  border: isDark ? '1px solid #2f3336' : 'none',
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  padding: '2px 8px',
-                  borderRadius: 999,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em'
-                }}>
-                  {post.category}
-                </span>
-              )}
-            </div>
-
-            {/* 3-dots Menu */}
-            <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(!menuOpen);
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: isDark ? '#71767b' : '#94a3b8',
-                  padding: '4px 6px',
-                  borderRadius: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.15s',
-                }}
-                title="Seçenekler"
-                aria-label="Seçenekler"
-              >
-                <MoreHorizontal size={18} />
-              </button>
-
-              {menuOpen && (
-                <>
-                  <div 
-                    style={{ position: 'fixed', inset: 0, zIndex: 100 }} 
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} 
-                  />
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      top: '100%',
-                      marginTop: 4,
-                      zIndex: 101,
-                      background: isDark ? '#16181c' : '#ffffff',
-                      border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                      borderRadius: 12,
-                      boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
-                      padding: 6,
-                      minWidth: 160,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        const url = `${window.location.origin}/forum?thread=${post.id}`;
-                        navigator.clipboard.writeText(url);
-                        toast.success('Bağlantı kopyalandı!');
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '8px 12px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: isDark ? '#e7e9ea' : '#0f172a',
-                        fontSize: '0.84rem',
-                        fontWeight: 600,
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#22252a' : '#f1f5f9')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <LinkIcon size={14} />
-                      <span>Linki Kopyala</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        setReportModalOpen(true);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '8px 12px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: isDark ? '#f87171' : '#dc2626',
-                        fontSize: '0.84rem',
-                        fontWeight: 600,
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#22252a' : '#fef2f2')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <Flag size={14} />
-                      <span>Şikayet Et</span>
-                    </button>
-
-                    {canDelete && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuOpen(false);
-                          onDelete(post.id);
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          padding: '8px 12px',
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#ef4444',
-                          fontSize: '0.84rem',
-                          fontWeight: 600,
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#22252a' : '#fef2f2')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <Trash2 size={14} />
-                        <span>Gönderiyi Sil</span>
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Post text & optional title */}
-          <div>
-            {post.title && (
-              <h3 style={{
-                fontSize: '1rem',
-                fontWeight: 800,
-                color: isDark ? '#e7e9ea' : '#0f172a',
-                marginBottom: 6,
-                lineHeight: 1.35,
-                wordBreak: 'break-word'
-              }}>
-                {post.title}
-              </h3>
-            )}
-            <p style={{
-              fontSize: '0.96rem',
-              color: isDark ? '#e7e9ea' : '#1e293b',
-              lineHeight: 1.6,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              margin: '0 0 10px'
-            }}>
-              {renderTextWithMentions(post.body)}
-            </p>
-
-            {post.imageUrl && (
-              <div style={{
-                marginTop: 10,
-                marginBottom: 12,
-                borderRadius: 18,
-                overflow: 'hidden',
-                maxHeight: 480,
-                background: isDark ? '#16181c' : '#f8fafc',
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`,
-                boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.06)'
-              }}>
-                <img
-                  src={post.imageUrl}
-                  alt=""
-                  style={{ width: '100%', maxHeight: 480, objectFit: 'cover', display: 'block' }}
-                />
+          <div className="fx-post-body">
+            <div className="fx-post-meta">
+              <div className="fx-post-meta-main">
+                <Link href={profileHref} onClick={e => e.stopPropagation()} className="fx-name">{displayAuthorName}</Link>
+                {hasPsychBadge && <VerifiedMark />}
+                <span className="fx-handle">@{displayAuthorUsername}</span>
+                <span className="fx-sep" aria-hidden="true">·</span>
+                <time className="fx-time" title={formatPostDate(post.createdAt)}>{formatTimeAgo(post.createdAt)}</time>
               </div>
-            )}
-          </div>
 
-          {/* ── ACTION BAR: Yanıt, Repost, Like, Dislike, Kaydet, Paylaş ── */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            maxWidth: 450,
-            marginTop: 6,
-            color: isDark ? '#71767b' : '#64748b'
-          }}>
-            
-            {/* 1. Reply */}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onOpen(post); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#64748b',
-                fontSize: '0.82rem',
-                padding: '4px 6px',
-                borderRadius: 6
-              }}
-              onMouseOver={e => (e.currentTarget.style.color = '#1d9bf0')}
-              onMouseOut={e => (e.currentTarget.style.color = '#64748b')}
-              title="Yanıtla"
-            >
-              <MessageCircle size={16} strokeWidth={1.8} />
-              <span>{commentsCount}</span>
-            </button>
-
-            {/* 2. Repost */}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onRepost && onRepost(e, post); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: hasReposted ? '#16a34a' : '#64748b',
-                fontWeight: hasReposted ? 700 : 500,
-                fontSize: '0.82rem',
-                padding: '4px 6px',
-                borderRadius: 6
-              }}
-              onMouseOver={e => !hasReposted && (e.currentTarget.style.color = '#16a34a')}
-              onMouseOut={e => !hasReposted && (e.currentTarget.style.color = '#64748b')}
-              title="Yeniden Paylaş"
-            >
-              <Repeat2 size={17} strokeWidth={hasReposted ? 2.4 : 1.8} />
-              <span>{repostsCount}</span>
-            </button>
-
-            {/* 3. Like */}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onLike && onLike(e, post); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: hasLiked ? '#ef4444' : '#64748b',
-                fontWeight: hasLiked ? 700 : 500,
-                fontSize: '0.82rem',
-                padding: '4px 6px',
-                borderRadius: 6
-              }}
-              onMouseOver={e => !hasLiked && (e.currentTarget.style.color = '#ef4444')}
-              onMouseOut={e => !hasLiked && (e.currentTarget.style.color = '#64748b')}
-              title="Beğen"
-            >
-              <Heart size={16} strokeWidth={hasLiked ? 2.4 : 1.8} fill={hasLiked ? '#ef4444' : 'none'} />
-              <span>{likesCount}</span>
-            </button>
-
-            {/* 4. Dislike */}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onDislike && onDislike(e, post); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: hasDisliked ? '#3b82f6' : '#64748b',
-                fontWeight: hasDisliked ? 700 : 500,
-                fontSize: '0.82rem',
-                padding: '4px 6px',
-                borderRadius: 6
-              }}
-              onMouseOver={e => !hasDisliked && (e.currentTarget.style.color = '#3b82f6')}
-              onMouseOut={e => !hasDisliked && (e.currentTarget.style.color = '#64748b')}
-              title="Beğenme"
-            >
-              <ThumbsDown size={16} strokeWidth={hasDisliked ? 2.4 : 1.8} fill={hasDisliked ? '#3b82f6' : 'none'} />
-              <span>{dislikesCount}</span>
-            </button>
-
-            {/* 5. Bookmark */}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onBookmark && onBookmark(e, post); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: hasBookmarked ? '#d97706' : '#64748b',
-                fontWeight: hasBookmarked ? 700 : 500,
-                fontSize: '0.82rem',
-                padding: '4px 6px',
-                borderRadius: 6
-              }}
-              onMouseOver={e => !hasBookmarked && (e.currentTarget.style.color = '#d97706')}
-              onMouseOut={e => !hasBookmarked && (e.currentTarget.style.color = '#64748b')}
-              title="Kaydet"
-            >
-              <Bookmark size={16} strokeWidth={hasBookmarked ? 2.4 : 1.8} fill={hasBookmarked ? '#d97706' : 'none'} />
-              <span>{bookmarksCount}</span>
-            </button>
-
-            {/* 6. Share */}
-            <button
-              type="button"
-              onClick={handleShare}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#64748b',
-                padding: '4px 6px',
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center'
-              }}
-              onMouseOver={e => (e.currentTarget.style.color = '#0f172a')}
-              onMouseOut={e => (e.currentTarget.style.color = '#64748b')}
-              title="Paylaş"
-            >
-              <Share2 size={16} strokeWidth={1.8} />
-            </button>
-          </div>
-        </div>
-      </div>
-    </article>
-
-      {/* Report Modal */}
-      {reportModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setReportModalOpen(false);
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: isDark ? '#16181c' : '#ffffff',
-              border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-              borderRadius: 16,
-              width: '100%',
-              maxWidth: 460,
-              padding: 24,
-              boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Flag size={20} color="#ef4444" />
-                <h3 style={{ fontWeight: 800, fontSize: '1.15rem', color: isDark ? '#e7e9ea' : '#0f172a', margin: 0 }}>
-                  Gönderiyi Şikayet Et
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReportModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: isDark ? '#71767b' : '#64748b', cursor: 'pointer', padding: 4 }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <p style={{ fontSize: '0.84rem', color: isDark ? '#94a3b8' : '#64748b', marginBottom: 14, lineHeight: 1.5 }}>
-              Bu gönderinin topluluk kurallarını ihlal ettiğini düşünüyorsanız lütfen sebebi açıklayın. Şikayetiniz yöneticilerimize iletilecektir.
-            </p>
-
-            <form onSubmit={handleReportSubmit}>
-              <textarea
-                autoFocus
-                required
-                value={reportReason}
-                onChange={e => setReportReason(e.target.value)}
-                placeholder="Şikayet sebebinizi yazın (ör. spam, hakaret, yanıltıcı bilgi, taciz)..."
-                style={{
-                  width: '100%',
-                  minHeight: 100,
-                  padding: 12,
-                  borderRadius: 10,
-                  border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                  background: isDark ? '#000000' : '#ffffff',
-                  color: isDark ? '#e7e9ea' : '#0f172a',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  resize: 'none',
-                  boxSizing: 'border-box',
-                  fontFamily: 'inherit',
-                  marginBottom: 16,
-                }}
-              />
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <div className="fx-menu-wrap">
                 <button
                   type="button"
-                  onClick={() => setReportModalOpen(false)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: `1px solid ${isDark ? '#2f3336' : '#cbd5e1'}`,
-                    background: 'transparent',
-                    color: isDark ? '#e7e9ea' : '#475569',
-                    fontWeight: 600,
-                    fontSize: '0.84rem',
-                    cursor: 'pointer',
-                  }}
+                  className="fx-icon-btn"
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+                  aria-label="Diğer seçenekler"
+                  aria-expanded={menuOpen}
                 >
-                  Vazgeç
+                  <MoreHorizontal size={18} />
                 </button>
-                <button
-                  type="submit"
-                  disabled={submittingReport || !reportReason.trim()}
-                  style={{
-                    padding: '8px 20px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: '#ef4444',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: '0.84rem',
-                    cursor: 'pointer',
-                    opacity: submittingReport || !reportReason.trim() ? 0.6 : 1,
-                  }}
-                >
-                  {submittingReport ? 'Gönderiliyor...' : 'Şikayeti Gönder'}
-                </button>
+                {menuOpen && (
+                  <>
+                    <div className="fx-menu-backdrop" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} />
+                    <div className="fx-menu" role="menu" onClick={(e) => e.stopPropagation()}>
+                      <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); copyLink(); }}>
+                        <LinkIcon size={17} /> Bağlantıyı kopyala
+                      </button>
+                      <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setReportModalOpen(true); }}>
+                        <Flag size={17} /> Gönderiyi şikayet et
+                      </button>
+                      {canDelete && (
+                        <button type="button" role="menuitem" className="is-danger" onClick={() => { setMenuOpen(false); onDelete(post.id); }}>
+                          <Trash2 size={17} /> Sil
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
-            </form>
+            </div>
+
+            {post.title && <h3 className="fx-post-title">{post.title}</h3>}
+            {post.body && <p className="fx-post-text">{renderTextWithMentions(post.body)}</p>}
+
+            {post.imageUrl && (
+              <div className="fx-post-media">
+                <img src={post.imageUrl} alt="" loading="lazy" />
+              </div>
+            )}
+
+            {post.category && (
+              <button
+                type="button"
+                className="fx-topic-link"
+                onClick={(e) => { e.stopPropagation(); onTopic?.(post.category!); }}
+              >
+                {post.category}
+              </button>
+            )}
+
+            <div className="fx-actions" role="group" aria-label="Gönderi etkileşimleri">
+              <button type="button" className="fx-act" onClick={(e) => { e.stopPropagation(); onOpen(post); }} aria-label={`Yanıtla, ${commentsCount} yanıt`}>
+                <span className="fx-act-ic"><MessageCircle size={18} strokeWidth={1.8} /></span>
+                <span className="fx-act-n">{compactCount(commentsCount)}</span>
+              </button>
+              <button type="button" data-kind="repost" className={`fx-act ${hasReposted ? 'is-on' : ''} ${popped === 'repost' ? 'pop' : ''}`} onClick={act('repost', onRepost)} aria-pressed={hasReposted} aria-label="Yeniden paylaş">
+                <span className="fx-act-ic"><Repeat2 size={19} strokeWidth={hasReposted ? 2.4 : 1.8} /></span>
+                <span className="fx-act-n">{compactCount(repostsCount)}</span>
+              </button>
+              <button type="button" data-kind="like" className={`fx-act ${hasLiked ? 'is-on' : ''} ${popped === 'like' ? 'pop' : ''}`} onClick={act('like', onLike)} aria-pressed={hasLiked} aria-label="Beğen">
+                <span className="fx-act-ic"><Heart size={18} strokeWidth={hasLiked ? 0 : 1.8} fill={hasLiked ? 'currentColor' : 'none'} /></span>
+                <span className="fx-act-n">{compactCount(likesCount)}</span>
+              </button>
+              <button type="button" data-kind="down" className={`fx-act ${hasDisliked ? 'is-on' : ''}`} onClick={act('down', onDislike)} aria-pressed={hasDisliked} aria-label="Katılmıyorum">
+                <span className="fx-act-ic"><ThumbsDown size={17} strokeWidth={1.8} fill={hasDisliked ? 'currentColor' : 'none'} /></span>
+                <span className="fx-act-n">{compactCount(dislikesCount)}</span>
+              </button>
+              <button type="button" data-kind="save" className={`fx-act ${hasBookmarked ? 'is-on' : ''} ${popped === 'save' ? 'pop' : ''}`} onClick={act('save', onBookmark)} aria-pressed={hasBookmarked} aria-label="Kaydet">
+                <span className="fx-act-ic"><Bookmark size={18} strokeWidth={hasBookmarked ? 0 : 1.8} fill={hasBookmarked ? 'currentColor' : 'none'} /></span>
+                <span className="fx-act-n">{compactCount(bookmarksCount)}</span>
+              </button>
+              <button type="button" className="fx-act" onClick={(e) => { e.stopPropagation(); copyLink(); }} aria-label="Bağlantıyı kopyala">
+                <span className="fx-act-ic"><Share size={17} strokeWidth={1.8} /></span>
+              </button>
+            </div>
           </div>
         </div>
+      </article>
+
+      {reportModalOpen && (
+        <ReportDialog
+          reason={reportReason}
+          setReason={setReportReason}
+          submitting={submittingReport}
+          onClose={() => setReportModalOpen(false)}
+          onSubmit={handleReportSubmit}
+        />
       )}
     </>
   );
