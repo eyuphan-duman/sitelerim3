@@ -103,3 +103,33 @@ export function ReportDialog({ reason, setReason, submitting, onClose, onSubmit,
     </div>
   );
 }
+
+/** Forum teması: tüm forum sayfalarında localStorage + olay ile senkron */
+export function useForumTheme(): [boolean, () => void, (dark: boolean) => void] {
+  const [isDark, setIsDark] = React.useState(false);
+  React.useEffect(() => {
+    const read = () => {
+      try {
+        const saved = localStorage.getItem('forum_theme');
+        if (saved) setIsDark(saved === 'dark');
+        else setIsDark(Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches));
+      } catch {}
+    };
+    read();
+    window.addEventListener('storage', read);
+    window.addEventListener('forum_theme_change', read);
+    return () => {
+      window.removeEventListener('storage', read);
+      window.removeEventListener('forum_theme_change', read);
+    };
+  }, []);
+  const set = React.useCallback((dark: boolean) => {
+    setIsDark(dark);
+    try {
+      localStorage.setItem('forum_theme', dark ? 'dark' : 'light');
+      window.dispatchEvent(new Event('forum_theme_change'));
+    } catch {}
+  }, []);
+  const toggle = React.useCallback(() => set(!isDark), [isDark, set]);
+  return [isDark, toggle, set];
+}

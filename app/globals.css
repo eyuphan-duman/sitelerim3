@@ -2894,7 +2894,7 @@ body:has([data-forum-page]) .navbar {
 body:has([data-forum-dark="true"]:not(:has(.fx-shell))),
 body.forum-dark-body,
 html.forum-dark-body {
-  background-color: #000000 !important;
+  background-color: #08111f !important;
   color: #e7e9ea !important;
 }
 

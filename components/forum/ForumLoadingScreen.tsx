@@ -14,7 +14,7 @@ export default function ForumLoadingScreen({ text = 'Topluluk Yükleniyor...', i
         position: 'fixed',
         inset: 0,
         zIndex: 99999,
-        background: isDark ? '#000000' : '#050810',
+        background: '#08111f',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

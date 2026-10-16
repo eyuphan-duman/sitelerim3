@@ -10,7 +10,7 @@ import {
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
   Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User,
   Settings, Lock, EyeOff, Shield, SlidersHorizontal, Plus, Award, Key, AlertTriangle, Snowflake, ArrowRight,
-  MoreHorizontal, Flag, LogOut, Sun, Moon, Mail, Send, RefreshCw
+  MoreHorizontal, Flag, LogOut, Sun, Moon, Mail, Send, RefreshCw, ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,7 +18,12 @@ import toast from 'react-hot-toast';
 import { formatTimeAgo, renderTextWithMentions } from '@/components/forum/ThreadView';
 import ForumLoadingScreen from '@/components/forum/ForumLoadingScreen';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
-import EmailVerificationBanner from '@/components/EmailVerificationBanner';
+import ForumShell from '@/components/forum/ForumShell';
+import ForumPost from '@/components/forum/ForumPost';
+import FollowList, { FollowListMode } from '@/components/forum/FollowList';
+import { Avatar, VerifiedMark, useForumTheme } from '@/components/forum/ui';
+import { usePostActions } from '@/components/forum/usePostActions';
+import { useMyGraph } from '@/components/forum/social';
 
 interface Post { 
   id: string; body: string; authorName: string; authorUsername?: string; uid: string; 
@@ -32,424 +37,6 @@ interface Post {
 
 const CATEGORIES = ['Tümü','Psikanaliz','Varoluş & Anlam','Kaygı & Depresyon','İlişkiler','Çocukluk & Travma','Rüyalar','Kimlik & Benlik','Kişisel Gelişim'];
 const ADMIN = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
-
-function Empty({ icon, text, isDark }: { icon?: React.ReactNode; text: string; isDark?: boolean }) {
-  return (
-    <div style={{ padding: '80px 20px', textAlign: 'center', color: isDark ? '#71767b' : '#94a3b8' }}>
-      {icon && <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>{icon}</div>}
-      <p style={{ fontWeight: 700, fontSize: '1rem', color: isDark ? '#94a3b8' : '#64748b' }}>{text}</p>
-    </div>
-  );
-}
-
-function PostCard({ 
-  p, 
-  pd, 
-  isOwn, 
-  userEmail, 
-  onDelete,
-  repostedBy,
-  isDark = false
-}: { 
-  p: Post; 
-  pd: any; 
-  isOwn: boolean; 
-  userEmail: string; 
-  onDelete: (id: string) => void;
-  repostedBy?: string;
-  isDark?: boolean;
-}) {
-  const router = useRouter();
-  const isRepost = Boolean(p.isRepost);
-  const authorName = (isRepost && p.originalAuthorName) ? p.originalAuthorName : (p.authorName || 'Kullanıcı');
-  const authorUsername = (isRepost && p.originalAuthorUsername) ? p.originalAuthorUsername : (p.authorUsername || authorName.toLowerCase().replace(/\s+/g, '') || 'kullanici');
-  const isPsych = !p.authorHideBadge && (p.uid === pd?.uid ? !pd?.hideBadge : true) && Boolean(isRepost && p.originalAuthorIsPsychologist !== undefined ? p.originalAuthorIsPsychologist : p.authorIsPsychologist);
-
-  const initialPhoto = (isRepost && p.originalAuthorPhotoURL) 
-    ? p.originalAuthorPhotoURL 
-    : (p.authorPhotoURL || (p.uid === pd?.uid ? pd?.photoURL : undefined) || (p.authorUsername && pd?.username && p.authorUsername.toLowerCase() === pd.username.toLowerCase() ? pd?.photoURL : undefined));
-  const [authorPic, setAuthorPic] = useState<string | undefined>(initialPhoto);
-
-  useEffect(() => {
-    const candidate = (isRepost && p.originalAuthorPhotoURL)
-      ? p.originalAuthorPhotoURL
-      : (p.authorPhotoURL || (p.uid === pd?.uid ? pd?.photoURL : undefined) || (p.authorUsername && pd?.username && p.authorUsername.toLowerCase() === pd.username.toLowerCase() ? pd?.photoURL : undefined));
-    if (candidate) {
-      setAuthorPic(candidate);
-      return;
-    }
-    const targetUid = p.uid;
-    if (!targetUid) return;
-    const unsub = onSnapshot(doc(db, 'users', targetUid), snap => {
-      if (snap.exists() && snap.data()?.photoURL) {
-        setAuthorPic(snap.data().photoURL);
-      }
-    });
-    return () => unsub();
-  }, [p.uid, p.authorPhotoURL, p.isRepost, p.originalAuthorPhotoURL, pd?.uid, pd?.photoURL, pd?.username, p.authorUsername]);
-
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [reportReason, setReportReason] = useState('');
-  const [submittingReport, setSubmittingReport] = useState(false);
-
-  const handleReportSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reportReason.trim()) {
-      return toast.error('Lütfen şikayet sebebinizi belirtin.');
-    }
-    setSubmittingReport(true);
-    try {
-      await addDoc(collection(db, 'reports'), {
-        postId: p.id,
-        postBody: p.body || '',
-        postAuthorUid: p.uid,
-        postAuthorName: authorName,
-        postAuthorUsername: authorUsername,
-        reportedByUid: pd?.uid || 'misafir',
-        reportedByEmail: userEmail || '',
-        reason: reportReason.trim(),
-        createdAt: serverTimestamp(),
-        status: 'pending',
-      });
-      toast.success('Şikayetiniz yöneticilere iletildi.');
-      setReportModalOpen(false);
-      setReportReason('');
-    } catch (err: any) {
-      toast.error('Şikayet iletilemedi: ' + (err.message || ''));
-    } finally {
-      setSubmittingReport(false);
-    }
-  };
-
-  return (
-    <div 
-      className="profile-card-item"
-      style={{ padding: '20px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, transition: 'background 0.15s', background: isDark ? '#000000' : 'white', cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
-      onClick={() => router.push(`/forum?thread=${p.id}`)}
-      onMouseOver={e => (e.currentTarget.style.background = isDark ? '#080808' : '#fafbfc')}
-      onMouseOut={e => (e.currentTarget.style.background = isDark ? '#000000' : 'white')}
-    >
-      {/* Repost banner */}
-      {repostedBy && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#16a34a', fontSize: '0.78rem', fontWeight: 700, marginBottom: 8, paddingLeft: 46 }}>
-          <Repeat2 size={13} strokeWidth={2.4} />
-          <span>{repostedBy} yeniden gönderdi</span>
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 14 }}>
-        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '1.05rem' }}>
-          {authorPic ? <img key={authorPic} src={authorPic} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : authorName[0].toUpperCase()}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.96rem' }}>{authorName}</span>
-              {isPsych && (
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                    border: '1px solid rgba(201,169,110,0.4)',
-                    color: '#facc15',
-                    fontSize: '0.65rem',
-                    fontWeight: 800,
-                    padding: '2px 7px',
-                    borderRadius: 999
-                  }}
-                  title="Doğrulanmış Lisanslı Psikolog"
-                >
-                  <CheckCircle size={11} color="#facc15" />
-                  <span>Psikolog</span>
-                </span>
-              )}
-              <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.85rem' }}>@{authorUsername}</span>
-              <span style={{ color: isDark ? '#333639' : '#cbd5e1', fontSize: '0.85rem' }}>·</span>
-              <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem' }}>{formatTimeAgo(p.createdAt)}</span>
-              {p.category && <span style={{ background: isDark ? '#16181c' : '#f1f5f9', color: isDark ? '#94a3b8' : '#64748b', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em', border: isDark ? '1px solid #2f3336' : 'none' }}>{p.category}</span>}
-            </div>
-
-            {/* 3-dots Menu */}
-            <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(!menuOpen);
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: isDark ? '#71767b' : '#94a3b8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '4px 6px',
-                  borderRadius: 6,
-                  transition: 'all 0.15s'
-                }}
-                title="Seçenekler"
-                aria-label="Seçenekler"
-              >
-                <MoreHorizontal size={18} />
-              </button>
-
-              {menuOpen && (
-                <>
-                  <div
-                    style={{ position: 'fixed', inset: 0, zIndex: 100 }}
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
-                  />
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      top: '100%',
-                      marginTop: 4,
-                      zIndex: 101,
-                      background: isDark ? '#16181c' : '#ffffff',
-                      border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                      borderRadius: 12,
-                      boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
-                      padding: 6,
-                      minWidth: 160,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        const url = `${window.location.origin}/forum?thread=${p.id}`;
-                        navigator.clipboard.writeText(url);
-                        toast.success('Bağlantı kopyalandı!');
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '8px 12px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: isDark ? '#e7e9ea' : '#0f172a',
-                        fontSize: '0.84rem',
-                        fontWeight: 600,
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#22252a' : '#f1f5f9')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <LinkIcon size={14} />
-                      <span>Linki Kopyala</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        setReportModalOpen(true);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '8px 12px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: isDark ? '#f87171' : '#dc2626',
-                        fontSize: '0.84rem',
-                        fontWeight: 600,
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <Flag size={14} />
-                      <span>Şikayet Et</span>
-                    </button>
-
-                    {((isOwn && !repostedBy) || ADMIN.includes(userEmail)) && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuOpen(false);
-                          onDelete(p.id);
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          padding: '8px 12px',
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#ef4444',
-                          fontSize: '0.84rem',
-                          fontWeight: 600,
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = isDark ? '#1f1315' : '#fee2e2')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <Trash2 size={14} />
-                        <span>Gönderiyi Sil</span>
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-          <p style={{ color: isDark ? '#d1d5db' : '#334155', fontSize: '0.97rem', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
-            {renderTextWithMentions(p.body)}
-          </p>
-          
-          {p.imageUrl && (
-            <div style={{ marginTop: 12, borderRadius: 14, overflow: 'hidden', maxHeight: 380, border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#05070a' : '#f8fafc' }}>
-              <img src={p.imageUrl} alt="" style={{ width: '100%', maxHeight: 380, objectFit: 'cover', display: 'block' }} />
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: 20, marginTop: 12, color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.85rem' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? '#94a3b8' : '#64748b', fontWeight: 500 }}><MessageCircle size={15} />{p.commentCount || 0}</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? '#94a3b8' : '#64748b', fontWeight: 500 }}><Heart size={15} />{Object.keys(p.reactionsData || {}).length}</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: isDark ? '#94a3b8' : '#64748b', fontWeight: 500 }}><Repeat2 size={15} />{Object.keys(p.repostsData || {}).length}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Report Modal */}
-      {reportModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            background: 'rgba(0, 0, 0, 0.72)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
-          onClick={(e) => { e.stopPropagation(); setReportModalOpen(false); }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: isDark ? '#121212' : '#ffffff',
-              border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-              borderRadius: 16,
-              width: '100%',
-              maxWidth: 460,
-              padding: 24,
-              boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
-              cursor: 'default',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Flag size={20} color="#ef4444" />
-                <h3 style={{ fontWeight: 800, fontSize: '1.15rem', color: isDark ? '#e7e9ea' : '#0f172a', margin: 0 }}>
-                  Gönderiyi Şikayet Et
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReportModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: isDark ? '#71767b' : '#64748b', cursor: 'pointer', padding: 4 }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <p style={{ fontSize: '0.84rem', color: isDark ? '#94a3b8' : '#64748b', marginBottom: 14, lineHeight: 1.5 }}>
-              Bu gönderinin topluluk kurallarını ihlal ettiğini düşünüyorsanız lütfen sebebi açıklayın. Şikayetiniz yöneticilerimize iletilecektir.
-            </p>
-
-            <form onSubmit={handleReportSubmit}>
-              <textarea
-                autoFocus
-                required
-                value={reportReason}
-                onChange={e => setReportReason(e.target.value)}
-                placeholder="Şikayet sebebinizi yazın (ör. spam, hakaret, yanıltıcı bilgi, taciz)..."
-                style={{
-                  width: '100%',
-                  minHeight: 100,
-                  padding: 12,
-                  borderRadius: 10,
-                  border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                  background: isDark ? '#000000' : '#ffffff',
-                  color: isDark ? '#e7e9ea' : '#0f172a',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  resize: 'none',
-                  boxSizing: 'border-box',
-                  fontFamily: 'inherit',
-                  marginBottom: 16,
-                }}
-              />
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setReportModalOpen(false)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: `1px solid ${isDark ? '#2f3336' : '#cbd5e1'}`,
-                    background: 'transparent',
-                    color: isDark ? '#e7e9ea' : '#475569',
-                    fontWeight: 600,
-                    fontSize: '0.84rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Vazgeç
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingReport || !reportReason.trim()}
-                  style={{
-                    padding: '8px 20px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: '#ef4444',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: '0.84rem',
-                    cursor: 'pointer',
-                    opacity: submittingReport || !reportReason.trim() ? 0.6 : 1,
-                  }}
-                >
-                  {submittingReport ? 'Gönderiliyor...' : 'Şikayeti Gönder'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function ProfilClient({ username }: { username: string }) {
   const { user, userProfile, emailVerified, resendVerificationEmail, refreshEmailVerification, logout } = useAuth();
@@ -493,6 +80,19 @@ export default function ProfilClient({ username }: { username: string }) {
   const coverRef = useRef<HTMLInputElement>(null);
   const [uploadingDiploma, setUploadingDiploma] = useState(false);
   const [togglingBadge, setTogglingBadge] = useState(false);
+  const [listMode, setListMode] = useState<FollowListMode | null>(null);
+  const [settingsDetail, setSettingsDetail] = useState(false);
+  const myFollowers = useMyGraph(user && !user.isAnonymous ? user.uid : null).followers;
+
+  // Profil listelerinde iyimser güncelleme
+  const patchAll = (id: string, update: (p: any) => any) => {
+    const f = (list: any[]) => list.map(x => (x.id === id ? update(x) : x));
+    setPosts(f); setReposts(f); setLikes(f); setBookmarks(f);
+  };
+  const actions = usePostActions({
+    onNeedAuth: () => window.dispatchEvent(new Event('forum:need-auth')),
+    onPatch: patchAll,
+  });
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -510,15 +110,7 @@ export default function ProfilClient({ username }: { username: string }) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
 
-  // Dark Mode State
-  const [isDark, setIsDark] = useState<boolean>(false);
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('forum_theme');
-      if (saved) setIsDark(saved === 'dark');
-      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setIsDark(true);
-    } catch {}
-  }, []);
+  const [isDark] = useForumTheme();
 
   const skipSplashAndGo = (href: string) => {
     try {
@@ -527,17 +119,6 @@ export default function ProfilClient({ username }: { username: string }) {
     } catch (e) {}
     router.push(href);
   };
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('forum-dark-body');
-    } else {
-      document.documentElement.classList.remove('forum-dark-body');
-    }
-    return () => {
-      document.documentElement.classList.remove('forum-dark-body');
-    };
-  }, [isDark]);
 
   const handleUploadDiploma = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -815,6 +396,9 @@ export default function ProfilClient({ username }: { username: string }) {
         }
       }
     }
+    const l = searchParams.get('list');
+    if (l === 'followers' || l === 'following') setListMode(l);
+    if (searchParams.get('section')) setSettingsDetail(true);
     if (t === 'bookmarks') {
       if (isViewerOwn) {
         setTab('bookmarks');
@@ -846,12 +430,6 @@ export default function ProfilClient({ username }: { username: string }) {
     return () => { u1(); u2(); };
   }, [pd, user]);
 
-  useEffect(() => {
-    if (!user || user.isAnonymous) return;
-    const q = query(collection(db, 'notifications'), where('toUid', '==', user.uid), where('read', '==', false));
-    return onSnapshot(q, snap => setUnreadCount(snap.size));
-  }, [user]);
-
   // Real following map for current user
   useEffect(() => {
     if (!user || user.isAnonymous) {
@@ -867,52 +445,6 @@ export default function ProfilClient({ username }: { username: string }) {
       setFollowingMap(map);
     });
   }, [user]);
-
-  // Real suggested users (excluding self, currently viewed user, and already followed users)
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'users'), snap => {
-      const list = snap.docs
-        .map(d => ({ ...d.data(), uid: d.data().uid || d.id }))
-        .filter((u: any) => {
-          if (!u.uid) return false;
-          if (user && u.uid === user.uid) return false;
-          if (pd && u.uid === pd.uid) return false;
-          if (followingMap[u.uid]) return false;
-          if (!u.displayName && !u.username) return false;
-          return true;
-        });
-      setSuggestedUsers(list.slice(0, 4));
-    });
-    return () => unsub();
-  }, [user, pd, followingMap]);
-
-  // Real trending tags from forum posts
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'forum'), snap => {
-      const tagCounts: Record<string, number> = {};
-      snap.docs.forEach(doc => {
-        const d = doc.data();
-        if (d.category && d.category !== 'Tümü') {
-          tagCounts[d.category] = (tagCounts[d.category] || 0) + 1;
-        }
-        if (d.body) {
-          const matches = d.body.match(/#([a-zA-Z0-9ğıüşöçİĞÜŞÖÇ_]+)/g);
-          if (matches) {
-            matches.forEach((m: string) => {
-              const clean = m.replace('#', '');
-              tagCounts[clean] = (tagCounts[clean] || 0) + 1;
-            });
-          }
-        }
-      });
-      const sorted = Object.entries(tagCounts)
-        .map(([tag, count]) => ({ tag, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-      setTrends(sorted);
-    });
-    return () => unsub();
-  }, []);
 
   const uploadImg = async (file: File, path: string): Promise<string> => {
     const fd = new FormData();
@@ -1144,7 +676,7 @@ export default function ProfilClient({ username }: { username: string }) {
     if (!deletePassword.trim()) {
       return toast.error('Hesabınızı silmek için mevcut şifrenizi girmelisiniz.');
     }
-    if (deleteConfirmText.trim().toUpperCase() !== 'SİL') {
+    if (deleteConfirmText.trim().toLocaleUpperCase('tr-TR') !== 'SİL') {
       return toast.error('Lütfen onaylamak için kutuya büyük harflerle SİL yazın.');
     }
     setDeletingAccount(true);
@@ -1214,1764 +746,568 @@ export default function ProfilClient({ username }: { username: string }) {
   };
 
   if (loading) {
-    return <ForumLoadingScreen text="Profil Yükleniyor..." isDark={isDark} />;
+    return <ForumLoadingScreen text="Profil yükleniyor" isDark={isDark} />;
   }
 
   if (!pd) {
     return (
-      <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: isDark ? '#000000' : '#f8fafc', padding: 20 }}>
-        <UserX size={44} color="#94a3b8" style={{ marginBottom: 14 }} />
-        <p style={{ fontSize: '1.3rem', fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 16 }}>Hesap bulunamadı</p>
-        <Link href="/forum" style={{ color: isDark ? '#38bdf8' : '#2563eb', fontWeight: 700, textDecoration: 'none' }}>← Topluluğa Dön</Link>
-      </div>
+      <ForumShell active={null}>
+        <div className="fx-thead">
+          <button type="button" className="fx-icon-btn" onClick={() => skipSplashAndGo('/forum')} aria-label="Foruma dön" style={{ color: 'var(--fx-ink)' }}>
+            <ArrowLeft size={20} />
+          </button>
+          <h2>Profil</h2>
+        </div>
+        <div className="fx-empty">
+          <h2>Bu hesap bulunamadı</h2>
+          <p>Kullanıcı adı değişmiş ya da hesap silinmiş olabilir. Başka bir arama dene.</p>
+          <button type="button" className="fx-btn fx-btn-primary" onClick={() => skipSplashAndGo('/forum')}>Foruma dön</button>
+        </div>
+      </ForumShell>
     );
   }
 
   const isOwn = Boolean(user && pd && user.uid === pd.uid);
-  const isAdmin = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'].includes((user?.email || '').toLowerCase().trim()) || userProfile?.role === 'admin';
-  const myUsername = userProfile?.username || (user?.displayName || '').toLowerCase().replace(/\s+/g, '') || (user?.email ? user.email.split('@')[0].toLowerCase().replace(/\s+/g, '') : '') || user?.uid || '';
+  const isAdmin = ADMIN.includes((user?.email || '').toLowerCase().trim()) || userProfile?.role === 'admin';
   const joined = pd.createdAt?.toDate?.().toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) || '';
+  const handle = (pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, '').replace(/^@+/, '');
+  const isPsych = Boolean(((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && !pd.hideBadge);
+  const isApproved = Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus));
+  const locked = !isOwn && !isAdmin && (pd.isFrozen || (pd.isPrivate && !following));
+  const followsMe = Boolean(user && followingMap && myFollowers.includes(pd.uid));
 
   const profileTabs = [
     { id: 'posts', label: 'Gönderiler' },
     ...((isOwn || !pd?.hideReplies) ? [{ id: 'replies', label: 'Yanıtlar' }] : []),
-    { id: 'reposts', label: 'Yeniden gönderiler' },
+    { id: 'reposts', label: 'Yeniden paylaşımlar' },
     ...((isOwn || !pd?.hideLikes) ? [{ id: 'likes', label: 'Beğeniler' }] : []),
-    ...(isOwn ? [{ id: 'bookmarks', label: 'Yer İşaretleri' }] : []),
+    ...(isOwn ? [{ id: 'bookmarks', label: 'Yer işaretleri' }] : []),
   ];
 
+  const enrich = (p: Post) => ({
+    ...p,
+    authorPhotoURL: p.uid === pd.uid ? (pd.photoURL || p.authorPhotoURL) : p.authorPhotoURL,
+    authorIsPsychologist: p.uid === pd.uid ? isPsych : p.authorIsPsychologist,
+  });
+
+  const renderPosts = (list: Post[], emptyTitle: string, emptyText: string, repostedBy?: boolean) =>
+    list.length === 0 ? (
+      <div className="fx-empty"><h2>{emptyTitle}</h2><p>{emptyText}</p></div>
+    ) : (
+      list.map(p => (
+        <ForumPost
+          key={p.id}
+          post={repostedBy ? { ...enrich(p), isRepost: true, authorName: pd.displayName || handle, authorUsername: handle, uid: pd.uid, originalAuthorName: p.authorName, originalAuthorUsername: p.authorUsername, originalAuthorPhotoURL: p.authorPhotoURL, originalAuthorIsPsychologist: p.authorIsPsychologist, originalPostId: p.id } as any : enrich(p)}
+          currentUserUid={user?.uid}
+          currentUserEmail={user?.email || ''}
+          adminEmails={ADMIN}
+          isDark={isDark}
+          onOpen={(x: any) => skipSplashAndGo(`/forum?thread=${x.originalPostId || x.id}`)}
+          onLike={actions.onLike as any}
+          onDislike={actions.onDislike as any}
+          onRepost={actions.onRepost as any}
+          onBookmark={actions.onBookmark as any}
+          onDelete={delPost}
+          onTopic={(c) => skipSplashAndGo(`/forum?cat=${encodeURIComponent(c)}`)}
+        />
+      ))
+    );
+
+  const settingsSections: { id: typeof settingsTab; label: string; desc: string; icon: React.ReactNode }[] = [
+    { id: 'profile', label: 'Profil bilgileri', desc: 'Ad, kullanıcı adı, biyografi', icon: <User size={20} /> },
+    { id: 'security', label: 'Şifre ve e-posta', desc: 'E-posta doğrulama, şifre değiştirme', icon: <Key size={20} /> },
+    { id: 'privacy', label: 'Gizlilik', desc: 'Gizli profil, beğeni ve yanıt görünürlüğü', icon: <Shield size={20} /> },
+    { id: 'appearance', label: 'Görünüm', desc: 'Açık ya da koyu tema', icon: <Sun size={20} /> },
+    { id: 'badge', label: 'Psikolog rozeti', desc: isApproved ? (pd.hideBadge ? 'Rozet gizli' : 'Rozet görünür') : pd.psychologistStatus === 'pending' ? 'Başvuru inceleniyor' : 'Başvuru yap', icon: <Award size={20} /> },
+    { id: 'danger', label: 'Hesap', desc: 'Çıkış, dondurma, silme', icon: <AlertTriangle size={20} /> },
+  ];
+  const closeSettings = () => { setSettingsOpen(false); setSettingsDetail(false); };
+  const currentSection = settingsSections.find(s => s.id === settingsTab)!;
+
+  const Toggle = ({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) => (
+    <button type="button" role="switch" aria-checked={on} aria-label={label} className={`fx-switch ${on ? 'is-on' : ''}`} onClick={onChange}>
+      <span />
+    </button>
+  );
+
   return (
-    <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'} className={isDark ? 'forum-dark' : ''} style={{ minHeight: '100vh', background: isDark ? '#000000' : '#f8fafc', overflowX: 'hidden' }}>
-      <style>{`
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @media (max-width: 1024px) {
-          .profile-sidebar-right { display: none !important; }
-          .profile-grid-3col { grid-template-columns: 240px 1fr !important; }
-        }
-        @media (max-width: 768px) {
-          .profile-sidebar-left { display: none !important; }
-          .profile-sidebar-right { display: none !important; }
-          .profile-grid-3col { 
-            grid-template-columns: 100% !important; 
-            padding-top: 56px !important; 
-            width: 100% !important;
-            max-width: 100vw !important;
-            overflow-x: hidden !important;
-          }
-          .profile-main-col {
-            width: 100% !important;
-            max-width: 100vw !important;
-            min-width: 0 !important;
-            overflow-x: hidden !important;
-            border-right: none !important;
-            padding-bottom: 76px !important;
-          }
-          .profile-cover {
-            height: 140px !important;
-          }
-          .profile-avatar-wrap {
-            margin-top: -42px !important;
-            padding: 0 16px !important;
-            margin-bottom: 12px !important;
-          }
-          .profile-avatar {
-            width: 82px !important;
-            height: 82px !important;
-            font-size: 1.8rem !important;
-            border-width: 3px !important;
-          }
-          .profile-btn-action {
-            padding: 7px 16px !important;
-            font-size: 0.84rem !important;
-          }
-          .profile-bio-wrap {
-            padding: 0 16px 16px !important;
-          }
-          .profile-bio-name {
-            font-size: 1.25rem !important;
-          }
-          .profile-card-item {
-            padding: 14px 16px !important;
-          }
-          .profil-tabs {
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: none !important;
-            width: 100% !important;
-            max-width: 100vw !important;
-          }
-          .profil-tabs::-webkit-scrollbar {
-            display: none !important;
-          }
-          .profil-tab-btn {
-            flex: none !important;
-            padding: 14px 16px !important;
-            font-size: 0.88rem !important;
-            white-space: nowrap !important;
-          }
-        }
-        .profil-tab-btn:hover { background: #f8fafc; }
-      `}</style>
-
-      {/* 3-COLUMN X (TWITTER) LAYOUT */}
-      <div className="profile-grid-3col" style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '260px 1fr 320px', gap: 0, paddingTop: 0, minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
-
-        {/* ── LEFT SIDEBAR ── */}
-        <aside className="profile-sidebar-left" style={{ position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, background: isDark ? '#000000' : 'transparent' }}>
-          <div style={{ padding: '0 8px 16px', marginBottom: 8 }}>
-            <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }} title="Ana Sayfaya Dön">
-              <img 
-                src="/forum-logo.png" 
-                alt="Manav Forum" 
-                style={{ 
-                  height: 38, 
-                  width: 'auto', 
-                  objectFit: 'contain',
-                  filter: isDark ? 'drop-shadow(0 0 12px rgba(29, 155, 240, 0.45)) brightness(1.05)' : 'none'
-                }} 
-              />
-              <span style={{ fontSize: '0.58rem', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>v2.0</span>
-            </Link>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingLeft: 2 }}>
-              <p style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8', margin: 0 }}>Psikoloji Topluluğu</p>
-              <Link href="/" style={{ fontSize: '0.74rem', color: isDark ? '#38bdf8' : '#2563eb', textDecoration: 'none', fontWeight: 700 }}>
-                ← Ana Site
-              </Link>
-            </div>
-          </div>
-
-          {[
-            { label: 'Ana Akış', href: '/forum', active: false, icon: <Home size={20} /> },
-            { label: 'Takip Ettiklerim', href: '/forum?feed=following', active: false, icon: <Users size={20} /> },
-            { label: 'Yer İşaretleri', href: `/forum/profil/${myUsername || username}?tab=bookmarks`, active: tab === 'bookmarks', icon: <Bookmark size={20} /> },
-            { label: 'Arama', href: '/forum?search=open', active: false, icon: <Search size={20} /> },
-            { label: 'Beğenilenler', href: `/forum/profil/${myUsername || username}?tab=likes`, active: tab === 'likes', icon: <Heart size={20} /> },
-            { label: 'Bildirimler', href: '/bildirimler', active: false, icon: <Bell size={20} />, badge: unreadCount },
-            { label: 'Ayarlar', action: () => setSettingsOpen(true), active: settingsOpen, icon: <Settings size={20} /> },
-            { label: 'Profilim', href: `/forum/profil/${myUsername || username}`, active: isOwn && tab !== 'bookmarks' && tab !== 'likes', icon: <div style={{ width: 22, height: 22, borderRadius: '50%', background: isOwn && tab !== 'bookmarks' && tab !== 'likes' ? (isDark ? '#38bdf8' : '#334155') : (isDark ? '#1d9bf0' : '#0f172a'), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{(userProfile?.displayName || user?.displayName || 'U')[0]}</div> },
-          ].map(item => (
-            item.action ? (
-              <button 
-                key={item.label}
-                type="button"
-                onClick={item.action}
-                style={{ width: '100%', border: 'none', background: 'transparent', padding: 0, textAlign: 'left', cursor: 'pointer' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? (isDark ? '#e7e9ea' : '#0f172a') : 'transparent', color: item.active ? (isDark ? '#000000' : 'white') : (isDark ? '#e7e9ea' : '#475569'), fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </div>
-                </div>
-              </button>
-            ) : (
-              <Link 
-                key={item.label} 
-                href={item.href || '#'} 
-                onClick={() => {
-                  if (item.href?.startsWith('/forum')) {
-                    try {
-                      sessionStorage.setItem('forum_skip_splash', 'true');
-                      sessionStorage.setItem('forum_splash_shown', '1');
-                    } catch (e) {}
-                  }
-                }}
-                style={{ textDecoration: 'none' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderRadius: 12, background: item.active ? (isDark ? '#e7e9ea' : '#0f172a') : 'transparent', color: item.active ? (isDark ? '#000000' : 'white') : (isDark ? '#e7e9ea' : '#475569'), fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', cursor: 'pointer' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge && item.badge > 0 ? (
-                    <span style={{ background: '#ef4444', color: 'white', fontSize: '0.68rem', fontWeight: 800, padding: '2px 7px', borderRadius: 999 }}>{item.badge}</span>
-                  ) : null}
-                </div>
-              </Link>
-            )
-          ))}
-
-          <div style={{ margin: '16px 0 8px', padding: '0 8px', fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#71767b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Kategoriler</div>
-          {CATEGORIES.filter(c => c !== 'Tümü').slice(0, 6).map(c => (
-            <Link key={c} href={`/forum?cat=${encodeURIComponent(c)}`} style={{ textDecoration: 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', borderRadius: 10, color: isDark ? '#71767b' : '#64748b', fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.15s' }}>
-                <Hash size={14} /> {c}
-              </div>
-            </Link>
-          ))}
-
-          {user && !user.isAnonymous && (
-            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Link href={`/forum/profil/${myUsername}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, textDecoration: 'none', background: isDark ? '#16181c' : '#f8fafc', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, overflow: 'hidden', flexShrink: 0 }}>
-                  {userProfile?.photoURL ? <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()}
-                </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.displayName || user.displayName}</div>
-                  <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{myUsername}</div>
-                </div>
-              </Link>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await logout();
-                    toast.success('Çıkış yapıldı');
-                    router.push('/forum');
-                  } catch (e: any) {
-                    toast.error('Çıkış yapılamadı: ' + e.message);
-                  }
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  border: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #fee2e2',
-                  background: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
-                  color: isDark ? '#f87171' : '#dc2626',
-                  fontSize: '0.86rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2')}
-                onMouseOut={e => (e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2')}
-              >
-                <LogOut size={16} />
-                <span>Çıkış Yap</span>
-              </button>
-            </div>
-          )}
-        </aside>
-
-        {/* ── CENTER COLUMN (PROFILE) ── */}
-        <main className="profile-main-col" style={{ borderRight: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, minHeight: '100vh', background: isDark ? '#000000' : 'white', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
-          <EmailVerificationBanner isDark={isDark} />
-          
-          {/* Header (normal scroll, non-sticky) */}
-          <div style={{ background: isDark ? '#000000' : 'white', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 20 }}>
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  sessionStorage.setItem('forum_skip_splash', 'true');
-                  sessionStorage.setItem('forum_splash_shown', '1');
-                } catch (e) {}
-                router.push('/forum');
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: isDark ? '#16181c' : '#f1f5f9',
-                border: 'none',
-                cursor: 'pointer',
-                color: isDark ? '#e7e9ea' : '#0f172a',
-                transition: 'background 0.15s ease'
-              }}
-              title="Geri Dön"
-              aria-label="Foruma Geri Dön"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <div>
-              <div className="profile-bio-name" style={{ fontWeight: 800, fontSize: '1.1rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>{pd.displayName || pd.username}</div>
-              <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.78rem' }}>{posts.length} gönderi</div>
-            </div>
-          </div>
-
-          {/* Cover Photo */}
-          <div className="profile-cover" style={{ height: 220, position: 'relative', background: pd.coverURL ? 'transparent' : 'linear-gradient(135deg,#667eea,#764ba2)', backgroundImage: pd.coverURL ? `url(${pd.coverURL})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', width: '100%' }}>
-            <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCover} />
-            {isOwn && (
-              <button onClick={() => coverRef.current?.click()} disabled={upCover} style={{ position: 'absolute', inset: 0, border: 'none', background: 'rgba(0,0,0,0)', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: '0.9rem', fontWeight: 700, transition: 'background 0.2s' }} onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.4)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,0,0,0)'; }}>
-                <Camera size={20} /> {upCover ? 'Yükleniyor...' : 'Kapak Değiştir'}
-              </button>
-            )}
-          </div>
-
-          {/* Avatar + Action Row */}
-          <div className="profile-avatar-wrap" style={{ padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -60, marginBottom: 16 }}>
-            <div style={{ position: 'relative' }}>
-              <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhoto} />
-              <div className="profile-avatar" style={{ width: 110, height: 110, borderRadius: '50%', border: `4px solid ${isDark ? '#000000' : 'white'}`, background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '2.4rem', boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
-                {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (pd.displayName || 'U')[0].toUpperCase()}
-              </div>
-              {isOwn && (
-                <button onClick={() => photoRef.current?.click()} disabled={upPhoto} style={{ position: 'absolute', bottom: 4, right: 4, width: 34, height: 34, borderRadius: '50%', border: `2px solid ${isDark ? '#000000' : 'white'}`, background: upPhoto ? '#64748b' : (isDark ? '#1d9bf0' : '#0f172a'), color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }} title="Profil Resmini Değiştir">
-                  <Camera size={15} />
-                </button>
-              )}
-            </div>
-            <div>
-              {isOwn ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <button 
-                    className="profile-btn-action" 
-                    onClick={() => { setSettingsTab('profile'); setSettingsOpen(true); }} 
-                    style={{ 
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, 
-                      background: isDark ? '#16181c' : 'white', 
-                      color: isDark ? '#e7e9ea' : '#0f172a', 
-                      borderRadius: 999, 
-                      padding: '8px 18px', 
-                      fontWeight: 800, 
-                      cursor: 'pointer', 
-                      fontSize: '0.88rem', 
-                      transition: 'all 0.15s' 
-                    }}
-                  >
-                    <Settings size={15} />
-                    <span>Ayarlar</span>
-                  </button>
-                  <button 
-                    className="profile-btn-action" 
-                    onClick={() => { setSettingsTab('profile'); setEditOpen(true); }} 
-                    style={{ 
-                      border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, 
-                      background: isDark ? '#16181c' : 'white', 
-                      color: isDark ? '#e7e9ea' : '#0f172a', 
-                      borderRadius: 999, 
-                      padding: '8px 18px', 
-                      fontWeight: 800, 
-                      cursor: 'pointer', 
-                      fontSize: '0.88rem', 
-                      transition: 'all 0.15s' 
-                    }}
-                  >
-                    Profili Düzenle
-                  </button>
-                </div>
-              ) : (
-                <button className="profile-btn-action" onClick={toggleFollow} style={{ background: following ? (isDark ? '#16181c' : 'white') : (isDark ? '#e7e9ea' : '#0f172a'), color: following ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#000000' : 'white'), border: following ? `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}` : 'none', borderRadius: 999, padding: '9px 24px', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' }}>
-                  {following ? 'Takip Ediliyor' : 'Takip Et'}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Profile Bio Details */}
-          <div className="profile-bio-wrap" style={{ padding: '0 24px 24px', minWidth: 0, boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: isDark ? '#e7e9ea' : '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{pd.displayName || pd.username}</h1>
-              {Boolean(((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && !pd.hideBadge) && (
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                    border: '1px solid rgba(201,169,110,0.5)',
-                    color: '#facc15',
-                    fontSize: '0.75rem',
-                    fontWeight: 800,
-                    padding: '3px 10px',
-                    borderRadius: 999,
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
-                  }}
-                  title="Doğrulanmış Lisanslı Psikolog"
-                >
-                  <CheckCircle size={13} color="#facc15" />
-                  <span>{pd.title || 'Psikolog'}</span>
-                </span>
-              )}
-            </div>
-
-            {/* Unverified Email Warning Banner for account owner */}
-            {isOwn && !isAdmin && !emailVerified && !user?.emailVerified && (
-              <div style={{
-                marginTop: 14,
-                padding: '12px 18px',
-                borderRadius: 12,
-                background: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
-                border: `1.5px solid ${isDark ? 'rgba(245, 158, 11, 0.4)' : '#fde68a'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Mail size={18} color="#d97706" />
-                  <div>
-                    <div style={{ fontWeight: 800, color: isDark ? '#fbbf24' : '#92400e', fontSize: '0.88rem' }}>
-                      E-posta Adresiniz Doğrulanmamış ({user?.email})
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: isDark ? '#fef3c7' : '#b45309' }}>
-                      Paylaşım yapmak ve topluluğu aktif kullanmak için e-postanızı doğrulayın.
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setSettingsTab('security'); setSettingsOpen(true); }}
-                  style={{
-                    background: isDark ? '#d97706' : '#f59e0b',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 999,
-                    padding: '6px 14px',
-                    fontWeight: 800,
-                    fontSize: '0.8rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Doğrula / Ayarlar
-                </button>
-              </div>
-            )}
-
-            {/* Psychologist application pending banner for owner */}
-            {isOwn && pd.psychologistStatus === 'pending' && (
-              <div style={{
-                marginTop: 12,
-                padding: '12px 18px',
-                borderRadius: 12,
-                background: isDark ? 'rgba(212, 175, 55, 0.12)' : '#fefce8',
-                border: `1.5px solid ${isDark ? 'rgba(212, 175, 55, 0.35)' : '#fef08a'}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Award size={20} color={isDark ? '#facc15' : '#ca8a04'} />
-                  <div>
-                    <div style={{ fontWeight: 800, color: isDark ? '#fde047' : '#854d0e', fontSize: '0.88rem' }}>
-                      Uzman & Psikolog Başvurunuz İnceleniyor
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: isDark ? '#cbd5e1' : '#713f12', marginTop: 2 }}>
-                      Forum profiliniz aktif açılmıştır. Belgeleriniz yöneticimiz tarafından onaylandığında resmi Psikolog rozetiniz profilinizde ve paylaşımlarınızda otomatik olarak görünecektir.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Frozen banner for owner */}
-            {isOwn && pd.isFrozen && (
-              <div style={{ marginTop: 12, padding: '12px 18px', borderRadius: 10, background: isDark ? '#1e293b' : '#eff6ff', border: `1px solid ${isDark ? '#334155' : '#bfdbfe'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Snowflake size={18} color="#0284c7" />
-                  <div>
-                    <span style={{ fontWeight: 800, color: isDark ? '#f0f9ff' : '#1e3a8a', fontSize: '0.88rem' }}>Profiliniz Şu Anda Dondurulmuş Durumda</span>
-                    <div style={{ fontSize: '0.78rem', color: isDark ? '#94a3b8' : '#3b82f6' }}>Profiliniz diğer kullanıcılara gizlidir.</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleToggleFreeze}
-                  disabled={freezing}
-                  style={{
-                    background: '#0284c7',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '6px 14px',
-                    fontWeight: 700,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {freezing ? 'Aktifleştiriliyor...' : 'Profilimi Aktifleştir'}
-                </button>
-              </div>
-            )}
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 14px', fontWeight: 500 }}>@{((pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, '').replace(/^@+/, ''))}</p>
-            {pd.bio && <p style={{ fontSize: '1rem', color: isDark ? '#cbd5e1' : '#334155', lineHeight: 1.6, marginBottom: 14 }}>{pd.bio}</p>}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, color: '#64748b', fontSize: '0.88rem', marginBottom: 16 }}>
-              {pd.location && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={15} />{pd.location}</span>}
-              {pd.website && (
-                <a href={pd.website.startsWith('http') ? pd.website : `https://${pd.website}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#38bdf8', textDecoration: 'none', fontWeight: 600 }}>
-                  <LinkIcon size={15} />{pd.website}
-                </a>
-              )}
-              {joined && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={15} />Katıldı: {joined}</span>}
-            </div>
-            <div style={{ display: 'flex', gap: 24, fontSize: '0.92rem' }}>
-              <span><strong style={{ color: isDark ? '#e7e9ea' : '#0f172a' }}>{followings}</strong> <span style={{ color: '#94a3b8' }}>Takip edilen</span></span>
-              <span><strong style={{ color: isDark ? '#e7e9ea' : '#0f172a' }}>{followers}</strong> <span style={{ color: '#94a3b8' }}>Takipçi</span></span>
-            </div>
-          </div>
-
-          {/* Profile Tabs or Locked/Frozen Screen */}
-          {pd.isFrozen && !isOwn && !ADMIN.includes(user?.email || '') ? (
-            <div style={{ padding: '80px 24px', textAlign: 'center', color: isDark ? '#71767b' : '#64748b' }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: isDark ? '#16181c' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: isDark ? '#e7e9ea' : '#0f172a' }}>
-                <Snowflake size={32} />
-              </div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 8 }}>
-                Bu Profil Dondurulmuştur
-              </h2>
-              <p style={{ fontSize: '0.92rem', color: isDark ? '#71767b' : '#64748b', maxWidth: 400, margin: '0 auto' }}>
-                Kullanıcı hesabını geçici olarak dondurmuştur. Paylaşımları ve aktiviteleri gizlenmiştir.
-              </p>
-            </div>
-          ) : pd.isPrivate && !isOwn && !ADMIN.includes(user?.email || '') && !following ? (
-            <div style={{ padding: '80px 24px', textAlign: 'center', color: isDark ? '#71767b' : '#64748b' }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: isDark ? '#16181c' : '#f1f5f9', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: isDark ? '#e7e9ea' : '#0f172a' }}>
-                <Lock size={30} />
-              </div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 8 }}>
-                Bu Profil Gizlidir
-              </h2>
-              <p style={{ fontSize: '0.92rem', color: isDark ? '#71767b' : '#64748b', maxWidth: 400, margin: '0 auto 20px', lineHeight: 1.5 }}>
-                Fotoğraflarını ve paylaşımlarını görmek için @{pd.username || pd.displayName} kullanıcısını takip edin.
-              </p>
-              <button
-                type="button"
-                onClick={toggleFollow}
-                style={{
-                  background: isDark ? '#e7e9ea' : '#0f172a',
-                  color: isDark ? '#000000' : '#ffffff',
-                  border: 'none',
-                  borderRadius: 999,
-                  padding: '10px 24px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  fontSize: '0.92rem'
-                }}
-              >
-                Takip Et
-              </button>
-            </div>
+    <ForumShell active={isOwn ? 'profile' : null}>
+      {(shell) => (
+        <>
+          {listMode ? (
+            <FollowList
+              profile={pd}
+              mode={listMode}
+              onMode={setListMode}
+              onBack={() => setListMode(null)}
+              onNeedAuth={shell.openAuth}
+            />
           ) : (
             <>
-              {/* Profile Tabs */}
-              <div className="profil-tabs" style={{ display: 'flex', borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderTop: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, background: isDark ? '#000000' : 'white' }}>
-                {profileTabs.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTab(t.id as any)}
-                    className="profil-tab-btn"
-                    style={{
-                      flex: 1,
-                      padding: '16px 12px',
-                      border: 'none',
-                      background: 'none',
-                      cursor: 'pointer',
-                      fontWeight: tab === t.id ? 800 : 600,
-                      fontSize: '0.92rem',
-                      color: tab === t.id ? (isDark ? '#e7e9ea' : '#0f172a') : (isDark ? '#71767b' : '#64748b'),
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    <span>{t.label}</span>
-                    {tab === t.id && (
-                      <span
-                        style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: '25%',
-                          right: '25%',
-                          height: 3.5,
-                          background: '#1d9bf0',
-                          borderRadius: '4px 4px 0 0'
-                        }}
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tab Content */}
-              {tab === 'posts' && (posts.length === 0 ? <Empty icon={<FileText size={36} color="#cbd5e1" />} text="Henüz gönderi yok" isDark={isDark} /> : posts.map(p => <PostCard key={p.id} p={p} pd={pd} isOwn={isOwn} userEmail={user?.email || ''} onDelete={delPost} isDark={isDark} />))}
-            </>
-          )}
-
-          {tab === 'replies' && (
-            !isOwn && pd?.hideReplies ? (
-              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Bu kullanıcı yanıtlarını gizlemiştir." isDark={isDark} />
-            ) : replies.length === 0 ? (
-              <Empty icon={<MessageCircle size={36} color="#cbd5e1" />} text="Henüz yanıt yok" isDark={isDark} />
-            ) : (
-              replies.map((r, i) => (
-                <div 
-                  key={i} 
-                  className="profile-card-item"
-                  onClick={() => r.postId && router.push(`/forum?thread=${r.postId}`)}
-                  onMouseOver={e => (e.currentTarget.style.background = isDark ? '#080808' : '#fafbfc')}
-                  onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
-                  style={{ padding: '16px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, cursor: r.postId ? 'pointer' : 'default', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
-                >
-                  <p style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#94a3b8', marginBottom: 8 }}>Yanıtladı: <em>"{r.postBody}..."</em></p>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800 }}>
-                      {pd.photoURL ? <img key={pd.photoURL} src={pd.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (pd.displayName || 'U')[0].toUpperCase()}
-                    </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>{pd.displayName}</span>
-                      <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem', marginLeft: 8 }}>· {formatTimeAgo(r.createdAt)}</span>
-                      <p style={{ margin: '6px 0 0', fontSize: '0.95rem', color: isDark ? '#cbd5e1' : '#334155', lineHeight: 1.6, wordBreak: 'break-word' }}>{r.text}</p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )
-          )}
-
-          {tab === 'reposts' && (reposts.length === 0 ? <Empty icon={<Repeat2 size={36} color="#cbd5e1" />} text="Henüz yeniden gönderi yok" isDark={isDark} /> : reposts.map(p => (
-            <PostCard 
-              key={p.id} 
-              p={p} 
-              pd={pd} 
-              isOwn={isOwn} 
-              userEmail={user?.email || ''} 
-              onDelete={delPost} 
-              repostedBy={pd.displayName || pd.username}
-              isDark={isDark}
-            />
-          )))}
-
-          {tab === 'likes' && (
-            !isOwn && pd?.hideLikes ? (
-              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Bu kullanıcı beğenilerini gizlemiştir." isDark={isDark} />
-            ) : likes.length === 0 ? (
-              <Empty icon={<Heart size={36} color="#cbd5e1" />} text="Henüz beğeni yok" isDark={isDark} />
-            ) : (
-              likes.map(p => (
-                <div 
-                  key={p.id} 
-                  className="profile-card-item"
-                  onClick={() => router.push(`/forum?thread=${p.originalPostId || p.id}`)}
-                  onMouseOver={e => (e.currentTarget.style.background = isDark ? '#080808' : '#fafbfc')}
-                  onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
-                  style={{ display: 'flex', gap: 14, padding: '16px 24px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, cursor: 'pointer', minWidth: 0, width: '100%', boxSizing: 'border-box' }}
-                >
-                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, overflow: 'hidden' }}>
-                    {(p.authorPhotoURL || (p.uid === pd?.uid ? pd?.photoURL : undefined)) ? (
-                      <img src={p.authorPhotoURL || pd?.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      (p.authorName || 'U')[0].toUpperCase()
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                      <span style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.92rem' }}>{p.authorName}</span>
-                      <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem' }}>· {formatTimeAgo(p.createdAt)}</span>
-                    </div>
-                    <p style={{ color: isDark ? '#cbd5e1' : '#334155', fontSize: '0.95rem', lineHeight: 1.6, margin: 0, wordBreak: 'break-word' }}>
-                      {renderTextWithMentions(p.body)}
-                    </p>
-                    <div style={{ display: 'flex', gap: 16, marginTop: 8, color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.82rem' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={14} />{p.commentCount}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ef4444' }}><Heart size={14} fill="#ef4444" />{Object.keys(p.reactionsData || {}).length}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )
-          )}
-
-          {tab === 'bookmarks' && (
-            !isOwn ? (
-              <Empty icon={<Lock size={36} color="#cbd5e1" />} text="Yer işaretleri yalnızca hesap sahibi tarafından görüntülenebilir." isDark={isDark} />
-            ) : bookmarks.length === 0 ? (
-              <Empty icon={<Bookmark size={36} color="#cbd5e1" />} text="Henüz kaydedilen yer işareti yok" isDark={isDark} />
-            ) : (
-              bookmarks.map(p => (
-                <PostCard 
-                  key={p.id} 
-                  p={p} 
-                  pd={pd} 
-                  isOwn={isOwn} 
-                  userEmail={user?.email || ''} 
-                  onDelete={delPost} 
-                  isDark={isDark}
-                />
-              ))
-            )
-          )}
-        </main>
-
-        {/* ── RIGHT SIDEBAR ── */}
-        <aside className="profile-sidebar-right" style={{ position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20, background: isDark ? '#000000' : 'transparent' }}>
-          {/* Search box - strictly searches forum */}
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: 8, background: isDark ? '#16181c' : '#f1f5f9', borderRadius: 12, padding: '10px 14px', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-            <Search size={17} color={isDark ? '#71767b' : '#94a3b8'} />
-            <input 
-              value={searchQuery} 
-              onChange={e => setSearchQuery(e.target.value)} 
-              placeholder="Forumda ara..." 
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', color: isDark ? '#e7e9ea' : '#0f172a', width: '100%' }} 
-            />
-            <button 
-              type="submit" 
-              style={{ background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
-            >
-              Ara
-            </button>
-          </form>
-
-          {/* Trending Topics Widget - Real tags & categories from forum posts */}
-          <div style={{ background: isDark ? '#16181c' : '#f8fafc', borderRadius: 16, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-            <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-              <TrendingUp size={18} color={isDark ? '#71767b' : '#64748b'} />
-              <h3 style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '1rem', margin: 0 }}>Gündemdekiler</h3>
-            </div>
-            {trends.length > 0 ? (
-              trends.map(t => (
-                <Link key={t.tag} href={`/forum?tag=${encodeURIComponent(t.tag.replace(/^#/, ''))}`} style={{ textDecoration: 'none' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 18px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}`, transition: 'background 0.15s' }} onMouseOver={e => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : '#f1f5f9')} onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
-                    <div>
-                      <div style={{ fontSize: '0.72rem', color: isDark ? '#71767b' : '#94a3b8', marginBottom: 2 }}>Gündemdekiler · Türkiye</div>
-                      <div style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.92rem' }}>#{t.tag.replace(/^#/, '').replace(/\s+/g, '')}</div>
-                      <div style={{ fontSize: '0.74rem', color: isDark ? '#71767b' : '#64748b', marginTop: 2 }}>{t.count} gönderi</div>
-                    </div>
-                    <span style={{ background: isDark ? 'rgba(56, 189, 248, 0.15)' : '#eff6ff', color: isDark ? '#38bdf8' : '#1d4ed8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999 }}>#{t.tag.replace(/^#/, '')}</span>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <div style={{ padding: '20px 18px', color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.84rem', textAlign: 'center' }}>
-                Henüz etiket veya konu yok
-              </div>
-            )}
-          </div>
-
-          {/* Suggested Users (Kimi Takip Etmeli) - Real active members with follow action */}
-          <div style={{ background: isDark ? '#16181c' : '#f8fafc', borderRadius: 16, overflow: 'hidden', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-            <div style={{ padding: '16px 18px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-              <Users size={18} color={isDark ? '#71767b' : '#64748b'} />
-              <h3 style={{ fontWeight: 800, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '1rem', margin: 0 }}>Kimi Takip Etmeli</h3>
-            </div>
-            {suggestedUsers.length > 0 ? (
-              suggestedUsers.map((su: any) => {
-                const suUsername = (su.username || su.displayName || 'kullanici').toLowerCase().replace(/\s+/g, '');
-                return (
-                  <div key={su.uid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderBottom: `1px solid ${isDark ? '#2f3336' : '#f1f5f9'}` }}>
-                    <Link href={`/forum/profil/${encodeURIComponent(suUsername)}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', minWidth: 0, flex: 1 }}>
-                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>
-                        {su.photoURL ? <img src={su.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (su.displayName || 'U')[0].toUpperCase()}
-                      </div>
-                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                        <div style={{ fontWeight: 700, color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{su.displayName || su.username}</div>
-                        <div style={{ color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.78rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{suUsername}</div>
-                      </div>
-                    </Link>
-                    <button 
-                      onClick={(e) => handleFollowSuggested(e, su.uid)}
-                      style={{ padding: '6px 14px', borderRadius: 999, background: isDark ? '#e7e9ea' : '#0f172a', color: isDark ? '#000000' : 'white', fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0, marginLeft: 8, transition: 'all 0.15s' }}
-                    >
-                      Takip Et
-                    </button>
-                  </div>
-                );
-              })
-            ) : (
-              <div style={{ padding: '20px 18px', color: isDark ? '#71767b' : '#94a3b8', fontSize: '0.84rem', textAlign: 'center' }}>
-                Şu an için yeni öneri yok
-              </div>
-            )}
-          </div>
-
-          {/* Footer & Copyright */}
-          <div style={{ padding: '0 8px', fontSize: '0.78rem', color: isDark ? '#71767b' : '#94a3b8', lineHeight: 1.6 }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 12px', marginBottom: 8 }}>
-              <Link href="/gizlilik" style={{ color: isDark ? '#71767b' : '#94a3b8', textDecoration: 'none' }}>Gizlilik Politikası</Link>
-              <Link href="/iletisim" style={{ color: isDark ? '#71767b' : '#94a3b8', textDecoration: 'none' }}>İletişim</Link>
-              <Link href="/ben-kimim" style={{ color: isDark ? '#71767b' : '#94a3b8', textDecoration: 'none' }}>Hakkında</Link>
-            </div>
-            <div>© 2026 Furkan Manav · Psikoloji Platformu</div>
-          </div>
-        </aside>
-
-      </div>
-
-      {/* Edit Profile & Settings Modal */}
-      {(editOpen || settingsOpen) && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => { setEditOpen(false); setSettingsOpen(false); }}>
-          <div style={{ background: isDark ? '#16181c' : 'white', border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderRadius: 20, width: '100%', maxWidth: 600, padding: '24px 20px', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Settings size={22} color={isDark ? '#e7e9ea' : '#0f172a'} />
-                <h2 style={{ fontWeight: 800, fontSize: '1.25rem', color: isDark ? '#e7e9ea' : '#0f172a', margin: 0 }}>
-                  Profil & Hesap Ayarları
-                </h2>
-              </div>
-              <button 
-                onClick={() => { setEditOpen(false); setSettingsOpen(false); }} 
-                style={{ background: isDark ? '#2f3336' : '#f1f5f9', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDark ? '#e7e9ea' : '#64748b' }}
-                aria-label="Kapat"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Sub-tabs header - Segmented Bar that 100% fits within screen */}
-            <div 
-              style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', 
-                gap: 4, 
-                background: isDark ? '#000000' : '#f1f5f9',
-                padding: 4,
-                borderRadius: 12,
-                marginBottom: 20, 
-                border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-              }}
-            >
-              {[
-                { id: 'profile', short: 'Profil', full: 'Profil Bilgileri', icon: <User size={14} /> },
-                { id: 'security', short: 'Şifre & Mail', full: 'Şifre ve E-posta Doğrulama', icon: <Key size={14} /> },
-                { id: 'appearance', short: 'Görünüm', full: 'Tema ve Görünüm Ayarları', icon: <Sun size={14} /> },
-                { id: 'privacy', short: 'Gizlilik', full: 'Gizlilik Ayarları', icon: <Shield size={14} /> },
-                { id: 'badge', short: 'Rozet', full: 'Psikolog Rozeti', icon: <Award size={14} /> },
-                { id: 'danger', short: 'Hesap', full: 'Hesap Durumu', icon: <AlertTriangle size={14} /> },
-              ].map(st => (
-                <button
-                  key={st.id}
-                  type="button"
-                  title={st.full}
-                  onClick={() => setSettingsTab(st.id as any)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 5,
-                    padding: '8px 2px',
-                    borderRadius: 9,
-                    border: 'none',
-                    background: settingsTab === st.id ? (isDark ? '#1d9bf0' : '#0f172a') : 'transparent',
-                    color: settingsTab === st.id ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b'),
-                    fontWeight: 700,
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                    minWidth: 0,
-                  }}
-                >
-                  {st.icon}
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {st.short}
-                  </span>
+              <div className="fx-thead fx-thead-2">
+                <button type="button" className="fx-icon-btn" onClick={() => (window.history.length > 1 ? router.back() : skipSplashAndGo('/forum'))} aria-label="Geri" style={{ color: 'var(--fx-ink)' }}>
+                  <ArrowLeft size={20} />
                 </button>
-              ))}
-            </div>
-
-            {/* TAB 1: PROFİL BİLGİLERİ & KULLANICI ADI */}
-            {settingsTab === 'profile' && (
-              <div>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Ad Soyad</label>
-                  <input 
-                    type="text" 
-                    placeholder="Adınız ve soyadınız" 
-                    value={ed.displayName} 
-                    onChange={e => setEd({ ...ed, displayName: e.target.value })} 
-                    style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
-                  />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h2>{pd.displayName || handle}</h2>
+                  <div className="fx-thead-sub">{posts.length} gönderi</div>
                 </div>
-
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Kullanıcı Adı Değiştir</label>
-                  <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderRadius: 10, padding: '0 14px', background: isDark ? '#000000' : '#f8fafc' }}>
-                    <span style={{ color: isDark ? '#71767b' : '#94a3b8', fontWeight: 700, fontSize: '0.93rem' }}>@</span>
-                    <input 
-                      type="text" 
-                      placeholder="kullaniciadi" 
-                      value={ed.username} 
-                      onChange={e => setEd({ ...ed, username: sanitizeUsername(e.target.value) })} 
-                      style={{ width: '100%', border: 'none', background: 'transparent', padding: '11px 6px', fontSize: '0.93rem', outline: 'none', color: isDark ? '#e7e9ea' : '#0f172a', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: isDark ? '#71767b' : '#64748b', marginTop: 4, display: 'block' }}>
-                    Yalnızca sade İngilizce harfler (a-z), rakamlar (0-9) ve alt çizgi (_) kullanılabilir. Etiketlemelerde (@kullaniciadi) kullanılır.
-                  </span>
-                </div>
-
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Hakkımda</label>
-                  <textarea 
-                    rows={3} 
-                    placeholder="Kendinizden bahsedin..." 
-                    value={ed.bio} 
-                    onChange={e => setEd({ ...ed, bio: e.target.value })} 
-                    style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} 
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Konum</label>
-                    <input 
-                      type="text" 
-                      placeholder="Şehir, Ülke" 
-                      value={ed.location} 
-                      onChange={e => setEd({ ...ed, location: e.target.value })} 
-                      style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Web Sitesi</label>
-                    <input 
-                      type="text" 
-                      placeholder="ornek.com" 
-                      value={ed.website} 
-                      onChange={e => setEd({ ...ed, website: e.target.value })} 
-                      style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-                  <button 
-                    type="button"
-                    onClick={() => { setEditOpen(false); setSettingsOpen(false); }} 
-                    style={{ flex: 1, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', background: isDark ? '#16181c' : 'white', color: isDark ? '#e7e9ea' : '#0f172a' }}
-                  >
-                    İptal
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={saveProfile} 
-                    disabled={saving} 
-                    style={{ flex: 1, background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', border: 'none', borderRadius: 999, padding: '12px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}
-                  >
-                    {saving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
-                  </button>
-                </div>
+                <button type="button" className="fx-icon-btn fx-only-mobile" onClick={shell.toggleTheme} aria-label="Temayı değiştir" style={{ color: 'var(--fx-ink)' }}>
+                  {shell.isDark ? <Sun size={19} /> : <Moon size={19} />}
+                </button>
               </div>
-            )}
 
-            {/* TAB 2: ŞİFRE DEĞİŞTİRME & GÜVENLİK */}
-            {settingsTab === 'security' && (
-              <div>
-                {/* E-posta Doğrulama Kartı */}
-                <div style={{ marginBottom: 20, padding: '16px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Mail size={18} color={emailVerified ? '#16a34a' : '#d97706'} />
-                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
-                        E-posta Doğrulama Durumu
-                      </span>
-                    </div>
-                    {emailVerified ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: isDark ? 'rgba(34,197,94,0.15)' : '#dcfce7', color: '#16a34a', padding: '3px 10px', borderRadius: 999, fontSize: '0.74rem', fontWeight: 800 }}>
-                        <CheckCircle size={12} /> Doğrulandı
-                      </span>
+              {/* Kapak */}
+              <div className="fx-cover" style={pd.coverURL ? { backgroundImage: `url(${pd.coverURL})` } : undefined}>
+                <input ref={coverRef} type="file" accept="image/*" hidden onChange={handleCover} />
+              </div>
+
+              <div className="fx-prof">
+                <div className="fx-prof-top">
+                  <div className="fx-prof-avatar">
+                    <input ref={photoRef} type="file" accept="image/*" hidden onChange={handlePhoto} />
+                    <Avatar src={pd.photoURL} name={pd.displayName || handle} size={134} />
+                  </div>
+                  <div className="fx-prof-actions">
+                    {isOwn ? (
+                      <>
+                        <button type="button" className="fx-icon-btn fx-icon-outline" onClick={() => { setSettingsTab('profile'); setSettingsDetail(false); setSettingsOpen(true); }} aria-label="Ayarlar" title="Ayarlar">
+                          <Settings size={18} />
+                        </button>
+                        <button type="button" className="fx-btn fx-btn-outline" onClick={() => setEditOpen(true)}>Profili düzenle</button>
+                      </>
                     ) : (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: isDark ? 'rgba(245,158,11,0.15)' : '#fef3c7', color: '#d97706', padding: '3px 10px', borderRadius: 999, fontSize: '0.74rem', fontWeight: 800 }}>
-                        <AlertTriangle size={12} /> Doğrulanmadı
-                      </span>
+                      <>
+                        <button
+                          type="button"
+                          className="fx-icon-btn fx-icon-outline"
+                          onClick={() => { try { navigator.clipboard.writeText(window.location.href); toast.success('Profil bağlantısı kopyalandı'); } catch {} }}
+                          aria-label="Profil bağlantısını kopyala"
+                          title="Bağlantıyı kopyala"
+                        >
+                          <Share2 size={17} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`fx-btn fx-btn-primary fx-follow ${following ? 'is-following' : ''}`}
+                          data-label-hover={following ? 'Takibi bırak' : undefined}
+                          onClick={() => (user && !user.isAnonymous ? toggleFollow() : shell.openAuth())}
+                        >
+                          <span>{following ? 'Takiptesin' : followsMe ? 'Geri takip et' : 'Takip et'}</span>
+                        </button>
+                      </>
                     )}
                   </div>
+                </div>
 
-                  <p style={{ fontSize: '0.82rem', color: isDark ? '#94a3b8' : '#64748b', margin: '0 0 12px', lineHeight: 1.5 }}>
-                    Kayıtlı e-posta adresiniz: <strong>{user?.email}</strong>
-                    {!emailVerified && ' — Forumda paylaşım yapmak, yorum yazmak ve etkileşimde bulunabilmek için e-posta adresinizi doğrulamanız gerekmektedir.'}
-                  </p>
+                <div className="fx-prof-name">
+                  <h1>{pd.displayName || handle}</h1>
+                  {isPsych && <VerifiedMark size={20} />}
+                </div>
+                <div className="fx-prof-handle">
+                  @{handle}
+                  {followsMe && !isOwn && <span className="fx-follows-you">Seni takip ediyor</span>}
+                </div>
+                {isPsych && <div className="fx-prof-title">{pd.title || 'Psikolog'}</div>}
 
-                  {!emailVerified && (
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        disabled={sendingVerification}
-                        onClick={async () => {
-                          setSendingVerification(true);
-                          try {
-                            await resendVerificationEmail();
-                            toast.success('Doğrulama bağlantısı e-posta adresinize gönderildi! Lütfen gelen kutunuzu ve spam klasörünüzü kontrol edin.');
-                          } catch (err: any) {
-                            toast.error(err.message || 'Gönderilemedi');
-                          } finally {
-                            setSendingVerification(false);
-                          }
-                        }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          background: isDark ? '#d97706' : '#f59e0b',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: 8,
-                          padding: '8px 14px',
-                          fontSize: '0.82rem',
-                          fontWeight: 700,
-                          cursor: sendingVerification ? 'wait' : 'pointer'
-                        }}
-                      >
-                        <Send size={13} />
-                        <span>{sendingVerification ? 'Gönderiliyor...' : 'Doğrulama E-postası Gönder'}</span>
-                      </button>
+                {pd.bio && <p className="fx-prof-bio">{renderTextWithMentions(pd.bio)}</p>}
 
-                      <button
-                        type="button"
-                        disabled={checkingVerification}
-                        onClick={async () => {
-                          setCheckingVerification(true);
-                          try {
-                            const verified = await refreshEmailVerification();
-                            if (verified) {
-                              toast.success('Harika! E-posta adresiniz başarıyla doğrulandı.');
-                            } else {
-                              toast.error('E-posta henüz doğrulanmamış görünüyor. Lütfen e-postanızdaki linke tıkladıktan sonra tekrar deneyin.');
-                            }
-                          } catch (err: any) {
-                            toast.error('Kontrol edilemedi: ' + err.message);
-                          } finally {
-                            setCheckingVerification(false);
-                          }
-                        }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          background: isDark ? 'rgba(255,255,255,0.06)' : 'white',
-                          color: isDark ? '#e7e9ea' : '#0f172a',
-                          border: `1px solid ${isDark ? '#2f3336' : '#cbd5e1'}`,
-                          borderRadius: 8,
-                          padding: '8px 14px',
-                          fontSize: '0.82rem',
-                          fontWeight: 700,
-                          cursor: checkingVerification ? 'wait' : 'pointer'
-                        }}
-                      >
-                        <RefreshCw size={13} className={checkingVerification ? 'animate-spin' : ''} />
-                        <span>{checkingVerification ? 'Kontrol Ediliyor...' : 'Doğruladım (Durumu Yenile)'}</span>
-                      </button>
-                    </div>
+                <div className="fx-prof-meta">
+                  {pd.location && <span><MapPin size={16} />{pd.location}</span>}
+                  {pd.website && (
+                    <a href={pd.website.startsWith('http') ? pd.website : `https://${pd.website}`} target="_blank" rel="noreferrer noopener">
+                      <LinkIcon size={16} />{pd.website.replace(/^https?:\/\//, '')}
+                    </a>
                   )}
+                  {joined && <span><Calendar size={16} />{joined} tarihinde katıldı</span>}
+                  {pd.isPrivate && <span><Lock size={15} />Gizli hesap</span>}
                 </div>
 
-                <form onSubmit={handleChangePassword}>
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Mevcut Şifre</label>
-                    <input 
-                      type="password" 
-                      placeholder="Mevcut şifrenizi girin" 
-                      value={currentPassword} 
-                      onChange={e => setCurrentPassword(e.target.value)} 
-                      style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Yeni Şifre</label>
-                    <input 
-                      type="password" 
-                      placeholder="En az 6 karakter" 
-                      value={newPassword} 
-                      onChange={e => setNewPassword(e.target.value)} 
-                      style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 18 }}>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Yeni Şifre Tekrar</label>
-                    <input 
-                      type="password" 
-                      placeholder="Yeni şifrenizi tekrar girin" 
-                      value={newPasswordConfirm} 
-                      onChange={e => setNewPasswordConfirm(e.target.value)} 
-                      style={{ width: '100%', background: isDark ? '#000000' : 'white', border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, color: isDark ? '#e7e9ea' : '#0f172a', borderRadius: 10, padding: '11px 14px', fontSize: '0.93rem', outline: 'none', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-
-                  <button 
-                    type="submit" 
-                    disabled={changingPassword || !newPassword} 
-                    style={{ width: '100%', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, cursor: 'pointer', opacity: (changingPassword || !newPassword) ? 0.7 : 1, marginBottom: 18 }}
-                  >
-                    {changingPassword ? 'Şifre Güncelleniyor...' : 'Şifreyi Değiştir'}
+                <div className="fx-prof-counts">
+                  <button type="button" onClick={() => (locked ? null : setListMode('following'))} disabled={locked}>
+                    <b>{followings}</b> Takip edilen
                   </button>
-                </form>
-
-                <div style={{ padding: '16px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 4 }}>Şifrenizi mi unuttunuz?</div>
-                  <p style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#64748b', margin: '0 0 12px', lineHeight: 1.5 }}>
-                    Kayıtlı e-posta adresinize (<strong>{user?.email}</strong>) tek tıkla güvenli şifre sıfırlama bağlantısı gönderebilirsiniz.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleSendResetEmail}
-                    disabled={sendingResetEmail}
-                    style={{
-                      background: 'transparent',
-                      border: `1.5px solid ${isDark ? '#2f3336' : '#cbd5e1'}`,
-                      color: isDark ? '#38bdf8' : '#2563eb',
-                      padding: '8px 16px',
-                      borderRadius: 8,
-                      fontWeight: 700,
-                      fontSize: '0.82rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {sendingResetEmail ? 'E-posta Gönderiliyor...' : 'Şifre Sıfırlama E-postası Gönder'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* TAB: TEMA & GÖRÜNÜM AYARLARI */}
-            {settingsTab === 'appearance' && (
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '1.05rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 6 }}>
-                  Tema ve Görünüm Ayarları
-                </div>
-                <p style={{ fontSize: '0.86rem', color: isDark ? '#94a3b8' : '#64748b', margin: '0 0 20px', lineHeight: 1.6 }}>
-                  Platform arayüzünü istediğiniz gibi açık veya karanlık temada kullanabilirsiniz. Seçtiğiniz tema tercihiniz bu tarayıcıda otomatik olarak hatırlanır.
-                </p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                  {/* Aydınlık Mod Kartı */}
-                  <div
-                    onClick={() => {
-                      setIsDark(false);
-                      try {
-                        localStorage.setItem('forum_theme', 'light');
-                        window.dispatchEvent(new CustomEvent('forum_theme_change', { detail: 'light' }));
-                      } catch {}
-                      document.documentElement.classList.remove('forum-dark-body');
-                      toast.success('Aydınlık mod aktif edildi');
-                    }}
-                    style={{
-                      border: !isDark ? '2.5px solid #1d9bf0' : `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                      background: !isDark ? (isDark ? 'rgba(29, 155, 240, 0.12)' : '#f0f9ff') : (isDark ? '#080808' : '#ffffff'),
-                      borderRadius: 14,
-                      padding: '20px 18px',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      transition: 'all 0.2s',
-                      position: 'relative',
-                      boxShadow: !isDark ? '0 4px 14px rgba(29, 155, 240, 0.15)' : 'none'
-                    }}
-                  >
-                    {!isDark && (
-                      <span style={{ position: 'absolute', top: 12, right: 12, color: '#1d9bf0' }}>
-                        <CheckCircle size={20} />
-                      </span>
-                    )}
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                      <Sun size={26} />
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: '1rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 4 }}>
-                      Aydınlık Mod
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#64748b', lineHeight: 1.4 }}>
-                      Gündüz ve aydınlık ortamlar için ferah, açık zeminli klasik arayüz.
-                    </div>
-                  </div>
-
-                  {/* Karanlık Mod Kartı */}
-                  <div
-                    onClick={() => {
-                      setIsDark(true);
-                      try {
-                        localStorage.setItem('forum_theme', 'dark');
-                        window.dispatchEvent(new CustomEvent('forum_theme_change', { detail: 'dark' }));
-                      } catch {}
-                      document.documentElement.classList.add('forum-dark-body');
-                      toast.success('Karanlık mod aktif edildi');
-                    }}
-                    style={{
-                      border: isDark ? '2.5px solid #1d9bf0' : `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`,
-                      background: isDark ? 'rgba(29, 155, 240, 0.15)' : '#ffffff',
-                      borderRadius: 14,
-                      padding: '20px 18px',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      transition: 'all 0.2s',
-                      position: 'relative',
-                      boxShadow: isDark ? '0 4px 14px rgba(29, 155, 240, 0.2)' : 'none'
-                    }}
-                  >
-                    {isDark && (
-                      <span style={{ position: 'absolute', top: 12, right: 12, color: '#1d9bf0' }}>
-                        <CheckCircle size={20} />
-                      </span>
-                    )}
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#0f172a', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                      <Moon size={26} />
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: '1rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 4 }}>
-                      Karanlık Mod
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#64748b', lineHeight: 1.4 }}>
-                      Gece ve loş ortamlar için gözü yormayan modern derin siyah tema.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 3: GİZLİLİK AYARLARI */}
-            {settingsTab === 'privacy' && (
-              <div>
-                {/* Toggle: Gizli Profil (Sadece Takipçiler) */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1.5px solid ${ed.isPrivate ? (isDark ? '#1d9bf0' : '#0f172a') : (isDark ? '#2f3336' : '#e2e8f0')}`, marginBottom: 12 }}>
-                  <div style={{ paddingRight: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Lock size={16} color={ed.isPrivate ? '#1d9bf0' : '#64748b'} />
-                      <span style={{ fontWeight: 800, fontSize: '0.95rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>Gizli Profil</span>
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: isDark ? '#71767b' : '#64748b', marginTop: 4, lineHeight: 1.5 }}>
-                      Hesabınız gizli olduğunda profilinizi ve gönderilerinizi <strong>sadece sizi takip eden onaylı kullanıcılar</strong> görebilir.
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={ed.isPrivate}
-                    onClick={() => setEd(prev => ({ ...prev, isPrivate: !prev.isPrivate }))}
-                    style={{
-                      width: 48,
-                      height: 28,
-                      borderRadius: 999,
-                      background: ed.isPrivate ? (isDark ? '#1d9bf0' : '#0f172a') : (isDark ? '#2f3336' : '#cbd5e1'),
-                      border: 'none',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      transition: 'background 0.2s',
-                      flexShrink: 0
-                    }}
-                  >
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: 3,
-                        left: ed.isPrivate ? 23 : 3,
-                        width: 22,
-                        height: 22,
-                        borderRadius: '50%',
-                        background: 'white',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                        transition: 'left 0.2s'
-                      }}
-                    />
+                  <button type="button" onClick={() => (locked ? null : setListMode('followers'))} disabled={locked}>
+                    <b>{followers}</b> Takipçi
                   </button>
                 </div>
 
-                {/* Toggle: Beğenileri Gizle */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, marginBottom: 12 }}>
-                  <div style={{ paddingRight: 16 }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.92rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>Beğenilerimi Herkese Gizle</div>
-                    <div style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#64748b', marginTop: 2 }}>Diğer kullanıcılar profilinizde beğendiğiniz gönderileri göremez.</div>
+                {isOwn && !isAdmin && !emailVerified && !user?.emailVerified && (
+                  <div className="fx-callout is-warn">
+                    <div><b>E-posta adresin doğrulanmadı.</b> Paylaşım yapabilmek için {user?.email} adresine gelen bağlantıya tıkla.</div>
+                    <button type="button" className="fx-btn fx-btn-outline fx-btn-sm" onClick={() => { setSettingsTab('security'); setSettingsDetail(true); setSettingsOpen(true); }}>Doğrula</button>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={ed.hideLikes}
-                    onClick={() => setEd(prev => ({ ...prev, hideLikes: !prev.hideLikes }))}
-                    style={{
-                      width: 46,
-                      height: 26,
-                      borderRadius: 999,
-                      background: ed.hideLikes ? (isDark ? '#1d9bf0' : '#0f172a') : (isDark ? '#2f3336' : '#cbd5e1'),
-                      border: 'none',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      transition: 'background 0.2s',
-                      flexShrink: 0
-                    }}
-                  >
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: 3,
-                        left: ed.hideLikes ? 23 : 3,
-                        width: 20,
-                        height: 20,
-                        borderRadius: '50%',
-                        background: 'white',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                        transition: 'left 0.2s'
-                      }}
-                    />
-                  </button>
-                </div>
-
-                {/* Toggle: Yanıtları Gizle */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, marginBottom: 20 }}>
-                  <div style={{ paddingRight: 16 }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.92rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>Yanıtlarımı Herkese Gizle</div>
-                    <div style={{ fontSize: '0.78rem', color: isDark ? '#71767b' : '#64748b', marginTop: 2 }}>Diğer kullanıcılar profilinizde yaptığınız yorum ve yanıtları göremez.</div>
+                )}
+                {isOwn && pd.psychologistStatus === 'pending' && (
+                  <div className="fx-callout">
+                    <div><b>Psikolog başvurun inceleniyor.</b> Belgelerin onaylandığında rozet profilinde ve gönderilerinde otomatik görünecek.</div>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={ed.hideReplies}
-                    onClick={() => setEd(prev => ({ ...prev, hideReplies: !prev.hideReplies }))}
-                    style={{
-                      width: 46,
-                      height: 26,
-                      borderRadius: 999,
-                      background: ed.hideReplies ? (isDark ? '#1d9bf0' : '#0f172a') : (isDark ? '#2f3336' : '#cbd5e1'),
-                      border: 'none',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      transition: 'background 0.2s',
-                      flexShrink: 0
-                    }}
-                  >
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: 3,
-                        left: ed.hideReplies ? 23 : 3,
-                        width: 20,
-                        height: 20,
-                        borderRadius: '50%',
-                        background: 'white',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                        transition: 'left 0.2s'
-                      }}
-                    />
-                  </button>
-                </div>
-
-                <button 
-                  type="button"
-                  onClick={saveProfile} 
-                  disabled={saving} 
-                  style={{ width: '100%', background: isDark ? '#1d9bf0' : '#0f172a', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}
-                >
-                  {saving ? 'Kaydediliyor...' : 'Gizlilik Ayarlarını Kaydet'}
-                </button>
-              </div>
-            )}
-
-            {/* TAB 4: PSİKOLOG ROZETİ BAŞVURUSU */}
-            {settingsTab === 'badge' && (
-              <div>
-                {Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) ? (
-                  <div style={{ padding: '22px', background: isDark ? '#16181c' : '#f8fafc', borderRadius: 14, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, textAlign: 'center' }}>
-                    <div style={{ width: 52, height: 52, borderRadius: '50%', background: pd.hideBadge ? (isDark ? '#334155' : '#cbd5e1') : '#16a34a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', transition: 'all 0.2s' }}>
-                      {pd.hideBadge ? <EyeOff size={28} /> : <CheckCircle size={28} />}
-                    </div>
-                    
-                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: isDark ? '#e7e9ea' : '#0f172a', marginBottom: 8 }}>
-                      {pd.hideBadge ? 'Psikolog Rozetiniz Şu Anda Kaldırılmış (Gizli)' : 'Onaylı Psikolog Rozetiniz Aktif'}
-                    </div>
-
-                    <p style={{ fontSize: '0.88rem', color: isDark ? '#94a3b8' : '#64748b', margin: '0 auto 20px', lineHeight: 1.6, maxWidth: 420 }}>
-                      {pd.hideBadge 
-                        ? 'Rozetiniz profilinizde ve forum gönderilerinizde gizlendi. Psikolog statünüzü kaybetmediniz; dilediğiniz an tek dokunuşla rozetinizi tekrar görünür yapabilirsiniz.'
-                        : `Profilinizde ve forumdaki tüm yazı ve yanıtlarınızda altın renkli resmi ${pd.title || 'Psikolog'} rozetiniz gösterilmektedir. Dilediğiniz takdirde rozetinizi kendiniz kaldırabilir veya gizleyebilirsiniz.`
-                      }
-                    </p>
-
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-                      <button
-                        type="button"
-                        onClick={handleToggleBadge}
-                        disabled={togglingBadge}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          padding: '11px 22px',
-                          borderRadius: 999,
-                          fontWeight: 700,
-                          fontSize: '0.88rem',
-                          cursor: togglingBadge ? 'wait' : 'pointer',
-                          background: pd.hideBadge ? (isDark ? '#1d9bf0' : '#0f172a') : (isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2'),
-                          color: pd.hideBadge ? 'white' : (isDark ? '#f87171' : '#b91c1c'),
-                          border: pd.hideBadge ? 'none' : (isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #fecaca'),
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        {pd.hideBadge ? <CheckCircle size={16} /> : <EyeOff size={16} />}
-                        <span>
-                          {togglingBadge 
-                            ? 'Güncelleniyor...' 
-                            : pd.hideBadge 
-                              ? 'Rozeti Tekrar Aktifleştir (Görünür Yap)' 
-                              : 'Rozeti Kaldır / Gizle'
-                          }
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                ) : pd.psychologistStatus === 'pending' ? (
-                  <div style={{ padding: '20px', background: isDark ? '#422006' : '#fefce8', borderRadius: 12, border: `1.5px solid ${isDark ? '#854d0e' : '#fef08a'}`, textAlign: 'center' }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#ca8a04', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                      <Clock size={28} />
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: '1.05rem', color: isDark ? '#fde047' : '#854d0e', marginBottom: 6 }}>
-                      Psikolog Rozet Başvurunuz İncelemede
-                    </div>
-                    <p style={{ fontSize: '0.85rem', color: isDark ? '#fde047' : '#a16207', margin: '0 0 14px', lineHeight: 1.5 }}>
-                      Yüklediğiniz mezuniyet/diploma belgesi yöneticilerimiz tarafından incelenmektedir. Onaylandığında rozetiniz otomatik olarak aktifleşecektir.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => { setSettingsOpen(false); setEditOpen(false); router.push('/kayit/psikolog'); }}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        background: '#ca8a04',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 8,
-                        padding: '9px 18px',
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Başvuru Bilgilerini Görüntüle <ArrowRight size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ padding: '20px', background: isDark ? '#16181c' : '#f8fafc', borderRadius: 12, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
-                      <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', border: '1.5px solid rgba(201,169,110,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#facc15', flexShrink: 0 }}>
-                        <Award size={24} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: '1.05rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
-                          Psikolog Rozeti Alın
-                        </div>
-                        <p style={{ fontSize: '0.86rem', color: isDark ? '#94a3b8' : '#64748b', margin: '6px 0 0', lineHeight: 1.6 }}>
-                          Lisanslı psikolog musunuz? Resmi diploma veya mezuniyet belgeniz ile başvuru yapın; profilinizde, forumdaki paylaşımlarınızda ve yanıtlarınızda adınızın yanında resmi altın <strong>Psikolog</strong> rozeti yer alsın.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div style={{ borderTop: `1px solid ${isDark ? '#2f3336' : '#e2e8f0'}`, paddingTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        type="button"
-                        onClick={() => { setSettingsOpen(false); setEditOpen(false); router.push('/kayit/psikolog'); }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          background: isDark ? 'linear-gradient(135deg,#c9a96e,#b89355)' : 'linear-gradient(135deg,#0a1628,#1e293b)',
-                          color: isDark ? '#0a1628' : '#ffffff',
-                          border: 'none',
-                          borderRadius: 8,
-                          padding: '11px 22px',
-                          fontSize: '0.88rem',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                        }}
-                      >
-                        <Award size={16} />
-                        <span>Psikolog Rozeti İçin Başvur</span>
-                        <ArrowRight size={15} />
-                      </button>
-                    </div>
+                )}
+                {isOwn && pd.isFrozen && (
+                  <div className="fx-callout">
+                    <div><b>Hesabın dondurulmuş.</b> Profilin ve gönderilerin diğer kullanıcılardan gizli.</div>
+                    <button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={handleToggleFreeze} disabled={freezing}>{freezing ? 'Etkinleştiriliyor…' : 'Hesabı etkinleştir'}</button>
                   </div>
                 )}
               </div>
-            )}
 
-            {/* TAB 5: HESAP DURUMU (DONDURMA & SİLME) */}
-            {settingsTab === 'danger' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {/* Sign out card */}
-                <div style={{ padding: '18px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <LogOut size={20} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
-                          Oturumu Kapat
+              {locked ? (
+                <div className="fx-empty">
+                  {pd.isFrozen ? (
+                    <>
+                      <h2>Bu hesap dondurulmuş</h2>
+                      <p>Hesap sahibi profilini geçici olarak gizledi.</p>
+                    </>
+                  ) : (
+                    <>
+                      <h2>Bu hesap gizli</h2>
+                      <p>Gönderilerini ve takip listelerini görmek için @{handle} hesabını takip et.</p>
+                      <button type="button" className="fx-btn fx-btn-primary" onClick={() => (user && !user.isAnonymous ? toggleFollow() : shell.openAuth())}>Takip et</button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="fx-tabs fx-tabs-scroll" role="tablist">
+                    {profileTabs.map(t => (
+                      <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`fx-tab ${tab === t.id ? 'is-active' : ''}`} onClick={() => setTab(t.id as any)}>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {tab === 'posts' && renderPosts(posts, isOwn ? 'Henüz gönderi paylaşmadın' : 'Henüz gönderi yok', isOwn ? 'İlk düşünceni ya da sorunu paylaştığında burada görünecek.' : `@${handle} henüz bir şey paylaşmadı.`)}
+
+                  {tab === 'replies' && (
+                    replies.length === 0 ? (
+                      <div className="fx-empty"><h2>Henüz yanıt yok</h2><p>Gönderilere yazılan yanıtlar burada listelenir.</p></div>
+                    ) : replies.map(r => (
+                      <div key={`${r.postId}-${r.id}`} className="fx-post" onClick={() => r.postId && skipSplashAndGo(`/forum?thread=${r.postId}`)}>
+                        <div className="fx-post-social" style={{ marginLeft: 52 }}>
+                          <MessageCircle size={14} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>“{r.postBody}…” gönderisine yanıt</span>
                         </div>
-                        <p style={{ fontSize: '0.82rem', color: isDark ? '#94a3b8' : '#64748b', margin: '2px 0 0' }}>
-                          Bu cihazdaki forum oturumunuzu güvenle sonlandırın.
-                        </p>
+                        <div className="fx-post-grid">
+                          <Avatar src={pd.photoURL} name={pd.displayName} size={40} />
+                          <div className="fx-post-body">
+                            <div className="fx-post-meta">
+                              <div className="fx-post-meta-main">
+                                <span className="fx-name">{pd.displayName}</span>
+                                {isPsych && <VerifiedMark />}
+                                <span className="fx-handle">@{handle}</span>
+                                <span className="fx-sep">·</span>
+                                <span className="fx-time">{formatTimeAgo(r.createdAt)}</span>
+                              </div>
+                            </div>
+                            <p className="fx-post-text">{renderTextWithMentions(r.text)}</p>
+                            {r.imageUrl && <div className="fx-post-media"><img src={r.imageUrl} alt="" loading="lazy" /></div>}
+                            <div style={{ height: 10 }} />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setSettingsOpen(false);
-                        setEditOpen(false);
-                        try {
-                          await logout();
-                          toast.success('Başarıyla çıkış yapıldı');
-                          router.push('/forum');
-                        } catch (err: any) {
-                          toast.error('Çıkış yapılamadı: ' + err.message);
-                        }
-                      }}
-                      style={{
-                        background: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 8,
-                        padding: '9px 20px',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6
-                      }}
-                    >
-                      <LogOut size={15} />
-                      <span>Çıkış Yap</span>
+                    ))
+                  )}
+
+                  {tab === 'reposts' && renderPosts(reposts, 'Henüz yeniden paylaşım yok', 'Yeniden paylaşılan gönderiler burada görünür.', true)}
+                  {tab === 'likes' && renderPosts(likes, 'Henüz beğeni yok', isOwn ? 'Beğendiğin gönderiler burada toplanır.' : 'Beğenilen gönderiler burada görünür.')}
+                  {tab === 'bookmarks' && isOwn && renderPosts(bookmarks, 'Kaydettiğin gönderi yok', 'Bir gönderiyi kaydettiğinde yalnızca sen burada görebilirsin.')}
+                </>
+              )}
+            </>
+          )}
+
+          {/* ── Profili düzenle ── */}
+          {editOpen && isOwn && (
+            <div className="fx-modal-scrim" onClick={() => setEditOpen(false)}>
+              <div className="fx-modal fx-modal-lg" role="dialog" aria-modal="true" aria-label="Profili düzenle" onClick={e => e.stopPropagation()}>
+                <div className="fx-modal-head">
+                  <button type="button" className="fx-icon-btn" onClick={() => setEditOpen(false)} aria-label="Kapat" style={{ color: 'var(--fx-ink)' }}><X size={20} /></button>
+                  <div className="fx-modal-title">Profili düzenle</div>
+                  <button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={saveProfile} disabled={saving}>{saving ? 'Kaydediliyor…' : 'Kaydet'}</button>
+                </div>
+                <div className="fx-modal-scroll">
+                  <div className="fx-cover fx-cover-edit" style={pd.coverURL ? { backgroundImage: `url(${pd.coverURL})` } : undefined}>
+                    <button type="button" className="fx-photo-btn" onClick={() => coverRef.current?.click()} disabled={upCover} aria-label="Kapak fotoğrafını değiştir">
+                      {upCover ? <Loader size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <Camera size={20} />}
                     </button>
                   </div>
-                </div>
-
-                {/* Freeze account card */}
-                <div style={{ padding: '18px', background: isDark ? '#080808' : '#f8fafc', borderRadius: 12, border: `1.5px solid ${isDark ? '#2f3336' : '#e2e8f0'}` }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                    <Snowflake size={22} color="#0284c7" style={{ flexShrink: 0, marginTop: 2 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.95rem', color: isDark ? '#e7e9ea' : '#0f172a' }}>
-                        {pd.isFrozen ? 'Hesabı Yeniden Aktifleştir' : 'Profili Geçici Olarak Dondur'}
-                      </div>
-                      <p style={{ fontSize: '0.82rem', color: isDark ? '#94a3b8' : '#64748b', margin: '4px 0 12px', lineHeight: 1.5 }}>
-                        Hesabınızı dondurduğunuzda profiliniz, gönderileriniz ve aktiviteleriniz diğer kullanıcılara gizlenir. Dilediğiniz zaman aynı şifrenizle giriş yaparak hesabınızı yeniden aktif edebilirsiniz.
-                      </p>
-                      {!freezeModalOpen ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (pd.isFrozen) {
-                              handleToggleFreeze();
-                            } else {
-                              setFreezeModalOpen(true);
-                            }
-                          }}
-                          disabled={freezing}
-                          style={{
-                            background: pd.isFrozen ? '#16a34a' : '#0284c7',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 8,
-                            padding: '9px 18px',
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {freezing ? 'İşleniyor...' : (pd.isFrozen ? 'Hesabımı Aktifleştir' : 'Hesabımı Dondur')}
-                        </button>
-                      ) : (
-                        <div style={{ marginTop: 10, padding: 14, background: isDark ? '#000000' : 'white', borderRadius: 8, border: `1px solid ${isDark ? '#0369a1' : '#bae6fd'}` }}>
-                          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: isDark ? '#38bdf8' : '#0369a1', margin: '0 0 8px' }}>
-                            Hesabınızı dondurmak için lütfen mevcut şifrenizi girin:
-                          </p>
-                          <input
-                            type="password"
-                            placeholder="Mevcut şifreniz"
-                            value={freezePassword}
-                            onChange={e => setFreezePassword(e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: `1.5px solid ${isDark ? '#0284c7' : '#38bdf8'}`, background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-                          />
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button
-                              type="button"
-                              onClick={() => { setFreezeModalOpen(false); setFreezePassword(''); }}
-                              style={{ flex: 1, padding: '8px', borderRadius: 6, border: '1px solid #cbd5e1', background: 'transparent', color: isDark ? '#e7e9ea' : '#475569', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
-                            >
-                              Vazgeç
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleToggleFreeze}
-                              disabled={freezing || !freezePassword.trim()}
-                              style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', background: '#0284c7', color: 'white', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: (freezing || !freezePassword.trim()) ? 0.6 : 1 }}
-                            >
-                              {freezing ? 'Doğrulanıyor...' : 'Dondurmayı Onayla'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                  <div className="fx-edit-avatar">
+                    <Avatar src={pd.photoURL} name={pd.displayName} size={104} />
+                    <button type="button" className="fx-photo-btn" onClick={() => photoRef.current?.click()} disabled={upPhoto} aria-label="Profil fotoğrafını değiştir">
+                      {upPhoto ? <Loader size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <Camera size={20} />}
+                    </button>
                   </div>
-                </div>
-
-                {/* Delete account card */}
-                <div style={{ padding: '18px', background: isDark ? '#1a0505' : '#fef2f2', borderRadius: 12, border: `1.5px solid ${isDark ? '#7f1d1d' : '#fecaca'}` }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                    <Trash2 size={22} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.95rem', color: isDark ? '#fca5a5' : '#991b1b' }}>
-                        Profili Kalıcı Olarak Sil
-                      </div>
-                      <p style={{ fontSize: '0.82rem', color: isDark ? '#fca5a5' : '#b91c1c', margin: '4px 0 12px', lineHeight: 1.5 }}>
-                        Hesabınızı kalıcı olarak sildiğinizde profil verileriniz ve takip bağlantılarınız silinir, oturumunuz kapatılır. <strong>Bu işlem geri alınamaz.</strong>
-                      </p>
-
-                      {!deleteModalOpen ? (
-                        <button
-                          type="button"
-                          onClick={() => setDeleteModalOpen(true)}
-                          style={{
-                            background: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 8,
-                            padding: '9px 18px',
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Hesabımı Kalıcı Olarak Sil
-                        </button>
-                      ) : (
-                        <div style={{ marginTop: 10, padding: 14, background: isDark ? '#000000' : 'white', borderRadius: 8, border: `1px solid ${isDark ? '#7f1d1d' : '#fca5a5'}` }}>
-                          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ef4444', margin: '0 0 6px' }}>
-                            Hesabınızı kalıcı olarak silmek için mevcut şifrenizi girin:
-                          </p>
-                          <input
-                            type="password"
-                            placeholder="Mevcut şifreniz"
-                            value={deletePassword}
-                            onChange={e => setDeletePassword(e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1.5px solid #ef4444', background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-                          />
-                          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ef4444', margin: '0 0 6px' }}>
-                            Onaylamak için aşağıdaki kutuya büyük harflerle <strong>SİL</strong> yazın:
-                          </p>
-                          <input
-                            type="text"
-                            placeholder="SİL"
-                            value={deleteConfirmText}
-                            onChange={e => setDeleteConfirmText(e.target.value)}
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1.5px solid #ef4444', background: isDark ? '#16181c' : '#ffffff', color: isDark ? '#e7e9ea' : '#0f172a', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-                          />
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button
-                              type="button"
-                              onClick={() => { setDeleteModalOpen(false); setDeletePassword(''); setDeleteConfirmText(''); }}
-                              style={{ flex: 1, padding: '8px', borderRadius: 6, border: '1px solid #cbd5e1', background: 'transparent', color: isDark ? '#e7e9ea' : '#475569', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
-                            >
-                              Vazgeç
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleDeleteAccount}
-                              disabled={deletingAccount || !deletePassword.trim() || deleteConfirmText.trim().toUpperCase() !== 'SİL'}
-                              style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', background: '#dc2626', color: 'white', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: (deletingAccount || !deletePassword.trim() || deleteConfirmText.trim().toUpperCase() !== 'SİL') ? 0.6 : 1 }}
-                            >
-                              {deletingAccount ? 'Doğrulanıyor...' : 'Onayla ve Hesabı Sil'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                  <div className="fx-form">
+                    <label className="fx-input">
+                      <span>Ad</span>
+                      <input value={ed.displayName} maxLength={50} onChange={e => setEd({ ...ed, displayName: e.target.value })} />
+                    </label>
+                    <label className="fx-input">
+                      <span>Kullanıcı adı</span>
+                      <div className="fx-input-prefix"><em>@</em><input value={ed.username} maxLength={30} onChange={e => setEd({ ...ed, username: sanitizeUsername(e.target.value) })} /></div>
+                      <small>Küçük harf (a-z), rakam ve alt çizgi. Bahsetmelerde (@ad) kullanılır.</small>
+                    </label>
+                    <label className="fx-input">
+                      <span>Biyografi</span>
+                      <textarea rows={3} maxLength={160} value={ed.bio} onChange={e => setEd({ ...ed, bio: e.target.value })} />
+                      <small>{ed.bio.length}/160</small>
+                    </label>
+                    <label className="fx-input">
+                      <span>Konum</span>
+                      <input value={ed.location} maxLength={40} onChange={e => setEd({ ...ed, location: e.target.value })} />
+                    </label>
+                    <label className="fx-input">
+                      <span>Web sitesi</span>
+                      <input value={ed.website} maxLength={100} inputMode="url" onChange={e => setEd({ ...ed, website: e.target.value })} />
+                    </label>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ─── THREADS-STYLE FLOATING BOTTOM DOCK (MOBILE ONLY) ─── */}
-      <nav className="forum-floating-dock" aria-label="Mobil Forum Navigasyonu">
-        {/* 1. Home button */}
-        <button
-          type="button"
-          onClick={() => skipSplashAndGo('/forum')}
-          className="dock-btn"
-          aria-label="Ana Akış"
-        >
-          <Home size={24} strokeWidth={1.9} />
-        </button>
-
-        {/* 2. Search button */}
-        <button
-          type="button"
-          onClick={() => skipSplashAndGo('/forum?search=open')}
-          className="dock-btn"
-          aria-label="Arama"
-        >
-          <Search size={24} strokeWidth={1.9} />
-        </button>
-
-        {/* 3. Center Create (+) button (Threads style prominent pill) */}
-        <button
-          type="button"
-          onClick={() => skipSplashAndGo('/forum?compose=open')}
-          className="dock-create-btn"
-          aria-label="Yeni Gönderi Paylaş"
-        >
-          <Plus size={22} strokeWidth={2.6} />
-        </button>
-
-        {/* 4. Heart / Activity button */}
-        <button
-          type="button"
-          onClick={() => router.push('/bildirimler')}
-          className="dock-btn"
-          aria-label="Bildirimler"
-          style={{ position: 'relative' }}
-        >
-          <Heart size={24} strokeWidth={1.9} />
-          {unreadCount > 0 && (
-            <span style={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: '#ef4444',
-            }} />
+            </div>
           )}
-        </button>
 
-        {/* 5. User Profile button (ACTIVE on Profile) */}
-        <button
-          type="button"
-          onClick={() => {
-            if (!user || user.isAnonymous) {
-              skipSplashAndGo('/forum');
-            } else if (isOwn) {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-              router.push(`/forum/profil/${encodeURIComponent(myUsername || user.uid)}`);
-            }
-          }}
-          className={`dock-btn ${isOwn ? 'active' : ''}`}
-          aria-label="Profilim"
-        >
-          <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            background: isDark ? '#2f3336' : '#0f172a',
-            overflow: 'hidden',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.75rem',
-            fontWeight: 800,
-            color: '#ffffff',
-            border: isOwn 
-              ? `2px solid ${isDark ? '#38bdf8' : '#0f172a'}` 
-              : `1.5px solid ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.3)'}`,
-            boxShadow: isOwn ? (isDark ? '0 0 10px rgba(56, 189, 248, 0.4)' : '0 0 8px rgba(15,23,42,0.3)') : 'none'
-          }}>
-            {userProfile?.photoURL ? (
-              <img src={userProfile.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : user && !user.isAnonymous ? (
-              (userProfile?.displayName || user.displayName || 'U')[0].toUpperCase()
-            ) : (
-              <User size={15} color="white" />
-            )}
-          </div>
-        </button>
-      </nav>
-    </div>
+          {/* ── Ayarlar ── */}
+          {settingsOpen && isOwn && (
+            <div className="fx-modal-scrim" onClick={closeSettings}>
+              <div className="fx-settings" data-detail={settingsDetail ? 'true' : 'false'} role="dialog" aria-modal="true" aria-label="Ayarlar" onClick={e => e.stopPropagation()}>
+                <div className="fx-settings-nav">
+                  <div className="fx-modal-head">
+                    <button type="button" className="fx-icon-btn" onClick={closeSettings} aria-label="Kapat" style={{ color: 'var(--fx-ink)' }}><X size={20} /></button>
+                    <div className="fx-modal-title">Ayarlar</div>
+                  </div>
+                  {settingsSections.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`fx-settings-item ${settingsTab === s.id ? 'is-active' : ''}`}
+                      onClick={() => { if (s.id === 'profile') { closeSettings(); setEditOpen(true); return; } setSettingsTab(s.id); setSettingsDetail(true); }}
+                    >
+                      <span className="fx-settings-ic">{s.icon}</span>
+                      <span className="fx-settings-text"><b>{s.label}</b><small>{s.desc}</small></span>
+                      <ChevronRight size={18} className="fx-settings-chev" />
+                    </button>
+                  ))}
+                </div>
+
+                <div className="fx-settings-pane">
+                  <div className="fx-modal-head">
+                    <button type="button" className="fx-icon-btn fx-settings-back" onClick={() => setSettingsDetail(false)} aria-label="Ayarlara dön" style={{ color: 'var(--fx-ink)' }}><ArrowLeft size={20} /></button>
+                    <div className="fx-modal-title">{settingsTab === 'profile' ? 'Ayarlar' : currentSection.label}</div>
+                    <button type="button" className="fx-icon-btn fx-settings-x" onClick={closeSettings} aria-label="Kapat" style={{ color: 'var(--fx-ink)' }}><X size={20} /></button>
+                  </div>
+
+                  <div className="fx-settings-body">
+                    {settingsTab === 'profile' && (
+                      <div className="fx-set-intro">
+                        <p>Soldan bir bölüm seç. Ad, kullanıcı adı, biyografi ve fotoğraflar için <button type="button" className="fx-text-btn" onClick={() => { closeSettings(); setEditOpen(true); }}>Profili düzenle</button> ekranını kullan.</p>
+                      </div>
+                    )}
+
+                    {settingsTab === 'security' && (
+                      <>
+                        <section className="fx-set-group">
+                          <h3>E-posta</h3>
+                          <div className="fx-set-row">
+                            <div className="fx-set-text">
+                              <b>{user?.email}</b>
+                              <small>{emailVerified ? 'Doğrulandı' : 'Doğrulanmadı. Paylaşım ve yanıt için doğrulama gerekir.'}</small>
+                            </div>
+                            <span className={`fx-pill ${emailVerified ? 'is-ok' : 'is-warn'}`}>{emailVerified ? 'Doğrulandı' : 'Bekliyor'}</span>
+                          </div>
+                          {!emailVerified && (
+                            <div className="fx-set-actions">
+                              <button
+                                type="button"
+                                className="fx-btn fx-btn-primary fx-btn-sm"
+                                disabled={sendingVerification}
+                                onClick={async () => {
+                                  setSendingVerification(true);
+                                  try { await resendVerificationEmail(); toast.success('Doğrulama bağlantısı gönderildi. Gelen kutunu ve spam klasörünü kontrol et.'); }
+                                  catch (err: any) { toast.error(err.message || 'Gönderilemedi'); }
+                                  finally { setSendingVerification(false); }
+                                }}
+                              >
+                                <Send size={14} /> {sendingVerification ? 'Gönderiliyor…' : 'Doğrulama bağlantısı gönder'}
+                              </button>
+                              <button
+                                type="button"
+                                className="fx-btn fx-btn-outline fx-btn-sm"
+                                disabled={checkingVerification}
+                                onClick={async () => {
+                                  setCheckingVerification(true);
+                                  try {
+                                    const ok = await refreshEmailVerification();
+                                    if (ok) toast.success('E-posta adresin doğrulandı.');
+                                    else toast.error('Henüz doğrulanmamış. Bağlantıya tıkladıktan sonra tekrar dene.');
+                                  } catch (err: any) { toast.error('Kontrol edilemedi: ' + err.message); }
+                                  finally { setCheckingVerification(false); }
+                                }}
+                              >
+                                <RefreshCw size={14} /> {checkingVerification ? 'Kontrol ediliyor…' : 'Doğruladım, kontrol et'}
+                              </button>
+                            </div>
+                          )}
+                        </section>
+
+                        <form className="fx-set-group" onSubmit={handleChangePassword}>
+                          <h3>Şifreyi değiştir</h3>
+                          <div className="fx-form">
+                            <label className="fx-input"><span>Mevcut şifre</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} /></label>
+                            <label className="fx-input"><span>Yeni şifre</span><input type="password" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} /><small>En az 6 karakter.</small></label>
+                            <label className="fx-input"><span>Yeni şifre (tekrar)</span><input type="password" autoComplete="new-password" value={newPasswordConfirm} onChange={e => setNewPasswordConfirm(e.target.value)} /></label>
+                          </div>
+                          <div className="fx-set-actions">
+                            <button type="submit" className="fx-btn fx-btn-primary" disabled={changingPassword || !newPassword}>{changingPassword ? 'Güncelleniyor…' : 'Şifreyi değiştir'}</button>
+                          </div>
+                        </form>
+
+                        <section className="fx-set-group">
+                          <h3>Şifreni mi unuttun?</h3>
+                          <p className="fx-set-note">{user?.email} adresine şifre sıfırlama bağlantısı gönderilir.</p>
+                          <div className="fx-set-actions">
+                            <button type="button" className="fx-btn fx-btn-outline fx-btn-sm" onClick={handleSendResetEmail} disabled={sendingResetEmail}>{sendingResetEmail ? 'Gönderiliyor…' : 'Sıfırlama bağlantısı gönder'}</button>
+                          </div>
+                        </section>
+                      </>
+                    )}
+
+                    {settingsTab === 'privacy' && (
+                      <>
+                        <section className="fx-set-group">
+                          <div className="fx-set-row">
+                            <div className="fx-set-text"><b>Gizli hesap</b><small>Gönderilerini ve takip listelerini yalnızca seni takip edenler görür. Gönderilerin genel akışta gösterilmez.</small></div>
+                            <Toggle label="Gizli hesap" on={ed.isPrivate} onChange={() => setEd(p => ({ ...p, isPrivate: !p.isPrivate }))} />
+                          </div>
+                          <div className="fx-set-row">
+                            <div className="fx-set-text"><b>Beğenilerimi gizle</b><small>Profilindeki Beğeniler sekmesini yalnızca sen görürsün.</small></div>
+                            <Toggle label="Beğenilerimi gizle" on={ed.hideLikes} onChange={() => setEd(p => ({ ...p, hideLikes: !p.hideLikes }))} />
+                          </div>
+                          <div className="fx-set-row">
+                            <div className="fx-set-text"><b>Yanıtlarımı gizle</b><small>Profilindeki Yanıtlar sekmesini yalnızca sen görürsün.</small></div>
+                            <Toggle label="Yanıtlarımı gizle" on={ed.hideReplies} onChange={() => setEd(p => ({ ...p, hideReplies: !p.hideReplies }))} />
+                          </div>
+                        </section>
+                        <div className="fx-set-actions fx-set-sticky">
+                          <button type="button" className="fx-btn fx-btn-primary" onClick={saveProfile} disabled={saving}>{saving ? 'Kaydediliyor…' : 'Gizlilik ayarlarını kaydet'}</button>
+                        </div>
+                      </>
+                    )}
+
+                    {settingsTab === 'appearance' && (
+                      <section className="fx-set-group">
+                        <p className="fx-set-note">Tercihin bu tarayıcıda hatırlanır.</p>
+                        <div className="fx-theme-pick">
+                          {[{ dark: false, label: 'Açık', icon: <Sun size={18} /> }, { dark: true, label: 'Koyu', icon: <Moon size={18} /> }].map(o => (
+                            <button key={o.label} type="button" className={`fx-theme-opt ${shell.isDark === o.dark ? 'is-active' : ''} ${o.dark ? 'is-dark' : ''}`} onClick={() => shell.setTheme(o.dark)} aria-pressed={shell.isDark === o.dark}>
+                              <span className="fx-theme-preview"><i /><i /><i /></span>
+                              <span className="fx-theme-label">{o.icon}{o.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {settingsTab === 'badge' && (
+                      <section className="fx-set-group">
+                        {isApproved ? (
+                          <>
+                            <div className="fx-set-row">
+                              <div className="fx-set-text">
+                                <b style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{pd.title || 'Psikolog'} <VerifiedMark size={17} /></b>
+                                <small>{pd.hideBadge ? 'Rozetin şu an gizli. Psikolog statün devam ediyor; istediğin zaman tekrar görünür yapabilirsin.' : 'Rozetin profilinde, gönderilerinde ve yanıtlarında görünüyor.'}</small>
+                              </div>
+                              <Toggle label="Rozeti göster" on={!pd.hideBadge} onChange={() => !togglingBadge && handleToggleBadge()} />
+                            </div>
+                          </>
+                        ) : pd.psychologistStatus === 'pending' ? (
+                          <>
+                            <div className="fx-set-row">
+                              <div className="fx-set-text"><b>Başvurun inceleniyor</b><small>Yüklediğin diploma yöneticiler tarafından inceleniyor. Onaylandığında rozet otomatik olarak görünür.</small></div>
+                              <span className="fx-pill is-warn">İnceleniyor</span>
+                            </div>
+                            <div className="fx-set-actions">
+                              <label className="fx-btn fx-btn-outline fx-btn-sm" style={{ cursor: 'pointer' }}>
+                                <Upload size={14} /> {uploadingDiploma ? 'Yükleniyor…' : pd.diplomaUrl ? 'Belgeyi güncelle' : 'Diploma yükle'}
+                                <input type="file" accept="image/*,application/pdf" hidden onChange={handleUploadDiploma} disabled={uploadingDiploma} />
+                              </label>
+                              {pd.diplomaUrl && <a className="fx-text-btn" href={pd.diplomaUrl} target="_blank" rel="noreferrer">Yüklenen belgeyi gör</a>}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p className="fx-set-note">Lisanslı bir psikologsan diploma ya da mezuniyet belgenle başvur. Onaylandığında adının yanında altın onay rozeti görünür.</p>
+                            <div className="fx-set-actions">
+                              <button type="button" className="fx-btn fx-btn-primary" onClick={() => { closeSettings(); router.push('/kayit/psikolog'); }}>Başvuru yap</button>
+                            </div>
+                          </>
+                        )}
+                      </section>
+                    )}
+
+                    {settingsTab === 'danger' && (
+                      <>
+                        <section className="fx-set-group">
+                          <div className="fx-set-row">
+                            <div className="fx-set-text"><b>Çıkış yap</b><small>Bu cihazdaki oturumunu kapatır.</small></div>
+                            <button
+                              type="button"
+                              className="fx-btn fx-btn-outline fx-btn-sm"
+                              onClick={async () => { closeSettings(); try { await logout(); toast.success('Çıkış yapıldı'); router.push('/forum'); } catch (err: any) { toast.error('Çıkış yapılamadı: ' + err.message); } }}
+                            >
+                              Çıkış yap
+                            </button>
+                          </div>
+                        </section>
+
+                        <section className="fx-set-group">
+                          <h3>{pd.isFrozen ? 'Hesabı etkinleştir' : 'Hesabı dondur'}</h3>
+                          <p className="fx-set-note">Dondurulan hesabın profili, gönderileri ve etkileşimleri diğer kullanıcılardan gizlenir. İstediğin zaman geri açabilirsin.</p>
+                          {pd.isFrozen ? (
+                            <div className="fx-set-actions"><button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={handleToggleFreeze} disabled={freezing}>{freezing ? 'Etkinleştiriliyor…' : 'Hesabı etkinleştir'}</button></div>
+                          ) : !freezeModalOpen ? (
+                            <div className="fx-set-actions"><button type="button" className="fx-btn fx-btn-outline fx-btn-sm" onClick={() => setFreezeModalOpen(true)}>Hesabı dondur</button></div>
+                          ) : (
+                            <div className="fx-confirm">
+                              <label className="fx-input"><span>Onaylamak için şifreni gir</span><input type="password" autoComplete="current-password" value={freezePassword} onChange={e => setFreezePassword(e.target.value)} /></label>
+                              <div className="fx-set-actions">
+                                <button type="button" className="fx-btn fx-btn-outline fx-btn-sm" onClick={() => { setFreezeModalOpen(false); setFreezePassword(''); }}>Vazgeç</button>
+                                <button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={handleToggleFreeze} disabled={freezing || !freezePassword.trim()}>{freezing ? 'Doğrulanıyor…' : 'Hesabı dondur'}</button>
+                              </div>
+                            </div>
+                          )}
+                        </section>
+
+                        <section className="fx-set-group is-danger">
+                          <h3>Hesabı sil</h3>
+                          <p className="fx-set-note">Profil bilgilerin ve takip bağlantıların silinir, oturumun kapatılır. Bu işlem geri alınamaz.</p>
+                          {!deleteModalOpen ? (
+                            <div className="fx-set-actions"><button type="button" className="fx-btn fx-btn-danger fx-btn-sm" onClick={() => setDeleteModalOpen(true)}>Hesabı sil</button></div>
+                          ) : (
+                            <div className="fx-confirm">
+                              <label className="fx-input"><span>Şifren</span><input type="password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /></label>
+                              <label className="fx-input"><span>Onaylamak için SİL yaz</span><input value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="SİL" /></label>
+                              <div className="fx-set-actions">
+                                <button type="button" className="fx-btn fx-btn-outline fx-btn-sm" onClick={() => { setDeleteModalOpen(false); setDeletePassword(''); setDeleteConfirmText(''); }}>Vazgeç</button>
+                                <button
+                                  type="button"
+                                  className="fx-btn fx-btn-danger fx-btn-sm"
+                                  onClick={handleDeleteAccount}
+                                  disabled={deletingAccount || !deletePassword.trim() || deleteConfirmText.trim().toLocaleUpperCase('tr-TR') !== 'SİL'}
+                                >
+                                  {deletingAccount ? 'Siliniyor…' : 'Hesabı kalıcı olarak sil'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </section>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </ForumShell>
   );
 }

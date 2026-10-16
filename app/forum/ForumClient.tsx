@@ -7,7 +7,10 @@ import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ThreadView from '@/components/forum/ThreadView';
 import { Search, Bell, Users, Home, X, Loader2, User, Bookmark, Heart, Sun, Moon, Menu, LogOut, Settings, Feather, ArrowLeft, Image as ImageIcon } from 'lucide-react';
-import { Avatar, VerifiedMark, CharRing } from '@/components/forum/ui';
+import { Avatar, CharRing, useForumTheme } from '@/components/forum/ui';
+import ForumShell from '@/components/forum/ForumShell';
+import PersonRow from '@/components/forum/PersonRow';
+import { WhoToFollowStrip } from '@/components/forum/WhoToFollow';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -71,7 +74,6 @@ export default function ForumClient() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [usersMap, setUsersMap] = useState<Record<string, any>>({});
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -111,38 +113,7 @@ export default function ForumClient() {
     return () => clearTimeout(timer);
   }, [showSplash]);
 
-  // Dark Mode State with localStorage persistence
-  const [isDark, setIsDark] = useState<boolean>(false);
-
-  useEffect(() => {
-    const syncTheme = () => {
-      try {
-        const savedTheme = localStorage.getItem('forum_theme');
-        if (savedTheme) {
-          setIsDark(savedTheme === 'dark');
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          setIsDark(true);
-        }
-      } catch (e) {}
-    };
-    syncTheme();
-    window.addEventListener('storage', syncTheme);
-    window.addEventListener('forum_theme_change', syncTheme);
-    return () => {
-      window.removeEventListener('storage', syncTheme);
-      window.removeEventListener('forum_theme_change', syncTheme);
-    };
-  }, []);
-
-  const toggleDarkMode = () => {
-    setIsDark(prev => {
-      const next = !prev;
-      try {
-        localStorage.setItem('forum_theme', next ? 'dark' : 'light');
-      } catch (e) {}
-      return next;
-    });
-  };
+  const [isDark, toggleDarkMode] = useForumTheme();
 
   useEffect(() => {
     if (isDark) {
@@ -157,7 +128,6 @@ export default function ForumClient() {
 
   useEffect(() => { return onSnapshot(collection(db, 'users'), snap => { const m: Record<string, any> = {}; snap.docs.forEach(d => m[d.id] = d.data()); setUsersMap(m); }); }, []);
   useEffect(() => { const q = query(collection(db, 'forum'), orderBy('createdAt', 'desc')); return onSnapshot(q, snap => { setThreads(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[]); }); }, []);
-  useEffect(() => { if (!user || user.isAnonymous) return; const q = query(collection(db, 'notifications'), where('toUid', '==', user.uid), where('read', '==', false)); return onSnapshot(q, snap => setUnreadCount(snap.size)); }, [user]);
   useEffect(() => { if (!user || user.isAnonymous) return; const q = query(collection(db, 'follows'), where('followerId', '==', user.uid)); return onSnapshot(q, snap => setFollowingUids(snap.docs.map(d => d.data().followingId))); }, [user]);
 
   // Sync search query, tag, category, and feed from URL
@@ -170,10 +140,8 @@ export default function ForumClient() {
       setActiveThread(null);
     } else if (qParam !== null && qParam !== undefined) {
       if (qParam === 'open' || qParam === '1') {
-        setMobileSearchOpen(true);
-        setTimeout(() => {
-          topSearchInputRef.current?.focus();
-        }, 200);
+        if (window.innerWidth < 700) setMobileSearchOpen(true);
+        else setTimeout(() => (searchInputRef.current?.offsetParent ? searchInputRef.current : topSearchInputRef.current)?.focus(), 250);
       } else {
         setSearchQuery(qParam);
       }
@@ -677,11 +645,8 @@ export default function ForumClient() {
   const isMember = Boolean(user && !user.isAnonymous);
   const myName = userProfile?.displayName || user?.displayName || '';
   const myPhoto = userProfile?.photoURL || user?.photoURL || '';
-  const myProfileHref = myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum';
   const isHome = feedTab === 'all' && !searchQuery && !activeThread;
   const canPost = Boolean(form.body.trim() || form.imageUrl) && !posting;
-
-  const requireMember = (fn: () => void) => () => { if (!isMember) setAuthOpen(true); else fn(); };
 
   const goHome = () => {
     setFeedTab('all');
@@ -713,13 +678,6 @@ export default function ForumClient() {
   };
 
   const openCompose = () => { if (!isMember) setAuthOpen(true); else setComposeModalOpen(true); };
-
-  const isApprovedPsych = (u: any) => Boolean(u && !u.hideBadge && ((u.isPsychologist && (u.psychologistStatus === 'approved' || !u.psychologistStatus)) || u.role === 'psychologist'));
-
-  const psychologists = Object.entries(usersMap)
-    .map(([uid, u]: [string, any]) => ({ uid, ...u }))
-    .filter((u: any) => isApprovedPsych(u) && !u.isFrozen && !u.isDeleted && !u.isBanned && u.uid !== user?.uid)
-    .slice(0, 3);
 
   const renderComposer = (opts: { autoFocus?: boolean; onPosted?: () => void } = {}) => (
     <div className="fx-compose">
@@ -793,19 +751,54 @@ export default function ForumClient() {
     </label>
   );
 
-  const navItems = [
-    { key: 'home', label: 'Ana sayfa', icon: Home, onClick: goHome, active: isHome },
-    { key: 'search', label: 'Keşfet', icon: Search, onClick: () => { if (activeThread) closeThread(); window.scrollTo({ top: 0 }); setTimeout(() => (searchInputRef.current || topSearchInputRef.current)?.focus(), 60); }, active: Boolean(searchQuery) },
-    { key: 'notif', label: 'Bildirimler', icon: Bell, onClick: requireMember(() => router.push('/bildirimler')), active: false, badge: unreadCount },
-    { key: 'following', label: 'Takip ettiklerin', icon: Users, onClick: requireMember(() => { setFeedTab('following'); if (activeThread) closeThread(); }), active: feedTab === 'following' && !activeThread },
-    { key: 'saved', label: 'Yer işaretleri', icon: Bookmark, onClick: requireMember(() => router.push(`${myProfileHref}?tab=bookmarks`)), active: false },
-    { key: 'profile', label: 'Profil', icon: User, onClick: requireMember(() => router.push(myProfileHref)), active: false },
-    { key: 'settings', label: 'Ayarlar', icon: Settings, onClick: requireMember(() => router.push(`${myProfileHref}?settings=open`)), active: false },
-  ];
+  const openExplore = () => {
+    if (activeThread) closeThread();
+    if (typeof window !== 'undefined' && window.innerWidth < 700) { setMobileSearchOpen(true); return; }
+    window.scrollTo({ top: 0 });
+    setTimeout(() => (searchInputRef.current?.offsetParent ? searchInputRef.current : topSearchInputRef.current)?.focus(), 60);
+  };
+
+  const shellActive = activeThread ? null : searchQuery ? 'explore' : feedTab === 'following' ? 'following' : 'home';
+
+  const feedPosts = filtered.map(t => {
+    const isAuthorPsych = Boolean(
+      !t.authorHideBadge && !usersMap[t.uid]?.hideBadge && (
+        t.authorIsPsychologist ||
+        (usersMap[t.uid]?.isPsychologist && usersMap[t.uid]?.psychologistStatus === 'approved') ||
+        (usersMap[t.uid]?.isPsychologist && !usersMap[t.uid]?.psychologistStatus)
+      )
+    );
+    return (
+      <ForumPost
+        key={t.id}
+        post={{
+          ...t,
+          authorPhotoURL: usersMap[t.uid]?.photoURL || t.authorPhotoURL || (user?.uid === t.uid ? (userProfile?.photoURL || user?.photoURL) : undefined),
+          authorIsPsychologist: isAuthorPsych
+        }}
+        currentUserUid={user?.uid}
+        currentUserEmail={user?.email || ''}
+        adminEmails={ADMIN_EMAILS}
+        isDark={isDark}
+        onOpen={openThread}
+        onLike={handleLike}
+        onDislike={handleDislike}
+        onRepost={handleRepost}
+        onBookmark={handleBookmark}
+        onDelete={deletePost}
+        onTopic={openTopic}
+      />
+    );
+  });
+  // "Kimi takip etmeli" şeridi: sağ sütun görünmediğinde akışın içinde gösterilir
+  if (!searchQuery && feedTab === 'all' && feedPosts.length) {
+    feedPosts.splice(Math.min(3, feedPosts.length), 0, (
+      <div key="__wtf" className="fx-strip-slot"><WhoToFollowStrip onNeedAuth={() => setAuthOpen(true)} /></div>
+    ));
+  }
 
   return (
-    <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'}>
-
+    <>
       {showSplash && (
         <div
           style={{
@@ -821,444 +814,229 @@ export default function ForumClient() {
         </div>
       )}
 
-      <EmailVerificationBanner isDark={isDark} />
-
-      <div className="fx-shell">
-
-        {/* ── Sol menü ── */}
-        <nav className="fx-nav" aria-label="Forum menüsü">
-          <Link href="/" className="fx-logo" title="Web sitesine dön">
-            <img src="/forum-logo.png" alt="Manav Forum" />
-          </Link>
-
-          {navItems.map(({ key, label, icon: Icon, onClick, active, badge }) => (
-            <button key={key} type="button" className={`fx-nav-item ${active ? 'is-active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined} title={label}>
-              <Icon size={26} strokeWidth={active ? 2.4 : 1.8} />
-              {badge ? <span className="fx-dot-count">{badge > 99 ? '99+' : badge}</span> : null}
-              <span className="fx-nav-label">{label}</span>
-            </button>
-          ))}
-
-          <button type="button" className="fx-nav-item" onClick={toggleDarkMode} title={isDark ? 'Açık tema' : 'Koyu tema'}>
-            {isDark ? <Sun size={26} strokeWidth={1.8} /> : <Moon size={26} strokeWidth={1.8} />}
-            <span className="fx-nav-label">{isDark ? 'Açık tema' : 'Koyu tema'}</span>
-          </button>
-
-          <button type="button" className="fx-post-cta" onClick={openCompose}>
-            <span className="fx-cta-label">Gönderi paylaş</span>
-            <Feather size={22} className="fx-cta-icon" />
-          </button>
-
-          {isMember ? (
-            <div className="fx-me">
-              <Link href={myProfileHref} style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1, color: 'inherit', textDecoration: 'none' }} title="Profilin">
-                <Avatar src={myPhoto} name={myName} size={40} />
-                <span className="fx-me-text">
-                  <div className="fx-me-name">{myName || 'Profilin'}</div>
-                  <div className="fx-me-handle">@{myUsername}</div>
-                </span>
-              </Link>
-              <button
-                type="button"
-                className="fx-icon-btn"
-                title="Çıkış yap"
-                aria-label="Çıkış yap"
-                onClick={async () => {
-                  try { await logout(); toast.success('Çıkış yapıldı'); } catch (e: any) { toast.error('Çıkış yapılamadı: ' + e.message); }
-                }}
-              >
-                <LogOut size={18} />
-              </button>
-            </div>
-          ) : null}
-        </nav>
-
-        {/* ── Akış ── */}
-        <main className="fx-main">
-          {activeThread ? (
-            <ThreadView
-              post={{
-                ...activeThread,
-                authorPhotoURL: usersMap[activeThread.uid]?.photoURL || activeThread.authorPhotoURL,
-                authorIsPsychologist: !activeThread.authorHideBadge && !usersMap[activeThread.uid]?.hideBadge && Boolean(
-                  activeThread.authorIsPsychologist ||
-                  usersMap[activeThread.uid]?.isPsychologist ||
-                  usersMap[activeThread.uid]?.role === 'psychologist'
-                )
-              }}
-              currentUser={user}
-              userProfile={userProfile}
-              emailVerified={isEffectiveEmailVerified}
-              photoLimitReached={photoLimitReached}
-              adminEmails={ADMIN_EMAILS}
-              isDark={isDark}
-              onBack={closeThread}
-              onOpenAuth={() => setAuthOpen(true)}
-              onPostDeleted={(deletedId) => {
-                setThreads(prev => prev.filter(t => t.id !== deletedId));
-                closeThread();
-              }}
-            />
-          ) : (
-            <>
-              <header className="fx-head">
-                <div className="fx-mhead">
-                  <button type="button" className="fx-icon-btn" onClick={() => setMobileDrawerOpen(true)} aria-label="Menüyü aç">
-                    {isMember ? <Avatar src={myPhoto} name={myName} size={32} /> : <Menu size={22} />}
-                  </button>
-                  <button type="button" className="fx-mhead-logo" onClick={goHome} aria-label="Akışın başına dön" style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer' }}>
-                    <img src="/forum-logo.png" alt="Manav Forum" />
-                  </button>
-                  <button type="button" className="fx-icon-btn" onClick={toggleDarkMode} aria-label={isDark ? 'Açık temaya geç' : 'Koyu temaya geç'}>
-                    {isDark ? <Sun size={20} /> : <Moon size={20} />}
-                  </button>
-                </div>
-
-                <div className="fx-head-search">{searchField(topSearchInputRef)}</div>
-
-                <div className="fx-tabs" role="tablist">
-                  {[{ key: 'all', label: 'Sana özel' }, { key: 'following', label: 'Takip ettiklerin' }].map(tab => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      role="tab"
-                      aria-selected={feedTab === tab.key}
-                      className={`fx-tab ${feedTab === tab.key ? 'is-active' : ''}`}
-                      onClick={() => tab.key === 'following' && !isMember ? setAuthOpen(true) : setFeedTab(tab.key as any)}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </header>
-
-              {!searchQuery && (
-                <div className="fx-topics" role="toolbar" aria-label="Konular">
-                  {CATEGORIES.map(c => (
-                    <button key={c} type="button" className={`fx-topic ${filter === c ? 'is-active' : ''}`} onClick={() => openTopic(c)} aria-pressed={filter === c}>
-                      {c === 'Tümü' ? 'Tüm konular' : c}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {searchQuery && (
-                <div className="fx-context">
-                  <span><strong>{searchQuery}</strong> için {filtered.length} gönderi{matchedUsers.length > 0 ? `, ${matchedUsers.length} kişi` : ''}</span>
-                  <button type="button" className="fx-text-btn" onClick={clearSearch}>Aramayı temizle</button>
-                </div>
-              )}
-
-              {searchQuery.trim() && matchedUsers.length > 0 && (
-                <section className="fx-users" aria-label="Kişiler">
-                  <div className="fx-users-title">Kişiler</div>
-                  {matchedUsers.map((u: any) => {
-                    const isFollowingThisUser = followingUids.includes(u.uid);
-                    return (
-                      <div key={u.uid} className="fx-panel-row fx-person" onClick={() => router.push(`/forum/profil/${encodeURIComponent(u.username || u.uid)}`)}>
-                        <Avatar src={u.photoURL} name={u.displayName || u.username} size={40} />
-                        <div className="fx-person-text">
-                          <div className="fx-person-name"><span>{u.displayName || u.username}</span>{isApprovedPsych(u) && <VerifiedMark size={16} />}</div>
-                          <div className="fx-person-handle">@{u.username || 'kullanici'}</div>
-                          {u.bio && <div className="fx-person-bio">{u.bio}</div>}
-                        </div>
-                        {user?.uid !== u.uid && (
-                          <button
-                            type="button"
-                            className={`fx-btn fx-btn-primary fx-follow ${isFollowingThisUser ? 'is-following' : ''}`}
-                            onClick={(e) => { e.stopPropagation(); toggleFollowUser(u.uid); }}
-                          >
-                            {isFollowingThisUser ? 'Takiptesin' : 'Takip et'}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </section>
-              )}
-
-              {userProfile?.isBanned && (
-                <div className="fx-alert" role="status">
-                  Hesabın yönetici tarafından askıya alındı. Gönderi paylaşamaz, yanıt yazamaz ve etkileşimde bulunamazsın.
-                </div>
-              )}
-
-              {isMember && !userProfile?.isBanned && !searchQuery && (
-                <div className="fx-compose-desktop">{renderComposer()}</div>
-              )}
-
-              {filtered.length === 0 ? (
-                <div className="fx-empty">
-                  {searchQuery.trim() ? (
-                    <>
-                      <h2>“{searchQuery}” için sonuç yok</h2>
-                      <p>Yazımı kontrol et ya da başka bir kelime, etiket veya kullanıcı adı dene.</p>
-                      <button type="button" className="fx-btn fx-btn-primary" onClick={clearSearch}>Aramayı temizle</button>
-                    </>
-                  ) : feedTab === 'following' ? (
-                    <>
-                      <h2>Takip ettiklerin henüz paylaşım yapmadı</h2>
-                      <p>Psikologları ve ilgini çeken kişileri takip et; paylaşımları burada görünür.</p>
-                      <button type="button" className="fx-btn fx-btn-primary" onClick={() => setFeedTab('all')}>Akışa dön</button>
-                    </>
-                  ) : (
-                    <>
-                      <h2>{filter !== 'Tümü' ? `${filter} konusunda henüz gönderi yok` : 'Henüz gönderi yok'}</h2>
-                      <p>İlk soruyu ya da düşünceyi sen paylaş, sohbet oradan başlasın.</p>
-                      <button type="button" className="fx-btn fx-btn-primary" onClick={openCompose}>Gönderi paylaş</button>
-                    </>
-                  )}
-                </div>
-              ) : (
-                filtered.map(t => {
-                  const isAuthorPsych = Boolean(
-                    !t.authorHideBadge && !usersMap[t.uid]?.hideBadge && (
-                      t.authorIsPsychologist ||
-                      (usersMap[t.uid]?.isPsychologist && usersMap[t.uid]?.psychologistStatus === 'approved') ||
-                      (usersMap[t.uid]?.isPsychologist && !usersMap[t.uid]?.psychologistStatus)
-                    )
-                  );
-                  return (
-                    <ForumPost
-                      key={t.id}
-                      post={{
-                        ...t,
-                        authorPhotoURL: usersMap[t.uid]?.photoURL || t.authorPhotoURL || (user?.uid === t.uid ? (userProfile?.photoURL || user?.photoURL) : undefined),
-                        authorIsPsychologist: isAuthorPsych
-                      }}
-                      currentUserUid={user?.uid}
-                      currentUserEmail={user?.email || ''}
-                      adminEmails={ADMIN_EMAILS}
-                      isDark={isDark}
-                      onOpen={openThread}
-                      onLike={handleLike}
-                      onDislike={handleDislike}
-                      onRepost={handleRepost}
-                      onBookmark={handleBookmark}
-                      onDelete={deletePost}
-                      onTopic={openTopic}
-                    />
-                  );
-                })
-              )}
-
-              {filtered.length > 0 && <div className="fx-end">Hepsi bu kadar. Yeni gönderiler geldikçe burada görünecek.</div>}
-            </>
-          )}
-        </main>
-
-        {/* ── Sağ sütun ── */}
-        <aside className="fx-aside" aria-label="Gündem ve öneriler">
-          <div className="fx-aside-search">{searchField(searchInputRef)}</div>
-
-          {trends.length > 0 && (
-            <section className="fx-panel">
-              <h2 className="fx-panel-title">Gündem</h2>
-              {trends.map(({ tag, count }) => (
-                <button key={tag} type="button" className="fx-panel-row" onClick={() => openTag(tag)}>
-                  <span className="fx-trend-tag">#{tag}</span>
-                  <small>{count} gönderi</small>
-                </button>
-              ))}
-            </section>
-          )}
-
-          {psychologists.length > 0 && (
-            <section className="fx-panel">
-              <h2 className="fx-panel-title">Topluluktaki psikologlar</h2>
-              {psychologists.map((u: any) => {
-                const following = followingUids.includes(u.uid);
-                return (
-                  <div key={u.uid} className="fx-panel-row fx-person" onClick={() => router.push(`/forum/profil/${encodeURIComponent(u.username || u.uid)}`)}>
-                    <Avatar src={u.photoURL} name={u.displayName || u.username} size={40} />
-                    <div className="fx-person-text">
-                      <div className="fx-person-name"><span>{u.displayName || u.username}</span><VerifiedMark size={16} /></div>
-                      <div className="fx-person-handle">{u.title || 'Psikolog'}</div>
-                    </div>
-                    <button
-                      type="button"
-                      className={`fx-btn fx-btn-primary fx-follow ${following ? 'is-following' : ''}`}
-                      onClick={(e) => { e.stopPropagation(); toggleFollowUser(u.uid); }}
-                    >
-                      {following ? 'Takiptesin' : 'Takip et'}
-                    </button>
-                  </div>
-                );
-              })}
-            </section>
-          )}
-
-          <nav className="fx-legal" aria-label="Site bağlantıları">
-            <Link href="/">Web sitesi</Link>
-            <Link href="/yazilarim">Yazılar</Link>
-            <Link href="/gizlilik">Gizlilik</Link>
-            <Link href="/kullanici-sozlesmesi">Kullanıcı sözleşmesi</Link>
-            <Link href="/iletisim">İletişim</Link>
-            <span>© {new Date().getFullYear()} Furkan Manav</span>
-          </nav>
-        </aside>
-      </div>
-
-      {/* ── Misafir bandı ── */}
-      {!isMember && (
-        <div className="fx-guest-band">
-          <div className="fx-guest-inner">
-            <div className="fx-guest-copy">
-              <strong>Sohbete katıl</strong>
-              <span>Soru sor, psikologların ve topluluğun yanıtlarını oku.</span>
-            </div>
-            <div className="fx-guest-actions">
-              <button type="button" className="fx-btn fx-btn-ghost" onClick={() => setAuthOpen(true)}>Giriş yap</button>
-              <button type="button" className="fx-btn fx-btn-solid" onClick={() => setAuthOpen(true)}>Kayıt ol</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} isDark={isDark} />
-
-      {/* ── Mobil yeni gönderi düğmesi ve alt menü ── */}
-      <button type="button" className="fx-fab" onClick={openCompose} aria-label="Gönderi paylaş">
-        <Feather size={24} />
-      </button>
-
-      <nav className="fx-tabbar" aria-label="Mobil menü">
-        <button type="button" className={`fx-tabbar-btn ${isHome ? 'is-active' : ''}`} onClick={goHome} aria-label="Ana sayfa">
-          <Home size={26} strokeWidth={isHome ? 2.4 : 1.8} />
-        </button>
-        <button type="button" className={`fx-tabbar-btn ${mobileSearchOpen || searchQuery ? 'is-active' : ''}`} onClick={() => setMobileSearchOpen(true)} aria-label="Ara">
-          <Search size={26} strokeWidth={mobileSearchOpen || searchQuery ? 2.4 : 1.8} />
-        </button>
-        <button type="button" className={`fx-tabbar-btn ${feedTab === 'following' ? 'is-active' : ''}`} onClick={requireMember(() => { setFeedTab('following'); if (activeThread) closeThread(); window.scrollTo({ top: 0 }); })} aria-label="Takip ettiklerin">
-          <Users size={26} strokeWidth={feedTab === 'following' ? 2.4 : 1.8} />
-        </button>
-        <button type="button" className="fx-tabbar-btn" onClick={requireMember(() => router.push('/bildirimler'))} aria-label={unreadCount ? `Bildirimler, ${unreadCount} okunmamış` : 'Bildirimler'}>
-          <Bell size={26} strokeWidth={1.8} />
-          {unreadCount > 0 && <span className="fx-tabbar-dot" />}
-        </button>
-        <button type="button" className="fx-tabbar-btn" onClick={requireMember(() => router.push(myProfileHref))} aria-label="Profil">
-          <User size={26} strokeWidth={1.8} />
-        </button>
-      </nav>
-
-      {/* ── Mobil arama ── */}
-      {mobileSearchOpen && (
-        <div className="fx-msearch" role="dialog" aria-modal="true" aria-label="Ara">
-          <div className="fx-msearch-head">
-            <button type="button" className="fx-icon-btn" onClick={() => setMobileSearchOpen(false)} aria-label="Geri" style={{ color: 'var(--fx-ink)' }}>
-              <ArrowLeft size={22} />
-            </button>
-            {searchField(undefined, true)}
-          </div>
-          <div className="fx-msearch-list">
-            {!searchQuery && trends.length > 0 && (
-              <>
-                <div className="fx-msearch-label">Gündem</div>
+      <ForumShell
+        active={shellActive as any}
+        onCompose={openCompose}
+        onNav={{
+          home: goHome,
+          explore: openExplore,
+          following: () => { setFeedTab('following'); if (activeThread) closeThread(); window.scrollTo({ top: 0 }); },
+        }}
+        asideTop={
+          <>
+            <div className="fx-aside-search">{searchField(searchInputRef)}</div>
+            {trends.length > 0 && (
+              <section className="fx-panel">
+                <h2 className="fx-panel-title">Gündem</h2>
                 {trends.map(({ tag, count }) => (
-                  <button key={tag} type="button" className="fx-panel-row" onClick={() => { setMobileSearchOpen(false); openTag(tag); }}>
+                  <button key={tag} type="button" className="fx-panel-row" onClick={() => openTag(tag)}>
                     <span className="fx-trend-tag">#{tag}</span>
                     <small>{count} gönderi</small>
                   </button>
                 ))}
-              </>
+              </section>
             )}
-            {searchQuery && matchedUsers.length > 0 && (
+          </>
+        }
+      >
+        {(shell) => (
+          <>
+            {activeThread ? (
+              <ThreadView
+                post={{
+                  ...activeThread,
+                  authorPhotoURL: usersMap[activeThread.uid]?.photoURL || activeThread.authorPhotoURL,
+                  authorIsPsychologist: !activeThread.authorHideBadge && !usersMap[activeThread.uid]?.hideBadge && Boolean(
+                    activeThread.authorIsPsychologist ||
+                    usersMap[activeThread.uid]?.isPsychologist ||
+                    usersMap[activeThread.uid]?.role === 'psychologist'
+                  )
+                }}
+                currentUser={user}
+                userProfile={userProfile}
+                emailVerified={isEffectiveEmailVerified}
+                photoLimitReached={photoLimitReached}
+                adminEmails={ADMIN_EMAILS}
+                isDark={isDark}
+                onBack={closeThread}
+                onOpenAuth={() => setAuthOpen(true)}
+                onPostDeleted={(deletedId) => {
+                  setThreads(prev => prev.filter(t => t.id !== deletedId));
+                  closeThread();
+                }}
+              />
+            ) : (
               <>
-                <div className="fx-msearch-label">Kişiler</div>
-                {matchedUsers.slice(0, 5).map((u: any) => (
-                  <div key={u.uid} className="fx-panel-row fx-person" onClick={() => { setMobileSearchOpen(false); setSearchQuery(''); router.push(`/forum/profil/${encodeURIComponent(u.username || u.uid)}`); }}>
-                    <Avatar src={u.photoURL} name={u.displayName || u.username} size={40} />
-                    <div className="fx-person-text">
-                      <div className="fx-person-name"><span>{u.displayName || u.username}</span>{isApprovedPsych(u) && <VerifiedMark size={16} />}</div>
-                      <div className="fx-person-handle">@{u.username}</div>
-                    </div>
+                <header className="fx-head">
+                  <div className="fx-mhead">
+                    <button type="button" className="fx-icon-btn" onClick={shell.openDrawer} aria-label="Menüyü aç">
+                      {isMember ? <Avatar src={myPhoto} name={myName} size={32} /> : <Menu size={22} />}
+                    </button>
+                    <button type="button" className="fx-mhead-logo" onClick={goHome} aria-label="Akışın başına dön" style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer' }}>
+                      <img src="/forum-logo.png" alt="Manav Forum" />
+                    </button>
+                    <button type="button" className="fx-icon-btn" onClick={toggleDarkMode} aria-label={isDark ? 'Açık temaya geç' : 'Koyu temaya geç'}>
+                      {isDark ? <Sun size={20} /> : <Moon size={20} />}
+                    </button>
                   </div>
-                ))}
-              </>
-            )}
-            {searchQuery && (
-              <>
-                <div className="fx-msearch-label">Gönderiler</div>
-                {filtered.slice(0, 20).map(t => (
-                  <div key={t.id} className="fx-msearch-post" onClick={() => { setMobileSearchOpen(false); openThread(t); }}>
-                    <b>{t.authorName}</b>
-                    <div>{t.body}</div>
+
+                  <div className="fx-head-search">{searchField(topSearchInputRef)}</div>
+
+                  <div className="fx-tabs" role="tablist">
+                    {[{ key: 'all', label: 'Sana özel' }, { key: 'following', label: 'Takip ettiklerin' }].map(tab => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={feedTab === tab.key}
+                        className={`fx-tab ${feedTab === tab.key ? 'is-active' : ''}`}
+                        onClick={() => tab.key === 'following' && !isMember ? setAuthOpen(true) : setFeedTab(tab.key as any)}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
                   </div>
-                ))}
-                {filtered.length === 0 && <div className="fx-end">“{searchQuery}” ile eşleşen gönderi yok.</div>}
-                {filtered.length > 0 && (
-                  <button type="button" className="fx-panel-more" onClick={() => setMobileSearchOpen(false)}>Tüm sonuçları akışta göster</button>
+                </header>
+
+                {!searchQuery && (
+                  <div className="fx-topics" role="toolbar" aria-label="Konular">
+                    {CATEGORIES.map(c => (
+                      <button key={c} type="button" className={`fx-topic ${filter === c ? 'is-active' : ''}`} onClick={() => openTopic(c)} aria-pressed={filter === c}>
+                        {c === 'Tümü' ? 'Tüm konular' : c}
+                      </button>
+                    ))}
+                  </div>
                 )}
+
+                {searchQuery && (
+                  <div className="fx-context">
+                    <span><strong>{searchQuery}</strong> için {filtered.length} gönderi{matchedUsers.length > 0 ? `, ${matchedUsers.length} kişi` : ''}</span>
+                    <button type="button" className="fx-text-btn" onClick={clearSearch}>Aramayı temizle</button>
+                  </div>
+                )}
+
+                {searchQuery.trim() && matchedUsers.length > 0 && (
+                  <section className="fx-users" aria-label="Kişiler">
+                    <div className="fx-users-title">Kişiler</div>
+                    {matchedUsers.map((u: any) => (
+                      <PersonRow
+                        key={u.uid}
+                        user={u}
+                        showBio
+                        isFollowing={followingUids.includes(u.uid)}
+                        onNeedAuth={() => setAuthOpen(true)}
+                      />
+                    ))}
+                  </section>
+                )}
+
+                {userProfile?.isBanned && (
+                  <div className="fx-alert" role="status">
+                    Hesabın yönetici tarafından askıya alındı. Gönderi paylaşamaz, yanıt yazamaz ve etkileşimde bulunamazsın.
+                  </div>
+                )}
+
+                {isMember && !userProfile?.isBanned && !searchQuery && (
+                  <div className="fx-compose-desktop">{renderComposer()}</div>
+                )}
+
+                {filtered.length === 0 ? (
+                  <>
+                    <div className="fx-empty">
+                      {searchQuery.trim() ? (
+                        <>
+                          <h2>“{searchQuery}” için sonuç yok</h2>
+                          <p>Yazımı kontrol et ya da başka bir kelime, etiket veya kullanıcı adı dene.</p>
+                          <button type="button" className="fx-btn fx-btn-primary" onClick={clearSearch}>Aramayı temizle</button>
+                        </>
+                      ) : feedTab === 'following' ? (
+                        <>
+                          <h2>Takip ettiklerin henüz paylaşım yapmadı</h2>
+                          <p>Psikologları ve ilgini çeken kişileri takip et; paylaşımları burada görünür.</p>
+                          <button type="button" className="fx-btn fx-btn-primary" onClick={() => setFeedTab('all')}>Akışa dön</button>
+                        </>
+                      ) : (
+                        <>
+                          <h2>{filter !== 'Tümü' ? `${filter} konusunda henüz gönderi yok` : 'Henüz gönderi yok'}</h2>
+                          <p>İlk soruyu ya da düşünceyi sen paylaş, sohbet oradan başlasın.</p>
+                          <button type="button" className="fx-btn fx-btn-primary" onClick={openCompose}>Gönderi paylaş</button>
+                        </>
+                      )}
+                    </div>
+                    {feedTab === 'following' && <WhoToFollowStrip onNeedAuth={() => setAuthOpen(true)} />}
+                  </>
+                ) : feedPosts}
+
+                {filtered.length > 0 && <div className="fx-end">Hepsi bu kadar. Yeni gönderiler geldikçe burada görünecek.</div>}
               </>
             )}
-          </div>
-        </div>
-      )}
 
-      {/* ── Paylaşım penceresi ── */}
-      {composeModalOpen && (
-        <div className="fx-sheet-scrim" onClick={() => setComposeModalOpen(false)}>
-          <div className="fx-sheet" role="dialog" aria-modal="true" aria-label="Yeni gönderi" onClick={e => e.stopPropagation()}>
-            <div className="fx-sheet-head">
-              <button type="button" className="fx-icon-btn" onClick={() => setComposeModalOpen(false)} aria-label="Kapat" style={{ color: 'var(--fx-ink)' }}>
-                <X size={22} />
-              </button>
-            </div>
-            {renderComposer({ autoFocus: true, onPosted: () => setComposeModalOpen(false) })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Mobil çekmece ── */}
-      {mobileDrawerOpen && (
-        <div className="fx-drawer-scrim" onClick={() => setMobileDrawerOpen(false)}>
-          <aside className="fx-drawer" onClick={e => e.stopPropagation()} aria-label="Menü">
-            <div className="fx-drawer-me">
-              {isMember ? (
-                <Link href={myProfileHref} onClick={() => setMobileDrawerOpen(false)} style={{ color: 'inherit', textDecoration: 'none' }}>
-                  <Avatar src={myPhoto} name={myName} size={44} />
-                  <div className="fx-drawer-me-name">{myName || 'Profilin'}</div>
-                  <div className="fx-drawer-me-handle">@{myUsername}</div>
-                </Link>
-              ) : (
-                <>
-                  <img src="/forum-logo.png" alt="Manav Forum" style={{ height: 30, width: 'auto' }} />
-                  <p style={{ color: 'var(--fx-ink-2)', fontSize: '.92rem', lineHeight: 1.5, margin: '12px 0 14px' }}>
-                    Psikoloji ve psikanaliz üzerine soru sor, tartış, uzmanlardan yanıt al.
-                  </p>
-                  <button type="button" className="fx-btn fx-btn-primary" style={{ width: '100%' }} onClick={() => { setMobileDrawerOpen(false); setAuthOpen(true); }}>
-                    Giriş yap veya kayıt ol
+            {/* ── Mobil arama ── */}
+            {mobileSearchOpen && (
+              <div className="fx-msearch" role="dialog" aria-modal="true" aria-label="Ara">
+                <div className="fx-msearch-head">
+                  <button type="button" className="fx-icon-btn" onClick={() => setMobileSearchOpen(false)} aria-label="Geri" style={{ color: 'var(--fx-ink)' }}>
+                    <ArrowLeft size={22} />
                   </button>
-                </>
-              )}
-            </div>
-
-            {isMember && (
-              <div style={{ paddingTop: 6 }}>
-                {[
-                  { label: 'Profil', icon: User, onClick: () => router.push(myProfileHref) },
-                  { label: 'Takip ettiklerin', icon: Users, onClick: () => { setFeedTab('following'); if (activeThread) closeThread(); } },
-                  { label: 'Yer işaretleri', icon: Bookmark, onClick: () => router.push(`${myProfileHref}?tab=bookmarks`) },
-                  { label: 'Beğendiklerin', icon: Heart, onClick: () => router.push(`${myProfileHref}?tab=likes`) },
-                  { label: 'Ayarlar', icon: Settings, onClick: () => router.push(`${myProfileHref}?settings=open`) },
-                ].map(({ label, icon: Icon, onClick }) => (
-                  <button key={label} type="button" className="fx-drawer-link" onClick={() => { setMobileDrawerOpen(false); onClick(); }}>
-                    <Icon size={24} strokeWidth={1.8} /> {label}
-                  </button>
-                ))}
+                  {searchField(undefined, true)}
+                </div>
+                <div className="fx-msearch-list">
+                  {!searchQuery && trends.length > 0 && (
+                    <>
+                      <div className="fx-msearch-label">Gündem</div>
+                      {trends.map(({ tag, count }) => (
+                        <button key={tag} type="button" className="fx-panel-row" onClick={() => { setMobileSearchOpen(false); openTag(tag); }}>
+                          <span className="fx-trend-tag">#{tag}</span>
+                          <small>{count} gönderi</small>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  {searchQuery && matchedUsers.length > 0 && (
+                    <>
+                      <div className="fx-msearch-label">Kişiler</div>
+                      {matchedUsers.slice(0, 5).map((u: any) => (
+                        <PersonRow key={u.uid} user={u} isFollowing={followingUids.includes(u.uid)} onNeedAuth={() => setAuthOpen(true)} />
+                      ))}
+                    </>
+                  )}
+                  {searchQuery && (
+                    <>
+                      <div className="fx-msearch-label">Gönderiler</div>
+                      {filtered.slice(0, 20).map(t => (
+                        <div key={t.id} className="fx-msearch-post" onClick={() => { setMobileSearchOpen(false); openThread(t); }}>
+                          <b>{t.authorName}</b>
+                          <div>{t.body}</div>
+                        </div>
+                      ))}
+                      {filtered.length === 0 && <div className="fx-end">“{searchQuery}” ile eşleşen gönderi yok.</div>}
+                      {filtered.length > 0 && (
+                        <button type="button" className="fx-panel-more" onClick={() => setMobileSearchOpen(false)}>Tüm sonuçları akışta göster</button>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
-            <div className="fx-drawer-sub">
-              <Link href="/" className="fx-drawer-link" onClick={() => setMobileDrawerOpen(false)}>Web sitesine dön</Link>
-              <button type="button" className="fx-drawer-link" onClick={toggleDarkMode}>{isDark ? 'Açık temaya geç' : 'Koyu temaya geç'}</button>
-              {isMember && (
-                <button type="button" className="fx-drawer-link is-danger" onClick={() => { setMobileDrawerOpen(false); logout(); }}>Çıkış yap</button>
-              )}
-            </div>
-          </aside>
-        </div>
-      )}
-    </div>
+            {/* ── Paylaşım penceresi ── */}
+            {composeModalOpen && (
+              <div className="fx-sheet-scrim" onClick={() => setComposeModalOpen(false)}>
+                <div className="fx-sheet" role="dialog" aria-modal="true" aria-label="Yeni gönderi" onClick={e => e.stopPropagation()}>
+                  <div className="fx-sheet-head">
+                    <button type="button" className="fx-icon-btn" onClick={() => setComposeModalOpen(false)} aria-label="Kapat" style={{ color: 'var(--fx-ink)' }}>
+                      <X size={22} />
+                    </button>
+                  </div>
+                  {renderComposer({ autoFocus: true, onPosted: () => setComposeModalOpen(false) })}
+                </div>
+              </div>
+            )}
+
+            <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} isDark={isDark} />
+          </>
+        )}
+      </ForumShell>
+    </>
   );
 }
