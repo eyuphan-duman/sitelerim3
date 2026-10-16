@@ -1412,3 +1412,31 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 [data-forum-dark="true"] .fx-brand .is-light { display: none; }
 [data-forum-dark="true"] .fx-brand .is-dark { display: block; }
 .fx-logo { height: 60px; padding: 0 8px; }
+
+/* ─── Psikolog rozeti: altın etiket ─── */
+.fx-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  height: 22px;
+  padding: 0 8px 0 4px;
+  border-radius: 999px;
+  color: var(--fx-gold);
+  background: color-mix(in srgb, var(--fx-gold) 13%, var(--fx-bg));
+  border: 1px solid color-mix(in srgb, var(--fx-gold) 45%, transparent);
+  font-size: .74rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+.fx-verified-label { color: color-mix(in srgb, var(--fx-gold) 82%, var(--fx-ink)); letter-spacing: .01em; }
+.fx-verified.is-icon { padding: 0; height: auto; border: 0; background: none; }
+.fx-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.fx-prof-name .fx-verified { height: 26px; padding: 0 10px 0 5px; font-size: .82rem; margin-left: 6px; }
+@media (max-width: 420px) {
+  .fx-post-meta .fx-verified { padding: 0 6px 0 3px; font-size: .7rem; }
+}
+.fx-gold-note { color: var(--fx-gold); font-weight: 600; }

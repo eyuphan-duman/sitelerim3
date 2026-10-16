@@ -20,6 +20,7 @@ import ForumLoadingScreen from '@/components/forum/ForumLoadingScreen';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
 import ForumShell from '@/components/forum/ForumShell';
 import ForumPost from '@/components/forum/ForumPost';
+import Composer from '@/components/forum/Composer';
 import FollowList, { FollowListMode } from '@/components/forum/FollowList';
 import { Avatar, VerifiedMark, useForumTheme } from '@/components/forum/ui';
 import { usePostActions } from '@/components/forum/usePostActions';
@@ -902,13 +903,12 @@ export default function ProfilClient({ username }: { username: string }) {
 
                 <div className="fx-prof-name">
                   <h1>{pd.displayName || handle}</h1>
-                  {isPsych && <VerifiedMark size={20} />}
+                  {isPsych && <VerifiedMark size={17} label={pd.title} />}
                 </div>
                 <div className="fx-prof-handle">
                   @{handle}
                   {followsMe && !isOwn && <span className="fx-follows-you">Seni takip ediyor</span>}
                 </div>
-                {isPsych && <div className="fx-prof-title">{pd.title || 'Psikolog'}</div>}
 
                 {pd.bio && <p className="fx-prof-bio">{renderTextWithMentions(pd.bio)}</p>}
 
@@ -976,6 +976,7 @@ export default function ProfilClient({ username }: { username: string }) {
                     ))}
                   </div>
 
+                  {tab === 'posts' && isOwn && !pd.isFrozen && <Composer onPosted={(np) => setPosts(prev => [np, ...prev])} />}
                   {tab === 'posts' && renderPosts(posts, isOwn ? 'Henüz gönderi paylaşmadın' : 'Henüz gönderi yok', isOwn ? 'İlk düşünceni ya da sorunu paylaştığında burada görünecek.' : `@${handle} henüz bir şey paylaşmadı.`)}
 
                   {tab === 'replies' && (
@@ -992,7 +993,7 @@ export default function ProfilClient({ username }: { username: string }) {
                             <div className="fx-post-meta">
                               <div className="fx-post-meta-main">
                                 <span className="fx-name">{pd.displayName}</span>
-                                {isPsych && <VerifiedMark />}
+                                {isPsych && <VerifiedMark label={pd.title} />}
                                 <span className="fx-handle">@{handle}</span>
                                 <span className="fx-sep">·</span>
                                 <span className="fx-time">{formatTimeAgo(r.createdAt)}</span>
@@ -1212,7 +1213,7 @@ export default function ProfilClient({ username }: { username: string }) {
                           <>
                             <div className="fx-set-row">
                               <div className="fx-set-text">
-                                <b style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{pd.title || 'Psikolog'} <VerifiedMark size={17} /></b>
+                                <b style={{ display: 'flex', alignItems: 'center', gap: 6 }}><VerifiedMark size={17} label={pd.title} /></b>
                                 <small>{pd.hideBadge ? 'Rozetin şu an gizli. Psikolog statün devam ediyor; istediğin zaman tekrar görünür yapabilirsin.' : 'Rozetin profilinde, gönderilerinde ve yanıtlarında görünüyor.'}</small>
                               </div>
                               <Toggle label="Rozeti göster" on={!pd.hideBadge} onChange={() => !togglingBadge && handleToggleBadge()} />

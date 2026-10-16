@@ -10,6 +10,7 @@ import { doc, onSnapshot, collection, addDoc, serverTimestamp } from 'firebase/f
 import { db } from '@/lib/firebase';
 import { formatTimeAgo, formatPostDate, renderTextWithMentions } from './ThreadView';
 import { Avatar, VerifiedMark, ReportDialog, compactCount } from './ui';
+import { useUsers } from './social';
 import toast from 'react-hot-toast';
 
 interface Post {
@@ -73,6 +74,8 @@ export default function ForumPost({
   const displayAuthorPhoto = isRepost && post.originalAuthorPhotoURL ? post.originalAuthorPhotoURL : post.authorPhotoURL;
   const canDelete = (currentUserUid && currentUserUid === post.uid) || adminEmails.includes(currentUserEmail || '');
   const hasPsychBadge = !post.authorHideBadge && Boolean(isPsychologist || post.authorIsPsychologist || (isRepost && post.originalAuthorIsPsychologist));
+  const users = useUsers();
+  const authorTitle = (!isRepost || !post.originalAuthorName) ? users[post.uid]?.title : undefined;
   const profileHref = `/forum/profil/${encodeURIComponent(displayAuthorUsername)}`;
 
   const [liveAuthorPhoto, setLiveAuthorPhoto] = useState<string | undefined>(displayAuthorPhoto);
@@ -172,7 +175,7 @@ export default function ForumPost({
             <div className="fx-post-meta">
               <div className="fx-post-meta-main">
                 <Link href={profileHref} onClick={e => e.stopPropagation()} className="fx-name">{displayAuthorName}</Link>
-                {hasPsychBadge && <VerifiedMark />}
+                {hasPsychBadge && <VerifiedMark label={authorTitle} />}
                 <span className="fx-handle">@{displayAuthorUsername}</span>
                 <span className="fx-sep" aria-hidden="true">·</span>
                 <time className="fx-time" title={formatPostDate(post.createdAt)}>{formatTimeAgo(post.createdAt)}</time>

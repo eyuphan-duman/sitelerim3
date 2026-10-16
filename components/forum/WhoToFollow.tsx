@@ -53,7 +53,7 @@ export function WhoToFollowStrip({ onNeedAuth }: { onNeedAuth?: () => void }) {
               <Avatar src={u.photoURL} name={u.displayName || u.username} size={64} />
               <div className="fx-strip-name">
                 <span>{u.displayName || u.username}</span>
-                {isApprovedPsychologist(u) && <VerifiedMark size={15} />}
+                {isApprovedPsychologist(u) && <VerifiedMark iconOnly size={16} label={u.title} />}
               </div>
               <div className="fx-strip-handle">@{u.username}</div>
               <div className="fx-strip-reason">{reason}</div>

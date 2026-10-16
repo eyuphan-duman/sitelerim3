@@ -8,6 +8,7 @@ import {
   Share, Trash2, Loader, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag
 } from 'lucide-react';
 import { Avatar, VerifiedMark, CharRing, ReportDialog, compactCount } from './ui';
+import { useUsers } from './social';
 import {
   doc, updateDoc, deleteField, increment, collection,
   addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc,
@@ -133,6 +134,7 @@ export default function ThreadView({
   onPostDeleted,
 }: ThreadViewProps) {
   const [currentPost, setCurrentPost] = useState<any>(post);
+  const users = useUsers();
   const [comments, setComments] = useState<any[]>([]);
   const [replyText, setReplyText] = useState('');
   const [replyImageUrl, setReplyImageUrl] = useState('');
@@ -688,7 +690,7 @@ export default function ThreadView({
           <div className="fx-detail-who">
             <div className="fx-post-meta-main">
               <Link href={`/forum/profil/${encodeURIComponent(username)}`} className="fx-name">{p.authorName}</Link>
-              {(post.authorIsPsychologist || p.authorIsPsychologist) && !p.authorHideBadge && <VerifiedMark />}
+              {(post.authorIsPsychologist || p.authorIsPsychologist) && !p.authorHideBadge && <VerifiedMark label={users[p.uid]?.title} />}
             </div>
             <div className="fx-handle">@{username}</div>
           </div>
@@ -851,7 +853,7 @@ export default function ThreadView({
                     <div className="fx-post-meta">
                       <div className="fx-post-meta-main">
                         <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} className="fx-name">{c.authorName}</Link>
-                        {c.authorIsPsychologist && !c.authorHideBadge && <VerifiedMark />}
+                        {c.authorIsPsychologist && !c.authorHideBadge && <VerifiedMark label={users[c.uid]?.title} />}
                         <span className="fx-handle">@{commentAuthorUsername}</span>
                         <span className="fx-sep" aria-hidden="true">·</span>
                         <time className="fx-time" title={formatPostDate(c.createdAt)}>{formatTimeAgo(c.createdAt)}</time>

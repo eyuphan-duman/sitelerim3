@@ -43,13 +43,13 @@ export default function PersonRow({ user: u, note, showBio, isFollowing, follows
       <div className="fx-person-text">
         <div className="fx-person-name">
           <span>{u.displayName || u.username}</span>
-          {isApprovedPsychologist(u) && <VerifiedMark size={16} />}
+          {isApprovedPsychologist(u) && <VerifiedMark iconOnly size={16} label={u.title} />}
         </div>
         <div className="fx-person-handle">
           @{u.username || 'kullanici'}
           {followsYou && <span className="fx-follows-you">Seni takip ediyor</span>}
         </div>
-        {note && <div className="fx-person-note">{note}</div>}
+        {note ? <div className="fx-person-note">{note}</div> : isApprovedPsychologist(u) ? <div className="fx-person-note fx-gold-note">{u.title || 'Psikolog'}</div> : null}
         {showBio && u.bio && <div className="fx-person-bio">{u.bio}</div>}
       </div>
       {!isMe && (
