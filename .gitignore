@@ -44,3 +44,7 @@ next-env.d.ts
 scratch/
 .claude/
 
+
+# Firebase servis hesabı anahtarları asla commit edilmez
+*service-account*.json
+*firebase-adminsdk*.json

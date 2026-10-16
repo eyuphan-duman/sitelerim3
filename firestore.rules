@@ -101,18 +101,24 @@ service cloud.firestore {
         request.resource.data.get('role', 'member') in ['member', 'psychologist_pending'];
     }
 
+    // Herkese açık profilde e-posta, tam ad ve doğum tarihi tutulmaz (bkz. private_users)
+    function noPrivateFields() {
+      return !request.resource.data.keys().hasAny(['email', 'fullName', 'birthDate']);
+    }
+
     match /users/{uid} {
-      // Forum, profil ve kullanıcı adıyla giriş bu verilere ihtiyaç duyar
+      // Forum ve profil için herkese açık (yalnızca açık profil bilgileri)
       allow read: if true;
 
       allow create: if isAdmin() || (
         isSelf(uid) &&
+        noPrivateFields() &&
         request.resource.data.get('isBanned', false) == false &&
         selfPsychApplication()
       );
 
       allow update: if isAdmin() || (
-        isSelf(uid) && (
+        isSelf(uid) && noPrivateFields() && (
           !changedKeys().hasAny(protectedUserKeys()) ||
           (!changedKeys().hasAny(['isBanned', 'uid', 'reviewedAt']) && selfPsychApplication()) ||
           // Fotoğraf hakkı sayacı yalnızca tek tek ve yukarı yönde kendi kendine güncellenebilir
@@ -125,6 +131,17 @@ service cloud.firestore {
       match /bookmarks/{postId} {
         allow read, write: if isSelf(uid) || isAdmin();
       }
+    }
+
+    // Gizli üye bilgileri: yalnızca üyenin kendisi ve admin
+    match /private_users/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create, update: if isAdmin() || (
+        isSelf(uid) &&
+        request.resource.data.keys().hasOnly(['email', 'fullName', 'birthDate', 'updatedAt']) &&
+        request.resource.data.get('email', '') == request.auth.token.get('email', '').lower()
+      );
+      allow delete: if isAdmin();
     }
 
     // ───────── Forum ─────────

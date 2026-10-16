@@ -158,9 +158,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       uid: u.uid,
       username: cleanUname,
       displayName: extraData?.fullName || customUsername || u.displayName || cleanUname,
-      fullName: extraData?.fullName || '',
-      birthDate: extraData?.birthDate || '',
-      email: u.email?.toLowerCase().trim() || '',
       photoURL: u.photoURL || '',
       role: isPsychSignup ? 'psychologist_pending' : (snap.exists() ? (snap.data().role || 'member') : 'member'),
       isPsychologist: false, // inactive until approved by admin
@@ -181,11 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatePayload: any = {};
       if (cleanUname && !snap.data().username) updatePayload.username = cleanUname;
       if (extraData?.fullName) {
-        updatePayload.fullName = extraData.fullName;
         updatePayload.displayName = extraData.fullName;
-      }
-      if (extraData?.birthDate) {
-        updatePayload.birthDate = extraData.birthDate;
       }
       if (extraData?.diplomaUrl) updatePayload.diplomaUrl = extraData.diplomaUrl;
       if (extraData?.university) updatePayload.university = extraData.university;
@@ -199,6 +192,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await updateDoc(ref, updatePayload);
       }
     }
+
+    const privateData: Record<string, any> = { email: u.email?.toLowerCase().trim() || '', updatedAt: serverTimestamp() };
+    if (extraData?.fullName) privateData.fullName = extraData.fullName;
+    if (extraData?.birthDate) privateData.birthDate = extraData.birthDate;
+    await setDoc(doc(db, 'private_users', u.uid), privateData, { merge: true });
 
     if (isPsychSignup) {
       await setDoc(doc(db, 'psychologist_applications', u.uid), {
@@ -220,11 +218,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let authEmail = usernameOrEmail.trim();
     // Check if it's not an email, assume it's a username
     if (!authEmail.includes('@')) {
-      const cleanUname = sanitizeUsername(authEmail);
-      const q = query(collection(db, 'users'), where('username', '==', cleanUname));
-      const snap = await getDocs(q);
-      if (snap.empty) throw new Error('Kullanıcı bulunamadı.');
-      authEmail = snap.docs[0].data().email;
+      const res = await fetch('/api/auth/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: sanitizeUsername(authEmail), password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.email) throw new Error(data.error || 'Kullanıcı adı veya şifre hatalı.');
+      authEmail = data.email;
     }
     const cred = await signInWithEmailAndPassword(auth, authEmail, password);
     const userEmail = (cred.user.email || '').toLowerCase().trim();
@@ -261,11 +262,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userSnap = await getDocs(userQ);
     if (!userSnap.empty) throw new Error('Bu kullanıcı adı zaten alınmış!');
 
-    // 2. E-posta adresi kontrolü (Aynı maille 2. bir kayıt kesinlikle engellenir)
-    const emailQ = query(collection(db, 'users'), where('email', '==', cleanEmail));
-    const emailSnap = await getDocs(emailQ);
-    if (!emailSnap.empty) throw new Error('Bu e-posta adresi ile zaten kayıtlı bir hesap bulunmaktadır!');
-
     try {
       const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
       const displayName = extraData?.fullName || cleanUsername;
@@ -287,8 +283,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: 'psychologist_pending',
           psychologistStatus: 'pending',
           applicationDate: serverTimestamp(),
-          fullName: extraData.fullName || displayName,
-          birthDate: extraData.birthDate || '',
         });
 
         await setDoc(doc(db, 'psychologist_applications', cred.user.uid), {
@@ -425,15 +419,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     // Check if it's not an email, assume it's a username
     if (!authEmail.includes('@')) {
-      const q = query(collection(db, 'users'), where('username', '==', authEmail.toLowerCase()));
-      const snap = await getDocs(q);
-      if (snap.empty) {
-        throw new Error('Bu kullanıcı adına ait kayıtlı bir hesap bulunamadı.');
-      }
-      authEmail = snap.docs[0].data().email;
-      if (!authEmail) {
-        throw new Error('Bu hesaba ait tanımlı bir e-posta adresi bulunamadı.');
-      }
+      const res = await fetch('/api/auth/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: sanitizeUsername(authEmail) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Şifre sıfırlama bağlantısı gönderilemedi.');
+      return data.masked || 'kayıtlı e-posta adresin';
     }
     await sendPasswordResetEmail(auth, authEmail);
     return authEmail;

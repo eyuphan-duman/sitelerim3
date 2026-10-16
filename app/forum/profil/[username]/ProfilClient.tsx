@@ -268,8 +268,7 @@ export default function ProfilClient({ username }: { username: string }) {
               const u = d.data();
               const uNorm = norm(u.username);
               const dNorm = norm(u.displayName);
-              const eNorm = norm(u.email ? u.email.split('@')[0] : '');
-              if (uNorm === targetNorm || dNorm === targetNorm || eNorm === targetNorm) {
+              if (uNorm === targetNorm || dNorm === targetNorm) {
                 data = { ...u, uid: u.uid || d.id };
                 break;
               }

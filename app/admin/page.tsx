@@ -111,10 +111,13 @@ export default function AdminPage() {
     });
     let usersList: any[] = [];
     let appsList: any[] = [];
+    let privateMap: Record<string, any> = {};
+    // Gizli üye bilgileri (e-posta, tam ad, doğum tarihi) ayrı koleksiyonda; yalnızca admin okuyabilir
+    const withPrivate = (list: any[]) => list.map(u => ({ ...u, ...(privateMap[u.id] || {}) }));
 
     const mergeAndSet = () => {
       const mergedMap = new Map();
-      usersList.forEach(u => mergedMap.set(u.id, { ...u }));
+      withPrivate(usersList).forEach(u => mergedMap.set(u.id, { ...u }));
       appsList.forEach(a => {
         const existing = mergedMap.get(a.id) || {};
         mergedMap.set(a.id, {
@@ -136,9 +139,16 @@ export default function AdminPage() {
 
     const u6 = onSnapshot(collection(db, 'users'), snap => {
       usersList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setAllUsers(usersList);
+      setAllUsers(withPrivate(usersList));
       mergeAndSet();
     });
+
+    const u9 = onSnapshot(collection(db, 'private_users'), snap => {
+      privateMap = {};
+      snap.docs.forEach(d => { privateMap[d.id] = d.data(); });
+      setAllUsers(withPrivate(usersList));
+      mergeAndSet();
+    }, () => {});
 
     const u7 = onSnapshot(collection(db, 'psychologist_applications'), snap => {
       appsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -162,7 +172,7 @@ export default function AdminPage() {
       }).catch(() => {});
     }
 
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); uAbout(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); uAbout(); };
   }, [user]);
 
   const [adminUploadingDiploma, setAdminUploadingDiploma] = useState<string | null>(null);
