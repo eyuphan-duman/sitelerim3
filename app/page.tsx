@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Quote, Search, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen, ShieldCheck, Users, CheckCircle2, Sparkles, Mail, GraduationCap, Compass, Shield, Clock, Award } from 'lucide-react';
+import { ArrowRight, Quote, Search, Heart, X, FileText, MessageCircle, User, Film, Play, ChevronLeft, ChevronRight, BookOpen, ShieldCheck, Users, CheckCircle2, Sparkles, Mail, GraduationCap, Compass, Shield, Clock, Award } from 'lucide-react';
 import { collection, query, orderBy, limit, getDocs, getDoc, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
@@ -67,6 +67,7 @@ export default function HomePage() {
   const articlesCarouselRef = useRef<HTMLDivElement>(null);
   const [dailyQuote, setDailyQuote] = useState(QUOTES[0]);
   const [randomVideos, setRandomVideos] = useState<any[]>([]);
+  const [forumPosts, setForumPosts] = useState<any[]>([]);
 
   // Hero Slider states
   const [heroSettings, setHeroSettings] = useState<HeroSettings>(DEFAULT_HERO_SETTINGS);
@@ -175,6 +176,30 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(15)))
+      .then(async snap => {
+        const posts = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as any))
+          .filter(p => !p.isRepost && p.body)
+          .slice(0, 3);
+        // Psikolog rozeti ve güncel fotoğraf yazarın profilinden gelir
+        const authors = await Promise.all(
+          [...new Set(posts.map(p => p.uid).filter(Boolean))].map(uid => getDoc(doc(db, 'users', uid)).catch(() => null))
+        );
+        const byUid: Record<string, any> = {};
+        authors.forEach(a => { if (a?.exists()) byUid[a.id] = a.data(); });
+        setForumPosts(posts
+          .filter(p => { const u = byUid[p.uid]; return !(u?.isBanned || u?.isFrozen || u?.isDeleted || u?.isPrivate); })
+          .map(p => {
+            const u = byUid[p.uid] || {};
+            const psych = !u.hideBadge && Boolean(p.authorIsPsychologist || (u.isPsychologist && (u.psychologistStatus === 'approved' || !u.psychologistStatus)) || u.role === 'psychologist');
+            return { ...p, authorPhotoURL: u.photoURL || p.authorPhotoURL, authorIsPsychologist: psych };
+          }));
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     async function fetchLatest() {
       try {
         const snap = await getDocs(query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(15)));
@@ -276,79 +301,10 @@ export default function HomePage() {
             <div className="hero-overlay" />
             <div className="hero-grain" />
 
-            {/* Hero Float Badges (Desktop Only) */}
-            <div className="absolute top-[10%] right-[6%] hidden xl:flex flex-col gap-2.5 z-10">
-              {/* Badge 1 — Varoluşçu Psikoterapi */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-                  <Image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=200&auto=format&fit=crop" alt="Varoluşçu Psikoterapi" width={200} height={200} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Anlam Arayışı</div>
-                  <div className="font-serif text-base font-bold leading-tight">Varoluşçu<br/>Psikoterapi</div>
-                </div>
-              </div>
-
-              {/* Badge 2 — Psikanalitik */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-10 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-                  <Image src="https://images.unsplash.com/photo-1580130601254-05fa235abeab?q=80&w=200&auto=format&fit=crop" alt="Psikanalitik" width={200} height={200} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bilinçdışı</div>
-                  <div className="font-serif text-base font-bold leading-tight">Psikanalitik<br/>Çalışmalar</div>
-                </div>
-              </div>
-
-              {/* Badge 3 — Rüya Analizi */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-                  <Image src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=200&auto=format&fit=crop" alt="Rüya Analizi" width={200} height={200} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Rüya Analizi</div>
-                  <div className="font-serif text-base font-bold leading-tight">Bilinçdışı<br/>Semboller</div>
-                </div>
-              </div>
-
-              {/* Badge 4 — Bağlanma */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-6 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-                  <Image src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=200&auto=format&fit=crop" alt="Bağlanma Kuramı" width={200} height={200} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Bağlanma Kuramı</div>
-                  <div className="font-serif text-base font-bold leading-tight">İlişki<br/>Dinamikleri</div>
-                </div>
-              </div>
-
-              {/* Badge 5 — Travma */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-                  <Image src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=200&auto=format&fit=crop" alt="Travma" width={200} height={200} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Travma Psikolojisi</div>
-                  <div className="font-serif text-base font-bold leading-tight">İyileşme<br/>Süreci</div>
-                </div>
-              </div>
-
-              {/* Badge 6 — Kendilik */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 py-2.5 px-4 rounded-2xl text-white shadow-2xl flex items-center gap-4 translate-x-8 transform hover:scale-105 hover:bg-white/18 transition-all duration-300 w-60">
-                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/20">
-                  <Image src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=200&auto=format&fit=crop" alt="Kendilik" width={200} height={200} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <div className="text-[0.58rem] text-white/60 uppercase tracking-widest font-bold mb-0.5">Kendilik Psikolojisi</div>
-                  <div className="font-serif text-base font-bold leading-tight">Narsisizm<br/>Araştırmaları</div>
-                </div>
-              </div>
-            </div>
-
             <div className="container-main" style={{ position: 'relative', zIndex: 2, width: '100%' }}>
               <div style={{ maxWidth: 680 }}>
                 {/* Eyebrow (Desktop) */}
-                <div className="eyebrow fade-up fade-up-1 hidden md:block" style={{ marginBottom: 28 }}>
+                <div className="eyebrow fade-up fade-up-1" style={{ marginBottom: 28 }}>
                   {heroSettings.slide1.eyebrow}
                 </div>
 
@@ -368,36 +324,12 @@ export default function HomePage() {
                 <div className="fade-up fade-up-4" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
                   <Link href={heroSettings.slide1.primaryBtnLink || '/forum'} className="btn-gold" style={{ position: 'relative' }}>
                     {heroSettings.slide1.primaryBtnText}
-                    {heroSettings.slide1.primaryBtnBadge && (
-                      <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: 'var(--navy)', color: 'white', padding: '2px 6px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-                        {heroSettings.slide1.primaryBtnBadge}
-                      </span>
-                    )}
                   </Link>
                   <Link href={heroSettings.slide1.secondaryBtnLink || '/iletisim'} className="btn-ghost">
                     {heroSettings.slide1.secondaryBtnText} <ArrowRight size={14}/>
                   </Link>
                 </div>
 
-                {/* Eyebrow (Mobile) */}
-                <div className="eyebrow fade-up fade-up-1 block md:hidden" style={{ marginBottom: 40, textAlign: 'center', opacity: 0.8 }}>
-                  {heroSettings.slide1.eyebrow}
-                </div>
-
-                {/* Search bar */}
-                <div className="fade-up fade-up-4" style={{ marginBottom: 40 }}>
-                  <button
-                    onClick={openSearch}
-                    aria-label="Arama Yap"
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: '14px 24px', cursor: 'pointer', color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', width: '100%', maxWidth: 420, transition: 'all 0.2s' }}
-                    onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = 'var(--gold)'; }}
-                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-                  >
-                    <Search size={16} color="var(--gold)" />
-                    <span>{heroSettings.slide1.searchPlaceholder || "SSS, Yazılar veya forumda ara..."}</span>
-                    <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', borderRadius: 6, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em' }}>Ctrl K</span>
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -496,11 +428,6 @@ export default function HomePage() {
                     >
                       <MessageCircle size={18} />
                       <span>{heroSettings.slide2.primaryBtnText || 'Hemen Üye Ol & Foruma Katıl'}</span>
-                      {heroSettings.slide2.primaryBtnBadge && (
-                        <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: '#16a34a', color: 'white', padding: '2px 7px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-                          {heroSettings.slide2.primaryBtnBadge}
-                        </span>
-                      )}
                     </Link>
 
                     <Link href={heroSettings.slide2.secondaryBtnLink || '/forum'} className="btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -562,7 +489,6 @@ export default function HomePage() {
                       color: 'white',
                       boxShadow: '0 12px 30px rgba(0, 0, 0, 0.3)',
                       transition: 'all 0.3s ease',
-                      transform: 'translateX(12px)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -1016,7 +942,7 @@ export default function HomePage() {
               }
             }
           `}</style>
-          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px' }}>
+          <div className="container-main">
             <div className="articles-section-header" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, flexWrap: 'wrap', gap: 16 }}>
               <div>
                 <div className="eyebrow" style={{ marginBottom: 10, color: '#8a5814' }}>Güncel İçerikler</div>
@@ -1219,8 +1145,64 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ══════════════════ QUOTE CTA ══════════════════ */}
-      <section style={{ padding: '120px 0', background: 'var(--navy)', position: 'relative', overflow: 'hidden' }}>
+      {/* ══════════════════ FORUMDAN ══════════════════ */}
+      <section className="home-forum">
+        <div className="container-main">
+          <div className="home-forum-head">
+            <div>
+              <div className="eyebrow" style={{ marginBottom: 12, color: '#8a5814' }}>Topluluk</div>
+              <h2>Forumda konuşulanlar</h2>
+              <p>Merak ettiğini sor, başkalarının sorularına katıl. Psikologların yanıtları altın rozetle işaretlenir.</p>
+            </div>
+            <Link href="/forum" className="btn-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              Foruma git <ArrowRight size={14} />
+            </Link>
+          </div>
+
+          {forumPosts.length > 0 ? (
+            <div className="home-forum-grid" style={{ gridTemplateColumns: `repeat(${Math.min(forumPosts.length + (forumPosts.length < 3 ? 1 : 0), 3)}, minmax(0, 1fr))` }}>
+              {forumPosts.map(p => {
+                const likes = Object.values(p.reactionsData || {}).filter((v: any) => v === 'like' || v === 'heart').length;
+                const date = p.createdAt?.toDate ? p.createdAt.toDate() : null;
+                return (
+                  <Link key={p.id} href={`/forum?thread=${p.id}`} className="home-forum-card">
+                    <div className="home-forum-author">
+                      <span className="home-forum-avatar">
+                        {p.authorPhotoURL ? <img src={p.authorPhotoURL} alt="" /> : (p.authorName || '?')[0].toLocaleUpperCase('tr-TR')}
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <strong>
+                          {p.authorName || 'Üye'}
+                          {p.authorIsPsychologist && <CheckCircle2 size={14} color="#a27a35" aria-label="Psikolog" />}
+                        </strong>
+                        <small>{p.category || 'Genel'}{date ? `, ${format(date, 'd MMMM', { locale: tr })}` : ''}</small>
+                      </span>
+                    </div>
+                    <p>{p.body}</p>
+                    <div className="home-forum-meta">
+                      <span><MessageCircle size={15} /> {p.commentCount || 0} yanıt</span>
+                      <span><Heart size={15} /> {likes} beğeni</span>
+                    </div>
+                  </Link>
+                );
+              })}
+              {forumPosts.length < 3 && (
+                <Link href="/forum?compose=open" className="home-forum-card home-forum-ask">
+                  <MessageCircle size={26} />
+                  <strong>Aklındaki soruyu sor</strong>
+                  <p>Kaygı, ilişkiler, rüyalar ya da bir kavram hakkında merak ettiğini yaz. Topluluk ve psikologlar yanıtlasın.</p>
+                  <span className="home-forum-ask-cta">Soru sor <ArrowRight size={14} /></span>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="home-forum-empty">Forumda ilk soruyu sen sor; sohbet oradan başlasın.</div>
+          )}
+        </div>
+      </section>
+
+      {/* ══════════════════ QUOTE ══════════════════ */}
+      <section style={{ padding: '88px 0', background: 'var(--navy)', position: 'relative', overflow: 'hidden' }}>
         {/* Decorative circles */}
         <div style={{ position: 'absolute', top: -100, right: -100, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle,rgba(201,169,110,0.08),transparent 70%)', pointerEvents: 'none' }}/>
         <div style={{ position: 'absolute', bottom: -80, left: -80, width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle,rgba(201,169,110,0.06),transparent 70%)', pointerEvents: 'none' }}/>
@@ -1230,16 +1212,9 @@ export default function HomePage() {
           <blockquote className="crimson" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 'clamp(1.4rem,3vw,2.1rem)', fontStyle: 'italic', maxWidth: 780, margin: '0 auto 20px', lineHeight: 1.6 }}>
             "{dailyQuote.text}"
           </blockquote>
-          <p style={{ color: 'var(--gold)', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 56 }}>
+          <p style={{ color: 'var(--gold)', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 0 }}>
             {dailyQuote.author}
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 520, margin: '0 auto 44px', lineHeight: 1.7, fontSize: '0.95rem' }}>
-            Yalnızca yazılara ve düşüncelere alan tanıyan bu platformda tartışmalara katılın.
-          </p>
-          <Link href="/forum" className="btn-gold" style={{ position: 'relative' }}>
-            Foruma Git
-            <span style={{ position: 'absolute', top: -8, right: -8, fontSize: '0.55rem', background: '#fff', color: 'var(--navy)', padding: '2px 6px', borderRadius: 4, fontWeight: 900, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>v2.0</span>
-          </Link>
         </div>
       </section>
 

@@ -9,13 +9,13 @@ import { Menu, X, LogOut, Bell, Search } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const links = [
+const links: { href: string; label: string; badge?: string }[] = [
   { href: '/', label: 'Anasayfa' },
   { href: '/ben-kimim', label: 'Hakkımda' },
   { href: '/yazilarim', label: 'Yazılarım' },
   { href: '/sss', label: 'SSS' },
   { href: '/videolarim', label: 'Videolarım' },
-  { href: '/forum', label: 'Forum', badge: 'v2.0' },
+  { href: '/forum', label: 'Forum' },
   { href: '/iletisim', label: 'İletişim' },
 ];
 
@@ -58,7 +58,7 @@ export default function Navbar() {
           <div className="container-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, paddingBottom: 20 }}>
 
           {/* Logo */}
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', lineHeight: 1, flexShrink: 0, whiteSpace: 'nowrap', marginRight: 24 }}>
             <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 700, color: 'white', letterSpacing: '0.02em' }}>
               Furkan Manav
             </span>
@@ -68,7 +68,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden lg:flex" style={{ gap: 36, alignItems: 'center' }}>
+          <div className="hidden lg:flex" style={{ gap: 28, alignItems: 'center' }}>
             {links.map(l => (
               <Link key={l.href} href={l.href} className={`nav-link ${pathname === l.href ? 'nav-link-active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 {l.label}
@@ -86,43 +86,11 @@ export default function Navbar() {
             <button
               type="button"
               onClick={openSearch}
-              aria-label="Sitede ve SSS'de Ara"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(201, 169, 110, 0.25)',
-                borderRadius: 9999,
-                padding: '6px 14px',
-                color: 'rgba(255, 255, 255, 0.75)',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseOver={e => {
-                e.currentTarget.style.borderColor = 'var(--gold)';
-                e.currentTarget.style.color = '#fff';
-                e.currentTarget.style.background = 'rgba(201, 169, 110, 0.12)';
-              }}
-              onMouseOut={e => {
-                e.currentTarget.style.borderColor = 'rgba(201, 169, 110, 0.25)';
-                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.75)';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
-              }}
+              aria-label="Sitede ara"
+              title="Sitede ara (Ctrl K)"
+              style={{ width: 40, height: 40, borderRadius: 999, display: 'grid', placeItems: 'center', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(201,169,110,0.25)', cursor: 'pointer', color: 'var(--gold)' }}
             >
-              <Search size={14} color="var(--gold)" />
-              <span>Ara...</span>
-              <kbd style={{
-                fontSize: '0.65rem',
-                background: 'rgba(0,0,0,0.3)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: 4,
-                padding: '1px 5px',
-                color: 'rgba(255,255,255,0.6)',
-                fontFamily: 'monospace',
-                marginLeft: 2,
-              }}>Ctrl K</kbd>
+              <Search size={17} />
             </button>
 
             {user ? (
@@ -162,7 +130,7 @@ export default function Navbar() {
           </div>
 
           {/* Mobile buttons: Search + Menu toggle */}
-          <div className="lg:hidden" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <div className="flex lg:hidden" style={{ alignItems: 'center', gap: 2 }}>
             <button 
               type="button"
               onClick={openSearch} 
