@@ -1071,7 +1071,7 @@ export default function HomePage() {
               <div>
                 <div className="eyebrow" style={{ marginBottom: 10, color: '#8a5814' }}>Güncel İçerikler</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem,3.5vw,2.8rem)', fontWeight: 700, color: 'var(--navy)', margin: 0 }}>
-                  Son Makaleler
+                  Son Yazılarım
                 </h2>
               </div>
               
@@ -1084,7 +1084,7 @@ export default function HomePage() {
                     onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.background = 'var(--navy)'; e.currentTarget.style.color = 'white'; }}
                     onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.4)'; e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--navy)'; }}
                     title="Önceki"
-                    aria-label="Önceki makaleler"
+                    aria-label="Önceki yazılar"
                   >
                     <ChevronLeft size={20} />
                   </button>
@@ -1094,7 +1094,7 @@ export default function HomePage() {
                     onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.background = 'var(--navy)'; e.currentTarget.style.color = 'white'; }}
                     onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.4)'; e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--navy)'; }}
                     title="Sonraki"
-                    aria-label="Sonraki makaleler"
+                    aria-label="Sonraki yazılar"
                   >
                     <ChevronRight size={20} />
                   </button>
@@ -1178,7 +1178,7 @@ export default function HomePage() {
 
                       <div className="article-card-cta-desktop" style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center' }}>
                         <span style={{ color: 'var(--navy)', fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          Makaleyi Oku 
+                          Yazıyı Oku 
                           <ArrowRight size={14} className="article-card-arrow-icon" style={{ transition: 'transform 0.2s ease', color: '#8a5814' }} />
                         </span>
                       </div>

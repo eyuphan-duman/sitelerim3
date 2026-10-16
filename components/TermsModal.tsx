@@ -131,7 +131,7 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
                   2. Hizmetin Kapsamı
                 </h3>
                 <p>
-                  Platform; psikoloji alanında bilgilendirici makaleler, videolar, forum tartışma alanı ve psikolog doğrulama sistemi sunmaktadır. Platformda sunulan hiçbir içerik veya kullanıcı yorumu doğrudan klinik tanı, tıbbi reçete veya tıbbi tedavi niteliği taşımamaktadır.
+                  Platform; psikoloji alanında bilgilendirici yazılar, videolar, forum tartışma alanı ve psikolog doğrulama sistemi sunmaktadır. Platformda sunulan hiçbir içerik veya kullanıcı yorumu doğrudan klinik tanı, tıbbi reçete veya tıbbi tedavi niteliği taşımamaktadır.
                 </p>
               </div>
 
@@ -173,7 +173,7 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
                   6. Fikri Mülkiyet Hakları
                 </h3>
                 <p>
-                  Platformda yer alan özgün metinler, makaleler, grafikler, ses ve video materyalleri, logo ve yazılım kodları 5846 sayılı Fikir ve Sanat Eserleri Kanunu ile korunmaktadır. İzinsiz kopyalanamaz, çoğaltılamaz veya ticari amaçla kullanılamaz.
+                  Platformda yer alan özgün metinler, yazılar, grafikler, ses ve video materyalleri, logo ve yazılım kodları 5846 sayılı Fikir ve Sanat Eserleri Kanunu ile korunmaktadır. İzinsiz kopyalanamaz, çoğaltılamaz veya ticari amaçla kullanılamaz.
                 </p>
               </div>
 

@@ -56,7 +56,7 @@ function ArticleCard({ article }: { article: any }) {
 
         <div className="article-card-btn">
           <BookOpen size={16} />
-          Makaleyi Oku
+          Yazıyı Oku
           <ArrowRight size={16} className="article-card-btn-arrow" />
         </div>
       </div>
@@ -111,11 +111,11 @@ export default function YazilarimPage() {
             Yazılarım
           </h1>
           <p className="yz-hero-sub">
-            İnsan ruhunun derinliklerine dair makaleler, analizler ve düşünceler.
+            İnsan ruhunun derinliklerine dair yazılar, analizler ve düşünceler.
           </p>
           {isAdmin && (
             <Link href="/admin?tab=posts" className="yz-new-btn">
-              <Plus size={18} /> Yeni Makale Yayımla
+              <Plus size={18} /> Yeni Yazı Yayımla
             </Link>
           )}
         </div>
@@ -132,7 +132,7 @@ export default function YazilarimPage() {
         ) : articles.length === 0 ? (
           <div className="yz-empty">
             <BookOpen size={48} className="yz-empty-icon" />
-            <p>Henüz yayımlanmış bir makale bulunmuyor.</p>
+            <p>Henüz yayımlanmış bir yazı bulunmuyor.</p>
           </div>
         ) : (
           <div className="yz-grid">

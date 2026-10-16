@@ -648,10 +648,10 @@ export default function VideolarimPage() {
             Derinlemesine Analizler
           </span>
           <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '16px' }}>
-            Düşüncelerim ve Makalelerim
+            Düşüncelerim ve Yazılarım
           </h3>
           <p style={{ fontFamily: 'Inter, sans-serif', color: 'var(--muted)', fontSize: '0.98rem', lineHeight: 1.6, marginBottom: '28px' }}>
-            İnsan psikolojisi, psikanaliz ve varoluşsal sorgulamalara dair kaleme aldığım makalelerime de göz atabilirsiniz.
+            İnsan psikolojisi, psikanaliz ve varoluşsal sorgulamalara dair kaleme aldığım yazılarıma da göz atabilirsiniz.
           </p>
           <Link href="/yazilarim" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--navy)', color: 'white', fontWeight: 600, padding: '12px 28px', borderRadius: '30px', transition: 'all 0.3s ease', textDecoration: 'none', border: '1px solid var(--navy)', fontFamily: 'Inter, sans-serif', fontSize: '0.9rem' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--navy)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--navy)'; e.currentTarget.style.color = 'white'; }}>
              Yazılarıma Göz Atın <ArrowRight size={16} />

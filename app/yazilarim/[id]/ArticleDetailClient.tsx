@@ -71,12 +71,12 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!confirm('Bu makaleyi kalıcı olarak silmek istediğinize emin misiniz?')) return;
+    if (!confirm('Bu yazıyı kalıcı olarak silmek istediğinize emin misiniz?')) return;
     
     // Check if it's a local article
     const isLocal = LOCAL_ARTICLES.some(a => a.id === id);
     if (isLocal) {
-      toast.error('Bu makale yerel bir dosyadır, veritabanından silinemez.');
+      toast.error('Bu yazı yerel bir dosyadır, veritabanından silinemez.');
       return;
     }
 
@@ -86,7 +86,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
         // Try to delete from posts as well (they might have different IDs but let's try or handle separately)
         deleteDoc(doc(db, 'posts', id))
       ]);
-      toast.success('Makale silindi.');
+      toast.success('Yazı silindi.');
       router.push('/yazilarim');
     } catch { toast.error('Silme başarısız.'); }
   };
@@ -98,7 +98,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
     // Check if it's a local article
     const isLocal = LOCAL_ARTICLES.some(a => a.id === id);
     if (isLocal) {
-      toast.error('Bu makale yerel bir dosyadır. Değişiklikler kalıcı olmaz. Lütfen veritabanına taşıyın.');
+      toast.error('Bu yazı yerel bir dosyadır. Değişiklikler kalıcı olmaz. Lütfen veritabanına taşıyın.');
       setEditing(false);
       return;
     }
@@ -124,7 +124,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
 
       setArticle((a: any) => ({ ...a, ...editForm, excerpt }));
       setEditing(false);
-      toast.success('Makale güncellendi!');
+      toast.success('Yazı güncellendi!');
     } catch (e) { 
       console.error(e);
       toast.error('Güncelleme başarısız.'); 
@@ -166,7 +166,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
           <button onClick={() => setEditing(false)} className="yz-editor-back">
             <X size={20} /> İptal
           </button>
-          <span className="yz-editor-label">Makaleyi Düzenle</span>
+          <span className="yz-editor-label">Yazıyı Düzenle</span>
           <button onClick={handleUpdate} disabled={saving} className="yz-editor-save">
             <Check size={18} /> {saving ? 'Kaydediliyor…' : 'Kaydet'}
           </button>
@@ -176,7 +176,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
             className="yz-editor-title-input"
             value={editForm.title}
             onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="Makale başlığı…"
+            placeholder="Yazı başlığı…"
           />
           <div className="yz-editor-row" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <input
@@ -220,7 +220,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
             <RichTextEditor
               value={editForm.content}
               onChange={val => setEditForm(f => ({ ...f, content: val }))}
-              placeholder="Makale içeriğini buraya yazın..."
+              placeholder="Yazı içeriğini buraya yazın..."
             />
           </div>
         </div>
@@ -263,7 +263,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
             <div className="yz-detail-admin-bar-minimal">
               <button onClick={() => {
                 if (LOCAL_ARTICLES.some(a => a.id === id)) {
-                  toast.error('Bu makale yerel bir dosyadır ve buradan düzenlenemez.');
+                  toast.error('Bu yazı yerel bir dosyadır ve buradan düzenlenemez.');
                 } else {
                   setEditing(true);
                 }

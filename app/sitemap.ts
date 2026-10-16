@@ -24,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1.0 : (route === '/gizlilik' ? 0.3 : 0.8),
   }));
 
-  // 2. Yerel Makaleler
+  // 2. Yerel Yazılar
   const localArticleRoutes = LOCAL_ARTICLES.map((article) => ({
     url: `${baseUrl}/yazilarim/${article.id}`,
     lastModified: article.createdAt ? new Date(article.createdAt) : new Date(),
@@ -40,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  // 3. Firestore'dan Dinamik Makaleler
+  // 3. Firestore'dan Dinamik Yazılar
   let fbArticleRoutes: MetadataRoute.Sitemap = [];
   try {
     const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));

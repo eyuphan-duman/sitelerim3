@@ -532,7 +532,7 @@ export default function AdminPage() {
             updatedAt: serverTimestamp()
           });
         } catch {}
-        toast.success('Makale başarıyla güncellendi!');
+        toast.success('Yazı başarıyla güncellendi!');
         setEditingArticleId(null);
       } else {
         await addDoc(collection(db, 'articles'), {
@@ -540,7 +540,7 @@ export default function AdminPage() {
           excerpt,
           createdAt: serverTimestamp()
         });
-        toast.success('Makale yayımlandı!');
+        toast.success('Yazı yayımlandı!');
       }
 
       setPostForm({ title: '', category: '', featuredImage: '', content: '' });
@@ -564,7 +564,7 @@ export default function AdminPage() {
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       else window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 50);
-    toast.success('Makale düzenleme moduna alındı.');
+    toast.success('Yazı düzenleme moduna alındı.');
   };
 
   const handleCancelEdit = () => {
@@ -573,7 +573,7 @@ export default function AdminPage() {
   };
 
   const deletePost = async (id: string) => {
-    if (!confirm('Makaleyi silmek istediğinize emin misiniz?')) return;
+    if (!confirm('Yazıyı silmek istediğinize emin misiniz?')) return;
     try {
       await Promise.all([
         deleteDoc(doc(db, 'articles', id)),
@@ -2929,7 +2929,7 @@ export default function AdminPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
                 <PenTool size={20} color="var(--gold-dim)"/>
                 <h2 style={{ fontSize: '1.25rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)' }}>
-                  {editingArticleId ? 'Makaleyi Güncelle' : 'Yeni Makale Yayımla'}
+                  {editingArticleId ? 'Yazıyı Güncelle' : 'Yeni Yazı Yayımla'}
                 </h2>
                 {editingArticleId && (
                   <button type="button" onClick={handleCancelEdit} style={{ marginLeft: 'auto', background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2939,7 +2939,7 @@ export default function AdminPage() {
               </div>
               <form onSubmit={handleAddPost} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div className="admin-post-form-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-                  <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Başlık</label><input required className="input-field" value={postForm.title} onChange={e=>setPostForm({...postForm, title: e.target.value})} placeholder="Makale başlığı…"/></div>
+                  <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Başlık</label><input required className="input-field" value={postForm.title} onChange={e=>setPostForm({...postForm, title: e.target.value})} placeholder="Yazı başlığı…"/></div>
                   <div><label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Kategori</label><input className="input-field" value={postForm.category} onChange={e=>setPostForm({...postForm, category: e.target.value})} placeholder="Örn: Psikoloji"/></div>
                 </div>
                 <div>
@@ -2988,20 +2988,20 @@ export default function AdminPage() {
                       key={editingArticleId || 'article-new-editor'}
                       value={postForm.content} 
                       onChange={val=>setPostForm({...postForm, content: val})} 
-                      placeholder="Makale içeriğini buraya yazın..."
+                      placeholder="Yazı içeriğini buraya yazın..."
                     />
                   </div>
                 </div>
                 <button disabled={submitting} type="submit" className="btn-gold justify-center mt-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {editingArticleId ? <Save size={16}/> : <Plus size={16}/>}
-                  {submitting ? 'Kaydediliyor…' : (editingArticleId ? 'Makaleyi Güncelle' : 'Makaleyi Yayımla')}
+                  {submitting ? 'Kaydediliyor…' : (editingArticleId ? 'Yazıyı Güncelle' : 'Yazıyı Yayımla')}
                 </button>
               </form>
             </div>
 
             {/* Published Articles */}
             <div>
-              <h2 style={{ fontSize: '1.2rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)', marginBottom: 20 }}>Yayımlanan Makaleler</h2>
+              <h2 style={{ fontSize: '1.2rem', fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--navy)', marginBottom: 20 }}>Yayımlanan Yazılar</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
                 {articles.map(a => (
                   <div key={a.id} style={{ background: 'white', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -3023,7 +3023,7 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
-                {articles.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>Henüz makale yok.</p>}
+                {articles.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>Henüz yazı yok.</p>}
               </div>
             </div>
           </div>

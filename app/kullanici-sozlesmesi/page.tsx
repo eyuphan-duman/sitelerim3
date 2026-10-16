@@ -57,7 +57,7 @@ export default function KullaniciSozlesmesiPage() {
               <strong>ÖNEMLİ UYARI:</strong> Bu web sitesi ve forum alanı bir acil psikiyatrik/tıbbi kriz müdahale birimi değildir. İntihar düşüncesi, kendine veya başkasına yönelik şiddet riski ya da ani tıbbi kriz durumlarında lütfen vakit kaybetmeksizin <strong>112 Acil Çağrı Merkezi</strong>&apos;ni arayınız ya da en yakın hastanenin acil servisine başvurunuz.
             </div>
             <p>
-              Platformda yer alan makaleler, videolar ve forum etkileşimleri bilgilendirme ve farkındalık amaçlıdır; klinik tanı, psikiyatrik reçete veya doğrudan tıbbi teşhis yerine geçmez.
+              Platformda yer alan yazılar, videolar ve forum etkileşimleri bilgilendirme ve farkındalık amaçlıdır; klinik tanı, psikiyatrik reçete veya doğrudan tıbbi teşhis yerine geçmez.
             </p>
           </section>
 

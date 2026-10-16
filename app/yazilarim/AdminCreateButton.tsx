@@ -15,7 +15,7 @@ export default function AdminCreateButton() {
     <div className="flex justify-center mt-8">
       <Link href="/admin?tab=posts" className="inline-flex items-center gap-2 bg-[var(--navy)] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-[var(--gold)] hover:text-[var(--navy)] transition-colors">
         <Plus size={20} />
-        Yeni Makale Yayımla
+        Yeni Yazı Yayımla
       </Link>
     </div>
   );
