@@ -18,6 +18,7 @@ import { Avatar, LogosMark, useForumTheme } from './ui';
 import { WhoToFollowPanel } from './WhoToFollow';
 import { loadRecentPosts } from './social';
 import { ConfirmHost } from './confirm';
+import { InteractionsHost } from './Interactions';
 import './forum.css';
 
 export type NavKey = 'home' | 'explore' | 'notif' | 'following' | 'saved' | 'profile' | 'settings';
@@ -310,6 +311,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
 
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} isDark={isDark} initialMode={authMode} />
       <ConfirmHost />
+      <InteractionsHost />
     </div>
   );
 }

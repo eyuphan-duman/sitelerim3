@@ -885,7 +885,7 @@ export default function ForumClient() {
 
                   <div className="fx-head-search">{searchField(topSearchInputRef)}</div>
 
-                  <div className="fx-tabs" role="tablist">
+                  <div className="fx-tabs fx-tabs-pill" role="tablist">
                     {[{ key: 'all', label: 'Sana özel' }, { key: 'following', label: 'Takip ettiklerin' }].map(tab => (
                       <button
                         key={tab.key}

@@ -13,6 +13,7 @@ import { Avatar, VerifiedMark, CharRing, ReportDialog, compactCount } from './ui
 import { useUsers, useBlocks, unblockUser, useMyAnonPosts } from './social';
 import { ANON_AVATAR, ANON_NAME, ANON_UID } from '@/lib/notify';
 import { confirmUnblock } from './confirm';
+import { openInteractions } from './Interactions';
 import {
   doc, updateDoc, deleteField, increment, collection,
   addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc,
@@ -761,8 +762,8 @@ export default function ThreadView({
 
   const stats = [
     { n: commentsCount, label: 'Yanıt' },
-    { n: repostsCount, label: 'Yeniden paylaşım' },
-    { n: likesCount, label: 'Beğeni' },
+    { n: repostsCount, label: 'Yeniden paylaşım', tab: 'reposts' as const },
+    { n: likesCount, label: 'Beğeni', tab: 'likes' as const },
     { n: bookmarksCount, label: 'Kayıt' },
   ].filter(s => s.n > 0);
 
@@ -1046,7 +1047,9 @@ export default function ThreadView({
 
         {stats.length > 0 && (
           <div className="fx-detail-stats">
-            {stats.map(s => <span key={s.label}><b>{s.n}</b> {s.label}</span>)}
+            {stats.map(s => 'tab' in s && s.tab
+              ? <button key={s.label} type="button" className="fx-stat-link" onClick={() => openInteractions(p.id, s.tab!)}><b>{s.n}</b> {s.label}</button>
+              : <span key={s.label}><b>{s.n}</b> {s.label}</span>)}
           </div>
         )}
 

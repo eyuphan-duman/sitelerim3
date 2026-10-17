@@ -13,6 +13,7 @@ import { Avatar, VerifiedMark, ReportDialog, compactCount } from './ui';
 import { useUsers, blockUser, useMyAnonPosts } from './social';
 import { ANON_AVATAR, ANON_NAME, ANON_UID } from '@/lib/notify';
 import { confirmBlock } from './confirm';
+import { openInteractions } from './Interactions';
 import toast from 'react-hot-toast';
 
 interface Post {
@@ -266,11 +267,11 @@ export default function ForumPost({
               </button>
               <button type="button" data-kind="repost" className={`fx-act ${hasReposted ? 'is-on' : ''} ${popped === 'repost' ? 'pop' : ''}`} onClick={act('repost', onRepost)} aria-pressed={hasReposted} aria-label="Yeniden paylaş">
                 <span className="fx-act-ic"><Repeat2 size={19} strokeWidth={hasReposted ? 2.4 : 1.8} /></span>
-                <span className="fx-act-n">{compactCount(repostsCount)}</span>
+                <span className="fx-act-n fx-act-count" role="button" tabIndex={-1} title="Yeniden paylaşanlar" onClick={e => { if (!repostsCount) return; e.stopPropagation(); openInteractions(post.originalPostId || post.id, 'reposts'); }}>{compactCount(repostsCount)}</span>
               </button>
               <button type="button" data-kind="like" className={`fx-act ${hasLiked ? 'is-on' : ''} ${popped === 'like' ? 'pop' : ''}`} onClick={act('like', onLike)} aria-pressed={hasLiked} aria-label="Beğen">
                 <span className="fx-act-ic"><Heart size={18} strokeWidth={hasLiked ? 0 : 1.8} fill={hasLiked ? 'currentColor' : 'none'} /></span>
-                <span className="fx-act-n">{compactCount(likesCount)}</span>
+                <span className="fx-act-n fx-act-count" role="button" tabIndex={-1} title="Beğenenler" onClick={e => { if (!likesCount) return; e.stopPropagation(); openInteractions(post.originalPostId || post.id, 'likes'); }}>{compactCount(likesCount)}</span>
               </button>
               <button type="button" data-kind="down" className={`fx-act ${hasDisliked ? 'is-on' : ''}`} onClick={act('down', onDislike)} aria-pressed={hasDisliked} aria-label="Katılmıyorum">
                 <span className="fx-act-ic"><ThumbsDown size={17} strokeWidth={1.8} fill={hasDisliked ? 'currentColor' : 'none'} /></span>
