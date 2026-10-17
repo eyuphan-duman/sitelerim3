@@ -185,6 +185,7 @@ export default function Composer({
             ...base,
             authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
             authorUsername: userProfile?.username || '',
+            authorPhotoURL: userProfile?.photoURL || user.photoURL || '',
             authorIsPsychologist: showBadge,
             authorHideBadge: Boolean(userProfile?.hideBadge),
             uid: user.uid,
