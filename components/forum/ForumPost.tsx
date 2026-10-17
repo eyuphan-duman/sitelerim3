@@ -9,8 +9,8 @@ import {
 import { doc, onSnapshot, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatTimeAgo, formatPostDate, renderTextWithMentions } from './ThreadView';
-import { Avatar, VerifiedMark, ReportDialog, compactCount } from './ui';
-import { useUsers, blockUser, useMyAnonPosts } from './social';
+import { Avatar, VerifiedMark, ReportDialog, compactCount, LevelBadge } from './ui';
+import { useUsers, blockUser, useMyAnonPosts, useScores } from './social';
 import { ANON_AVATAR, ANON_NAME, ANON_UID } from '@/lib/notify';
 import { confirmBlock } from './confirm';
 import { openInteractions } from './Interactions';
@@ -83,6 +83,7 @@ export default function ForumPost({
   const canDelete = (currentUserUid && currentUserUid === post.uid) || (!isRepost && ownsAnon) || adminEmails.includes(currentUserEmail || '');
   const hasPsychBadge = !anon && !post.authorHideBadge && Boolean(isPsychologist || post.authorIsPsychologist || (isRepost && post.originalAuthorIsPsychologist));
   const users = useUsers();
+  const scores = useScores();
   const authorTitle = (!isRepost || !post.originalAuthorName) ? users[post.uid]?.title : undefined;
   const profileHref = `/forum/profil/${encodeURIComponent(displayAuthorUsername)}`;
 
@@ -194,6 +195,7 @@ export default function ForumPost({
                   <Link href={profileHref} onClick={e => e.stopPropagation()} className="fx-name">{displayAuthorName}</Link>
                 )}
                 {hasPsychBadge && <VerifiedMark label={authorTitle} />}
+                {!anon && !isRepost && <LevelBadge level={scores.users[post.uid]?.level} points={scores.users[post.uid]?.points} />}
                 {anon ? (ownsAnon && <span className="fx-anon-mine">Senin paylaşımın</span>) : <span className="fx-handle">@{displayAuthorUsername}</span>}
                 <span className="fx-sep" aria-hidden="true">·</span>
                 <time className="fx-time" title={formatPostDate(post.createdAt)}>{formatTimeAgo(post.createdAt)}</time>

@@ -24,9 +24,10 @@ import { getPasswordError } from '@/lib/passwordUtils';
 import ForumPost from '@/components/forum/ForumPost';
 import Composer from '@/components/forum/Composer';
 import FollowList, { FollowListMode } from '@/components/forum/FollowList';
-import { Avatar, VerifiedMark, useForumTheme } from '@/components/forum/ui';
+import { Avatar, VerifiedMark, useForumTheme, LevelBadge } from '@/components/forum/ui';
+import { LevelCard } from '@/components/forum/Scores';
 import { usePostActions } from '@/components/forum/usePostActions';
-import { useMyGraph, loadUsers, loadRecentPosts, setFollow, useBlocks, blockUser, unblockUser } from '@/components/forum/social';
+import { useMyGraph, loadUsers, loadRecentPosts, setFollow, useBlocks, blockUser, unblockUser, useScores } from '@/components/forum/social';
 import { confirmUnfollow, confirmBlock, confirmUnblock } from '@/components/forum/confirm';
 import BlockedList from '@/components/forum/BlockedList';
 
@@ -62,6 +63,7 @@ export default function ProfilClient({ username }: { username: string }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'profile' | 'security' | 'appearance' | 'privacy' | 'blocked' | 'policy' | 'badge' | 'danger'>('profile');
   const [profMenu, setProfMenu] = useState(false);
+  const scores = useScores();
   const blocks = useBlocks(user && !user.isAnonymous ? user.uid : null);
   const [sendingVerification, setSendingVerification] = useState(false);
   const [checkingVerification, setCheckingVerification] = useState(false);
@@ -939,6 +941,7 @@ export default function ProfilClient({ username }: { username: string }) {
                 <div className="fx-prof-name">
                   <h1>{pd.displayName || handle}</h1>
                   {isPsych && <VerifiedMark size={17} label={pd.title} />}
+                  <LevelBadge level={scores.users[pd.uid]?.level || 1} points={scores.users[pd.uid]?.points || 0} />
                 </div>
                 <div className="fx-prof-handle">
                   @{handle}
@@ -966,6 +969,7 @@ export default function ProfilClient({ username }: { username: string }) {
                     <b>{followers}</b> Takipçi
                   </button>
                 </div>
+                {isOwn && <LevelCard score={scores.users[pd.uid]} />}
 
                 {isOwn && !isAdmin && !emailVerified && !user?.emailVerified && (
                   <div className="fx-callout is-warn">

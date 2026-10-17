@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { Home, Search, Bell, Users, Bookmark, User, Settings, Sun, Moon, Feather, LogOut, Heart } from 'lucide-react';
+import { Home, Search, Bell, Users, Bookmark, User, Settings, Sun, Moon, Feather, LogOut, Heart, Trophy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,12 +16,13 @@ import AuthModal from '@/components/AuthModal';
 import EmailVerificationBanner from '@/components/EmailVerificationBanner';
 import { Avatar, LogosMark, useForumTheme } from './ui';
 import { WhoToFollowPanel } from './WhoToFollow';
+import { WeeklyLeaders } from './Scores';
 import { loadRecentPosts } from './social';
 import { ConfirmHost } from './confirm';
 import { InteractionsHost } from './Interactions';
 import './forum.css';
 
-export type NavKey = 'home' | 'explore' | 'notif' | 'following' | 'saved' | 'profile' | 'settings';
+export type NavKey = 'home' | 'explore' | 'notif' | 'following' | 'saved' | 'profile' | 'settings' | 'leaders';
 
 export type ShellApi = {
   isDark: boolean;
@@ -112,6 +113,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     notif: needMember(() => go('/bildirimler')),
     following: needMember(() => go('/forum?feed=following')),
     saved: needMember(() => go(`${myProfileHref}?tab=bookmarks`)),
+    leaders: () => go('/forum/liderler'),
     profile: needMember(() => go(myProfileHref)),
     settings: needMember(() => go(`${myProfileHref}?settings=open`)),
   };
@@ -133,6 +135,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     { key: 'explore', label: 'Keşfet', icon: Search },
     { key: 'notif', label: 'Bildirimler', icon: Bell, badge: unread },
     { key: 'following', label: 'Takip ettiklerin', icon: Users },
+    { key: 'leaders', label: 'Liderlik', icon: Trophy },
     { key: 'saved', label: 'Yer işaretleri', icon: Bookmark },
     { key: 'profile', label: 'Profil', icon: User },
     { key: 'settings', label: 'Ayarlar', icon: Settings },
@@ -216,6 +219,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
             </>
           )}
 
+          <WeeklyLeaders />
           <WhoToFollowPanel onNeedAuth={() => setAuthOpen(true)} />
 
           <nav className="fx-legal" aria-label="Site bağlantıları">
@@ -287,6 +291,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
                 {[
                   { label: 'Profil', icon: User, href: myProfileHref },
                   { label: 'Takip ettiklerin', icon: Users, href: '/forum?feed=following' },
+                  { label: 'Liderlik', icon: Trophy, href: '/forum/liderler' },
                   { label: 'Yer işaretleri', icon: Bookmark, href: `${myProfileHref}?tab=bookmarks` },
                   { label: 'Beğendiklerin', icon: Heart, href: `${myProfileHref}?tab=likes` },
                   { label: 'Ayarlar', icon: Settings, href: `${myProfileHref}?settings=open` },

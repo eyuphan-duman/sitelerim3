@@ -9,8 +9,8 @@ import {
   ArrowLeft, MessageCircle, Heart, ThumbsDown, Repeat2, Bookmark,
   Share, Trash2, Loader, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag, Camera
 } from 'lucide-react';
-import { Avatar, VerifiedMark, CharRing, ReportDialog, compactCount } from './ui';
-import { useUsers, useBlocks, unblockUser, useMyAnonPosts } from './social';
+import { Avatar, VerifiedMark, CharRing, ReportDialog, compactCount, LevelBadge } from './ui';
+import { useUsers, useBlocks, unblockUser, useMyAnonPosts, useScores } from './social';
 import { ANON_AVATAR, ANON_NAME, ANON_UID } from '@/lib/notify';
 import { confirmUnblock } from './confirm';
 import { openInteractions } from './Interactions';
@@ -141,6 +141,7 @@ export default function ThreadView({
 }: ThreadViewProps) {
   const [currentPost, setCurrentPost] = useState<any>(post);
   const users = useUsers();
+  const scores = useScores();
   const [comments, setComments] = useState<any[]>([]);
   const [replyText, setReplyText] = useState('');
   const [followsAuthor, setFollowsAuthor] = useState(false);
@@ -884,6 +885,7 @@ export default function ThreadView({
                           <>
                             <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} className="fx-name">{c.authorName}</Link>
                             {c.authorIsPsychologist && !c.authorHideBadge && <VerifiedMark label={users[c.uid]?.title} />}
+                            <LevelBadge level={scores.users[c.uid]?.level} points={scores.users[c.uid]?.points} />
                             <span className="fx-handle">@{commentAuthorUsername}</span>
                           </>
                         )}
@@ -992,6 +994,7 @@ export default function ThreadView({
                 <div className="fx-post-meta-main">
                   <Link href={`/forum/profil/${encodeURIComponent(username)}`} className="fx-name">{p.authorName}</Link>
                   {(post.authorIsPsychologist || p.authorIsPsychologist) && !p.authorHideBadge && <VerifiedMark label={users[p.uid]?.title} />}
+                  <LevelBadge level={scores.users[p.uid]?.level} points={scores.users[p.uid]?.points} />
                 </div>
                 <div className="fx-handle">@{username}</div>
               </div>

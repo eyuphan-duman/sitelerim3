@@ -317,3 +317,33 @@ export function useMyAnonPosts(uid?: string | null) {
   }, [uid]);
   return useMemo(() => new Set(ids), [ids]);
 }
+
+/* ─── Logos puanları ve seviyeler (sunucuda hesaplanır, 30 dakikada bir yenilenir) ─── */
+export type UserScore = {
+  points: number; level: number; progress: number; posts: number; replies: number;
+  likes: number; reposts: number; repliesReceived: number; week: number; month: number;
+};
+export type ScoreBoard = {
+  users: Record<string, UserScore>;
+  weekly: { uid: string; points: number }[];
+  monthly: { uid: string; points: number }[];
+  allTime: { uid: string; points: number }[];
+  rules: { post: number; reply: number; like: number; repost: number; replyReceived: number };
+  levelSize: number;
+  at: number;
+};
+const EMPTY_SCORES: ScoreBoard = { users: {}, weekly: [], monthly: [], allTime: [], rules: { post: 3, reply: 1, like: 2, repost: 3, replyReceived: 1 }, levelSize: 100, at: 0 };
+let scoresCache: Promise<ScoreBoard> | null = null;
+let scoresAt = 0;
+export function loadScores(): Promise<ScoreBoard> {
+  if (!scoresCache || Date.now() - scoresAt > 600_000) {
+    scoresAt = Date.now();
+    scoresCache = fetch('/api/forum/scores').then(r => r.json()).then(d => ({ ...EMPTY_SCORES, ...d })).catch(() => { scoresCache = null; return EMPTY_SCORES; });
+  }
+  return scoresCache;
+}
+export function useScores() {
+  const [s, setS] = useState<ScoreBoard>(EMPTY_SCORES);
+  useEffect(() => { let on = true; loadScores().then(x => on && setS(x)); return () => { on = false; }; }, []);
+  return s;
+}

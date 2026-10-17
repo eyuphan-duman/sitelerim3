@@ -1,0 +1,133 @@
+import type { Firestore } from 'firebase-admin/firestore';
+
+/**
+ * Logos puan sistemi. Puanlar forumdaki gerçek veriden sunucuda hesaplanır;
+ * istemci puan yazamaz, bu yüzden değiştirilemez.
+ *
+ *   Gönderi paylaşmak                          +3
+ *   Yanıt yazmak                               +1
+ *   Gönderin ya da yanıtın beğenilmesi         +2 (her beğeni)
+ *   Gönderin ya da yanıtın yeniden paylaşılması +3 (her paylaşım)
+ *   Başka birinin gönderine yanıt yazması      +1
+ *
+ * Kendi içeriğine yapılan etkileşim ve isimsiz içerik puan kazandırmaz.
+ * Her 100 puanda bir seviye atlanır. Haftalık ve aylık sıralama, o dönemde
+ * paylaşılan gönderi ve yanıtlardan toplanan puanlara göre yapılır.
+ */
+export const POINTS = { post: 3, reply: 1, like: 2, repost: 3, replyReceived: 1 } as const;
+export const LEVEL_SIZE = 100;
+
+export type UserScore = {
+  points: number;
+  level: number;
+  progress: number; // bu seviyedeki puan (0–99)
+  posts: number;
+  replies: number;
+  likes: number;
+  reposts: number;
+  repliesReceived: number;
+  week: number;
+  month: number;
+};
+
+export type Scores = {
+  at: number;
+  weekStart: number;
+  monthStart: number;
+  users: Record<string, UserScore>;
+  weekly: { uid: string; points: number }[];
+  monthly: { uid: string; points: number }[];
+  allTime: { uid: string; points: number }[];
+};
+
+const TR_OFFSET = 3 * 60 * 60 * 1000; // Türkiye saati (UTC+3, yaz saati yok)
+
+/** Bu haftanın pazartesi 00:00'ı ve bu ayın 1'i 00:00'ı (Türkiye saatiyle) */
+export function periodStarts(now = Date.now()) {
+  const tr = new Date(now + TR_OFFSET);
+  const y = tr.getUTCFullYear(), m = tr.getUTCMonth(), d = tr.getUTCDate();
+  const dow = (tr.getUTCDay() + 6) % 7; // pazartesi = 0
+  return {
+    weekStart: Date.UTC(y, m, d - dow) - TR_OFFSET,
+    monthStart: Date.UTC(y, m, 1) - TR_OFFSET,
+  };
+}
+
+const ms = (v: unknown): number =>
+  typeof v === 'number' ? v : (v as { toMillis?: () => number } | null)?.toMillis?.() ?? 0;
+const realUid = (uid: unknown): uid is string => typeof uid === 'string' && uid !== '' && uid !== 'anonymous';
+
+export async function computeScores(db: Firestore): Promise<Scores> {
+  const { weekStart, monthStart } = periodStarts();
+  const [postsSnap, commentsSnap, usersSnap] = await Promise.all([
+    db.collection('forum').get(),
+    db.collectionGroup('comments').get(),
+    db.collection('users').get(),
+  ]);
+
+  const s: Record<string, UserScore> = {};
+  const get = (uid: string) => (s[uid] ||= { points: 0, level: 1, progress: 0, posts: 0, replies: 0, likes: 0, reposts: 0, repliesReceived: 0, week: 0, month: 0 });
+  const add = (uid: string, pts: number, at: number) => {
+    const u = get(uid);
+    u.points += pts;
+    if (at >= weekStart) u.week += pts;
+    if (at >= monthStart) u.month += pts;
+  };
+  const othersCount = (map: unknown, owner: string, pred: (v: unknown) => boolean) =>
+    Object.entries((map || {}) as Record<string, unknown>).filter(([k, v]) => k !== owner && pred(v)).length;
+
+  // Gönderiler (yeniden paylaşım kayıtları içerik sayılmaz; paylaşım asıl gönderinin repostsData'sında sayılır)
+  const postOwner: Record<string, string> = {};
+  for (const d of postsSnap.docs) {
+    const p = d.data();
+    if (p.isRepost || p.isAnonymous || !realUid(p.uid)) continue;
+    postOwner[d.id] = p.uid;
+    const at = ms(p.createdAt);
+    const likes = othersCount(p.reactionsData, p.uid, v => v === 'like' || v === 'heart');
+    const reposts = othersCount(p.repostsData, p.uid, Boolean);
+    const u = get(p.uid);
+    u.posts++; u.likes += likes; u.reposts += reposts;
+    add(p.uid, POINTS.post + likes * POINTS.like + reposts * POINTS.repost, at);
+  }
+
+  // Yanıtlar (yalnızca forum yanıtları; blog yorumları sayılmaz)
+  for (const d of commentsSnap.docs) {
+    if (d.ref.parent.parent?.parent.id !== 'forum') continue;
+    const c = d.data();
+    const postId = d.ref.parent.parent!.id;
+    const at = ms(c.createdAt);
+    if (!c.isAnonymous && realUid(c.uid)) {
+      const likes = othersCount(c.reactionsData, c.uid, v => v === 'like');
+      const reposts = othersCount(c.repostsData, c.uid, Boolean);
+      const u = get(c.uid);
+      u.replies++; u.likes += likes; u.reposts += reposts;
+      add(c.uid, POINTS.reply + likes * POINTS.like + reposts * POINTS.repost, at);
+    }
+    const owner = postOwner[postId];
+    if (owner && realUid(c.uid) && c.uid !== owner) {
+      get(owner).repliesReceived++;
+      add(owner, POINTS.replyReceived, at);
+    }
+  }
+
+  // Sıralamalarda banlı, dondurulmuş ve silinmiş hesaplar gösterilmez
+  const hidden = new Set(usersSnap.docs.filter(d => {
+    const u = d.data();
+    return u.isBanned || u.isFrozen || u.isDeleted;
+  }).map(d => d.id));
+  const exists = new Set(usersSnap.docs.map(d => d.id));
+
+  for (const [uid, u] of Object.entries(s)) {
+    if (!exists.has(uid)) { delete s[uid]; continue; }
+    u.level = Math.floor(u.points / LEVEL_SIZE) + 1;
+    u.progress = u.points % LEVEL_SIZE;
+  }
+
+  const top = (key: 'week' | 'month' | 'points') => Object.entries(s)
+    .filter(([uid, u]) => !hidden.has(uid) && u[key] > 0)
+    .sort((a, b) => b[1][key] - a[1][key])
+    .slice(0, 20)
+    .map(([uid, u]) => ({ uid, points: u[key] }));
+
+  return { at: Date.now(), weekStart, monthStart, users: s, weekly: top('week'), monthly: top('month'), allTime: top('points') };
+}

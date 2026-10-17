@@ -37,6 +37,20 @@ export function VerifiedMark({ size = 15, label = 'Psikolog', iconOnly = false }
   );
 }
 
+/**
+ * Logos seviye rozeti: her 100 puanda bir seviye. Renk seviye arttıkça turkuazdan mercana geçer
+ * (altın psikolog rozetine ayrılmıştır).
+ */
+export function LevelBadge({ level, points }: { level?: number; points?: number }) {
+  if (!level) return null;
+  const tier = level >= 20 ? 4 : level >= 10 ? 3 : level >= 5 ? 2 : 1;
+  return (
+    <span className="fx-level" data-tier={tier} title={`Seviye ${level}${points != null ? ` · ${points} puan` : ''}`} aria-label={`Seviye ${level}`}>
+      Sv {level}
+    </span>
+  );
+}
+
 /** X tarzı karakter sayacı halkası */
 export function CharRing({ length, limit }: { length: number; limit: number }) {
   const r = 9.5;

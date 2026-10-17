@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Avatar, VerifiedMark } from './ui';
-import { ForumUser, isApprovedPsychologist, profileHref, setFollow } from './social';
+import { Avatar, VerifiedMark, LevelBadge } from './ui';
+import { ForumUser, isApprovedPsychologist, profileHref, setFollow, useScores } from './social';
 import { confirmUnfollow } from './confirm';
 
 type Props = {
@@ -23,6 +23,7 @@ export default function PersonRow({ user: u, note, showBio, isFollowing, follows
   const { user, userProfile } = useAuth();
   const [busy, setBusy] = useState(false);
   const isMe = user?.uid === u.uid;
+  const scores = useScores();
 
   const toggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -46,6 +47,7 @@ export default function PersonRow({ user: u, note, showBio, isFollowing, follows
         <div className="fx-person-name">
           <span>{u.displayName || u.username}</span>
           {isApprovedPsychologist(u) && <VerifiedMark iconOnly size={16} label={u.title} />}
+          <LevelBadge level={scores.users[u.uid]?.level} points={scores.users[u.uid]?.points} />
         </div>
         <div className="fx-person-handle">
           @{u.username || 'kullanici'}
