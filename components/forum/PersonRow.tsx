@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, VerifiedMark } from './ui';
 import { ForumUser, isApprovedPsychologist, profileHref, setFollow } from './social';
+import { confirmUnfollow } from './confirm';
 
 type Props = {
   user: ForumUser;
@@ -27,6 +28,7 @@ export default function PersonRow({ user: u, note, showBio, isFollowing, follows
     e.preventDefault();
     e.stopPropagation();
     if (!user || user.isAnonymous) { onNeedAuth?.(); return; }
+    if (isFollowing && !(await confirmUnfollow(u.username || u.displayName || 'kullanici'))) return;
     setBusy(true);
     try {
       await setFollow(user, userProfile, u.uid, !isFollowing);

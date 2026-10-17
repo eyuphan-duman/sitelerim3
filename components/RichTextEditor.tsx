@@ -103,7 +103,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const loadingToast = toast.loading('Görsel Cloudinary\'ye yükleniyor...');
+    const loadingToast = toast.loading('Görsel yükleniyor…');
     try {
       const formData = new FormData();
       formData.append('file', file);

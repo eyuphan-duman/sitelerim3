@@ -721,7 +721,7 @@ export default function AdminPage() {
       setVideoForm({ title: '', category: '', desc: '', dur: '', views: '1', link: '' });
       setVideoFile(null);
       setUploadProgress(0);
-      toast.success('Video Cloudinary\'ye yüklendi ve eklendi!');
+      toast.success('Video eklendi');
     } catch (error: any) { 
       toast.error('Hata oluştu: ' + error.message); 
       setUploadProgress(0);
@@ -2961,7 +2961,7 @@ export default function AdminPage() {
                       <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const t = toast.loading('Görsel Cloudinary\'ye yükleniyor...');
+                        const t = toast.loading('Görsel yükleniyor…');
                         try {
                           const fd = new FormData();
                           fd.append('file', file);
@@ -3072,7 +3072,7 @@ export default function AdminPage() {
                       <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const t = toast.loading('Görsel Cloudinary\'ye yükleniyor...');
+                        const t = toast.loading('Görsel yükleniyor…');
                         try {
                           const fd = new FormData();
                           fd.append('file', file);

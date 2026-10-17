@@ -501,7 +501,7 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-post-social a { color: inherit; text-decoration: none; }
 .fx-post-social a:hover { text-decoration: underline; }
 
-.fx-post-grid { display: grid; grid-template-columns: 40px 1fr; gap: 12px; }
+.fx-post-grid { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; }
 .fx-post-body { min-width: 0; }
 
 .fx-post-meta {
@@ -924,7 +924,7 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   .fx-select { max-width: 150px; }
 
   .fx-post { padding: 12px 14px 4px; }
-  .fx-post-grid { grid-template-columns: 38px 1fr; gap: 10px; }
+  .fx-post-grid { grid-template-columns: 38px minmax(0, 1fr); gap: 10px; }
   .fx-post-social { margin-left: 24px; }
   .fx-actions { max-width: none; margin-right: -8px; }
 
@@ -1381,7 +1381,7 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-thead-flat { position: static; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding-left: 16px; }
 .fx-notif {
   display: grid;
-  grid-template-columns: 40px 1fr;
+  grid-template-columns: 40px minmax(0, 1fr);
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--fx-line);
@@ -1444,3 +1444,90 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-load-more { display: block; width: 100%; padding: 18px 16px; border: 0; border-bottom: 1px solid var(--fx-line); background: none; color: var(--fx-link); font: inherit; font-size: .95rem; font-weight: 600; cursor: pointer; }
 .fx-load-more:hover { background: var(--fx-hover); }
 .fx-load-more:disabled { color: var(--fx-ink-3); cursor: default; }
+
+/* ─── Mobil sığdırma düzeltmeleri ─── */
+.fx-actions { min-width: 0; }
+.fx-act { min-width: 0; flex-shrink: 1; }
+.fx-search input:focus-visible { outline: none; } /* odak halkası kutunun kendisinde */
+@media (max-width: 699px) {
+  /* iOS 16px altındaki alanlarda sayfayı yakınlaştırır; bu da düzeni taşırır */
+  [data-forum-page] input, [data-forum-page] textarea, [data-forum-page] select { font-size: 16px; }
+  .fx-actions { margin-right: 0; }
+  .fx-act-ic { width: 32px; height: 32px; }
+}
+@media (max-width: 360px) {
+  .fx-act-n { min-width: 0; }
+  .fx-guest-copy strong { font-size: .92rem; }
+  .fx-guest-actions { gap: 6px; }
+  .fx-guest-actions .fx-btn { padding: 0 11px; }
+}
+
+/* ─── Yatay kaydırma okları (yalnızca fare ile) ─── */
+.fx-scrollrow { position: relative; }
+.fx-scroll-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--fx-line-strong);
+  background: var(--fx-bg);
+  color: var(--fx-ink);
+  display: none;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(10, 22, 40, .12);
+  transition: background-color .15s;
+}
+.fx-scroll-arrow:hover { background: var(--fx-soft); }
+.fx-scroll-arrow.is-left { left: 8px; }
+.fx-scroll-arrow.is-right { right: 8px; }
+.fx-scrollrow:has(.is-left)::before, .fx-scrollrow:has(.is-right)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 56px;
+  pointer-events: none;
+  z-index: 2;
+}
+@media (hover: hover) and (pointer: fine) {
+  .fx-scroll-arrow { display: grid; }
+  .fx-scrollrow:has(.is-left)::before { left: 0; background: linear-gradient(90deg, var(--fx-bg) 30%, transparent); }
+  .fx-scrollrow:has(.is-right)::after { right: 0; background: linear-gradient(270deg, var(--fx-bg) 30%, transparent); }
+}
+/* Öneri kartlarında oklar kartların ortasına hizalansın */
+.fx-strip .fx-scroll-arrow { top: calc(50% - 2px); }
+
+/* ─── Onay penceresi (X tarzı) ─── */
+.fx-confirm-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: var(--fx-scrim);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  animation: fxFade .15s ease-out;
+}
+.fx-confirm-box {
+  width: 100%;
+  max-width: 320px;
+  padding: 28px 28px 24px;
+  border-radius: 18px;
+  background: var(--fx-bg);
+  box-shadow: var(--fx-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fxPopIn .18s cubic-bezier(.2, .9, .3, 1.2);
+}
+.fx-confirm-box h2 { margin: 0; font-size: 1.25rem; font-weight: 800; line-height: 1.25; color: var(--fx-ink); overflow-wrap: anywhere; }
+.fx-confirm-box p { margin: 0 0 14px; color: var(--fx-ink-2); font-size: .94rem; line-height: 1.45; }
+.fx-confirm-box .fx-btn { width: 100%; height: 44px; font-size: .97rem; }
+.fx-btn-confirm { background: var(--fx-brand); color: var(--fx-on-brand); }
+.fx-btn-confirm:hover { opacity: .88; }
+@keyframes fxFade { from { opacity: 0; } }
+@keyframes fxPopIn { from { opacity: 0; transform: scale(.94); } }

@@ -3116,3 +3116,18 @@ body.forum-dark-body .navbar {
 @media (max-width: 960px) {
   .home-forum-grid { grid-template-columns: 1fr !important; }
 }
+
+/* ═══ Bildirim şeridi (toast) ═══ */
+.app-toaster { bottom: 24px !important; }
+@media (max-width: 699px) {
+  /* mobilde forum alt menüsünün üstünde */
+  .app-toaster { bottom: calc(68px + env(safe-area-inset-bottom)) !important; }
+}
+.app-toast > div[role="status"] { margin: 0 2px !important; }
+.app-toast-spin { animation: appToastSpin .8s linear infinite; }
+@keyframes appToastSpin { to { transform: rotate(360deg); } }
+/* Misafir bandı varken bildirim bandın üstünde çıksın */
+body:has(.fx-guest-band) .app-toaster { bottom: 104px !important; }
+@media (max-width: 699px) {
+  body:has(.fx-guest-band) .app-toaster { bottom: calc(132px + env(safe-area-inset-bottom)) !important; }
+}

@@ -199,7 +199,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
                 <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-                  const t = toast.loading('Kapak görseli Cloudinary\'ye yükleniyor...');
+                  const t = toast.loading('Kapak görseli yükleniyor…');
                   try {
                     const fd = new FormData();
                     fd.append('file', file);

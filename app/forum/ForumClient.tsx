@@ -10,6 +10,7 @@ import ThreadView from '@/components/forum/ThreadView';
 import { Search, Bell, Users, Home, X, Loader2, User, Bookmark, Heart, Sun, Moon, Menu, LogOut, Settings, Feather, ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import { Avatar, CharRing, LogosMark, useForumTheme } from '@/components/forum/ui';
 import ForumShell from '@/components/forum/ForumShell';
+import ScrollRow from '@/components/forum/ScrollRow';
 import PersonRow from '@/components/forum/PersonRow';
 import { WhoToFollowStrip } from '@/components/forum/WhoToFollow';
 import toast from 'react-hot-toast';
@@ -281,7 +282,7 @@ export default function ForumClient() {
           followingId: targetUid,
           createdAt: serverTimestamp(),
         });
-        toast.success('Takip edildi!');
+        toast.success('Takip ediliyor');
       }
     } catch (err: any) {
       toast.error('İşlem başarısız: ' + (err.message || ''));
@@ -343,7 +344,7 @@ export default function ForumClient() {
       return;
     }
     setUploadingImage(true);
-    const toastId = toast.loading('Görsel Cloudinary\'ye yükleniyor...');
+    const toastId = toast.loading('Görsel yükleniyor…');
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -352,7 +353,7 @@ export default function ForumClient() {
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
       setForm(prev => ({ ...prev, imageUrl: data.url }));
-      toast.success('Görsel eklendi!', { id: toastId });
+      toast.success('Görsel eklendi', { id: toastId });
     } catch (err: any) {
       toast.error('Hata: ' + err.message, { id: toastId });
     } finally {
@@ -400,7 +401,7 @@ export default function ForumClient() {
       } catch {}
 
       setForm({ body: '', cat: 'Psikanaliz', imageUrl: '' });
-      toast.success('Paylaşıldı!');
+      toast.success('Gönderin paylaşıldı');
     } catch {
       toast.error('Hata oluştu.');
     } finally {
@@ -943,13 +944,13 @@ export default function ForumClient() {
                 </header>
 
                 {!searchQuery && (
-                  <div className="fx-topics" role="toolbar" aria-label="Konular">
+                  <ScrollRow className="fx-topics" role="toolbar" label="Konular">
                     {CATEGORIES.map(c => (
                       <button key={c} type="button" className={`fx-topic ${filter === c ? 'is-active' : ''}`} onClick={() => openTopic(c)} aria-pressed={filter === c}>
                         {c === 'Tümü' ? 'Tüm konular' : c}
                       </button>
                     ))}
-                  </div>
+                  </ScrollRow>
                 )}
 
                 {searchQuery && (

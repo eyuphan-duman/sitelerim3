@@ -6,7 +6,7 @@ import GlobalSearchModal from "@/components/GlobalSearchModal";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import QuickContact from "@/components/QuickContact";
-import { Toaster } from "react-hot-toast";
+import AppToaster from "@/components/AppToaster";
 import Script from "next/script";
 import CookieConsent from "@/components/CookieConsent";
 import SwipeBackNavigation from "@/components/SwipeBackNavigation";
@@ -203,19 +203,7 @@ export default function RootLayout({
             <AnalyticsTracker />
             <GlobalSearchModal />
 
-            <Toaster
-              position="top-right"
-              containerStyle={{ zIndex: 999999 }}
-              toastOptions={{
-                style: {
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: "0.875rem",
-                  background: "#1c1c1e",
-                  color: "#e8dcc8",
-                  border: "1px solid rgba(184,150,90,0.3)",
-                },
-              }}
-            />
+            <AppToaster />
             <Navbar />
             <SwipeBackNavigation />
             <main>{children}</main>

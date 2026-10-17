@@ -142,7 +142,7 @@ export default function ForumPost({
   const copyLink = () => {
     try {
       navigator.clipboard.writeText(`${window.location.origin}/forum?thread=${post.originalPostId || post.id}`);
-      toast.success('Bağlantı kopyalandı');
+      toast.success('Bağlantı panoya kopyalandı');
     } catch {
       toast.error('Bağlantı kopyalanamadı');
     }

@@ -902,7 +902,7 @@ export default function ThreadView({
                         type="button"
                         className="fx-act"
                         onClick={async () => {
-                          try { await navigator.clipboard.writeText(`${window.location.origin}/forum?thread=${p.id}`); toast.success('Bağlantı kopyalandı'); }
+                          try { await navigator.clipboard.writeText(`${window.location.origin}/forum?thread=${p.id}`); toast.success('Bağlantı panoya kopyalandı'); }
                           catch { toast.error('Bağlantı kopyalanamadı'); }
                         }}
                         aria-label="Bağlantıyı kopyala"

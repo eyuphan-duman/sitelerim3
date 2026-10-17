@@ -7,6 +7,8 @@ import PersonRow from './PersonRow';
 import { Avatar, VerifiedMark } from './ui';
 import { isApprovedPsychologist, profileHref, setFollow, useFollowSuggestions, useMyGraph } from './social';
 import toast from 'react-hot-toast';
+import { confirmUnfollow } from './confirm';
+import ScrollRow from './ScrollRow';
 
 /** Sağ sütundaki "Kimi takip etmeli" paneli */
 export function WhoToFollowPanel({ onNeedAuth, max = 3 }: { onNeedAuth?: () => void; max?: number }) {
@@ -45,7 +47,7 @@ export function WhoToFollowStrip({ onNeedAuth }: { onNeedAuth?: () => void }) {
   return (
     <section className="fx-strip" aria-label="Kimi takip etmeli">
       <div className="fx-strip-head">Kimi takip etmeli</div>
-      <div className="fx-strip-track">
+      <ScrollRow className="fx-strip-track" label="Önerilen kişiler">
         {list.map(({ user: u, reason }) => {
           const isF = following.includes(u.uid);
           return (
@@ -64,6 +66,7 @@ export function WhoToFollowStrip({ onNeedAuth }: { onNeedAuth?: () => void }) {
                   e.preventDefault();
                   e.stopPropagation();
                   if (!user || user.isAnonymous) return onNeedAuth?.();
+                  if (isF && !(await confirmUnfollow(u.username || 'kullanici'))) return;
                   try { await setFollow(user, userProfile, u.uid, !isF); } catch (err: any) { toast.error(err.message || 'İşlem yapılamadı'); }
                 }}
               >
@@ -72,7 +75,7 @@ export function WhoToFollowStrip({ onNeedAuth }: { onNeedAuth?: () => void }) {
             </Link>
           );
         })}
-      </div>
+      </ScrollRow>
     </section>
   );
 }

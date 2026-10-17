@@ -26,7 +26,8 @@ import Composer from '@/components/forum/Composer';
 import FollowList, { FollowListMode } from '@/components/forum/FollowList';
 import { Avatar, VerifiedMark, useForumTheme } from '@/components/forum/ui';
 import { usePostActions } from '@/components/forum/usePostActions';
-import { useMyGraph, loadUsers, loadRecentPosts } from '@/components/forum/social';
+import { useMyGraph, loadUsers, loadRecentPosts, setFollow } from '@/components/forum/social';
+import { confirmUnfollow } from '@/components/forum/confirm';
 
 interface Post { 
   id: string; body: string; authorName: string; authorUsername?: string; uid: string; 
@@ -454,13 +455,13 @@ export default function ProfilClient({ username }: { username: string }) {
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f || !user) return;
     setUpPhoto(true);
-    const toastId = toast.loading('Profil fotoğrafı Cloudinary\'ye yükleniyor...');
+    const toastId = toast.loading('Profil fotoğrafı yükleniyor…');
     try {
       const url = await uploadImg(f, `avatars/${user.uid}`);
       await setDoc(doc(db, 'users', user.uid), { photoURL: url }, { merge: true });
       try { await updateProfile(user, { photoURL: url }); } catch {}
       setPd((p: any) => ({ ...p, photoURL: url }));
-      toast.success('Profil fotoğrafı güncellendi!', { id: toastId });
+      toast.success('Profil fotoğrafı güncellendi', { id: toastId });
     } catch (err: any) {
       console.error('handlePhoto error:', err);
       toast.error('Hata: ' + (err.message || 'Yükleme başarısız'), { id: toastId });
@@ -473,12 +474,12 @@ export default function ProfilClient({ username }: { username: string }) {
   const handleCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f || !user) return;
     setUpCover(true);
-    const toastId = toast.loading('Kapak fotoğrafı Cloudinary\'ye yükleniyor...');
+    const toastId = toast.loading('Kapak fotoğrafı yükleniyor…');
     try {
       const url = await uploadImg(f, `covers/${user.uid}`);
       await setDoc(doc(db, 'users', user.uid), { coverURL: url }, { merge: true });
       setPd((p: any) => ({ ...p, coverURL: url }));
-      toast.success('Kapak fotoğrafı güncellendi!', { id: toastId });
+      toast.success('Kapak fotoğrafı güncellendi', { id: toastId });
     } catch (err: any) {
       console.error('handleCover error:', err);
       toast.error('Hata: ' + (err.message || 'Yükleme başarısız'), { id: toastId });
@@ -490,9 +491,13 @@ export default function ProfilClient({ username }: { username: string }) {
 
   const toggleFollow = async () => {
     if (!user || user.isAnonymous || !pd) return toast.error('Giriş gerekli.');
-    const fid = `${user.uid}_${pd.uid}`;
-    if (following) { await deleteDoc(doc(db,'follows',fid)); setFollowing(false); }
-    else { await setDoc(doc(db,'follows',fid), { followerId:user.uid, followingId:pd.uid, createdAt:serverTimestamp() }); setFollowing(true); }
+    if (following && !(await confirmUnfollow(pd.username || pd.displayName || 'kullanici'))) return;
+    try {
+      await setFollow(user, userProfile, pd.uid, !following);
+      setFollowing(!following);
+    } catch (err: any) {
+      toast.error('İşlem yapılamadı: ' + (err.message || ''));
+    }
   };
 
   const saveProfile = async () => {
@@ -873,7 +878,7 @@ export default function ProfilClient({ username }: { username: string }) {
                         <button
                           type="button"
                           className="fx-icon-btn fx-icon-outline"
-                          onClick={() => { try { navigator.clipboard.writeText(window.location.href); toast.success('Profil bağlantısı kopyalandı'); } catch {} }}
+                          onClick={() => { try { navigator.clipboard.writeText(window.location.href); toast.success('Profil bağlantısı panoya kopyalandı'); } catch {} }}
                           aria-label="Profil bağlantısını kopyala"
                           title="Bağlantıyı kopyala"
                         >
