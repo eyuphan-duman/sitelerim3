@@ -8,7 +8,8 @@ import {
   Share, Trash2, Loader, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag
 } from 'lucide-react';
 import { Avatar, VerifiedMark, CharRing, ReportDialog, compactCount } from './ui';
-import { useUsers } from './social';
+import { useUsers, useBlocks, unblockUser } from './social';
+import { confirmUnblock } from './confirm';
 import {
   doc, updateDoc, deleteField, increment, collection,
   addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc,
@@ -138,6 +139,7 @@ export default function ThreadView({
   const [comments, setComments] = useState<any[]>([]);
   const [replyText, setReplyText] = useState('');
   const [followsAuthor, setFollowsAuthor] = useState(false);
+  const blocks = useBlocks(currentUser && !currentUser.isAnonymous ? currentUser.uid : null);
   const replyPolicy: string = currentPost?.replyPolicy || 'everyone';
   useEffect(() => {
     if (replyPolicy !== 'followers' || !currentUser || currentUser.isAnonymous || !currentPost?.uid || currentPost.uid === currentUser.uid) return;
@@ -652,9 +654,11 @@ export default function ThreadView({
 
   const isMember = Boolean(currentUser && !currentUser.isAnonymous);
   const amPsych = Boolean((userProfile?.isPsychologist && (userProfile?.psychologistStatus === 'approved' || !userProfile?.psychologistStatus)) || userProfile?.role === 'psychologist');
-  const canReply = !isMember || replyPolicy === 'everyone' || currentPost?.uid === currentUser?.uid ||
+  const authorBlockedMe = Boolean(currentPost?.uid && blocks.blockedBy.has(currentPost.uid));
+  const iBlockedAuthor = Boolean(currentPost?.uid && blocks.blocked.has(currentPost.uid));
+  const canReply = !authorBlockedMe && !iBlockedAuthor && (!isMember || replyPolicy === 'everyone' || currentPost?.uid === currentUser?.uid ||
     adminEmails.includes(currentUser?.email?.toLowerCase() || '') ||
-    (replyPolicy === 'psychologists' && amPsych) || (replyPolicy === 'followers' && followsAuthor);
+    (replyPolicy === 'psychologists' && amPsych) || (replyPolicy === 'followers' && followsAuthor));
   const replyNote = replyPolicy === 'nobody' ? 'Bu gönderiye yanıt kapalı.'
     : replyPolicy === 'psychologists' ? 'Bu gönderiyi yalnızca psikologlar yanıtlayabilir.'
     : replyPolicy === 'followers' ? `Bu gönderiyi yalnızca @${currentPost?.authorUsername || 'yazarın'} adlı kişinin takipçileri yanıtlayabilir.` : '';
@@ -676,6 +680,37 @@ export default function ThreadView({
     { n: likesCount, label: 'Beğeni' },
     { n: bookmarksCount, label: 'Kayıt' },
   ].filter(s => s.n > 0);
+
+  if (authorBlockedMe || iBlockedAuthor) {
+    const h = currentPost?.authorUsername || 'kullanici';
+    return (
+      <div className="fx-thread">
+        <div className="fx-thead">
+          <button type="button" className="fx-icon-btn" onClick={onBack} aria-label="Geri" style={{ color: 'var(--fx-ink)' }}>
+            <ArrowLeft size={20} />
+          </button>
+          <h2>Gönderi</h2>
+        </div>
+        <div className="fx-empty">
+          {authorBlockedMe ? (
+            <>
+              <h2>Bu gönderiyi göremezsin</h2>
+              <p>@{h} seni engellediği için gönderilerini göremez ve yanıt yazamazsın.</p>
+            </>
+          ) : (
+            <>
+              <h2>@{h} adlı kişiyi engelledin</h2>
+              <p>Engeli kaldırırsan gönderilerini yeniden görebilirsin.</p>
+              <button type="button" className="fx-btn fx-btn-outline" onClick={async () => {
+                if (!(await confirmUnblock(h))) return;
+                try { await unblockUser(currentUser.uid, currentPost.uid); toast.success(`@${h} adlı kişinin engeli kaldırıldı`); } catch { toast.error('İşlem yapılamadı.'); }
+              }}>Engeli kaldır</button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fx-thread">
@@ -845,7 +880,7 @@ export default function ThreadView({
         {comments.length === 0 ? (
           <div className="fx-end">Henüz yanıt yok. İlk yanıtı sen yaz.</div>
         ) : (
-          comments.map(c => {
+          comments.filter(c => !blocks.hidden.has(c.uid)).map(c => {
             const commentAuthorUsername = c.authorUsername || (c.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
             const canDeleteComment = (currentUser?.uid && currentUser.uid === c.uid) || isAdmin;
             const uid = currentUser?.uid || '';

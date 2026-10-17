@@ -59,3 +59,18 @@ export function ConfirmHost() {
     </div>
   );
 }
+
+export const confirmBlock = (handle: string) =>
+  confirmDialog({
+    title: `@${handle} engellensin mi?`,
+    body: 'Seni takip edemez, gönderilerini göremez ve sana yanıt yazamaz. Onun gönderileri de sana gösterilmez. Aranızdaki takipler kaldırılır. Engellediğini kendisine bildirmeyiz.',
+    confirmLabel: 'Engelle',
+  });
+
+export const confirmUnblock = (handle: string) =>
+  confirmDialog({
+    title: `@${handle} adlı kişinin engeli kaldırılsın mı?`,
+    body: 'Gönderilerini yeniden görebilir, seni takip edebilir ve sana yanıt yazabilir.',
+    confirmLabel: 'Engeli kaldır',
+    danger: false,
+  });

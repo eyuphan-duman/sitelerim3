@@ -1,0 +1,48 @@
+.page { min-height: 100vh; background: var(--sand-light); }
+
+.wrap { max-width: 760px; margin: 0 auto; padding: 56px 20px 88px; color: #2b3442; }
+
+.lead { font-size: 1.06rem; line-height: 1.75; color: var(--navy); margin: 0 0 40px; }
+
+.short {
+  border-left: 3px solid var(--gold);
+  padding: 4px 0 4px 22px;
+  margin: 0 0 56px;
+}
+.short h2 { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--navy); margin: 0 0 14px; }
+.short ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.short li { line-height: 1.6; font-size: .97rem; }
+.short li b { color: var(--navy); }
+
+.toc { margin: 0 0 56px; font-size: .92rem; }
+.toc b { display: block; color: var(--navy); margin-bottom: 8px; }
+.toc ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.toc a { color: #2b3442; text-decoration: none; border-bottom: 1px solid rgba(201, 169, 110, .45); }
+.toc a:hover { color: var(--navy); border-bottom-color: var(--gold); }
+
+.section { padding: 0 0 40px; margin: 0 0 40px; border-bottom: 1px solid rgba(10, 22, 40, .08); scroll-margin-top: 96px; }
+.section:last-of-type { border-bottom: 0; }
+.section h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--navy); margin: 0 0 16px; line-height: 1.25; }
+.section h3 { font-size: 1rem; font-weight: 700; color: var(--navy); margin: 24px 0 8px; }
+.section p { line-height: 1.75; font-size: .96rem; margin: 0 0 12px; }
+.section ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 8px; }
+.section li { line-height: 1.65; font-size: .96rem; }
+.section a { color: var(--navy); font-weight: 600; }
+
+.tableWrap { overflow-x: auto; margin: 8px 0 12px; border: 1px solid rgba(10, 22, 40, .1); border-radius: 10px; background: #fff; }
+.table { width: 100%; border-collapse: collapse; font-size: .92rem; min-width: 520px; }
+.table th, .table td { text-align: left; padding: 12px 14px; vertical-align: top; line-height: 1.5; }
+.table th { font-weight: 700; color: var(--navy); background: rgba(201, 169, 110, .1); }
+.table tr + tr td { border-top: 1px solid rgba(10, 22, 40, .07); }
+.table td:first-child { font-weight: 600; color: var(--navy); width: 42%; }
+
+.note { font-size: .88rem; color: #5b6676; }
+
+.back { margin-top: 48px; padding-top: 28px; border-top: 1px solid rgba(10, 22, 40, .08); display: flex; flex-wrap: wrap; gap: 24px; }
+.back a { color: var(--navy); font-weight: 600; font-size: .92rem; text-decoration: none; }
+.back a:hover { text-decoration: underline; }
+
+@media (max-width: 600px) {
+  .wrap { padding: 40px 16px 72px; }
+  .section h2 { font-size: 1.25rem; }
+}

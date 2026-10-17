@@ -132,6 +132,7 @@ export function loadRecentPosts() {
 export function useFollowSuggestions(me?: string | null, max = 3) {
   const users = useUsers();
   const { following, followers } = useMyGraph(me);
+  const { hidden } = useBlocks(me);
   const [posts, setPosts] = useState<any[]>([]);
   const [secondHop, setSecondHop] = useState<Record<string, string[]>>({});
 
@@ -184,7 +185,7 @@ export function useFollowSuggestions(me?: string | null, max = 3) {
 
     const out: Suggestion[] = [];
     for (const u of all) {
-      if (!isVisibleUser(u) || u.uid === me || followingSet.has(u.uid)) continue;
+      if (!isVisibleUser(u) || u.uid === me || followingSet.has(u.uid) || hidden.has(u.uid)) continue;
       let score = 0;
       let reason = '';
       const via = (secondHop[u.uid] || []).filter(x => x !== me);
@@ -209,7 +210,7 @@ export function useFollowSuggestions(me?: string | null, max = 3) {
       out.push({ user: u, reason, score });
     }
     return out.sort((a, b) => b.score - a.score).slice(0, max);
-  }, [users, following, followers, posts, secondHop, me, max]);
+  }, [users, following, followers, posts, secondHop, me, max, hidden]);
 }
 
 /** uid listesini kullanıcı nesnelerine çevirir (sıra korunur) */
@@ -231,4 +232,58 @@ export function useUsersByIds(ids: string[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missingKey]);
   return ids.map(id => users[id] || extra[id]).filter(Boolean) as ForumUser[];
+}
+
+/* ─── Engelleme ───
+ * blocks/{engelleyen}_{engellenen}. Tek bir canlı dinleyici tüm bileşenlerle paylaşılır.
+ * hidden: benim engellediklerim + beni engelleyenler; bu kişilerin içeriği bana gösterilmez.
+ */
+type BlockState = { blocked: string[]; blockedBy: string[] };
+const EMPTY_BLOCKS: BlockState = { blocked: [], blockedBy: [] };
+let blockOwner: string | null = null;
+let blockState: BlockState = EMPTY_BLOCKS;
+let blockStop: (() => void) | null = null;
+const blockSubs = new Set<(s: BlockState) => void>();
+
+function watchBlocks(uid: string) {
+  if (blockOwner === uid) return;
+  blockStop?.();
+  blockOwner = uid;
+  blockState = EMPTY_BLOCKS;
+  const emit = (patch: Partial<BlockState>) => {
+    blockState = { ...blockState, ...patch };
+    blockSubs.forEach(fn => fn(blockState));
+  };
+  const a = onSnapshot(query(collection(db, 'blocks'), where('blockerId', '==', uid)), s => emit({ blocked: s.docs.map(d => d.data().blockedId) }), () => {});
+  const b = onSnapshot(query(collection(db, 'blocks'), where('blockedId', '==', uid)), s => emit({ blockedBy: s.docs.map(d => d.data().blockerId) }), () => {});
+  blockStop = () => { a(); b(); };
+}
+
+export function useBlocks(uid?: string | null) {
+  const [s, setS] = useState<BlockState>(uid && blockOwner === uid ? blockState : EMPTY_BLOCKS);
+  useEffect(() => {
+    if (!uid) { setS(EMPTY_BLOCKS); return; }
+    watchBlocks(uid);
+    setS(blockState);
+    blockSubs.add(setS);
+    return () => { blockSubs.delete(setS); };
+  }, [uid]);
+  return useMemo(() => {
+    const blocked = new Set(s.blocked);
+    const blockedBy = new Set(s.blockedBy);
+    return { blocked, blockedBy, hidden: new Set([...s.blocked, ...s.blockedBy]), blockedList: s.blocked };
+  }, [s]);
+}
+
+export async function blockUser(meUid: string, targetUid: string) {
+  await setDoc(doc(db, 'blocks', `${meUid}_${targetUid}`), { blockerId: meUid, blockedId: targetUid, createdAt: serverTimestamp() });
+  // Engellenen kişiyle aradaki takipler iki yönde de kalkar
+  await Promise.all([
+    deleteDoc(doc(db, 'follows', `${meUid}_${targetUid}`)).catch(() => {}),
+    deleteDoc(doc(db, 'follows', `${targetUid}_${meUid}`)).catch(() => {}),
+  ]);
+}
+
+export async function unblockUser(meUid: string, targetUid: string) {
+  await deleteDoc(doc(db, 'blocks', `${meUid}_${targetUid}`));
 }

@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   MessageCircle, Trash2, Heart, ThumbsDown, Repeat2,
-  Bookmark, Share, MoreHorizontal, Link as LinkIcon, Flag
+  Bookmark, Share, MoreHorizontal, Link as LinkIcon, Flag, Ban
 } from 'lucide-react';
 import { doc, onSnapshot, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatTimeAgo, formatPostDate, renderTextWithMentions } from './ThreadView';
 import { Avatar, VerifiedMark, ReportDialog, compactCount } from './ui';
-import { useUsers } from './social';
+import { useUsers, blockUser } from './social';
+import { confirmBlock } from './confirm';
 import toast from 'react-hot-toast';
 
 interface Post {
@@ -201,6 +202,17 @@ export default function ForumPost({
                       <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setReportModalOpen(true); }}>
                         <Flag size={17} /> Gönderiyi şikayet et
                       </button>
+                      {currentUserUid && post.uid && currentUserUid !== post.uid && (
+                        <button type="button" role="menuitem" onClick={async () => {
+                          setMenuOpen(false);
+                          const handle = post.authorUsername || post.authorName || 'kullanici';
+                          if (!(await confirmBlock(handle))) return;
+                          try { await blockUser(currentUserUid, post.uid); toast.success(`@${handle} engellendi`); }
+                          catch { toast.error('Engellenemedi. Lütfen tekrar dene.'); }
+                        }}>
+                          <Ban size={17} /> @{post.authorUsername || 'kullanici'} adlı kişiyi engelle
+                        </button>
+                      )}
                       {canDelete && (
                         <button type="button" role="menuitem" className="is-danger" onClick={() => { setMenuOpen(false); onDelete(post.id); }}>
                           <Trash2 size={17} /> Sil

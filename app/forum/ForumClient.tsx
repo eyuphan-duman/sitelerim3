@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc, startAfter } from 'firebase/firestore';
-import { loadDirectory } from '@/components/forum/social';
+import { loadDirectory, useBlocks } from '@/components/forum/social';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -209,6 +209,8 @@ export default function ForumClient() {
     }
   }, [searchParams, user]);
 
+  const { hidden: hiddenUids } = useBlocks(user && !user.isAnonymous ? user.uid : null);
+
   const filtered = (() => {
     let list = (searchQuery.trim() ? threads : feedThreads).filter(t => !t.isRepost);
     // Hide posts by banned or frozen users, and hide private accounts completely from public feed/search
@@ -218,6 +220,7 @@ export default function ForumClient() {
       if (author?.isFrozen || author?.isDeleted) return false;
       // Private profiles: share cannot be seen anywhere including main feed; only on their own profile
       if (author?.isPrivate && t.uid !== user?.uid) return false;
+      if (hiddenUids.has(t.uid)) return false;
       return true;
     });
     if (filter !== 'Tümü') list = list.filter(t => t.category === filter);
@@ -258,13 +261,13 @@ export default function ForumClient() {
     const cleanQ = rawQ.startsWith('@') ? rawQ.slice(1) : rawQ.startsWith('#') ? '' : rawQ;
     if (!cleanQ) return [];
     return Object.values(usersMap).filter((u: any) => {
-      if (!u || u.isFrozen || u.isDeleted) return false;
+      if (!u || u.isFrozen || u.isDeleted || hiddenUids.has(u.uid)) return false;
       const uname = (u.username || '').toLocaleLowerCase('tr-TR');
       const dname = (u.displayName || '').toLocaleLowerCase('tr-TR');
       const bio = (u.bio || '').toLocaleLowerCase('tr-TR');
       return uname.includes(cleanQ) || dname.includes(cleanQ) || bio.includes(cleanQ);
     }).slice(0, 8);
-  }, [searchQuery, usersMap]);
+  }, [searchQuery, usersMap, hiddenUids]);
 
   const toggleFollowUser = async (targetUid: string) => {
     if (!user || user.isAnonymous) {

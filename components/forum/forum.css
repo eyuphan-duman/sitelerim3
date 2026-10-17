@@ -1705,3 +1705,13 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-radio.is-on { border: 7px solid var(--fx-link); }
 .fx-policy-apply { width: 100%; height: 50px; margin-top: 14px; background: var(--fx-ink); color: var(--fx-bg); font-size: 1.02rem; font-weight: 700; border: 0; }
 .fx-policy-apply:hover { opacity: .9; }
+
+/* Engellenen hesaplar */
+.fx-set-note { margin: 0 0 8px; padding: 0; color: var(--fx-ink-2); font-size: .88rem; line-height: 1.45; }
+.fx-blocked-row { gap: 12px; }
+.fx-blocked-who { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; color: inherit; text-decoration: none; }
+.fx-blocked-who .fx-set-text { min-width: 0; }
+.fx-follow.is-blocked { background: var(--fx-danger); border-color: var(--fx-danger); color: #fff; }
+.fx-follow.is-blocked:hover span { display: none; }
+.fx-follow.is-blocked:hover::after { content: attr(data-label-hover); }
+.fx-prof-actions .fx-menu { min-width: 260px; }

@@ -1,157 +1,231 @@
 import Link from 'next/link';
+import s from './gizlilik.module.css';
 
 export const metadata = {
   title: 'Gizlilik Politikası — Psikolog Furkan Manav',
-  description: 'Furkan Manav psikoloji platformu gizlilik politikası ve kişisel veri işleme aydınlatma metni.',
+  description: 'Hangi bilgileri topladığımız, kimlerin görebildiği, hesabını nasıl koruduğumuz ve KVKK kapsamındaki hakların.',
 };
 
+const UPDATED = '17 Ekim 2026';
+const MAIL = 'pskfurkan.manav@gmail.com';
+
+const TOC = [
+  ['sorumlu', 'Veri sorumlusu'],
+  ['bilgiler', 'Hangi bilgileri tutuyoruz, kim görebilir'],
+  ['hesap', 'Hesabını nasıl koruyoruz'],
+  ['forum', 'Forumda kontrol sende'],
+  ['kurallar', 'Veritabanı kuralları'],
+  ['cerezler', 'Çerezler ve ölçüm'],
+  ['hizmetler', 'Kullandığımız hizmetler'],
+  ['saklama', 'Saklama süresi ve hesabı silme'],
+  ['haklar', 'KVKK kapsamındaki hakların'],
+  ['cocuklar', '18 yaş sınırı'],
+  ['degisiklik', 'Değişiklikler ve iletişim'],
+] as const;
+
 export default function GizlilikPage() {
-  const date = '24 Nisan 2025';
-
-  const sections = [
-    {
-      title: '1. Veri Sorumlusu',
-      content: `Bu gizlilik politikası, Psikolog Furkan Manav ("Veri Sorumlusu") tarafından işletilen pskfurkanmanav.com web platformuna ait olup 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) çerçevesinde hazırlanmıştır.
-
-İletişim: pskfurkan.manav@gmail.com | +90 507 875 15 03`
-    },
-    {
-      title: '2. Toplanan Kişisel Veriler',
-      content: `Platform üzerinden şu kişisel veriler toplanmaktadır:
-
-• **Kimlik Bilgileri:** Ad, soyad, kullanıcı adı
-• **İletişim Bilgileri:** E-posta adresi, telefon numarası
-• **Hesap Bilgileri:** Firebase ile kimlik doğrulama bilgileri (Google OAuth dahil)
-• **İçerik Verileri:** Forum gönderileri, yorumlar, paylaşılan içerikler
-• **Teknik Veriler:** IP adresi, tarayıcı türü, kullanım günlükleri (Firebase Analytics)`
-    },
-    {
-      title: '3. Verilerin Kullanım Amaçları',
-      content: `Toplanan veriler yalnızca aşağıdaki amaçlarla işlenmektedir:
-
-• Kullanıcı hesabı oluşturma ve kimlik doğrulama
-• Forum ve blog içeriklerinin yönetilmesi
-• İletişim sorularına yanıt verilmesi
-• Hizmet kalitesinin iyileştirilmesi
-• Yasal yükümlülüklerin yerine getirilmesi
-
-Verileriniz hiçbir koşulda üçüncü şahıslara satılmaz veya ticari amaçla kullanılmaz.`
-    },
-    {
-      title: '4. Veri Saklama ve Güvenlik',
-      content: `Tüm veriler Google Firebase altyapısında (Firestore, Firebase Storage, Firebase Auth) saklanmaktadır. Google'ın güvenlik standartları ve ISO 27001 sertifikası kapsamında korunmaktadır.
-
-• Forum içerikleri: Kullanıcı silme talebine kadar saklanır
-• İletişim mesajları: 1 yıl süreyle saklanır
-• Hesap verileri: Hesap silinene kadar saklanır`
-    },
-    {
-      title: '5. Çerezler (Cookies)',
-      content: `Bu site zorunlu teknik çerezler kullanmaktadır:
-
-• **Oturum Çerezleri:** Firebase Authentication oturumunu sürdürmek için kullanılır (zorunlu)
-• **Tercih Çerezleri:** Kullanıcı arayüzü tercihlerini hatırlamak için kullanılır
-
-Çerezleri tarayıcı ayarlarınızdan reddedebilirsiniz; ancak bu durumda bazı özellikler çalışmayabilir.`
-    },
-    {
-      title: '6. Üçüncü Taraf Hizmetler',
-      content: `Platform şu üçüncü taraf hizmetleri kullanmaktadır:
-
-• **Google Firebase:** Kimlik doğrulama, veritabanı ve depolama (Google Gizlilik Politikası geçerlidir)
-• **Google Maps:** İletişim sayfasındaki konum haritası için (Google Gizlilik Politikası geçerlidir)
-• **EmailJS / SMTP:** İletişim formundan gelen mesajları iletmek için
-
-Bu hizmetlerin gizlilik politikalarını ayrıca incelemenizi öneririz.`
-    },
-    {
-      title: '7. KVKK Kapsamındaki Haklarınız',
-      content: `6698 sayılı KVKK'nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:
-
-• Kişisel verilerinizin işlenip işlenmediğini öğrenme
-• İşlenmişse buna ilişkin bilgi talep etme
-• Verilerin işlenme amacını ve bunların amaca uygun kullanılıp kullanılmadığını öğrenme
-• Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme
-• Eksik veya yanlış işlenmiş verilerin düzeltilmesini isteme
-• Verilerin silinmesini veya yok edilmesini isteme
-• Otomatik sistemler aracılığıyla analiz edilmesi suretiyle aleyhinize bir sonuç ortaya çıkmasına itiraz etme
-
-Bu haklarınızı kullanmak için **pskfurkan.manav@gmail.com** adresine yazılı başvurabilirsiniz.`
-    },
-    {
-      title: '8. Çocukların Gizliliği',
-      content: `Bu platform, 18 yaşın altındaki bireylere yönelik değildir. 18 yaşından küçük kişilerden bilerek kişisel veri toplanmamaktadır. Böyle bir durumun farkına varılması halinde ilgili veriler derhal silinecektir.`
-    },
-    {
-      title: '9. Politika Değişiklikleri',
-      content: `Bu gizlilik politikası zaman zaman güncellenebilir. Önemli değişiklikler platformda duyurulacak ve son güncelleme tarihi burada belirtilecektir.
-
-**Son Güncelleme:** ${date}`
-    },
-    {
-      title: '10. İletişim ve Başvuru',
-      content: `Gizlilik politikamızla ilgili soru, şikayet veya talepleriniz için:
-
-E-posta: pskfurkan.manav@gmail.com
-Telefon: +90 507 875 15 03
-Adres: Polatlı/Ankara & Çankaya/Ankara
-
-Başvurularınız en geç 30 gün içinde yanıtlanacaktır.`
-    },
-  ];
-
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--sand-light)' }}>
-      {/* Header */}
+    <div className={s.page}>
       <div className="page-header">
         <div className="page-header-inner">
-          <div className="eyebrow" style={{ marginBottom: 20 }}>KVKK Uyumlu</div>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.4rem,5vw,4rem)', fontWeight: 700, color: 'white', lineHeight: 1.05, marginBottom: 24 }}>
             Gizlilik Politikası
           </h1>
           <div className="gold-line" style={{ marginBottom: 24 }} />
-          <p className="crimson" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '1rem', maxWidth: 520 }}>
-            Son güncelleme: {date}
+          <p className="crimson" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', maxWidth: 560 }}>
+            Son güncelleme: {UPDATED}
           </p>
         </div>
       </div>
 
-      <div className="container-main" style={{ paddingTop: 64, paddingBottom: 80, maxWidth: 800 }}>
-        {/* Intro box */}
-        <div style={{ background: 'rgba(201,169,110,0.08)', border: '1px solid rgba(201,169,110,0.25)', borderLeft: '4px solid var(--gold)', borderRadius: 4, padding: '20px 24px', marginBottom: 48 }}>
-          <p style={{ color: 'var(--navy)', fontSize: '0.95rem', lineHeight: 1.7 }}>
-            Kişisel verilerinizin güvenliği ve gizliliği bizim için önceliklidir. Bu politika, hangi verileri topladığımızı, nasıl kullandığımızı ve KVKK kapsamındaki haklarınızı açıklamaktadır.
+      <div className={s.wrap}>
+        <p className={s.lead}>
+          Bu sayfa, pskfurkanmanav.com ve Logos forumunda hangi bilgilerini tuttuğumuzu, bu bilgileri kimlerin görebildiğini
+          ve onları nasıl koruduğumuzu anlatır. Metin 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamındaki
+          aydınlatma yükümlülüğümüz için de geçerlidir.
+        </p>
+
+        <div className={s.short}>
+          <h2>Kısaca</h2>
+          <ul>
+            <li><b>E-posta adresin, ad soyadın ve doğum tarihin herkese açık değil.</b> Bunları yalnızca sen ve site yöneticisi görebilir.</li>
+            <li><b>Kullanıcı adıyla giriş yaptığında e-postan ekrana gelmez.</b> Eşleştirme sunucuda yapılır.</li>
+            <li><b>Forumda neyin görüneceğine sen karar verirsin.</b> Gizli hesap, yanıt izni ve engelleme seçeneklerin var.</li>
+            <li><b>Verilerini satmıyoruz</b> ve reklam için kimseyle paylaşmıyoruz.</li>
+            <li><b>Reklam çerezleri yalnızca onay verirsen çalışır.</b></li>
+          </ul>
+        </div>
+
+        <nav className={s.toc} aria-label="İçindekiler">
+          <b>İçindekiler</b>
+          <ol>
+            {TOC.map(([id, label]) => <li key={id}><a href={`#${id}`}>{label}</a></li>)}
+          </ol>
+        </nav>
+
+        <section id="sorumlu" className={s.section}>
+          <h2>1. Veri sorumlusu</h2>
+          <p>
+            Bu site, Psikolog Furkan Manav tarafından işletilir. KVKK kapsamında veri sorumlusu odur.
+            Gizlilikle ilgili her konuda <a href={`mailto:${MAIL}`}>{MAIL}</a> adresine yazabilirsin.
           </p>
-        </div>
+        </section>
 
-        {/* Sections */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {sections.map((section, i) => (
-            <div key={i} style={{ borderBottom: '1px solid rgba(0,0,0,0.07)', paddingBottom: 36, marginBottom: 36 }}>
-              <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 16 }}>
-                {section.title}
-              </h2>
-              <div style={{ color: '#444', fontSize: '0.93rem', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
-                {section.content.split('\n').map((line, j) => {
-                  const boldLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                  return (
-                    <p key={j} style={{ marginBottom: line === '' ? 8 : 0 }}
-                      dangerouslySetInnerHTML={{ __html: boldLine }} />
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+        <section id="bilgiler" className={s.section}>
+          <h2>2. Hangi bilgileri tutuyoruz, kim görebilir</h2>
+          <p>Yalnızca siteyi ve forumu çalıştırmak için gereken bilgileri tutuyoruz.</p>
+          <div className={s.tableWrap}>
+            <table className={s.table}>
+              <thead>
+                <tr><th>Bilgi</th><th>Kim görebilir</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Görünen ad, kullanıcı adı, profil ve kapak fotoğrafı, biyografi, konum, web sitesi</td><td>Herkes. Bunlar profilinde gösterilir.</td></tr>
+                <tr><td>E-posta adresi, ad soyad, doğum tarihi</td><td>Yalnızca sen ve site yöneticisi. Ayrı ve kapalı bir kayıtta tutulur, profilinle birlikte yayınlanmaz.</td></tr>
+                <tr><td>Şifre</td><td>Kimse. Şifren Google Firebase tarafından şifrelenmiş olarak saklanır, biz de göremeyiz.</td></tr>
+                <tr><td>Gönderiler, yanıtlar, beğeniler, yeniden paylaşımlar</td><td>Herkes. Hesabın gizliyse yalnızca takipçilerin.</td></tr>
+                <tr><td>Takip ettiklerin ve takipçilerin</td><td>Herkes. Hesabın gizliyse yalnızca takipçilerin.</td></tr>
+                <tr><td>Kaydettiğin gönderiler ve bildirimlerin</td><td>Yalnızca sen.</td></tr>
+                <tr><td>Engellediğin kişiler</td><td>Engelleme listeni yalnızca sen görürsün. Engellediğin kişiye bildirim gitmez, ama profilini açarsa engellendiğini görür.</td></tr>
+                <tr><td>Gönderi taslakların</td><td>Yalnızca sen. Taslaklar sunucuya gönderilmez, kaydettiğin cihazın tarayıcısında kalır.</td></tr>
+                <tr><td>Şikayetler, iletişim formu mesajları, randevu talepleri</td><td>Yalnızca site yöneticisi.</td></tr>
+                <tr><td>Psikolog başvurusundaki diploma ve belgeler</td><td>Yalnızca site yöneticisi. Yalnızca başvuruyu doğrulamak için kullanılır.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p className={s.note}>
+            Telefon numaranı ve randevu bilgilerini yalnızca bize iletişim ya da randevu formuyla kendin gönderirsen alırız.
+          </p>
+        </section>
 
-        {/* Back link */}
-        <div style={{ marginTop: 48, paddingTop: 32, borderTop: '1px solid rgba(0,0,0,0.08)', display: 'flex', gap: 20 }}>
-          <Link href="/" style={{ color: 'var(--navy)', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-            ← Anasayfaya Dön
-          </Link>
-          <Link href="/iletisim" style={{ color: 'var(--gold-dim)', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-            İletişim →
-          </Link>
+        <section id="hesap" className={s.section}>
+          <h2>3. Hesabını nasıl koruyoruz</h2>
+          <ul>
+            <li><b>Kullanıcı adıyla giriş:</b> Kullanıcı adını yazdığında e-posta adresin sunucumuzda bulunur ve giriş orada tamamlanır. Adresin tarayıcıya ya da başka bir kullanıcıya gönderilmez.</li>
+            <li><b>Şifre sıfırlama:</b> Sıfırlama bağlantısı yalnızca sitede kayıtlı ve gerçekten e-posta alabilen bir adrese gönderilir. Kullanıcı adıyla istenirse adres ekranda yalnızca kısmen gösterilir (ör. ab•••@gmail.com).</li>
+            <li><b>Şifre kuralları:</b> Şifren en az 6 karakter olmalı ve en az bir rakam içermeli. Ayrıca güç göstergesinde en az &quot;Orta&quot; seviyesine ulaşmalı.</li>
+            <li><b>E-posta doğrulama:</b> E-posta adresini doğrulamadan gönderi paylaşamaz ve yanıt yazamazsın. Böylece başkası senin adresinle hesap açıp içerik paylaşamaz.</li>
+            <li><b>Güvenli bağlantı:</b> Site her zaman şifreli bağlantıyla (HTTPS) açılır. Başka sitelerin sayfamızı kendi içinde göstermesi engellenir.</li>
+            <li><b>Dosya yükleme:</b> Yalnızca resim, PDF ve video kabul edilir. Boyut sınırı resim ve PDF için 10 MB, video için 100 MB.</li>
+          </ul>
+        </section>
+
+        <section id="forum" className={s.section}>
+          <h2>4. Forumda kontrol sende</h2>
+          <p>Bu ayarların çoğu forumda profilinden <b>Ayarlar</b> bölümüne girerek değiştirilebilir.</p>
+          <ul>
+            <li><b>Gizli hesap:</b> Gönderilerini ve takip listelerini yalnızca takipçilerin görür. Gönderilerin genel akışta ve aramada çıkmaz.</li>
+            <li><b>Beğenilerimi gizle, yanıtlarımı gizle:</b> Profilindeki bu sekmeleri yalnızca sen görürsün.</li>
+            <li><b>Yanıt izni:</b> Her gönderiyi paylaşırken kimlerin yanıt verebileceğini seçersin: Herkes, Takipçilerim, Sadece psikologlar ya da Hiç kimse.</li>
+            <li><b>Engelleme:</b> Engellediğin kişi seni takip edemez, gönderilerini göremez ve sana yanıt yazamaz. Onun gönderileri ve bildirimleri de sana gösterilmez. Engelleyince aranızdaki takipler kaldırılır. Engellediklerini Ayarlar › Engellenen hesaplar bölümünden yönetirsin.</li>
+            <li><b>Şikayet:</b> Uygunsuz bir gönderiyi şikayet edebilirsin. Şikayetler yalnızca yöneticiye iletilir. Şikayet edilen kişi kimin şikayet ettiğini göremez.</li>
+            <li><b>Silme ve dondurma:</b> Gönderilerini ve yanıtlarını istediğin zaman silebilirsin. Hesabını dondurursan profilin ve gönderilerin diğer kullanıcılardan gizlenir.</li>
+          </ul>
+        </section>
+
+        <section id="kurallar" className={s.section}>
+          <h2>5. Veritabanı kuralları</h2>
+          <p>
+            Yukarıdaki sınırlar yalnızca sayfada gizlenmekle kalmaz. Çoğu veritabanımızın kurallarıyla da korunur.
+            Biri sitenin arayüzünü atlayıp doğrudan veritabanına erişmeye çalışsa bile şunları yapamaz:
+          </p>
+          <ul>
+            <li>Senin adına gönderi, yanıt, takip ya da bildirim oluşturmak.</li>
+            <li>Senin e-posta adresini, ad soyadını, doğum tarihini, kaydettiklerini ya da bildirimlerini okumak.</li>
+            <li>Onaylı psikolog olmadan psikolog rozeti taşımak.</li>
+            <li>Yanıt iznini ya da engellemeyi aşarak sana yanıt yazmak veya seni takip etmek.</li>
+            <li>Başkasının beğeni ya da kaydetme bilgisini değiştirmek.</li>
+            <li>Şikayetleri, iletişim mesajlarını ve randevu taleplerini okumak. Bunları yalnızca yönetici görür.</li>
+          </ul>
+        </section>
+
+        <section id="cerezler" className={s.section}>
+          <h2>6. Çerezler ve ölçüm</h2>
+          <h3>Zorunlu olanlar</h3>
+          <p>
+            Oturumunun açık kalması için Firebase&apos;in tarayıcıya kaydettiği bilgiler zorunludur. Tema seçimin, çerez tercihin,
+            izlediğin videolar ve gönderi taslakların da yalnızca kendi tarayıcında saklanır. Bunlar bize gönderilmez.
+          </p>
+          <h3>Ölçüm ve reklam</h3>
+          <ul>
+            <li><b>Google Analytics:</b> Hangi sayfaların ziyaret edildiğini isimsiz olarak ölçer. Çerez bandında &quot;Reddet&quot;i seçersen ölçüm çerezleri de kapanır.</li>
+            <li><b>Google Ads:</b> Reklam ve dönüşüm çerezleri yalnızca &quot;Kabul et&quot; dersen çalışır. Onay vermezsen kapalı kalır.</li>
+          </ul>
+          <p className={s.note}>Tercihini değiştirmek için tarayıcında bu sitenin verilerini temizleyebilirsin. Çerez bandı yeniden açılır.</p>
+        </section>
+
+        <section id="hizmetler" className={s.section}>
+          <h2>7. Kullandığımız hizmetler</h2>
+          <ul>
+            <li><b>Google Firebase:</b> Giriş ve veritabanı (hesaplar, gönderiler, bildirimler).</li>
+            <li><b>Cloudinary:</b> Yüklediğin fotoğraf, video ve belgelerin saklanması.</li>
+            <li><b>Vercel:</b> Sitenin yayınlandığı sunucular.</li>
+            <li><b>E-posta sunucusu (SMTP):</b> İletişim formundan gönderdiğin mesajın bize ulaştırılması.</li>
+            <li><b>Google Analytics ve Google Ads:</b> Yukarıda anlatıldığı gibi ölçüm ve reklam.</li>
+            <li><b>Google Haritalar:</b> İletişim sayfasındaki konum haritası.</li>
+          </ul>
+          <p>
+            Bu hizmetlerin bir kısmının sunucuları yurt dışındadır. Bilgilerin yalnızca hizmetin çalışması için bu sağlayıcılara iletilir.
+            Hiçbirine satılmaz, reklam amacıyla da paylaşılmaz.
+          </p>
+        </section>
+
+        <section id="saklama" className={s.section}>
+          <h2>8. Saklama süresi ve hesabı silme</h2>
+          <ul>
+            <li>Hesap bilgilerin ve forum içeriklerin, sen silene ya da hesabını kapatana kadar saklanır.</li>
+            <li>
+              Ayarlar › Hesap bölümünden hesabını silebilirsin. Silince giriş bilgilerin kaldırılır ve profilin &quot;Silinmiş Hesap&quot; olarak gösterilir.
+              Adın, fotoğrafların ve biyografin silinir. Gönderilerin akışlarda gösterilmez.
+            </li>
+            <li>
+              Gönderilerinin, e-posta adresinin ve diğer kayıtlarının da tamamen silinmesini istersen <a href={`mailto:${MAIL}`}>{MAIL}</a> adresine yaz.
+              Talebini en geç 30 gün içinde yerine getiririz.
+            </li>
+            <li>İletişim formu mesajları en fazla 1 yıl saklanır.</li>
+          </ul>
+        </section>
+
+        <section id="haklar" className={s.section}>
+          <h2>9. KVKK kapsamındaki hakların</h2>
+          <p>KVKK&apos;nın 11. maddesine göre şu haklara sahipsin:</p>
+          <ul>
+            <li>Kişisel verilerinin işlenip işlenmediğini öğrenme ve işlendiyse bilgi isteme</li>
+            <li>Verilerinin hangi amaçla işlendiğini ve bu amaca uygun kullanılıp kullanılmadığını öğrenme</li>
+            <li>Yurt içinde ya da yurt dışında kimlere aktarıldığını bilme</li>
+            <li>Eksik ya da yanlış işlenen verilerin düzeltilmesini isteme</li>
+            <li>Verilerinin silinmesini ya da yok edilmesini isteme</li>
+            <li>Yalnızca otomatik sistemlerle yapılan bir analizin aleyhine sonuç doğurmasına itiraz etme</li>
+            <li>Kanuna aykırı işleme nedeniyle uğradığın zararın giderilmesini isteme</li>
+          </ul>
+          <p>Bu hakları kullanmak için <a href={`mailto:${MAIL}`}>{MAIL}</a> adresine yazman yeterli. En geç 30 gün içinde yanıt veririz.</p>
+        </section>
+
+        <section id="cocuklar" className={s.section}>
+          <h2>10. 18 yaş sınırı</h2>
+          <p>
+            Forum 18 yaşını doldurmuş kişiler içindir. 18 yaşından küçük birine ait bir hesap fark edersek hesabı ve verilerini sileriz.
+          </p>
+        </section>
+
+        <section id="degisiklik" className={s.section}>
+          <h2>11. Değişiklikler ve iletişim</h2>
+          <p>
+            Bu politikayı yeni bir özellik eklediğimizde ya da bir uygulamayı değiştirdiğimizde güncelleriz. Güncel tarih her zaman sayfanın başında yazar.
+            Önemli değişiklikleri sitede ayrıca duyururuz.
+          </p>
+          <p>
+            E-posta: <a href={`mailto:${MAIL}`}>{MAIL}</a><br />
+            Telefon: +90 507 875 15 03<br />
+            Adres: Polatlı/Ankara ve Çankaya/Ankara
+          </p>
+        </section>
+
+        <div className={s.back}>
+          <Link href="/forum">← Foruma dön</Link>
+          <Link href="/">Anasayfa</Link>
+          <Link href="/kullanici-sozlesmesi">Kullanıcı sözleşmesi</Link>
+          <Link href="/iletisim">İletişim</Link>
         </div>
       </div>
     </div>

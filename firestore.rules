@@ -47,16 +47,23 @@ service cloud.firestore {
           myProfile().get('photoUploadsUsed', 0) < 1);
     }
 
+    // İki kişiden biri diğerini engellemiş mi?
+    function blockedBetween(a, b) {
+      return exists(/databases/$(database)/documents/blocks/$(a + '_' + b)) ||
+        exists(/databases/$(database)/documents/blocks/$(b + '_' + a));
+    }
+
     // Gönderi sahibinin seçtiği yanıt iznine uyuluyor mu?
     function canReplyTo(postId) {
       let post = get(/databases/$(database)/documents/forum/$(postId)).data;
       let policy = post.get('replyPolicy', 'everyone');
-      return policy == 'everyone' ||
+      return (post.uid == request.auth.uid || !blockedBetween(request.auth.uid, post.uid)) && (
+        policy == 'everyone' ||
         post.uid == request.auth.uid ||
         isAdmin() ||
         (policy == 'psychologists' && isVerifiedPsychologist()) ||
         (policy == 'followers' &&
-          exists(/databases/$(database)/documents/follows/$(request.auth.uid + '_' + post.uid)));
+          exists(/databases/$(database)/documents/follows/$(request.auth.uid + '_' + post.uid))));
     }
 
     function withinCommentLimits() {
@@ -210,7 +217,8 @@ service cloud.firestore {
       allow read: if true;
       allow create: if signedIn() &&
         request.resource.data.followerId == request.auth.uid &&
-        followId == request.auth.uid + '_' + request.resource.data.followingId;
+        followId == request.auth.uid + '_' + request.resource.data.followingId &&
+        !blockedBetween(request.auth.uid, request.resource.data.followingId);
       // Takip eden takibi bırakabilir, takip edilen takipçiyi çıkarabilir
       allow delete: if isAdmin() ||
         (signedIn() && (resource.data.followerId == request.auth.uid ||
@@ -218,10 +226,26 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ───────── Engellemeler ─────────
+    // Yalnızca engelleyen ve engellenen görebilir; yalnızca engelleyen kaldırabilir
+    match /blocks/{blockId} {
+      allow read: if signedIn() &&
+        (resource.data.blockerId == request.auth.uid || resource.data.blockedId == request.auth.uid);
+      allow create: if signedIn() &&
+        request.resource.data.keys().hasOnly(['blockerId', 'blockedId', 'createdAt']) &&
+        request.resource.data.blockerId == request.auth.uid &&
+        request.resource.data.blockedId is string &&
+        request.resource.data.blockedId != request.auth.uid &&
+        blockId == request.auth.uid + '_' + request.resource.data.blockedId;
+      allow delete: if isAdmin() || (signedIn() && resource.data.blockerId == request.auth.uid);
+      allow update: if false;
+    }
+
     // ───────── Bildirimler ─────────
     match /notifications/{notifId} {
       allow read: if isAdmin() || (signedIn() && resource.data.toUid == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid &&
+        !blockedBetween(request.auth.uid, request.resource.data.get('toUid', ''));
       allow update: if signedIn() && resource.data.toUid == request.auth.uid &&
         changedKeys().hasOnly(['read']);
       allow delete: if isAdmin() ||

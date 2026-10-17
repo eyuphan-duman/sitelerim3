@@ -10,7 +10,7 @@ import {
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
   Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User,
   Settings, Lock, EyeOff, Shield, SlidersHorizontal, Plus, Award, Key, AlertTriangle, Snowflake, ArrowRight,
-  MoreHorizontal, Flag, LogOut, Sun, Moon, Mail, Send, RefreshCw, ChevronRight
+  MoreHorizontal, Flag, LogOut, Sun, Moon, Mail, Send, RefreshCw, ChevronRight, Ban, ScrollText
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -26,8 +26,9 @@ import Composer from '@/components/forum/Composer';
 import FollowList, { FollowListMode } from '@/components/forum/FollowList';
 import { Avatar, VerifiedMark, useForumTheme } from '@/components/forum/ui';
 import { usePostActions } from '@/components/forum/usePostActions';
-import { useMyGraph, loadUsers, loadRecentPosts, setFollow } from '@/components/forum/social';
-import { confirmUnfollow } from '@/components/forum/confirm';
+import { useMyGraph, loadUsers, loadRecentPosts, setFollow, useBlocks, blockUser, unblockUser } from '@/components/forum/social';
+import { confirmUnfollow, confirmBlock, confirmUnblock } from '@/components/forum/confirm';
+import BlockedList from '@/components/forum/BlockedList';
 
 interface Post { 
   id: string; body: string; authorName: string; authorUsername?: string; uid: string; 
@@ -59,7 +60,9 @@ export default function ProfilClient({ username }: { username: string }) {
   const [followings, setFollowings] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'profile' | 'security' | 'appearance' | 'privacy' | 'badge' | 'danger'>('profile');
+  const [settingsTab, setSettingsTab] = useState<'profile' | 'security' | 'appearance' | 'privacy' | 'blocked' | 'policy' | 'badge' | 'danger'>('profile');
+  const [profMenu, setProfMenu] = useState(false);
+  const blocks = useBlocks(user && !user.isAnonymous ? user.uid : null);
   const [sendingVerification, setSendingVerification] = useState(false);
   const [checkingVerification, setCheckingVerification] = useState(false);
   const [ed, setEd] = useState({ 
@@ -385,7 +388,7 @@ export default function ProfilClient({ username }: { username: string }) {
       if (isViewerOwn) {
         setSettingsOpen(true);
         const sec = searchParams.get('section');
-        if (sec && ['profile', 'security', 'appearance', 'privacy', 'badge', 'danger'].includes(sec)) {
+        if (sec && ['profile', 'security', 'appearance', 'privacy', 'blocked', 'badge', 'danger'].includes(sec)) {
           setSettingsTab(sec as any);
         }
       }
@@ -770,7 +773,19 @@ export default function ProfilClient({ username }: { username: string }) {
   const handle = (pd.username || pd.displayName || 'kullanici').toLowerCase().replace(/\s+/g, '').replace(/^@+/, '');
   const isPsych = Boolean(((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus)) && !pd.hideBadge);
   const isApproved = Boolean((pd.isPsychologist && pd.psychologistStatus === 'approved') || (pd.isPsychologist && !pd.psychologistStatus));
-  const locked = !isOwn && !isAdmin && (pd.isFrozen || (pd.isPrivate && !following));
+  const blockedMe = !isOwn && blocks.blockedBy.has(pd.uid);
+  const iBlocked = !isOwn && blocks.blocked.has(pd.uid);
+  const locked = blockedMe || iBlocked || (!isOwn && !isAdmin && (pd.isFrozen || (pd.isPrivate && !following)));
+  const toggleBlock = async (openAuth: () => void) => {
+    if (!user || user.isAnonymous) return openAuth();
+    if (iBlocked) {
+      if (!(await confirmUnblock(handle))) return;
+      try { await unblockUser(user.uid, pd.uid); toast.success(`@${handle} adlı kişinin engeli kaldırıldı`); } catch { toast.error('İşlem yapılamadı.'); }
+      return;
+    }
+    if (!(await confirmBlock(handle))) return;
+    try { await blockUser(user.uid, pd.uid); setFollowing(false); toast.success(`@${handle} engellendi`); } catch { toast.error('Engellenemedi. Lütfen tekrar dene.'); }
+  };
   const followsMe = Boolean(user && followingMap && myFollowers.includes(pd.uid));
 
   const profileTabs = [
@@ -814,6 +829,8 @@ export default function ProfilClient({ username }: { username: string }) {
     { id: 'profile', label: 'Profil bilgileri', desc: 'Ad, kullanıcı adı, biyografi', icon: <User size={20} /> },
     { id: 'security', label: 'Şifre ve e-posta', desc: 'E-posta doğrulama, şifre değiştirme', icon: <Key size={20} /> },
     { id: 'privacy', label: 'Gizlilik', desc: 'Gizli profil, beğeni ve yanıt görünürlüğü', icon: <Shield size={20} /> },
+    { id: 'blocked', label: 'Engellenen hesaplar', desc: blocks.blockedList.length ? `${blocks.blockedList.length} kişi` : 'Engellediğin kişileri yönet', icon: <Ban size={20} /> },
+    { id: 'policy', label: 'Gizlilik politikası', desc: 'Verilerini nasıl koruduğumuz', icon: <ScrollText size={20} /> },
     { id: 'appearance', label: 'Görünüm', desc: 'Açık ya da koyu tema', icon: <Sun size={20} /> },
     { id: 'badge', label: 'Psikolog rozeti', desc: isApproved ? (pd.hideBadge ? 'Rozet gizli' : 'Rozet görünür') : pd.psychologistStatus === 'pending' ? 'Başvuru inceleniyor' : 'Başvuru yap', icon: <Award size={20} /> },
     { id: 'danger', label: 'Hesap', desc: 'Çıkış, dondurma, silme', icon: <AlertTriangle size={20} /> },
@@ -875,23 +892,40 @@ export default function ProfilClient({ username }: { username: string }) {
                       </>
                     ) : (
                       <>
-                        <button
-                          type="button"
-                          className="fx-icon-btn fx-icon-outline"
-                          onClick={() => { try { navigator.clipboard.writeText(window.location.href); toast.success('Profil bağlantısı panoya kopyalandı'); } catch {} }}
-                          aria-label="Profil bağlantısını kopyala"
-                          title="Bağlantıyı kopyala"
-                        >
-                          <Share2 size={17} />
-                        </button>
-                        <button
-                          type="button"
-                          className={`fx-btn fx-btn-primary fx-follow ${following ? 'is-following' : ''}`}
-                          data-label-hover={following ? 'Takibi bırak' : undefined}
-                          onClick={() => (user && !user.isAnonymous ? toggleFollow() : shell.openAuth())}
-                        >
-                          <span>{following ? 'Takiptesin' : followsMe ? 'Geri takip et' : 'Takip et'}</span>
-                        </button>
+                        <div className="fx-menu-wrap">
+                          <button type="button" className="fx-icon-btn fx-icon-outline" onClick={() => setProfMenu(v => !v)} aria-label="Diğer seçenekler" aria-expanded={profMenu}>
+                            <MoreHorizontal size={18} />
+                          </button>
+                          {profMenu && (
+                            <>
+                              <div className="fx-menu-backdrop" onClick={() => setProfMenu(false)} />
+                              <div className="fx-menu" role="menu">
+                                <button type="button" role="menuitem" onClick={() => { setProfMenu(false); try { navigator.clipboard.writeText(window.location.href); toast.success('Profil bağlantısı panoya kopyalandı'); } catch {} }}>
+                                  <Share2 size={17} /> Profil bağlantısını kopyala
+                                </button>
+                                {user && !user.isAnonymous && (
+                                  <button type="button" role="menuitem" className={iBlocked ? '' : 'is-danger'} onClick={() => { setProfMenu(false); toggleBlock(shell.openAuth); }}>
+                                    <Ban size={17} /> {iBlocked ? `@${handle} adlı kişinin engelini kaldır` : `@${handle} adlı kişiyi engelle`}
+                                  </button>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        {iBlocked ? (
+                          <button type="button" className="fx-btn fx-follow is-blocked" data-label-hover="Engeli kaldır" onClick={() => toggleBlock(shell.openAuth)}>
+                            <span>Engellendi</span>
+                          </button>
+                        ) : !blockedMe && (
+                          <button
+                            type="button"
+                            className={`fx-btn fx-btn-primary fx-follow ${following ? 'is-following' : ''}`}
+                            data-label-hover={following ? 'Takibi bırak' : undefined}
+                            onClick={() => (user && !user.isAnonymous ? toggleFollow() : shell.openAuth())}
+                          >
+                            <span>{following ? 'Takiptesin' : followsMe ? 'Geri takip et' : 'Takip et'}</span>
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -903,7 +937,7 @@ export default function ProfilClient({ username }: { username: string }) {
                 </div>
                 <div className="fx-prof-handle">
                   @{handle}
-                  {followsMe && !isOwn && <span className="fx-follows-you">Seni takip ediyor</span>}
+                  {followsMe && !isOwn && !iBlocked && !blockedMe && <span className="fx-follows-you">Seni takip ediyor</span>}
                 </div>
 
                 {pd.bio && <p className="fx-prof-bio">{renderTextWithMentions(pd.bio)}</p>}
@@ -949,7 +983,18 @@ export default function ProfilClient({ username }: { username: string }) {
 
               {locked ? (
                 <div className="fx-empty">
-                  {pd.isFrozen ? (
+                  {blockedMe ? (
+                    <>
+                      <h2>@{handle} seni engelledi</h2>
+                      <p>Gönderilerini göremez, takip edemez ve yanıt yazamazsın.</p>
+                    </>
+                  ) : iBlocked ? (
+                    <>
+                      <h2>@{handle} adlı kişiyi engelledin</h2>
+                      <p>Engelli olduğu sürece seni takip edemez ve gönderilerini göremez. Onun gönderileri de sana gösterilmez.</p>
+                      <button type="button" className="fx-btn fx-btn-outline" onClick={() => toggleBlock(shell.openAuth)}>Engeli kaldır</button>
+                    </>
+                  ) : pd.isFrozen ? (
                     <>
                       <h2>Bu hesap dondurulmuş</h2>
                       <p>Hesap sahibi profilini geçici olarak gizledi.</p>
@@ -1076,7 +1121,7 @@ export default function ProfilClient({ username }: { username: string }) {
                       key={s.id}
                       type="button"
                       className={`fx-settings-item ${settingsTab === s.id ? 'is-active' : ''}`}
-                      onClick={() => { if (s.id === 'profile') { closeSettings(); setEditOpen(true); return; } setSettingsTab(s.id); setSettingsDetail(true); }}
+                      onClick={() => { if (s.id === 'profile') { closeSettings(); setEditOpen(true); return; } if (s.id === 'policy') { closeSettings(); router.push('/gizlilik'); return; } setSettingsTab(s.id); setSettingsDetail(true); }}
                     >
                       <span className="fx-settings-ic">{s.icon}</span>
                       <span className="fx-settings-text"><b>{s.label}</b><small>{s.desc}</small></span>
@@ -1188,6 +1233,8 @@ export default function ProfilClient({ username }: { username: string }) {
                         </div>
                       </>
                     )}
+
+                    {settingsTab === 'blocked' && user && <BlockedList uid={user.uid} />}
 
                     {settingsTab === 'appearance' && (
                       <section className="fx-set-group">

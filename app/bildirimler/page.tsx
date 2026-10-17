@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ForumShell from '@/components/forum/ForumShell';
 import { Avatar } from '@/components/forum/ui';
+import { useBlocks } from '@/components/forum/social';
 import { formatTimeAgo } from '@/components/forum/ThreadView';
 
 interface Notification {
@@ -52,6 +53,7 @@ export default function BildirimlerPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
+  const { hidden } = useBlocks(user && !user.isAnonymous ? user.uid : null);
 
   useEffect(() => {
     if (!user || user.isAnonymous) { setLoading(false); return; }
@@ -93,7 +95,7 @@ export default function BildirimlerPage() {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
-  const list = notifications.filter(n => filter === 'all' || n.type === filter);
+  const list = notifications.filter(n => !hidden.has(n.fromUid || '') && (filter === 'all' || n.type === filter));
   const isMember = Boolean(user && !user.isAnonymous);
 
   return (
