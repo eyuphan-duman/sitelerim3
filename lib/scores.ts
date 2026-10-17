@@ -4,17 +4,17 @@ import type { Firestore } from 'firebase-admin/firestore';
  * Logos puan sistemi. Puanlar forumdaki gerçek veriden sunucuda hesaplanır;
  * istemci puan yazamaz, bu yüzden değiştirilemez.
  *
- *   Gönderi paylaşmak                          +3
- *   Yanıt yazmak                               +1
- *   Gönderin ya da yanıtın beğenilmesi         +2 (her beğeni)
- *   Gönderin ya da yanıtın yeniden paylaşılması +3 (her paylaşım)
- *   Başka birinin gönderine yanıt yazması      +1
+ *   Gönderin ya da yanıtın beğenilmesi              +2 (her beğeni)
+ *   Gönderin ya da yanıtın yer işaretlerine eklenmesi +2 (her kayıt)
+ *   Gönderin ya da yanıtın yeniden paylaşılması      +3 (her paylaşım)
  *
- * Kendi içeriğine yapılan etkileşim ve isimsiz içerik puan kazandırmaz.
+ * Gönderi ya da yanıt yazmak tek başına puan kazandırmaz (spam'i ödüllendirmemek için);
+ * yalnızca başkalarının içeriğe gösterdiği ilgi sayılır. Kendi içeriğine yapılan etkileşim
+ * ve isimsiz içerik puan kazandırmaz.
  * Her 100 puanda bir seviye atlanır. Haftalık ve aylık sıralama, o dönemde
  * paylaşılan gönderi ve yanıtlardan toplanan puanlara göre yapılır.
  */
-export const POINTS = { post: 3, reply: 1, like: 2, repost: 3, replyReceived: 1 } as const;
+export const POINTS = { like: 2, bookmark: 2, repost: 3 } as const;
 export const LEVEL_SIZE = 100;
 
 export type UserScore = {
@@ -24,8 +24,8 @@ export type UserScore = {
   posts: number;
   replies: number;
   likes: number;
+  bookmarks: number;
   reposts: number;
-  repliesReceived: number;
   week: number;
   month: number;
 };
@@ -66,7 +66,7 @@ export async function computeScores(db: Firestore): Promise<Scores> {
   ]);
 
   const s: Record<string, UserScore> = {};
-  const get = (uid: string) => (s[uid] ||= { points: 0, level: 1, progress: 0, posts: 0, replies: 0, likes: 0, reposts: 0, repliesReceived: 0, week: 0, month: 0 });
+  const get = (uid: string) => (s[uid] ||= { points: 0, level: 1, progress: 0, posts: 0, replies: 0, likes: 0, bookmarks: 0, reposts: 0, week: 0, month: 0 });
   const add = (uid: string, pts: number, at: number) => {
     const u = get(uid);
     u.points += pts;
@@ -77,36 +77,30 @@ export async function computeScores(db: Firestore): Promise<Scores> {
     Object.entries((map || {}) as Record<string, unknown>).filter(([k, v]) => k !== owner && pred(v)).length;
 
   // Gönderiler (yeniden paylaşım kayıtları içerik sayılmaz; paylaşım asıl gönderinin repostsData'sında sayılır)
-  const postOwner: Record<string, string> = {};
   for (const d of postsSnap.docs) {
     const p = d.data();
     if (p.isRepost || p.isAnonymous || !realUid(p.uid)) continue;
-    postOwner[d.id] = p.uid;
     const at = ms(p.createdAt);
     const likes = othersCount(p.reactionsData, p.uid, v => v === 'like' || v === 'heart');
     const reposts = othersCount(p.repostsData, p.uid, Boolean);
+    const saves = othersCount(p.bookmarksData, p.uid, Boolean);
     const u = get(p.uid);
-    u.posts++; u.likes += likes; u.reposts += reposts;
-    add(p.uid, POINTS.post + likes * POINTS.like + reposts * POINTS.repost, at);
+    u.posts++; u.likes += likes; u.reposts += reposts; u.bookmarks += saves;
+    add(p.uid, likes * POINTS.like + saves * POINTS.bookmark + reposts * POINTS.repost, at);
   }
 
   // Yanıtlar (yalnızca forum yanıtları; blog yorumları sayılmaz)
   for (const d of commentsSnap.docs) {
     if (d.ref.parent.parent?.parent.id !== 'forum') continue;
     const c = d.data();
-    const postId = d.ref.parent.parent!.id;
     const at = ms(c.createdAt);
     if (!c.isAnonymous && realUid(c.uid)) {
       const likes = othersCount(c.reactionsData, c.uid, v => v === 'like');
       const reposts = othersCount(c.repostsData, c.uid, Boolean);
+      const saves = othersCount(c.bookmarksData, c.uid, Boolean);
       const u = get(c.uid);
-      u.replies++; u.likes += likes; u.reposts += reposts;
-      add(c.uid, POINTS.reply + likes * POINTS.like + reposts * POINTS.repost, at);
-    }
-    const owner = postOwner[postId];
-    if (owner && realUid(c.uid) && c.uid !== owner) {
-      get(owner).repliesReceived++;
-      add(owner, POINTS.replyReceived, at);
+      u.replies++; u.likes += likes; u.reposts += reposts; u.bookmarks += saves;
+      add(c.uid, likes * POINTS.like + saves * POINTS.bookmark + reposts * POINTS.repost, at);
     }
   }
 

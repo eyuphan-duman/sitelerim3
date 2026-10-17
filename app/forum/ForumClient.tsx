@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc, startAfter } from 'firebase/firestore';
+import { createLimited, SpamError } from '@/components/forum/antiSpam';
 import { loadDirectory, useBlocks } from '@/components/forum/social';
 import { db } from '@/lib/firebase';
 import { sendNotification } from '@/lib/notify';
@@ -496,7 +497,7 @@ export default function ForumClient() {
         userProfile?.role === 'psychologist') && !userProfile?.hideBadge
       );
 
-      const repostDoc = await addDoc(collection(db, 'forum'), {
+      const repostDoc = await createLimited(user.uid, 'repost', doc(collection(db, 'forum')), {
         body: thread.body,
         category: thread.category || 'Genel',
         imageUrl: thread.imageUrl || '',
@@ -519,7 +520,8 @@ export default function ForumClient() {
         originalAuthorIsPsychologist: thread.originalAuthorIsPsychologist ?? thread.authorIsPsychologist ?? false,
         originalIsAnonymous: Boolean(thread.originalIsAnonymous ?? thread.isAnonymous),
         originalCreatedAt: thread.createdAt instanceof Date ? thread.createdAt : new Date(),
-      });
+      }).catch((err) => { toast.error(err instanceof SpamError ? err.message : 'Yeniden paylaşılamadı.'); return null; });
+      if (!repostDoc) return;
 
       await updateDoc(postRef, { [`repostsData.${user.uid}`]: repostDoc.id });
 

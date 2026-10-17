@@ -8,7 +8,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { X, Loader2, Image as ImageIcon, Camera, Undo2, Redo2, Globe, Users, BadgeCheck, Ban, FileText, Trash2, VenetianMask } from 'lucide-react';
-import { collection, doc, increment, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, increment, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { createLimited, SpamError } from './antiSpam';
 import { ANON_AVATAR, ANON_NAME, ANON_UID } from '@/lib/notify';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -191,10 +192,8 @@ export default function Composer({
             uid: user.uid,
           };
       const ref = doc(collection(db, 'forum'));
-      const batch = writeBatch(db);
-      batch.set(ref, data);
-      if (anon) batch.set(doc(db, 'anon_owners', ref.id), { uid: user.uid, createdAt: serverTimestamp() });
-      await batch.commit();
+      // Gönderi, hız sınırı kaydıyla (spam koruması) aynı toplu yazımda oluşturulur
+      await createLimited(user.uid, 'post', ref, data, body, anon ? (batch) => batch.set(doc(db, 'anon_owners', ref.id), { uid: user.uid, createdAt: serverTimestamp() }) : undefined);
       if (imageUrl && !isPsych && !isAdmin) {
         try { await updateDoc(doc(db, 'users', user.uid), { photoUploadsUsed: increment(1) }); } catch {}
       }
@@ -205,7 +204,7 @@ export default function Composer({
       if (open) close();
       toast.success(anon ? 'İsimsiz olarak paylaşıldı' : 'Paylaşıldı');
     } catch (err: any) {
-      toast.error('Paylaşılamadı: ' + (err.message || ''));
+      toast.error(err instanceof SpamError ? err.message : 'Paylaşılamadı: ' + (err.message || ''));
     } finally {
       setPosting(false);
     }

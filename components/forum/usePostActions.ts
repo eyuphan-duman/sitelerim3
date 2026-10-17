@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import {
   addDoc, collection, deleteDoc, deleteField, doc, getDocs, query, serverTimestamp, setDoc, updateDoc, where,
 } from 'firebase/firestore';
+import { createLimited, SpamError } from './antiSpam';
 import { db } from '@/lib/firebase';
 import { sendNotification } from '@/lib/notify';
 import { useAuth } from '@/contexts/AuthContext';
@@ -110,7 +111,7 @@ export function usePostActions({ onNeedAuth, onPatch }: { onNeedAuth: () => void
         toast.success('Yeniden paylaşım geri alındı');
         return;
       }
-      const repost = await addDoc(collection(db, 'forum'), {
+      const repost = await createLimited(u.uid, 'repost', doc(collection(db, 'forum')), {
         body: thread.body,
         category: thread.category || 'Genel',
         imageUrl: thread.imageUrl || '',
@@ -137,7 +138,7 @@ export function usePostActions({ onNeedAuth, onPatch }: { onNeedAuth: () => void
       notify(thread, 'repost', 'gönderini yeniden paylaştı.');
       toast.success('Yeniden paylaşıldı');
     } catch (err: any) {
-      toast.error('Yeniden paylaşılamadı: ' + (err.message || ''));
+      toast.error(err instanceof SpamError ? err.message : 'Yeniden paylaşılamadı: ' + (err.message || ''));
     }
   };
 

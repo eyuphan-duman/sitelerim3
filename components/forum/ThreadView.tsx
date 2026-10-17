@@ -19,6 +19,7 @@ import {
   addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc,
   getDocs, where, setDoc, getDoc
 } from 'firebase/firestore';
+import { createLimited, SpamError } from './antiSpam';
 import { db } from '@/lib/firebase';
 import { sendNotification } from '@/lib/notify';
 import toast from 'react-hot-toast';
@@ -403,7 +404,7 @@ export default function ThreadView({
         userProfile?.role === 'psychologist') && !userProfile?.hideBadge
       );
 
-      const repostDoc = await addDoc(collection(db, 'forum'), {
+      const repostDoc = await createLimited(currentUser.uid, 'repost', doc(collection(db, 'forum')), {
         body: p.body,
         category: p.category || 'Genel',
         imageUrl: p.imageUrl || '',
@@ -426,7 +427,8 @@ export default function ThreadView({
         originalAuthorIsPsychologist: p.originalAuthorIsPsychologist ?? p.authorIsPsychologist ?? false,
         originalIsAnonymous: Boolean(p.originalIsAnonymous ?? p.isAnonymous),
         originalCreatedAt: p.createdAt instanceof Date ? p.createdAt : new Date(),
-      });
+      }).catch((err) => { toast.error(err instanceof SpamError ? err.message : 'Yeniden paylaşılamadı.'); return null; });
+      if (!repostDoc) return;
 
       await updateDoc(postRef, { [`repostsData.${currentUser.uid}`]: repostDoc.id });
 
@@ -546,7 +548,7 @@ export default function ThreadView({
       const anonFields = ownsAnon
         ? { isAnonymous: true, uid: ANON_UID, authorName: ANON_NAME, authorUsername: '', authorIsPsychologist: false, authorHideBadge: false, authorPhotoURL: '' }
         : {};
-      await addDoc(collection(db, 'forum', p.id, 'comments'), {
+      await createLimited(currentUser.uid, 'comment', doc(collection(db, 'forum', p.id, 'comments')), {
         authorName: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
         authorUsername: userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
         authorIsPsychologist: isPsychologist,
@@ -563,7 +565,7 @@ export default function ThreadView({
         bookmarksData: {},
         uid: currentUser.uid,
         ...anonFields,
-      });
+      }, replyText.trim());
 
       if (usesNewPhoto) {
         try { await updateDoc(doc(db, 'users', currentUser.uid), { photoUploadsUsed: increment(1) }); } catch {}
@@ -639,7 +641,7 @@ export default function ThreadView({
       setReplyFull(false);
       toast.success('Yanıtınız paylaşıldı');
     } catch (err: any) {
-      toast.error('Yanıt gönderilemedi: ' + (err.message || ''));
+      toast.error(err instanceof SpamError ? err.message : 'Yanıt gönderilemedi: ' + (err.message || ''));
     } finally {
       setSubmittingReply(false);
     }
@@ -699,7 +701,7 @@ export default function ThreadView({
         userProfile?.role === 'psychologist'
       );
 
-      const repostDoc = await addDoc(collection(db, 'forum'), {
+      const repostDoc = await createLimited(currentUser.uid, 'repost', doc(collection(db, 'forum')), {
         body: c.text,
         imageUrl: c.imageUrl || '',
         category: p.category || 'Genel',
@@ -720,7 +722,8 @@ export default function ThreadView({
         originalAuthorPhotoURL: c.authorPhotoURL || '',
         originalAuthorIsPsychologist: c.authorIsPsychologist || false,
         originalIsAnonymous: Boolean(c.isAnonymous)
-      });
+      }).catch((err) => { toast.error(err instanceof SpamError ? err.message : 'Yeniden paylaşılamadı.'); return null; });
+      if (!repostDoc) return;
       await updateDoc(commentRef, { [`repostsData.${currentUser.uid}`]: repostDoc.id });
       toast.success('Yeniden paylaşıldı');
     }

@@ -12,11 +12,9 @@ const MEDALS = ['#d9a441', '#9aa4b2', '#b87333'];
 export function PointsRules({ rules }: { rules: ScoreBoard['rules'] }) {
   return (
     <ul className="fx-points-rules">
-      <li><b>+{rules.post}</b> gönderi paylaşmak</li>
-      <li><b>+{rules.reply}</b> yanıt yazmak</li>
       <li><b>+{rules.like}</b> gönderin ya da yanıtın beğenildikçe</li>
+      <li><b>+{rules.bookmark}</b> gönderin ya da yanıtın yer işaretlerine eklendikçe</li>
       <li><b>+{rules.repost}</b> gönderin ya da yanıtın yeniden paylaşıldıkça</li>
-      <li><b>+{rules.replyReceived}</b> gönderine başkası yanıt yazdıkça</li>
     </ul>
   );
 }
@@ -25,7 +23,7 @@ export function PointsRules({ rules }: { rules: ScoreBoard['rules'] }) {
 export function LevelCard({ score }: { score?: UserScore }) {
   const board = useScores();
   const [open, setOpen] = useState(false);
-  const s: UserScore = score || { points: 0, level: 1, progress: 0, posts: 0, replies: 0, likes: 0, reposts: 0, repliesReceived: 0, week: 0, month: 0 };
+  const s: UserScore = score || { points: 0, level: 1, progress: 0, posts: 0, replies: 0, likes: 0, bookmarks: 0, reposts: 0, week: 0, month: 0 };
   const left = board.levelSize - s.progress;
   return (
     <section className="fx-levelcard" aria-label="Logos puanın">
@@ -43,15 +41,15 @@ export function LevelCard({ score }: { score?: UserScore }) {
         <div><b>{s.posts}</b><small>Gönderi</small></div>
         <div><b>{s.replies}</b><small>Yanıt</small></div>
         <div><b>{s.likes}</b><small>Aldığın beğeni</small></div>
+        <div><b>{s.bookmarks}</b><small>Yer işareti</small></div>
         <div><b>{s.reposts}</b><small>Yeniden paylaşım</small></div>
-        <div><b>{s.repliesReceived}</b><small>Aldığın yanıt</small></div>
         <div><b>{s.week}</b><small>Bu haftaki puan</small></div>
       </div>
       <button type="button" className="fx-text-btn" onClick={() => setOpen(v => !v)}>{open ? 'Gizle' : 'Puan nasıl kazanılır?'}</button>
       {open && (
         <>
           <PointsRules rules={board.rules} />
-          <p className="fx-levelcard-note">Her {board.levelSize} puanda bir seviye atlarsın. Kendi içeriğine yaptığın etkileşimler ve isimsiz paylaşımlar puan kazandırmaz. Puanlar yaklaşık 30 dakikada bir güncellenir.</p>
+          <p className="fx-levelcard-note">Puanı paylaşım yapmak değil, paylaşımlarının gördüğü ilgi kazandırır. Her {board.levelSize} puanda bir seviye atlarsın. Kendi içeriğine yaptığın etkileşimler ve isimsiz paylaşımlar puan kazandırmaz. Puanlar yaklaşık 30 dakikada bir güncellenir.</p>
         </>
       )}
     </section>
@@ -104,8 +102,8 @@ export function Leaderboard() {
         ))}
       </div>
       <p className="fx-leader-intro">
-        {period === 'weekly' ? 'Bu hafta (pazartesiden beri) paylaşılan gönderi ve yanıtlardan toplanan puanlar.'
-          : period === 'monthly' ? 'Bu ay paylaşılan gönderi ve yanıtlardan toplanan puanlar.'
+        {period === 'weekly' ? 'Bu hafta (pazartesiden beri) paylaşılan gönderi ve yanıtların topladığı beğeni, yer işareti ve yeniden paylaşım puanları.'
+          : period === 'monthly' ? 'Bu ay paylaşılan gönderi ve yanıtların topladığı beğeni, yer işareti ve yeniden paylaşım puanları.'
           : 'Logos’a katıldığından beri toplanan tüm puanlar.'}
       </p>
       {!board.at ? <div className="fx-end">Yükleniyor…</div>
@@ -132,7 +130,7 @@ export function Leaderboard() {
       <details className="fx-leader-rules">
         <summary>Puan nasıl kazanılır?</summary>
         <PointsRules rules={board.rules} />
-        <p className="fx-levelcard-note">Her {board.levelSize} puanda bir seviye atlanır ve seviye rozeti isminin yanında görünür. Kendi içeriğine yapılan etkileşimler ve isimsiz paylaşımlar puan kazandırmaz. Banlı ya da dondurulmuş hesaplar sıralamada gösterilmez. Sıralama yaklaşık 30 dakikada bir güncellenir.</p>
+        <p className="fx-levelcard-note">Puanı paylaşım yapmak değil, paylaşımların gördüğü ilgi kazandırır. Her {board.levelSize} puanda bir seviye atlanır ve seviye rozeti isminin yanında görünür. Kendi içeriğine yapılan etkileşimler ve isimsiz paylaşımlar puan kazandırmaz. Banlı ya da dondurulmuş hesaplar sıralamada gösterilmez. Sıralama yaklaşık 30 dakikada bir güncellenir.</p>
       </details>
     </div>
   );

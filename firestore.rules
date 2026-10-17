@@ -82,6 +82,68 @@ service cloud.firestore {
           exists(/databases/$(database)/documents/follows/$(request.auth.uid + '_' + post.uid))));
     }
 
+    // ── Spam koruması (hız sınırı) ──
+    // Her gönderi, yorum ve yeniden paylaşım, aynı toplu yazımda rate_limits/{uid} kaydını günceller.
+    // Kayıtta türe göre (post | comment | repost) şu alanlar tutulur:
+    //   <tür>At    son paylaşım zamanı
+    //   <tür>Win   bir saatlik pencerenin başlangıcı
+    //   <tür>Count pencere içindeki paylaşım sayısı
+    //   <tür>Text  son paylaşılan metin
+    //   <tür>Ref   son oluşturulan belgenin yolu
+    function rlPath() {
+      return /databases/$(database)/documents/rate_limits/$(request.auth.uid);
+    }
+
+    // Son paylaşımdan bu yana en az gapSec saniye geçmeli. Bir saatte en fazla perHour paylaşım yapılabilir.
+    // Aynı metin arka arkaya paylaşılamaz (text boşsa, örneğin yalnız fotoğraf ya da yeniden paylaşımsa, denetlenmez).
+    function rateOk(kind, gapSec, perHour, text) {
+      let after = getAfter(rlPath()).data;
+      let before = exists(rlPath()) ? get(rlPath()).data : {};
+      let last = before.get(kind + 'At', null);
+      let win = before.get(kind + 'Win', null);
+      return isAdmin() || (
+        after.get(kind + 'At', null) == request.time &&
+        (last == null || last < request.time - duration.value(gapSec, 's')) &&
+        after.get(kind + 'Text', '') == text &&
+        (text == '' || before.get(kind + 'Text', '') != text) && (
+          // Pencere sürüyor: sayaç bir artar ve sınırı geçemez
+          (win != null && win > request.time - duration.value(1, 'h') &&
+            after.get(kind + 'Win', null) == win &&
+            after.get(kind + 'Count', 0) == before.get(kind + 'Count', 0) + 1 &&
+            after.get(kind + 'Count', 0) <= perHour) ||
+          // Yeni pencere (cihaz saati kaymalarına karşı 50 dakikadan sonra açılabilir)
+          ((win == null || win < request.time - duration.value(50, 'm')) &&
+            after.get(kind + 'Win', null) == request.time &&
+            after.get(kind + 'Count', 0) == 1)
+        )
+      );
+    }
+
+    function rlFieldsChanged(kind) {
+      let d = request.resource.data;
+      let old = resource == null ? {} : resource.data;
+      return d.get(kind + 'At', null) != old.get(kind + 'At', null) ||
+        d.get(kind + 'Win', null) != old.get(kind + 'Win', null) ||
+        d.get(kind + 'Count', 0) != old.get(kind + 'Count', 0) ||
+        d.get(kind + 'Text', '') != old.get(kind + 'Text', '') ||
+        d.get(kind + 'Ref', '') != old.get(kind + 'Ref', '');
+    }
+
+    // Sayaç yalnızca o türden yeni bir belge aynı yazımda oluşturulurken değişebilir
+    // (tek başına sıfırlanıp sınır aşılamaz)
+    function rlKindOk(kind, isRepost, isComment) {
+      let ref = request.resource.data.get(kind + 'Ref', '');
+      let p = path('/databases/' + database + '/documents/' + ref);
+      return !rlFieldsChanged(kind) || (
+        request.resource.data.get(kind + 'At', null) == request.time &&
+        ref is string &&
+        (isComment
+          ? ref.matches('forum/[^/]+/comments/[^/]+')
+          : (ref.matches('forum/[^/]+') && getAfter(p).data.get('isRepost', false) == isRepost)) &&
+        existsAfter(p) && !exists(p)
+      );
+    }
+
     function withinCommentLimits() {
       return request.resource.data.get('text', '').size() <= 560 &&
         (request.resource.data.get('imageUrl', '') == '' ||
@@ -190,7 +252,10 @@ service cloud.firestore {
         notBanned() &&
         isEmailVerified() &&
         withinPostLimits() &&
-        validPsychBadge();
+        validPsychBadge() &&
+        (request.resource.data.get('isRepost', false) == true
+          ? rateOk('repost', 3, 60, '')
+          : rateOk('post', 30, 10, request.resource.data.get('body', '')));
 
       allow update: if isAdmin() ||
         (signedIn() && resource.data.uid == request.auth.uid &&
@@ -211,7 +276,8 @@ service cloud.firestore {
           notBanned() &&
           isEmailVerified() &&
           withinCommentLimits() &&
-          validPsychBadge() && (
+          validPsychBadge() &&
+          rateOk('comment', 10, 40, request.resource.data.get('text', '')) && (
             (request.resource.data.uid == request.auth.uid &&
               request.resource.data.get('isAnonymous', false) == false &&
               canReplyTo(postId)) ||
@@ -237,6 +303,21 @@ service cloud.firestore {
               anonOwnerOf(postId) == request.auth.uid)
           ));
       }
+    }
+
+    // ───────── Spam koruması: hız sınırı kayıtları ─────────
+    // Yalnızca sahibi okur ve yalnızca yeni bir paylaşımla birlikte güncellenebilir; silinemez.
+    match /rate_limits/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create, update: if isSelf(uid) &&
+        request.resource.data.keys().hasOnly([
+          'postAt', 'postWin', 'postCount', 'postText', 'postRef',
+          'commentAt', 'commentWin', 'commentCount', 'commentText', 'commentRef',
+          'repostAt', 'repostWin', 'repostCount', 'repostText', 'repostRef']) &&
+        rlKindOk('post', false, false) &&
+        rlKindOk('comment', false, true) &&
+        rlKindOk('repost', true, false);
+      allow delete: if isAdmin();
     }
 
     // ───────── İsimsiz gönderi sahiplikleri ─────────
