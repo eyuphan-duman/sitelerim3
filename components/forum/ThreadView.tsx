@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useIsMobile } from './Composer';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, MessageCircle, Heart, ThumbsDown, Repeat2, Bookmark,
-  Share, Trash2, Loader, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag
+  Share, Trash2, Loader, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag, Camera
 } from 'lucide-react';
 import { Avatar, VerifiedMark, CharRing, ReportDialog, compactCount } from './ui';
 import { useUsers, useBlocks, unblockUser, useMyAnonPosts } from './social';
@@ -156,7 +158,29 @@ export default function ThreadView({
   const [submittingReply, setSubmittingReply] = useState(false);
   const [replyToUser, setReplyToUser] = useState<string>('');
   // Bir yoruma yanıt verilirken: yanıtlanan yorum ve bağlı olduğu kök yorum
-  const [replyTo, setReplyTo] = useState<{ id: string; rootId: string; uid: string; name: string; text: string } | null>(null);
+  const [replyTo, setReplyTo] = useState<{ id: string; rootId: string; uid: string; name: string; text: string; photo?: string } | null>(null);
+  // Mobilde yanıt tam ekran yazılır
+  const isMobile = useIsMobile();
+  const [replyFull, setReplyFull] = useState(false);
+  const [vv, setVv] = useState<{ h: number; top: number } | null>(null);
+  const fullReplyRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (!replyFull) return;
+    const v = window.visualViewport;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const on = () => v && setVv({ h: v.height, top: v.offsetTop });
+    on();
+    v?.addEventListener('resize', on);
+    v?.addEventListener('scroll', on);
+    const t = setTimeout(() => fullReplyRef.current?.focus(), 60);
+    return () => {
+      clearTimeout(t);
+      document.body.style.overflow = prev;
+      v?.removeEventListener('resize', on);
+      v?.removeEventListener('scroll', on);
+    };
+  }, [replyFull]);
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
   const notifFromUser = searchParams?.get('fromUser');
@@ -586,6 +610,7 @@ export default function ThreadView({
       setReplyImageUrl('');
       setReplyToUser(username);
       setReplyTo(null);
+      setReplyFull(false);
       toast.success('Yanıtınız paylaşıldı');
     } catch (err: any) {
       toast.error('Yanıt gönderilemedi: ' + (err.message || ''));
@@ -766,9 +791,16 @@ export default function ThreadView({
     if (handle) lastByAuthor[handle] = root || c.id;
   }
 
+  const openPostReply = () => {
+    setReplyTo(null);
+    setReplyToUser(username);
+    setReplyFull(true);
+  };
+
   const startReplyTo = (c: any, handle: string) => {
     setReplyToUser(c.isAnonymous ? '' : handle);
-    setReplyTo({ id: c.id, rootId: c.parentId && commentIds.has(c.parentId) ? c.parentId : c.id, uid: c.uid, name: c.isAnonymous ? ANON_NAME : c.authorName || handle, text: (c.text || '').slice(0, 120) });
+    setReplyTo({ id: c.id, rootId: c.parentId && commentIds.has(c.parentId) ? c.parentId : c.id, uid: c.uid, name: c.isAnonymous ? ANON_NAME : c.authorName || handle, text: (c.text || '').slice(0, 120), photo: c.isAnonymous ? ANON_AVATAR : c.authorPhotoURL || '' });
+    if (isMobile) { setReplyFull(true); return; }
     replyInputRef.current?.focus();
     replyInputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
@@ -979,7 +1011,7 @@ export default function ThreadView({
         )}
 
         <div className="fx-actions fx-detail-actions" role="group" aria-label="Gönderi etkileşimleri">
-          <button type="button" className="fx-act" onClick={() => (isMember ? replyInputRef.current?.focus() : onOpenAuth())} aria-label="Yanıtla">
+          <button type="button" className="fx-act" onClick={() => (!isMember ? onOpenAuth() : isMobile ? (canReply ? openPostReply() : toast.error(replyNote)) : replyInputRef.current?.focus())} aria-label="Yanıtla">
             <span className="fx-act-ic"><MessageCircle size={21} strokeWidth={1.8} /></span>
           </button>
           <button type="button" data-kind="repost" className={`fx-act ${hasReposted ? 'is-on' : ''}`} onClick={handleRepost} aria-pressed={hasReposted} aria-label="Yeniden paylaş">
@@ -1003,7 +1035,7 @@ export default function ThreadView({
       {replyNote && (
         <div className="fx-reply-policy-note" role="note">{replyNote}{canReply && isMember && currentPost?.uid !== currentUser?.uid ? ' Sen yanıtlayabilirsin.' : ''}</div>
       )}
-      {isMember && !canReply ? null : isMember ? (
+      {(isMember && !canReply) || isMobile ? null : isMember ? (
         <div className="fx-compose fx-reply">
           <Avatar src={myPhoto} name={myName} size={40} />
           <div className="fx-compose-body">
@@ -1078,6 +1110,77 @@ export default function ThreadView({
           threadRoots.map(c => renderComment(c, false))
         )}
       </section>
+
+      {isMobile && !(isMember && !canReply) && (
+        <>
+          <div className="fx-reply-dock-space" aria-hidden="true" />
+          <div className="fx-reply-dock">
+            <button type="button" onClick={() => (isMember ? openPostReply() : onOpenAuth())}>
+              {isMember ? (replyText ? replyText : 'Yanıtını gönder') : 'Yanıt yazmak için giriş yap'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {replyFull && isMobile && createPortal(
+        <div className="fx-fullcompose" role="dialog" aria-modal="true" aria-label="Yanıt yaz" style={vv ? { height: vv.h, top: vv.top } : undefined}>
+          <div className="fx-fullcompose-head">
+            <button type="button" className="fx-text-btn fx-fullcompose-cancel" onClick={() => setReplyFull(false)}>İptal et</button>
+            <button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={handleSubmitReply} disabled={submittingReply || (!replyText.trim() && !replyImageUrl)}>
+              {submittingReply ? 'Gönderiliyor…' : 'Yanıtla'}
+            </button>
+          </div>
+          <div className="fx-fullcompose-main">
+            <div className="fx-reply-ctx">
+              <div className="fx-reply-ctx-rail">
+                <Avatar src={replyTo ? replyTo.photo : pAnon ? ANON_AVATAR : authorPhoto} name={replyTo ? replyTo.name : pAnon ? ANON_NAME : p.authorName} size={40} />
+              </div>
+              <div className="fx-reply-ctx-body">
+                <b>{replyTo ? replyTo.name : pAnon ? ANON_NAME : p.authorName}</b>
+                <p>{(replyTo ? replyTo.text : (p.body || '').slice(0, 160)) || 'Görsel'}</p>
+                <div className="fx-reply-ctx-to">
+                  {replyToUser || username ? <>Yanıtladığın kişi <span className="fx-mention">@{replyToUser || username}</span></> : ownsAnon ? 'İsimsiz olarak yanıt veriyorsun' : 'İsimsiz kullanıcıya yanıt veriyorsun'}
+                </div>
+              </div>
+            </div>
+            <div className="fx-compose fx-compose-full">
+              <Avatar src={myPhoto} name={myName} size={40} />
+              <div className="fx-compose-body">
+                <textarea
+                  ref={fullReplyRef}
+                  value={replyText}
+                  maxLength={COMMENT_CHAR_LIMIT}
+                  onChange={e => setReplyText(e.target.value.slice(0, COMMENT_CHAR_LIMIT))}
+                  placeholder="Yanıtını yaz"
+                  aria-label="Yanıt metni"
+                />
+                {replyImageUrl && (
+                  <div className="fx-compose-preview">
+                    <img src={replyImageUrl} alt="Eklenen görsel" />
+                    <button type="button" onClick={() => setReplyImageUrl('')} aria-label="Görseli kaldır"><X size={16} /></button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="fx-fullcompose-foot">
+            <div className="fx-fullcompose-tools">
+              <div className="fx-compose-tools">
+                <label className="fx-tool" aria-disabled={photoLimitReached || uploadingImage} title="Fotoğraf ekle">
+                  {uploadingImage ? <Loader size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <ImageIcon size={21} />}
+                  <input type="file" accept="image/*" onChange={handleReplyImageUpload} hidden disabled={uploadingImage || photoLimitReached} />
+                </label>
+                <label className="fx-tool" aria-disabled={photoLimitReached || uploadingImage} title="Kamerayı aç">
+                  <Camera size={21} />
+                  <input type="file" accept="image/*" capture="environment" onChange={handleReplyImageUpload} hidden disabled={uploadingImage || photoLimitReached} />
+                </label>
+              </div>
+              <CharRing length={replyText.length} limit={COMMENT_CHAR_LIMIT} />
+            </div>
+          </div>
+        </div>,
+        (document.querySelector('[data-forum-page]') as HTMLElement | null) || document.body
+      )}
 
       {reportModalOpen && (
         <ReportDialog

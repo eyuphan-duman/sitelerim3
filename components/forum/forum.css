@@ -1757,3 +1757,45 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 }
 .fx-compose textarea:focus, .fx-compose textarea:focus-visible { outline: 0 !important; border: 0 !important; box-shadow: none !important; }
 .fx-reply-to .fx-text-btn { margin-left: 6px; }
+/* Profil üst düğmeleri: gönderi menüsündeki eksi kenar boşluğu burada düğmeleri üst üste bindiriyordu */
+.fx-prof-actions .fx-menu-wrap { margin: 0; }
+.fx-prof-actions .fx-menu-wrap > .fx-icon-btn { width: 34px; height: 34px; }
+
+/* Mobil: gönderi sayfasının altında sabit "Yanıtını gönder" çubuğu */
+.fx-reply-dock-space { height: 72px; }
+.fx-reply-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--fx-tabbar-h) + env(safe-area-inset-bottom));
+  z-index: 69;
+  padding: 8px 12px;
+  background: var(--fx-bg);
+  border-top: 1px solid var(--fx-line);
+}
+.fx-reply-dock button {
+  width: 100%;
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--fx-line);
+  border-radius: 999px;
+  background: var(--fx-soft);
+  color: var(--fx-ink-3);
+  font: inherit;
+  font-size: .98rem;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+}
+
+/* Tam ekran yanıt: üstte yanıtlanan içerik, çizgiyle senin yanıtına bağlanır */
+.fx-reply-ctx { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; padding: 8px 16px 0; }
+.fx-reply-ctx-rail { display: flex; flex-direction: column; align-items: center; }
+.fx-reply-ctx-rail::after { content: ''; flex: 1; width: 2px; min-height: 16px; margin-top: 4px; background: var(--fx-line-strong); border-radius: 2px; }
+.fx-reply-ctx-body { padding-bottom: 14px; min-width: 0; }
+.fx-reply-ctx-body b { font-size: .95rem; color: var(--fx-ink); }
+.fx-reply-ctx-body p { margin: 2px 0 8px; font-size: .95rem; line-height: 1.4; color: var(--fx-ink); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.fx-reply-ctx-to { font-size: .88rem; color: var(--fx-ink-2); }
+.fx-reply-ctx + .fx-compose-full { padding-top: 0; }
