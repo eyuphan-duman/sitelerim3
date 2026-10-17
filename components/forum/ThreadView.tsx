@@ -162,6 +162,14 @@ export default function ThreadView({
   // Mobilde yanıt tam ekran yazılır
   const isMobile = useIsMobile();
   const [replyFull, setReplyFull] = useState(false);
+  // Yoruma yanıt verirken başa eklenen "@kullanıcı " etiketi
+  const replyTag = useRef('');
+  const caretToEnd = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.focus();
+    const n = el.value.length;
+    el.setSelectionRange(n, n);
+  };
   const [vv, setVv] = useState<{ h: number; top: number } | null>(null);
   const fullReplyRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -173,7 +181,7 @@ export default function ThreadView({
     on();
     v?.addEventListener('resize', on);
     v?.addEventListener('scroll', on);
-    const t = setTimeout(() => fullReplyRef.current?.focus(), 60);
+    const t = setTimeout(() => caretToEnd(fullReplyRef.current), 60);
     return () => {
       clearTimeout(t);
       document.body.style.overflow = prev;
@@ -583,7 +591,8 @@ export default function ThreadView({
           text: replyText,
           postId: p.originalPostId || p.id,
           currentUser,
-          userProfile
+          userProfile,
+          skipUids: [p.uid, replyTo?.uid || ''].filter(Boolean)
         });
       } catch {}
 
@@ -610,6 +619,7 @@ export default function ThreadView({
       setReplyImageUrl('');
       setReplyToUser(username);
       setReplyTo(null);
+      replyTag.current = '';
       setReplyFull(false);
       toast.success('Yanıtınız paylaşıldı');
     } catch (err: any) {
@@ -791,17 +801,33 @@ export default function ThreadView({
     if (handle) lastByAuthor[handle] = root || c.id;
   }
 
-  const openPostReply = () => {
+  const dropTag = (t: string) => (replyTag.current && t.startsWith(replyTag.current) ? t.slice(replyTag.current.length) : t);
+
+  const clearReplyTo = () => {
+    setReplyText(t => dropTag(t));
+    replyTag.current = '';
     setReplyTo(null);
     setReplyToUser(username);
+  };
+
+  const openPostReply = () => {
+    clearReplyTo();
     setReplyFull(true);
   };
 
   const startReplyTo = (c: any, handle: string) => {
+    // Yanıtlanan kişi yanıtın başında etiketlenir (kendi yorumuna ya da isimsiz yoruma etiket eklenmez)
+    const myHandle = (userProfile?.username || '').toLowerCase();
+    const tag = !c.isAnonymous && handle && handle.toLowerCase() !== myHandle ? `@${handle} ` : '';
+    setReplyText(t => {
+      const rest = dropTag(t);
+      return rest.startsWith(tag) ? rest : (tag + rest).slice(0, COMMENT_CHAR_LIMIT);
+    });
+    replyTag.current = tag;
     setReplyToUser(c.isAnonymous ? '' : handle);
     setReplyTo({ id: c.id, rootId: c.parentId && commentIds.has(c.parentId) ? c.parentId : c.id, uid: c.uid, name: c.isAnonymous ? ANON_NAME : c.authorName || handle, text: (c.text || '').slice(0, 120), photo: c.isAnonymous ? ANON_AVATAR : c.authorPhotoURL || '' });
     if (isMobile) { setReplyFull(true); return; }
-    replyInputRef.current?.focus();
+    setTimeout(() => caretToEnd(replyInputRef.current), 0);
     replyInputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
 
@@ -856,7 +882,7 @@ export default function ThreadView({
                       )}
                     </div>
 
-                    {replyTarget !== username && (
+                    {replyTarget !== username && !(c.text || '').startsWith('@' + replyTarget) && (
                       <div className="fx-reply-to">
                         <Link href={`/forum/profil/${encodeURIComponent(replyTarget)}`} className="fx-mention">@{replyTarget}</Link> adlı kişiye yanıt
                       </div>
@@ -1049,7 +1075,7 @@ export default function ThreadView({
                 <span>{ownsAnon ? 'İsimsiz olarak yanıt veriyorsun' : 'İsimsiz kullanıcıya yanıt'}</span>
               )}
               {replyTo ? (
-                <button type="button" className="fx-text-btn" onClick={() => { setReplyTo(null); setReplyToUser(username); }}>vazgeç</button>
+                <button type="button" className="fx-text-btn" onClick={clearReplyTo}>vazgeç</button>
               ) : replyToUser && replyToUser !== username && (
                 <button type="button" className="fx-text-btn" onClick={() => setReplyToUser(username)}>gönderiye dön</button>
               )}

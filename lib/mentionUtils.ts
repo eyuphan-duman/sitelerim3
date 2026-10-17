@@ -6,12 +6,15 @@ export async function notifyMentions({
   text,
   postId,
   currentUser,
-  userProfile
+  userProfile,
+  skipUids = []
 }: {
   text: string;
   postId: string;
   currentUser: any;
   userProfile?: any;
+  /** Bu kişilere zaten başka bir bildirim (ör. yanıt) gittiyse bahsetme bildirimi gönderilmez */
+  skipUids?: string[];
 }) {
   if (!text || !currentUser || currentUser.isAnonymous) return;
   
@@ -34,7 +37,7 @@ export async function notifyMentions({
       if (!snap.empty) {
         const targetUserDoc = snap.docs[0];
         const targetUid = targetUserDoc.id;
-        if (targetUid && targetUid !== currentUser.uid) {
+        if (targetUid && targetUid !== currentUser.uid && !skipUids.includes(targetUid)) {
           await addDoc(collection(db, 'notifications'), {
             toUid: targetUid,
             fromUid: currentUser.uid,
