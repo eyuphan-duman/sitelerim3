@@ -157,7 +157,7 @@ export default function ProfilClient({ username }: { username: string }) {
       } catch {}
 
       setPd((prev: any) => ({ ...prev, diplomaUrl: data.url }));
-      toast.success('Diploma belgeniz başarıyla yüklendi!');
+      toast.success('Mezun belgen yüklendi.');
     } catch (err: any) {
       toast.error('Belge yüklenirken hata oluştu: ' + (err.message || ''));
     } finally {
@@ -1270,12 +1270,12 @@ export default function ProfilClient({ username }: { username: string }) {
                         ) : pd.psychologistStatus === 'pending' ? (
                           <>
                             <div className="fx-set-row">
-                              <div className="fx-set-text"><b>Başvurun inceleniyor</b><small>Yüklediğin diploma yöneticiler tarafından inceleniyor. Onaylandığında rozet otomatik olarak görünür.</small></div>
+                              <div className="fx-set-text"><b>Başvurun inceleniyor</b><small>Yüklediğin mezun belgesi yöneticiler tarafından inceleniyor. Onaylandığında rozet otomatik olarak görünür. Kontrol edildikten sonra belgeniz otomatik olarak sistem tarafından silinir.</small></div>
                               <span className="fx-pill is-warn">İnceleniyor</span>
                             </div>
                             <div className="fx-set-actions">
                               <label className="fx-btn fx-btn-outline fx-btn-sm" style={{ cursor: 'pointer' }}>
-                                <Upload size={14} /> {uploadingDiploma ? 'Yükleniyor…' : pd.diplomaUrl ? 'Belgeyi güncelle' : 'Diploma yükle'}
+                                <Upload size={14} /> {uploadingDiploma ? 'Yükleniyor…' : pd.diplomaUrl ? 'Belgeyi güncelle' : 'Mezun belgesi yükle'}
                                 <input type="file" accept="image/*,application/pdf" hidden onChange={handleUploadDiploma} disabled={uploadingDiploma} />
                               </label>
                               {pd.diplomaUrl && <a className="fx-text-btn" href={pd.diplomaUrl} target="_blank" rel="noreferrer">Yüklenen belgeyi gör</a>}
@@ -1283,7 +1283,7 @@ export default function ProfilClient({ username }: { username: string }) {
                           </>
                         ) : (
                           <>
-                            <p className="fx-set-note">Lisanslı bir psikologsan diploma ya da mezuniyet belgenle başvur. Onaylandığında adının yanında altın onay rozeti görünür.</p>
+                            <p className="fx-set-note">Lisanslı bir psikologsan e-Devlet'ten aldığın mezun belgenle başvur. Onaylandığında adının yanında altın onay rozeti görünür. Kontrol edildikten sonra belgeniz otomatik olarak sistem tarafından silinir.</p>
                             <div className="fx-set-actions">
                               <button type="button" className="fx-btn fx-btn-primary" onClick={() => { closeSettings(); router.push('/kayit/psikolog'); }}>Başvuru yap</button>
                             </div>

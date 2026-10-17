@@ -60,3 +60,24 @@ export async function uploadToCloudinary(
 }
 
 export default cloudinary;
+
+/**
+ * Cloudinary adresinden dosyayı kalıcı olarak siler.
+ * Adres biçimi: https://res.cloudinary.com/<bulut>/<tür>/upload/[v123/]<public_id>.<uzantı>
+ */
+export async function deleteFromCloudinary(url: string): Promise<boolean> {
+  const m = url.match(/res\.cloudinary\.com\/[^/]+\/(image|video|raw)\/upload\/(?:[^/]*\/)*?(?:v\d+\/)?(.+)$/);
+  if (!m) return false;
+  const resourceType = m[1] as 'image' | 'video' | 'raw';
+  const path = decodeURIComponent(m[2]);
+  // image/video için public_id uzantısızdır; raw dosyalarda uzantı public_id'nin parçasıdır
+  const publicId = resourceType === 'raw' ? path : path.replace(/\.[^/.]+$/, '');
+  const { cloud_name, api_key, api_secret } = getCleanConfig();
+  if (process.env.CLOUDINARY_URL) {
+    cloudinary.config({ cloudinary_url: process.env.CLOUDINARY_URL.replace(/^["']|["']$/g, '').trim(), secure: true });
+  } else {
+    cloudinary.config({ cloud_name, api_key, api_secret, secure: true });
+  }
+  const res = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType, invalidate: true });
+  return res?.result === 'ok' || res?.result === 'not found';
+}

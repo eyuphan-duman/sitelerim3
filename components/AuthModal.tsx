@@ -585,7 +585,7 @@ export default function AuthModal({ isOpen, onClose, isDark, initialMode = 'sign
                   <span className={styles.psychIcon}><Award size={20} /></span>
                   <div>
                     <div className={styles.psychTitle}>Psikolog musunuz?</div>
-                    <div className={styles.psychText}>Diploma ve belgelerinizle uzman rozetli hesap açın.</div>
+                    <div className={styles.psychText}>e-Devlet mezun belgenizle uzman rozetli hesap açın.</div>
                   </div>
                 </div>
                 <Link href="/kayit/psikolog" onClick={requestClose} className={styles.psychBtn}>

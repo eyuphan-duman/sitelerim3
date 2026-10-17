@@ -212,7 +212,7 @@ export default function TermsModal({ isOpen, onClose, onAccept, isDark = false }
                   <li><strong>İletişim Verileri:</strong> E-posta adresi, iletişim formu taleplerinde telefon numarası</li>
                   <li><strong>Hesap ve İşlem Güvenliği:</strong> IP adresi, oturum logları, şifre hash&apos;leri (Google Firebase Auth standartları)</li>
                   <li><strong>İçerik Verileri:</strong> Forum gönderileri, yanıtlar, beğeniler</li>
-                  <li><strong>Mesleki Bilgiler (Yalnızca Uzman Başvuruları):</strong> Mezun olunan üniversite, diploma/mezuniyet belgesi görseli</li>
+                  <li><strong>Mesleki Bilgiler (Yalnızca Uzman Başvuruları):</strong> Mezun olunan üniversite ve e-Devlet mezun belgesi (kontrol edildikten sonra otomatik olarak silinir)</li>
                 </ul>
               </div>
 

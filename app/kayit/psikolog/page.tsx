@@ -53,7 +53,7 @@ export default function PsychologistRegisterPage() {
       if (!data.success) throw new Error(data.error || 'Yükleme başarısız');
 
       setForm(prev => ({ ...prev, diplomaUrl: data.url }));
-      toast.success('Diploma belgesi yüklendi');
+      toast.success('Mezun belgesi yüklendi');
     } catch (err: any) {
       toast.error('Belge yüklenirken hata: ' + (err.message || ''));
       setDiplomaFileName('');
@@ -87,7 +87,7 @@ export default function PsychologistRegisterPage() {
     }
 
     if (!form.diplomaUrl) {
-      toast.error('Lütfen psikolog doğrulaması için diploma belgenizi yükleyin.');
+      toast.error('Lütfen psikolog doğrulaması için e-Devlet mezun belgenizi yükleyin.');
       return;
     }
 
@@ -437,10 +437,10 @@ export default function PsychologistRegisterPage() {
             <ShieldCheck size={32} color="var(--gold)" />
             <div>
               <div style={{ fontWeight: 700, fontSize: '0.98rem', color: 'white', marginBottom: 4 }}>
-                Diploma veya Geçici Mezuniyet Belgesi *
+                e-Devlet Mezun Belgesi *
               </div>
               <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', maxWidth: 440 }}>
-                Yalnızca uzman doğrulaması amacıyla incelenir; sistem güvenliğinde saklanır. (PDF, JPG veya PNG)
+                e-Devlet'teki "Yükseköğretim Mezun Belgesi Sorgulama" hizmetinden aldığın barkodlu belgeyi yükle (PDF, JPG veya PNG). Belge yalnızca yönetici tarafından, başvurunu doğrulamak için incelenir. Kontrol edildikten sonra belgeniz otomatik olarak sistem tarafından silinir.
               </div>
             </div>
 
@@ -525,7 +525,7 @@ export default function PsychologistRegisterPage() {
                 ) : (
                   <>
                     <Upload size={16} />
-                    <span>Diploma Belgesi Seç ve Yükle</span>
+                    <span>Mezun Belgesi Seç ve Yükle</span>
                   </>
                 )}
                 <input

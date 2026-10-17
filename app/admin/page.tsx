@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc, getDoc, getDocs } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import { Calendar, Clock, CheckCircle, XCircle, FileText, Video, Trash2, Plus, PenTool, LayoutDashboard, LogOut, Mail, Eye, Edit3, Save, X, Home, Menu, Sliders, Upload, Image as ImageIcon, Sparkles, MessageCircle, RotateCcw, Link2, Type, Check, Award, ExternalLink, GraduationCap, Users, Search, UserCheck, ShieldCheck, ArrowRight, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -215,6 +215,22 @@ export default function AdminPage() {
     }
   };
 
+  // Başvuru kontrol edildikten sonra mezun belgesi sistemden kalıcı olarak silinir (güvenlik prosedürü)
+  const purgeDocument = async (uid: string) => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const r = await fetch('/api/admin/purge-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ uid }),
+      });
+      if (!r.ok) throw new Error();
+      toast.success('Mezun belgesi sistemden silindi.');
+    } catch {
+      toast.error('Mezun belgesi silinemedi. Lütfen tekrar deneyin.');
+    }
+  };
+
   const handleApprovePsychologist = async (applicant: any) => {
     try {
       await updateDoc(doc(db, 'users', applicant.id), {
@@ -230,6 +246,7 @@ export default function AdminPage() {
         });
       } catch {}
       toast.success(`${applicant.displayName || applicant.fullName || 'Kullanıcı'} başarıyla onaylandı. Psikolog rozeti aktif edildi!`);
+      await purgeDocument(applicant.id);
     } catch (err: any) {
       toast.error('Onaylanırken hata oluştu: ' + (err.message || ''));
     }
@@ -251,6 +268,7 @@ export default function AdminPage() {
         });
       } catch {}
       toast.success('Başvuru reddedildi.');
+      await purgeDocument(applicant.id);
     } catch (err: any) {
       toast.error('İşlem başarısız: ' + (err.message || ''));
     }
