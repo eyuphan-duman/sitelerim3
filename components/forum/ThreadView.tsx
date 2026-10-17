@@ -12,7 +12,7 @@ import { useUsers } from './social';
 import {
   doc, updateDoc, deleteField, increment, collection,
   addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc,
-  getDocs, where, setDoc
+  getDocs, where, setDoc, getDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import toast from 'react-hot-toast';
@@ -137,6 +137,12 @@ export default function ThreadView({
   const users = useUsers();
   const [comments, setComments] = useState<any[]>([]);
   const [replyText, setReplyText] = useState('');
+  const [followsAuthor, setFollowsAuthor] = useState(false);
+  const replyPolicy: string = currentPost?.replyPolicy || 'everyone';
+  useEffect(() => {
+    if (replyPolicy !== 'followers' || !currentUser || currentUser.isAnonymous || !currentPost?.uid || currentPost.uid === currentUser.uid) return;
+    getDoc(doc(db, 'follows', `${currentUser.uid}_${currentPost.uid}`)).then(d => setFollowsAuthor(d.exists())).catch(() => {});
+  }, [replyPolicy, currentUser, currentPost?.uid]);
   const [replyImageUrl, setReplyImageUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submittingReply, setSubmittingReply] = useState(false);
@@ -475,6 +481,7 @@ export default function ThreadView({
     if (!currentUser || currentUser.isAnonymous) return onOpenAuth();
     if (userProfile?.isBanned) return toast.error('Hesabınız askıya alınmıştır (banlandı). Yorum yapamazsınız.');
     if (!emailVerified) return toast.error('Yorum yapabilmek için e-posta adresinizi doğrulamanız gerekiyor.');
+    if (!canReply) return toast.error(replyNote);
     if (!replyText.trim() && !replyImageUrl) return;
     if (replyText.length > COMMENT_CHAR_LIMIT) return toast.error(`Yorum en fazla ${COMMENT_CHAR_LIMIT} karakter olabilir.`);
 
@@ -644,6 +651,13 @@ export default function ThreadView({
   };
 
   const isMember = Boolean(currentUser && !currentUser.isAnonymous);
+  const amPsych = Boolean((userProfile?.isPsychologist && (userProfile?.psychologistStatus === 'approved' || !userProfile?.psychologistStatus)) || userProfile?.role === 'psychologist');
+  const canReply = !isMember || replyPolicy === 'everyone' || currentPost?.uid === currentUser?.uid ||
+    adminEmails.includes(currentUser?.email?.toLowerCase() || '') ||
+    (replyPolicy === 'psychologists' && amPsych) || (replyPolicy === 'followers' && followsAuthor);
+  const replyNote = replyPolicy === 'nobody' ? 'Bu gönderiye yanıt kapalı.'
+    : replyPolicy === 'psychologists' ? 'Bu gönderiyi yalnızca psikologlar yanıtlayabilir.'
+    : replyPolicy === 'followers' ? `Bu gönderiyi yalnızca @${currentPost?.authorUsername || 'yazarın'} adlı kişinin takipçileri yanıtlayabilir.` : '';
   const authorPhoto = authorProfilePhoto || p.authorPhotoURL || (currentUser?.uid === p.uid ? (userProfile?.photoURL || currentUser?.photoURL) : '');
   const myPhoto = userProfile?.photoURL || currentUser?.photoURL || '';
   const myName = userProfile?.displayName || currentUser?.displayName || '';
@@ -770,7 +784,10 @@ export default function ThreadView({
         </div>
       </article>
 
-      {isMember ? (
+      {replyNote && (
+        <div className="fx-reply-policy-note" role="note">{replyNote}{canReply && isMember && currentPost?.uid !== currentUser?.uid ? ' Sen yanıtlayabilirsin.' : ''}</div>
+      )}
+      {isMember && !canReply ? null : isMember ? (
         <div className="fx-compose fx-reply">
           <Avatar src={myPhoto} name={myName} size={40} />
           <div className="fx-compose-body">

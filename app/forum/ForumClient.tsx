@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
 import ThreadView from '@/components/forum/ThreadView';
+import Composer, { useIsMobile } from '@/components/forum/Composer';
 import { Search, Bell, Users, Home, X, Loader2, User, Bookmark, Heart, Sun, Moon, Menu, LogOut, Settings, Feather, ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import { Avatar, CharRing, LogosMark, useForumTheme } from '@/components/forum/ui';
 import ForumShell from '@/components/forum/ForumShell';
@@ -722,58 +723,8 @@ export default function ForumClient() {
     window.scrollTo({ top: 0 });
   };
 
+  const isMobile = useIsMobile();
   const openCompose = () => { if (!isMember) setAuthOpen(true); else setComposeModalOpen(true); };
-
-  const renderComposer = (opts: { autoFocus?: boolean; onPosted?: () => void } = {}) => (
-    <div className="fx-compose">
-      <Avatar src={myPhoto} name={myName} size={40} />
-      <div className="fx-compose-body">
-        <textarea
-          autoFocus={opts.autoFocus}
-          placeholder="Aklından ne geçiyor?"
-          value={form.body}
-          maxLength={POST_CHAR_LIMIT}
-          rows={opts.autoFocus ? 5 : 2}
-          onChange={e => setForm({ ...form, body: e.target.value.slice(0, POST_CHAR_LIMIT) })}
-          aria-label="Gönderi metni"
-        />
-
-        {form.imageUrl && (
-          <div className="fx-compose-preview">
-            <img src={form.imageUrl} alt="Eklenen görsel" />
-            <button type="button" onClick={() => setForm({ ...form, imageUrl: '' })} aria-label="Görseli kaldır"><X size={16} /></button>
-          </div>
-        )}
-
-        <div className="fx-compose-bar">
-          <div className="fx-compose-tools">
-            <label
-              className="fx-tool"
-              aria-disabled={photoLimitReached || uploadingImage}
-              title={photoLimitReached ? 'Görsel ekleme hakkını kullandın' : 'Görsel ekle'}
-            >
-              {uploadingImage ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <ImageIcon size={19} />}
-              <input type="file" accept="image/*" onChange={handleImageUpload} hidden disabled={uploadingImage || photoLimitReached} />
-            </label>
-            <select className="fx-select" value={form.cat} onChange={e => setForm({ ...form, cat: e.target.value })} aria-label="Konu">
-              {CATEGORIES.filter(c => c !== 'Tümü').map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div className="fx-compose-send">
-            <CharRing length={form.body.length} limit={POST_CHAR_LIMIT} />
-            <button
-              type="button"
-              className="fx-btn fx-btn-primary"
-              disabled={!canPost}
-              onClick={async () => { await handlePost(); opts.onPosted?.(); }}
-            >
-              {posting ? 'Paylaşılıyor…' : 'Paylaş'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const searchField = (ref?: React.RefObject<HTMLInputElement | null>, autoFocus?: boolean) => (
     <label className="fx-search">
@@ -982,7 +933,7 @@ export default function ForumClient() {
                 )}
 
                 {isMember && !userProfile?.isBanned && !searchQuery && (
-                  <div className="fx-compose-desktop">{renderComposer()}</div>
+                  <div className="fx-compose-desktop"><Composer /></div>
                 )}
 
                 {filtered.length === 0 ? (
@@ -1069,7 +1020,9 @@ export default function ForumClient() {
             )}
 
             {/* ── Paylaşım penceresi ── */}
-            {composeModalOpen && (
+            {composeModalOpen && (isMobile ? (
+              <Composer startFull onClose={() => setComposeModalOpen(false)} />
+            ) : (
               <div className="fx-sheet-scrim" onClick={() => setComposeModalOpen(false)}>
                 <div className="fx-sheet" role="dialog" aria-modal="true" aria-label="Yeni gönderi" onClick={e => e.stopPropagation()}>
                   <div className="fx-sheet-head">
@@ -1077,10 +1030,10 @@ export default function ForumClient() {
                       <X size={22} />
                     </button>
                   </div>
-                  {renderComposer({ autoFocus: true, onPosted: () => setComposeModalOpen(false) })}
+                  <Composer autoFocus onPosted={() => setComposeModalOpen(false)} />
                 </div>
               </div>
-            )}
+            ))}
 
             <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} isDark={isDark} />
           </>

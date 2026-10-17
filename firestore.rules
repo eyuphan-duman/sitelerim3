@@ -41,9 +41,22 @@ service cloud.firestore {
     // asıl 140 karakter sınırı istemci tarafında uygulanır, burası kötüye kullanıma karşı yedek sınırdır.
     function withinPostLimits() {
       return request.resource.data.get('body', '').size() <= 560 &&
+        request.resource.data.get('replyPolicy', 'everyone') in ['everyone', 'followers', 'psychologists', 'nobody'] &&
         (request.resource.data.get('imageUrl', '') == '' ||
           isVerifiedPsychologist() ||
           myProfile().get('photoUploadsUsed', 0) < 1);
+    }
+
+    // Gönderi sahibinin seçtiği yanıt iznine uyuluyor mu?
+    function canReplyTo(postId) {
+      let post = get(/databases/$(database)/documents/forum/$(postId)).data;
+      let policy = post.get('replyPolicy', 'everyone');
+      return policy == 'everyone' ||
+        post.uid == request.auth.uid ||
+        isAdmin() ||
+        (policy == 'psychologists' && isVerifiedPsychologist()) ||
+        (policy == 'followers' &&
+          exists(/databases/$(database)/documents/follows/$(request.auth.uid + '_' + post.uid)));
     }
 
     function withinCommentLimits() {
@@ -174,6 +187,7 @@ service cloud.firestore {
           notBanned() &&
           isEmailVerified() &&
           withinCommentLimits() &&
+          canReplyTo(postId) &&
           validPsychBadge();
 
         allow update: if isAdmin() ||
