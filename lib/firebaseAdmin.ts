@@ -11,7 +11,7 @@ function loadCredentials() {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!raw) return null;
   try {
-    const json = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
+    const json = raw.trim().startsWith('{') ? raw : Buffer.from(raw.trim(), 'base64').toString('utf8');
     const sa = JSON.parse(json);
     if (sa.private_key) sa.private_key = String(sa.private_key).replace(/\\n/g, '\n');
     return sa;
