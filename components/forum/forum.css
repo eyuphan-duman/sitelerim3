@@ -1570,6 +1570,9 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   flex-direction: column;
   background: var(--fx-bg);
   color: var(--fx-ink);
+  /* iOS klavyesi açılınca görünen alan küçülür; pencerenin dışında kalan her yer de arka plan rengiyle örtülür */
+  box-shadow: 0 0 0 200vh var(--fx-bg);
+  overscroll-behavior: contain;
   animation: fxSheetUp .18s ease-out;
 }
 @keyframes fxSheetUp { from { transform: translateY(24px); opacity: 0; } }

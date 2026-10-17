@@ -176,7 +176,10 @@ export default function ThreadView({
     if (!replyFull) return;
     const v = window.visualViewport;
     const prev = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    // iOS yalnızca body'yi kilitlemekle yetinmez; html de kilitlenir
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     const on = () => v && setVv({ h: v.height, top: v.offsetTop });
     on();
     v?.addEventListener('resize', on);
@@ -185,6 +188,7 @@ export default function ThreadView({
     return () => {
       clearTimeout(t);
       document.body.style.overflow = prev;
+      document.documentElement.style.overflow = prevHtml;
       v?.removeEventListener('resize', on);
       v?.removeEventListener('scroll', on);
     };
