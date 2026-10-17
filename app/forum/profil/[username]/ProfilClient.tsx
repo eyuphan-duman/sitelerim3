@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, onSnapshot, updateDoc, serverTimestamp, limit, addDoc } from 'firebase/firestore';
-import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, deleteUser } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup, sendPasswordResetEmail, deleteUser } from 'firebase/auth';
+import { auth, db, googleProvider } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   ArrowLeft, Camera, MapPin, Link as LinkIcon, Calendar, 
@@ -671,9 +671,12 @@ export default function ProfilClient({ username }: { username: string }) {
   };
 
   // Account Delete handler with password verification
+  // Google ile kayıt olanların şifresi yoktur; kimlik Google penceresiyle doğrulanır
+  const hasPassword = Boolean(user?.providerData?.some(pr => pr.providerId === 'password'));
+
   const handleDeleteAccount = async () => {
     if (!user) return;
-    if (!deletePassword.trim()) {
+    if (hasPassword && !deletePassword.trim()) {
       return toast.error('Hesabınızı silmek için mevcut şifrenizi girmelisiniz.');
     }
     if (deleteConfirmText.trim().toLocaleUpperCase('tr-TR') !== 'SİL') {
@@ -681,9 +684,11 @@ export default function ProfilClient({ username }: { username: string }) {
     }
     setDeletingAccount(true);
     try {
-      if (user.email) {
+      if (hasPassword && user.email) {
         const credential = EmailAuthProvider.credential(user.email, deletePassword);
         await reauthenticateWithCredential(user, credential);
+      } else {
+        await reauthenticateWithPopup(user, googleProvider);
       }
       await updateDoc(doc(db, 'users', user.uid), {
         isDeleted: true,
@@ -1327,7 +1332,11 @@ export default function ProfilClient({ username }: { username: string }) {
                             <div className="fx-set-actions"><button type="button" className="fx-btn fx-btn-danger fx-btn-sm" onClick={() => setDeleteModalOpen(true)}>Hesabı sil</button></div>
                           ) : (
                             <div className="fx-confirm">
-                              <label className="fx-input"><span>Şifren</span><input type="password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /></label>
+                              {hasPassword ? (
+                                <label className="fx-input"><span>Şifren</span><input type="password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /></label>
+                              ) : (
+                                <p className="fx-set-note">Silmeden önce Google hesabınla kimliğini doğrulaman istenecek.</p>
+                              )}
                               <label className="fx-input"><span>Onaylamak için SİL yaz</span><input value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="SİL" /></label>
                               <div className="fx-set-actions">
                                 <button type="button" className="fx-btn fx-btn-outline fx-btn-sm" onClick={() => { setDeleteModalOpen(false); setDeletePassword(''); setDeleteConfirmText(''); }}>Vazgeç</button>
@@ -1335,7 +1344,7 @@ export default function ProfilClient({ username }: { username: string }) {
                                   type="button"
                                   className="fx-btn fx-btn-danger fx-btn-sm"
                                   onClick={handleDeleteAccount}
-                                  disabled={deletingAccount || !deletePassword.trim() || deleteConfirmText.trim().toLocaleUpperCase('tr-TR') !== 'SİL'}
+                                  disabled={deletingAccount || (hasPassword && !deletePassword.trim()) || deleteConfirmText.trim().toLocaleUpperCase('tr-TR') !== 'SİL'}
                                 >
                                   {deletingAccount ? 'Siliniyor…' : 'Hesabı kalıcı olarak sil'}
                                 </button>

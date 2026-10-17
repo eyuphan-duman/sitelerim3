@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
     return [
+      // Service worker her zaman güncel sürümüyle yüklensin
+      {
+        source: '/sw.js',
+        headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }],
+      },
+      // Android uygulama doğrulaması (Digital Asset Links)
+      {
+        source: '/.well-known/assetlinks.json',
+        headers: [{ key: 'Content-Type', value: 'application/json' }],
+      },
       {
         source: '/:path*',
         headers: [

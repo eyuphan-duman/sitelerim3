@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.pskfurkanmanav.logos",
+      "sha256_cert_fingerprints": [
+        "37:C8:AA:78:55:3E:04:F1:30:8F:8D:E6:23:CF:72:FA:B7:53:3F:24:03:D5:A8:BA:49:F3:CC:CD:F5:2F:C9:B1"
+      ]
+    }
+  }
+]

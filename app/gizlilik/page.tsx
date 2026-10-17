@@ -178,7 +178,7 @@ export default function GizlilikPage() {
           <ul>
             <li>Hesap bilgilerin ve forum içeriklerin, sen silene ya da hesabını kapatana kadar saklanır.</li>
             <li>
-              Ayarlar › Hesap bölümünden hesabını silebilirsin. Silince giriş bilgilerin kaldırılır ve profilin &quot;Silinmiş Hesap&quot; olarak gösterilir.
+              Ayarlar › Hesap bölümünden hesabını silebilirsin (adım adım anlatım: <Link href="/hesap-silme">Hesabını sil</Link>). Silince giriş bilgilerin kaldırılır ve profilin &quot;Silinmiş Hesap&quot; olarak gösterilir.
               Adın, fotoğrafların ve biyografin silinir. Gönderilerin akışlarda gösterilmez.
             </li>
             <li>
