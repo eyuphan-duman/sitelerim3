@@ -19,6 +19,8 @@ import { formatTimeAgo, renderTextWithMentions } from '@/components/forum/Thread
 import ForumLoadingScreen from '@/components/forum/ForumLoadingScreen';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
 import ForumShell from '@/components/forum/ForumShell';
+import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
+import { getPasswordError } from '@/lib/passwordUtils';
 import ForumPost from '@/components/forum/ForumPost';
 import Composer from '@/components/forum/Composer';
 import FollowList, { FollowListMode } from '@/components/forum/FollowList';
@@ -554,9 +556,8 @@ export default function ProfilClient({ username }: { username: string }) {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !user.email) return;
-    if (!newPassword || newPassword.length < 6) {
-      return toast.error('Yeni şifreniz en az 6 karakter olmalıdır.');
-    }
+    const pwError = getPasswordError(newPassword || '');
+    if (pwError) return toast.error(pwError);
     if (newPassword !== newPasswordConfirm) {
       return toast.error('Yeni şifreleriniz birbiriyle uyuşmuyor.');
     }
@@ -1143,11 +1144,11 @@ export default function ProfilClient({ username }: { username: string }) {
                           <h3>Şifreyi değiştir</h3>
                           <div className="fx-form">
                             <label className="fx-input"><span>Mevcut şifre</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} /></label>
-                            <label className="fx-input"><span>Yeni şifre</span><input type="password" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} /><small>En az 6 karakter.</small></label>
+                            <label className="fx-input"><span>Yeni şifre</span><input type="password" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} /><PasswordStrengthMeter password={newPassword} mutedColor="var(--fx-ink-3)" />{!newPassword && <small>En az 6 karakter ve bir rakam; güç en az "Orta" olmalı.</small>}</label>
                             <label className="fx-input"><span>Yeni şifre (tekrar)</span><input type="password" autoComplete="new-password" value={newPasswordConfirm} onChange={e => setNewPasswordConfirm(e.target.value)} /></label>
                           </div>
                           <div className="fx-set-actions">
-                            <button type="submit" className="fx-btn fx-btn-primary" disabled={changingPassword || !newPassword}>{changingPassword ? 'Güncelleniyor…' : 'Şifreyi değiştir'}</button>
+                            <button type="submit" className="fx-btn fx-btn-primary" disabled={changingPassword || !newPassword || Boolean(getPasswordError(newPassword))}>{changingPassword ? 'Güncelleniyor…' : 'Şifreyi değiştir'}</button>
                           </div>
                         </form>
 

@@ -9,6 +9,8 @@ import toast from 'react-hot-toast';
 import TermsModal from '@/components/TermsModal';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
 import { calculateAge, getMaxBirthDateFor18, getBirthDateValidationError } from '@/lib/ageUtils';
+import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
+import { getPasswordError } from '@/lib/passwordUtils';
 
 export default function PsychologistRegisterPage() {
   const router = useRouter();
@@ -64,6 +66,12 @@ export default function PsychologistRegisterPage() {
     e.preventDefault();
     if (!form.fullName.trim() || !form.username.trim() || !form.email.trim() || !form.password.trim()) {
       toast.error('Lütfen tüm zorunlu alanları doldurun.');
+      return;
+    }
+
+    const pwError = getPasswordError(form.password);
+    if (pwError) {
+      toast.error(pwError);
       return;
     }
 
@@ -334,7 +342,7 @@ export default function PsychologistRegisterPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 6 }}>
-                Şifre * (En az 6 karakter)
+                Şifre * (En az 6 karakter ve bir rakam)
               </label>
               <input
                 type="password"
@@ -355,6 +363,7 @@ export default function PsychologistRegisterPage() {
                   boxSizing: 'border-box',
                 }}
               />
+              <PasswordStrengthMeter password={form.password} mutedColor="rgba(255,255,255,0.65)" />
             </div>
           </div>
 

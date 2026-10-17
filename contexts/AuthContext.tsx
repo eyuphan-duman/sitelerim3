@@ -6,6 +6,7 @@ import { doc, setDoc, getDoc, getDocs, collection, query, where, serverTimestamp
 import { auth, db, googleProvider } from '@/lib/firebase';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
 import { getBirthDateValidationError } from '@/lib/ageUtils';
+import { getPasswordError } from '@/lib/passwordUtils';
 
 export interface UserRegistrationData {
   fullName?: string;
@@ -254,6 +255,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (ageErr) throw new Error(ageErr);
     }
 
+    const pwError = getPasswordError(password);
+    if (pwError) throw new Error(pwError);
+
     const cleanUsername = sanitizeUsername(username);
     const cleanEmail = email.toLowerCase().trim();
 
@@ -355,7 +359,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const ageErr = getBirthDateValidationError(extraData.birthDate);
       if (ageErr) throw new Error(ageErr);
     }
-    if (!password || password.length < 6) throw new Error('Şifre en az 6 karakter olmalıdır.');
+    const pwError = getPasswordError(password || '');
+    if (pwError) throw new Error(pwError);
     if (!termsAccepted) throw new Error('Lütfen kullanıcı sözleşmesini ve KVKK metnini onaylayın.');
 
     const cleanUsername = sanitizeUsername(chosenUsername);
@@ -418,18 +423,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Lütfen kullanıcı adı veya e-posta adresinizi girin.');
     }
     // Check if it's not an email, assume it's a username
-    if (!authEmail.includes('@')) {
-      const res = await fetch('/api/auth/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: sanitizeUsername(authEmail) }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Şifre sıfırlama bağlantısı gönderilemedi.');
-      return data.masked || 'kayıtlı e-posta adresin';
-    }
-    await sendPasswordResetEmail(auth, authEmail);
-    return authEmail;
+    const res = await fetch('/api/auth/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: authEmail.includes('@') ? authEmail : sanitizeUsername(authEmail) }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Şifre sıfırlama bağlantısı gönderilemedi.');
+    return data.sentTo;
   };
 
   const logout = async () => {

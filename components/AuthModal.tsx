@@ -9,6 +9,8 @@ import TermsModal from './TermsModal';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
 import { calculateAge, getMaxBirthDateFor18, getBirthDateValidationError } from '@/lib/ageUtils';
 import styles from './AuthModal.module.css';
+import PasswordStrengthMeter from './PasswordStrengthMeter';
+import { getPasswordError } from '@/lib/passwordUtils';
 
 interface Props {
   isOpen: boolean;
@@ -170,7 +172,8 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
   const birthDateOk = Boolean(birthDate) && !birthDateError;
   const usernameError = username ? getUsernameValidationError(username) : null;
   const usernameOk = Boolean(username) && !getUsernameValidationError(username);
-  const passwordOk = password.length >= 6;
+  const passwordError = password ? getPasswordError(password) : null;
+  const passwordOk = Boolean(password) && !passwordError;
   const emailOk = /\S+@\S+\.\S+/.test(email);
 
   // Terms can only be confirmed last, after every other field is valid
@@ -599,7 +602,8 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
                 {nameAndAgeBlock}
                 {usernameBlock}
                 <Field id="auth_email" label="E-posta adresi" type="email" inputMode="email" value={email} onChange={setEmail} autoComplete="email" />
-                <Field id="auth_new_password" label="Şifre (en az 6 karakter)" type="password" value={password} onChange={setPassword} autoComplete="new-password" minLength={6} />
+                <Field id="auth_new_password" label="Şifre (en az 6 karakter ve bir rakam)" type="password" value={password} onChange={setPassword} autoComplete="new-password" minLength={6} />
+                <PasswordStrengthMeter password={password} />
                 {termsBlock}
                 <button type="submit" className={styles.primary} disabled={busy || !termsAccepted || !signupFieldsReady}>
                   {busy && <Loader size={18} className={styles.spin} />}
@@ -624,7 +628,8 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
               <form className={styles.form} onSubmit={handleGoogleComplete}>
                 {nameAndAgeBlock}
                 {usernameBlock}
-                <Field id="auth_google_password" label="Giriş şifresi belirle (en az 6 karakter)" type="password" value={password} onChange={setPassword} autoComplete="new-password" minLength={6} />
+                <Field id="auth_google_password" label="Giriş şifresi belirle (en az 6 karakter ve bir rakam)" type="password" value={password} onChange={setPassword} autoComplete="new-password" minLength={6} />
+                <PasswordStrengthMeter password={password} />
                 <p className={styles.hint}>Bu şifreyle daha sonra kullanıcı adın veya e-postanla giriş yapacaksın.</p>
                 {termsBlock}
                 <button type="submit" className={styles.primary} disabled={busy || !termsAccepted || !googleFieldsReady}>
