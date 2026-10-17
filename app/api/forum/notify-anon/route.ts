@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb, getAdminApp } from '@/lib/firebaseAdmin';
+import { pushNotification } from '@/lib/push';
 
 /**
  * İsimsiz gönderilere gelen beğeni / yeniden paylaşım / yanıt bildirimleri.
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     if (!dupe.empty && type !== 'comment') return NextResponse.json({ ok: true });
 
     const me = (await db.collection('users').doc(caller.uid).get()).data() || {};
-    await db.collection('notifications').add({
+    const added = await db.collection('notifications').add({
       toUid: ownerUid,
       fromUid: caller.uid,
       fromUser: me.displayName || 'Kullanıcı',
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
       read: false,
       createdAt: FieldValue.serverTimestamp(),
     });
+    await pushNotification(app, db, added.id).catch(() => 0);
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ ok: false }, { status: 500 });

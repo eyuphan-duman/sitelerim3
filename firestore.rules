@@ -280,6 +280,17 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ───────── Anlık bildirim cihaz anahtarları ─────────
+    // Belge kimliği cihazın FCM anahtarıdır. Cihazda hesap değişince anahtar yeni hesaba yazılır;
+    // anahtarları yalnızca sunucu okur (bildirim gönderirken).
+    match /push_tokens/{token} {
+      allow read: if false;
+      allow create, update: if signedIn() &&
+        request.resource.data.keys().hasOnly(['uid', 'platform', 'updatedAt']) &&
+        request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
     // ───────── Bildirimler ─────────
     match /notifications/{notifId} {
       allow read: if isAdmin() || (signedIn() && resource.data.toUid == request.auth.uid);

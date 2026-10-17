@@ -6,6 +6,7 @@ import {
   addDoc, serverTimestamp, orderBy, limit, documentId,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { sendNotification } from '@/lib/notify';
 
 export type ForumUser = {
   uid: string;
@@ -41,7 +42,7 @@ export async function setFollow(me: { uid: string; displayName?: string | null; 
   }
   await setDoc(doc(db, 'follows', fid), { followerId: me.uid, followingId: targetUid, createdAt: serverTimestamp() });
   try {
-    await addDoc(collection(db, 'notifications'), {
+    await sendNotification({
       toUid: targetUid,
       fromUid: me.uid,
       fromUser: myProfile?.displayName || me.displayName || 'Kullanıcı',

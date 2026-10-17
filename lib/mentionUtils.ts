@@ -1,5 +1,6 @@
 import { collection, query, where, getDocs, addDoc, serverTimestamp, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { sendNotification } from '@/lib/notify';
 import { sanitizeUsername } from '@/lib/usernameUtils';
 
 export async function notifyMentions({
@@ -38,7 +39,7 @@ export async function notifyMentions({
         const targetUserDoc = snap.docs[0];
         const targetUid = targetUserDoc.id;
         if (targetUid && targetUid !== currentUser.uid && !skipUids.includes(targetUid)) {
-          await addDoc(collection(db, 'notifications'), {
+          await sendNotification({
             toUid: targetUid,
             fromUid: currentUser.uid,
             fromUser: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
