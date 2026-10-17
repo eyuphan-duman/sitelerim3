@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc, startAfter } from 'firebase/firestore';
+import { loadDirectory } from '@/components/forum/social';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
@@ -62,7 +63,13 @@ export default function ForumClient() {
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const topSearchInputRef = useRef<HTMLInputElement>(null);
-  const [threads, setThreads] = useState<Post[]>([]);
+  const PAGE_SIZE = 30;
+  const [livePosts, setLivePosts] = useState<Post[]>([]);
+  const [olderPosts, setOlderPosts] = useState<Post[]>([]);
+  const [dirPosts, setDirPosts] = useState<Post[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const lastDocRef = useRef<any>(null);
   const [filter, setFilter] = useState('Tümü');
   const [feedTab, setFeedTab] = useState<'all' | 'following' | 'bookmarks' | 'likes'>('all');
   const [followingUids, setFollowingUids] = useState<string[]>([]);
@@ -126,8 +133,45 @@ export default function ForumClient() {
     };
   }, [isDark]);
 
-  useEffect(() => { return onSnapshot(collection(db, 'users'), snap => { const m: Record<string, any> = {}; snap.docs.forEach(d => m[d.id] = d.data()); setUsersMap(m); }); }, []);
-  useEffect(() => { const q = query(collection(db, 'forum'), orderBy('createdAt', 'desc')); return onSnapshot(q, snap => { setThreads(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[]); }); }, []);
+  // Üyeler ve son gönderiler sunucu önbelleğinden (Firestore okuması harcamaz)
+  useEffect(() => {
+    let on = true;
+    loadDirectory().then(d => {
+      if (!on) return;
+      const m: Record<string, any> = {};
+      d.users.forEach((u: any) => { m[u.uid] = u; });
+      setUsersMap(m);
+      setDirPosts(d.posts.map((x: any) => ({ ...x, createdAt: x.createdAt ? new Date(x.createdAt) : new Date() })) as Post[]);
+    });
+    return () => { on = false; };
+  }, []);
+  useEffect(() => {
+    const q = query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
+    return onSnapshot(q, snap => {
+      setLivePosts(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[]);
+      if (!lastDocRef.current) lastDocRef.current = snap.docs[snap.docs.length - 1] || null;
+      setHasMore(prev => prev || snap.size === PAGE_SIZE);
+    });
+  }, []);
+
+  const loadMore = async () => {
+    if (!lastDocRef.current || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const snap = await getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), startAfter(lastDocRef.current), limit(PAGE_SIZE)));
+      lastDocRef.current = snap.docs[snap.docs.length - 1] || lastDocRef.current;
+      setOlderPosts(prev => [...prev, ...(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[])]);
+      setHasMore(snap.size === PAGE_SIZE);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Akış: canlı + yüklenen eski sayfalar. Arama ve gündem: buna ek olarak önbellekteki son 200 gönderi
+  const dedupe = (lists: Post[][]) => { const seen = new Set<string>(); const out: Post[] = []; lists.flat().forEach(t => { if (!seen.has(t.id)) { seen.add(t.id); out.push(t); } }); return out; };
+  const feedThreads = React.useMemo(() => dedupe([livePosts, olderPosts]), [livePosts, olderPosts]);
+  const threads = React.useMemo(() => dedupe([livePosts, olderPosts, dirPosts]), [livePosts, olderPosts, dirPosts]);
+  const setThreads = (fn: (prev: Post[]) => Post[]) => { setLivePosts(fn); setOlderPosts(fn); setDirPosts(fn); };
   useEffect(() => { if (!user || user.isAnonymous) return; const q = query(collection(db, 'follows'), where('followerId', '==', user.uid)); return onSnapshot(q, snap => setFollowingUids(snap.docs.map(d => d.data().followingId))); }, [user]);
 
   // Sync search query, tag, category, and feed from URL
@@ -164,7 +208,7 @@ export default function ForumClient() {
   }, [searchParams, user]);
 
   const filtered = (() => {
-    let list = threads.filter(t => !t.isRepost);
+    let list = (searchQuery.trim() ? threads : feedThreads).filter(t => !t.isRepost);
     // Hide posts by banned or frozen users, and hide private accounts completely from public feed/search
     list = list.filter(t => {
       const author = usersMap[t.uid];
@@ -967,7 +1011,11 @@ export default function ForumClient() {
                   </>
                 ) : feedPosts}
 
-                {filtered.length > 0 && <div className="fx-end">Hepsi bu kadar. Yeni gönderiler geldikçe burada görünecek.</div>}
+                {filtered.length > 0 && !searchQuery && hasMore ? (
+                  <button type="button" className="fx-load-more" onClick={loadMore} disabled={loadingMore}>
+                    {loadingMore ? 'Yükleniyor…' : 'Daha fazla göster'}
+                  </button>
+                ) : filtered.length > 0 && <div className="fx-end">Hepsi bu kadar. Yeni gönderiler geldikçe burada görünecek.</div>}
               </>
             )}
 

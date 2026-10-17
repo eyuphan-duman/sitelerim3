@@ -57,16 +57,38 @@ export async function setFollow(me: { uid: string; displayName?: string | null; 
 }
 
 /* ─── Kullanıcı önbelleği (sayfalar arası tek okuma) ─── */
-let usersCache: Promise<Record<string, ForumUser>> | null = null;
-export function loadUsers(force = false): Promise<Record<string, ForumUser>> {
-  if (!usersCache || force) {
-    usersCache = getDocs(collection(db, 'users')).then(snap => {
-      const map: Record<string, ForumUser> = {};
-      snap.docs.forEach(d => { map[d.id] = { ...(d.data() as any), uid: d.id }; });
-      return map;
-    }).catch(() => { usersCache = null; return {}; });
+/* ─── Ortak forum verisi: sunucuda önbelleklenen dizin (Firestore okuması harcamaz) ─── */
+type Directory = { users: ForumUser[]; posts: any[]; at: number; configured?: boolean };
+let directoryCache: Promise<Directory> | null = null;
+let directoryAt = 0;
+export function loadDirectory(force = false): Promise<Directory> {
+  // Sayfa açık kaldıkça 3 dakikada bir tazelenir
+  if (!directoryCache || force || Date.now() - directoryAt > 180_000) {
+    directoryAt = Date.now();
+    directoryCache = fetch('/api/forum/directory')
+      .then(r => r.json())
+      .then(async (d: Directory) => {
+        if (d.configured === false) {
+          // Sunucu yapılandırılmamışsa doğrudan Firestore (yedek yol)
+          const [us, ps] = await Promise.all([
+            getDocs(collection(db, 'users')),
+            getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(200))),
+          ]);
+          return { users: us.docs.map(x => ({ ...(x.data() as any), uid: x.id })), posts: ps.docs.map(x => ({ id: x.id, ...x.data() })), at: Date.now() };
+        }
+        return d;
+      })
+      .catch(() => { directoryCache = null; return { users: [], posts: [], at: 0 }; });
   }
-  return usersCache;
+  return directoryCache;
+}
+
+export function loadUsers(force = false): Promise<Record<string, ForumUser>> {
+  return loadDirectory(force).then(d => {
+    const map: Record<string, ForumUser> = {};
+    d.users.forEach(u => { map[u.uid] = u; });
+    return map;
+  });
 }
 
 export function useUsers() {
@@ -96,14 +118,8 @@ export function useUserGraph(uid?: string | null) {
 /* ─── Öneri motoru ─── */
 type Suggestion = { user: ForumUser; reason: string; score: number };
 
-let recentPostsCache: Promise<any[]> | null = null;
 export function loadRecentPosts() {
-  if (!recentPostsCache) {
-    recentPostsCache = getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(300)))
-      .then(s => s.docs.map(d => ({ id: d.id, ...d.data() })))
-      .catch(() => { recentPostsCache = null; return []; });
-  }
-  return recentPostsCache;
+  return loadDirectory().then(d => d.posts);
 }
 
 /**

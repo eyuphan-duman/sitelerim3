@@ -24,7 +24,7 @@ import Composer from '@/components/forum/Composer';
 import FollowList, { FollowListMode } from '@/components/forum/FollowList';
 import { Avatar, VerifiedMark, useForumTheme } from '@/components/forum/ui';
 import { usePostActions } from '@/components/forum/usePostActions';
-import { useMyGraph } from '@/components/forum/social';
+import { useMyGraph, loadUsers, loadRecentPosts } from '@/components/forum/social';
 
 interface Post { 
   id: string; body: string; authorName: string; authorUsername?: string; uid: string; 
@@ -249,7 +249,7 @@ export default function ProfilClient({ username }: { username: string }) {
         // 4. Resilient fuzzy scan (handles spaces, casing, Turkish characters, email prefixes)
         if (!data) {
           try {
-            const allUsersSnap = await getDocs(collection(db, 'users'));
+            const dirUsers = Object.values(await loadUsers());
             const norm = (str: string) => 
               (str || '')
                 .toLowerCase()
@@ -264,12 +264,11 @@ export default function ProfilClient({ username }: { username: string }) {
             
             const targetNorm = norm(decoded);
 
-            for (const d of allUsersSnap.docs) {
-              const u = d.data();
+            for (const u of dirUsers as any[]) {
               const uNorm = norm(u.username);
               const dNorm = norm(u.displayName);
               if (uNorm === targetNorm || dNorm === targetNorm) {
-                data = { ...u, uid: u.uid || d.id };
+                data = { ...u };
                 break;
               }
             }
@@ -311,59 +310,51 @@ export default function ProfilClient({ username }: { username: string }) {
             setLoading(false);
           }
 
-          // Asynchronously fetch remaining tabs in background
+          // Diğer sekmeler arka planda, hedefli sorgularla (tüm forumu okumadan)
           try {
-            const all = await getDocs(collection(db, 'forum'));
-            if (isCancelled) return;
-            
-            // 1. Reposts
-            const repostList = all.docs
-              .filter(d => !d.data().isRepost && d.data().repostsData?.[data.uid])
-              .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
-            if (!isCancelled) setReposts(repostList.sort((a, b) => b.createdAt - a.createdAt));
-
-            // 2. Likes (only if viewer is owner or owner allows public likes)
+            const toPost = (d: any) => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() }) as Post;
             const isViewerOwn = Boolean(user && user.uid === data.uid);
+
+            // 1. Yeniden paylaşımlar: kullanıcının yeniden paylaşım kayıtlarından orijinal gönderiler
+            const rs = await getDocs(query(collection(db, 'forum'), where('uid', '==', data.uid), where('isRepost', '==', true), limit(40)));
+            const originalIds = [...new Set(rs.docs.map(d => d.data().originalPostId).filter(Boolean))] as string[];
+            const originals = (await Promise.all(originalIds.map(id => getDoc(doc(db, 'forum', id)).catch(() => null))))
+              .filter((d): d is any => Boolean(d?.exists()))
+              .map(toPost);
+            if (!isCancelled) setReposts(originals.sort((a: any, b: any) => b.createdAt - a.createdAt));
+
+            // 2. Beğeniler (sahibi ya da herkese açıksa)
             if (isViewerOwn || !data.hideLikes) {
-              const likeList = all.docs
-                .filter(d => !d.data().isRepost && d.data().reactionsData?.[data.uid])
-                .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
-              if (!isCancelled) setLikes(likeList.sort((a, b) => b.createdAt - a.createdAt));
+              const ls = await getDocs(query(collection(db, 'forum'), where(`reactionsData.${data.uid}`, 'in', ['like', 'heart']), limit(40)));
+              const likeList = ls.docs.map(toPost).filter((x: any) => !x.isRepost);
+              if (!isCancelled) setLikes(likeList.sort((a: any, b: any) => b.createdAt - a.createdAt));
             }
 
-            // 3. Bookmarks (STRICTLY OWNER ONLY: never queried or displayed to other users)
+            // 3. Yer işaretleri: yalnızca sahibi
             if (isViewerOwn) {
-              let bookmarkedIds: string[] = [];
-              try {
-                const bSnap = await getDocs(collection(db, 'users', data.uid, 'bookmarks'));
-                bookmarkedIds = bSnap.docs.map(d => d.id);
-              } catch {}
-
-              const bPosts = all.docs
-                .filter(d => !d.data().isRepost && (d.data().bookmarksData?.[data.uid] || bookmarkedIds.includes(d.id)))
-                .map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[];
-              if (!isCancelled) setBookmarks(bPosts.sort((a, b) => b.createdAt - a.createdAt));
+              const bSnap = await getDocs(query(collection(db, 'users', data.uid, 'bookmarks'), limit(40))).catch(() => null);
+              const ids = (bSnap?.docs || []).map(d => d.id);
+              const bPosts = (await Promise.all(ids.map(id => getDoc(doc(db, 'forum', id)).catch(() => null))))
+                .filter((d): d is any => Boolean(d?.exists()))
+                .map(toPost);
+              if (!isCancelled) setBookmarks(bPosts.sort((a: any, b: any) => b.createdAt - a.createdAt));
             }
 
-            // 4. Replies (run concurrently with Promise.all over recent posts)
+            // 4. Yanıtlar: yalnızca yanıtı olan son gönderiler taranır (önbellekteki dizinden)
             if (isViewerOwn || !data.hideReplies) {
-              const candidatePosts = all.docs.filter(d => !d.data().isRepost).slice(0, 30);
-              const replyPromises = candidatePosts.map(p =>
-                getDocs(query(collection(db, 'forum', p.id, 'comments'), where('uid', '==', data.uid)))
+              const recent = (await loadRecentPosts()).filter((x: any) => !x.isRepost && (x.commentCount || 0) > 0).slice(0, 30);
+              const results = await Promise.all(recent.map((x: any) =>
+                getDocs(query(collection(db, 'forum', x.id, 'comments'), where('uid', '==', data.uid)))
                   .then(cs => cs.docs.map(c => ({
                     ...c.data(),
                     id: c.id,
-                    postId: p.id,
-                    postBody: p.data().body?.slice(0, 60),
+                    postId: x.id,
+                    postBody: x.body?.slice(0, 60),
                     createdAt: c.data().createdAt?.toDate() || new Date()
                   })))
                   .catch(() => [])
-              );
-              const results = await Promise.all(replyPromises);
-              const rList = results.flat();
-              if (!isCancelled) {
-                setReplies(rList.sort((a, b) => b.createdAt - a.createdAt));
-              }
+              ));
+              if (!isCancelled) setReplies(results.flat().sort((a: any, b: any) => b.createdAt - a.createdAt));
             }
           } catch (e) { 
             console.error('Secondary profile data fetch error:', e); 

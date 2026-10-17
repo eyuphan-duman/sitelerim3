@@ -1440,3 +1440,7 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   .fx-post-meta .fx-verified { padding: 0 6px 0 3px; font-size: .7rem; }
 }
 .fx-gold-note { color: var(--fx-gold); font-weight: 600; }
+
+.fx-load-more { display: block; width: 100%; padding: 18px 16px; border: 0; border-bottom: 1px solid var(--fx-line); background: none; color: var(--fx-link); font: inherit; font-size: .95rem; font-weight: 600; cursor: pointer; }
+.fx-load-more:hover { background: var(--fx-hover); }
+.fx-load-more:disabled { color: var(--fx-ink-3); cursor: default; }
