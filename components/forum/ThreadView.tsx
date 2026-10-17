@@ -155,6 +155,8 @@ export default function ThreadView({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submittingReply, setSubmittingReply] = useState(false);
   const [replyToUser, setReplyToUser] = useState<string>('');
+  // Bir yoruma yanıt verilirken: yanıtlanan yorum ve bağlı olduğu kök yorum
+  const [replyTo, setReplyTo] = useState<{ id: string; rootId: string; uid: string; name: string; text: string } | null>(null);
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
   const notifFromUser = searchParams?.get('fromUser');
@@ -515,6 +517,8 @@ export default function ThreadView({
         text: replyText.trim(),
         imageUrl: replyImageUrl || '',
         replyToUsername: replyToUser || username,
+        parentId: replyTo?.rootId || '',
+        replyToCommentId: replyTo?.id || '',
         createdAt: serverTimestamp(),
         reactionsData: {},
         repostsData: {},
@@ -559,9 +563,29 @@ export default function ThreadView({
         });
       } catch {}
 
+      // Yanıtlanan yorumun sahibine de haber ver (gönderi sahibi zaten yukarıda bildirildi)
+      if (replyTo && replyTo.uid && replyTo.uid !== currentUser.uid && replyTo.uid !== p.uid) {
+        try {
+          await sendNotification({
+            toUid: replyTo.uid,
+            fromUid: currentUser.uid,
+            fromUser: ownsAnon ? ANON_NAME : userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
+            fromUsername: ownsAnon ? '' : userProfile?.username || '',
+            fromPhotoURL: ownsAnon ? '' : userProfile?.photoURL || currentUser.photoURL || '',
+            type: 'comment',
+            message: 'yanıtına yanıt verdi.',
+            postId: p.originalPostId || p.id,
+            postTitle: replyText.trim().slice(0, 50),
+            read: false,
+            createdAt: serverTimestamp(),
+          });
+        } catch {}
+      }
+
       setReplyText('');
       setReplyImageUrl('');
       setReplyToUser(username);
+      setReplyTo(null);
       toast.success('Yanıtınız paylaşıldı');
     } catch (err: any) {
       toast.error('Yanıt gönderilemedi: ' + (err.message || ''));
@@ -724,6 +748,139 @@ export default function ThreadView({
     );
   }
 
+  // Yorumlar: kök yorumlar ve altlarındaki yanıtlar (tek seviye girinti)
+  const visibleComments = comments.filter(c => !blocks.hidden.has(c.uid));
+  const commentIds = new Set(visibleComments.map(c => c.id));
+  const kidsOf: Record<string, any[]> = {};
+  const lastByAuthor: Record<string, string> = {};
+  const threadRoots: any[] = [];
+  for (const c of visibleComments) {
+    let root = c.parentId && commentIds.has(c.parentId) ? c.parentId : '';
+    // parentId'den önceki eski yanıtlar: aynı kişinin en son yorumuna bağlanır
+    if (!c.parentId && c.replyToUsername && c.replyToUsername !== username && lastByAuthor[c.replyToUsername]) {
+      root = lastByAuthor[c.replyToUsername];
+    }
+    if (root) (kidsOf[root] ||= []).push(c);
+    else threadRoots.push(c);
+    const handle = c.authorUsername || (c.authorName || '').toLowerCase().replace(/\s+/g, '');
+    if (handle) lastByAuthor[handle] = root || c.id;
+  }
+
+  const startReplyTo = (c: any, handle: string) => {
+    setReplyToUser(c.isAnonymous ? '' : handle);
+    setReplyTo({ id: c.id, rootId: c.parentId && commentIds.has(c.parentId) ? c.parentId : c.id, uid: c.uid, name: c.isAnonymous ? ANON_NAME : c.authorName || handle, text: (c.text || '').slice(0, 120) });
+    replyInputRef.current?.focus();
+    replyInputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  };
+
+  const renderComment = (c: any, isChild: boolean): React.ReactNode => {
+    const kids = isChild ? [] : kidsOf[c.id] || [];
+            const commentAuthorUsername = c.authorUsername || (c.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
+            const canDeleteComment = (currentUser?.uid && currentUser.uid === c.uid) || (c.isAnonymous && ownsAnon) || isAdmin;
+            const uid = currentUser?.uid || '';
+            const liked = c.reactionsData?.[uid] === 'like';
+            const disliked = c.reactionsData?.[uid] === 'dislike';
+            const reposted = Boolean(c.repostsData?.[uid]);
+            const saved = Boolean(c.bookmarksData?.[uid]);
+            const likeN = Object.values(c.reactionsData || {}).filter(v => v === 'like').length;
+            const downN = Object.values(c.reactionsData || {}).filter(v => v === 'dislike').length;
+            const repostN = Object.values(c.repostsData || {}).filter(Boolean).length;
+            const saveN = Object.values(c.bookmarksData || {}).filter(Boolean).length;
+            const replyTarget = c.replyToUsername || username;
+            const guard = (fn: () => void) => () => (isMember ? fn() : onOpenAuth());
+
+            return (
+              <div key={c.id} className={`fx-post fx-comment ${isChild ? 'is-child' : ''} ${kids.length ? 'has-kids' : ''}`}>
+                <div className="fx-post-grid">
+                  {c.isAnonymous ? (
+                    <span className="fx-anon-avatar"><Avatar src={ANON_AVATAR} name={ANON_NAME} size={isChild ? 32 : 40} /></span>
+                  ) : (
+                    <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} aria-label={c.authorName}>
+                      <Avatar src={c.authorPhotoURL} name={c.authorName} size={isChild ? 32 : 40} />
+                    </Link>
+                  )}
+                  <div className="fx-post-body">
+                    <div className="fx-post-meta">
+                      <div className="fx-post-meta-main">
+                        {c.isAnonymous ? (
+                          <>
+                            <span className="fx-name fx-name-anon">{ANON_NAME}</span>
+                            <span className="fx-anon-mine">Gönderi sahibi</span>
+                          </>
+                        ) : (
+                          <>
+                            <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} className="fx-name">{c.authorName}</Link>
+                            {c.authorIsPsychologist && !c.authorHideBadge && <VerifiedMark label={users[c.uid]?.title} />}
+                            <span className="fx-handle">@{commentAuthorUsername}</span>
+                          </>
+                        )}
+                        <span className="fx-sep" aria-hidden="true">·</span>
+                        <time className="fx-time" title={formatPostDate(c.createdAt)}>{formatTimeAgo(c.createdAt)}</time>
+                      </div>
+                      {canDeleteComment && (
+                        <button type="button" className="fx-icon-btn fx-comment-del" onClick={() => handleDeleteComment(c.id)} aria-label="Yanıtı sil" title="Yanıtı sil">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    {replyTarget !== username && (
+                      <div className="fx-reply-to">
+                        <Link href={`/forum/profil/${encodeURIComponent(replyTarget)}`} className="fx-mention">@{replyTarget}</Link> adlı kişiye yanıt
+                      </div>
+                    )}
+
+                    {c.text && <p className="fx-post-text">{renderTextWithMentions(c.text)}</p>}
+                    {c.imageUrl && (
+                      <div className="fx-post-media">
+                        <img src={c.imageUrl} alt="" loading="lazy" />
+                      </div>
+                    )}
+
+                    <div className="fx-actions" role="group" aria-label="Yanıt etkileşimleri">
+                      <button type="button" className="fx-act" onClick={guard(() => startReplyTo(c, commentAuthorUsername))} aria-label={kids.length ? `Yanıtla, ${kids.length} yanıt` : 'Yanıtla'}>
+                        <span className="fx-act-ic"><MessageCircle size={17} strokeWidth={1.8} /></span>
+                        {!isChild && kids.length > 0 && <span className="fx-act-n">{compactCount(kids.length)}</span>}
+                      </button>
+                      <button type="button" data-kind="repost" className={`fx-act ${reposted ? 'is-on' : ''}`} onClick={() => handleCommentRepost(c)} aria-pressed={reposted} aria-label="Yeniden paylaş">
+                        <span className="fx-act-ic"><Repeat2 size={18} strokeWidth={reposted ? 2.4 : 1.8} /></span>
+                        <span className="fx-act-n">{compactCount(repostN)}</span>
+                      </button>
+                      <button type="button" data-kind="like" className={`fx-act ${liked ? 'is-on' : ''}`} onClick={() => handleCommentLike(c.id, c.reactionsData)} aria-pressed={liked} aria-label="Beğen">
+                        <span className="fx-act-ic"><Heart size={17} strokeWidth={liked ? 0 : 1.8} fill={liked ? 'currentColor' : 'none'} /></span>
+                        <span className="fx-act-n">{compactCount(likeN)}</span>
+                      </button>
+                      <button type="button" data-kind="down" className={`fx-act ${disliked ? 'is-on' : ''}`} onClick={() => handleCommentDislike(c.id, c.reactionsData)} aria-pressed={disliked} aria-label="Katılmıyorum">
+                        <span className="fx-act-ic"><ThumbsDown size={16} strokeWidth={1.8} fill={disliked ? 'currentColor' : 'none'} /></span>
+                        <span className="fx-act-n">{compactCount(downN)}</span>
+                      </button>
+                      <button type="button" data-kind="save" className={`fx-act ${saved ? 'is-on' : ''}`} onClick={() => handleCommentBookmark(c.id, c.bookmarksData)} aria-pressed={saved} aria-label="Kaydet">
+                        <span className="fx-act-ic"><Bookmark size={17} strokeWidth={saved ? 0 : 1.8} fill={saved ? 'currentColor' : 'none'} /></span>
+                        <span className="fx-act-n">{compactCount(saveN)}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="fx-act"
+                        onClick={async () => {
+                          try { await navigator.clipboard.writeText(`${window.location.origin}/forum?thread=${p.id}`); toast.success('Bağlantı panoya kopyalandı'); }
+                          catch { toast.error('Bağlantı kopyalanamadı'); }
+                        }}
+                        aria-label="Bağlantıyı kopyala"
+                      >
+                        <span className="fx-act-ic"><Share size={16} strokeWidth={1.8} /></span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {!isChild && kids.length > 0 && (
+                  <div className="fx-comment-kids" aria-label={`${kids.length} yanıt`}>
+                    {kids.map(k => renderComment(k, true))}
+                  </div>
+                )}
+              </div>
+            );
+  };
+
   return (
     <div className="fx-thread">
       <div className="fx-thead">
@@ -859,10 +1016,18 @@ export default function ThreadView({
               ) : (
                 <span>{ownsAnon ? 'İsimsiz olarak yanıt veriyorsun' : 'İsimsiz kullanıcıya yanıt'}</span>
               )}
-              {replyToUser && replyToUser !== username && (
+              {replyTo ? (
+                <button type="button" className="fx-text-btn" onClick={() => { setReplyTo(null); setReplyToUser(username); }}>vazgeç</button>
+              ) : replyToUser && replyToUser !== username && (
                 <button type="button" className="fx-text-btn" onClick={() => setReplyToUser(username)}>gönderiye dön</button>
               )}
             </div>
+            {replyTo && (
+              <div className="fx-replying-quote">
+                <b>{replyTo.name}</b>
+                <span>{replyTo.text || 'Görsel'}</span>
+              </div>
+            )}
             <textarea
               ref={replyInputRef}
               rows={2}
@@ -910,106 +1075,7 @@ export default function ThreadView({
         {comments.length === 0 ? (
           <div className="fx-end">Henüz yanıt yok. İlk yanıtı sen yaz.</div>
         ) : (
-          comments.filter(c => !blocks.hidden.has(c.uid)).map(c => {
-            const commentAuthorUsername = c.authorUsername || (c.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
-            const canDeleteComment = (currentUser?.uid && currentUser.uid === c.uid) || (c.isAnonymous && ownsAnon) || isAdmin;
-            const uid = currentUser?.uid || '';
-            const liked = c.reactionsData?.[uid] === 'like';
-            const disliked = c.reactionsData?.[uid] === 'dislike';
-            const reposted = Boolean(c.repostsData?.[uid]);
-            const saved = Boolean(c.bookmarksData?.[uid]);
-            const likeN = Object.values(c.reactionsData || {}).filter(v => v === 'like').length;
-            const downN = Object.values(c.reactionsData || {}).filter(v => v === 'dislike').length;
-            const repostN = Object.values(c.repostsData || {}).filter(Boolean).length;
-            const saveN = Object.values(c.bookmarksData || {}).filter(Boolean).length;
-            const replyTarget = c.replyToUsername || username;
-            const guard = (fn: () => void) => () => (isMember ? fn() : onOpenAuth());
-
-            return (
-              <div key={c.id} className="fx-post fx-comment">
-                <div className="fx-post-grid">
-                  {c.isAnonymous ? (
-                    <span className="fx-anon-avatar"><Avatar src={ANON_AVATAR} name={ANON_NAME} size={40} /></span>
-                  ) : (
-                    <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} aria-label={c.authorName}>
-                      <Avatar src={c.authorPhotoURL} name={c.authorName} size={40} />
-                    </Link>
-                  )}
-                  <div className="fx-post-body">
-                    <div className="fx-post-meta">
-                      <div className="fx-post-meta-main">
-                        {c.isAnonymous ? (
-                          <>
-                            <span className="fx-name fx-name-anon">{ANON_NAME}</span>
-                            <span className="fx-anon-mine">Gönderi sahibi</span>
-                          </>
-                        ) : (
-                          <>
-                            <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} className="fx-name">{c.authorName}</Link>
-                            {c.authorIsPsychologist && !c.authorHideBadge && <VerifiedMark label={users[c.uid]?.title} />}
-                            <span className="fx-handle">@{commentAuthorUsername}</span>
-                          </>
-                        )}
-                        <span className="fx-sep" aria-hidden="true">·</span>
-                        <time className="fx-time" title={formatPostDate(c.createdAt)}>{formatTimeAgo(c.createdAt)}</time>
-                      </div>
-                      {canDeleteComment && (
-                        <button type="button" className="fx-icon-btn fx-comment-del" onClick={() => handleDeleteComment(c.id)} aria-label="Yanıtı sil" title="Yanıtı sil">
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-
-                    {replyTarget !== username && (
-                      <div className="fx-reply-to">
-                        <Link href={`/forum/profil/${encodeURIComponent(replyTarget)}`} className="fx-mention">@{replyTarget}</Link> adlı kişiye yanıt
-                      </div>
-                    )}
-
-                    {c.text && <p className="fx-post-text">{renderTextWithMentions(c.text)}</p>}
-                    {c.imageUrl && (
-                      <div className="fx-post-media">
-                        <img src={c.imageUrl} alt="" loading="lazy" />
-                      </div>
-                    )}
-
-                    <div className="fx-actions" role="group" aria-label="Yanıt etkileşimleri">
-                      <button type="button" className="fx-act" onClick={guard(() => { setReplyToUser(commentAuthorUsername); replyInputRef.current?.focus(); })} aria-label="Yanıtla">
-                        <span className="fx-act-ic"><MessageCircle size={17} strokeWidth={1.8} /></span>
-                      </button>
-                      <button type="button" data-kind="repost" className={`fx-act ${reposted ? 'is-on' : ''}`} onClick={() => handleCommentRepost(c)} aria-pressed={reposted} aria-label="Yeniden paylaş">
-                        <span className="fx-act-ic"><Repeat2 size={18} strokeWidth={reposted ? 2.4 : 1.8} /></span>
-                        <span className="fx-act-n">{compactCount(repostN)}</span>
-                      </button>
-                      <button type="button" data-kind="like" className={`fx-act ${liked ? 'is-on' : ''}`} onClick={() => handleCommentLike(c.id, c.reactionsData)} aria-pressed={liked} aria-label="Beğen">
-                        <span className="fx-act-ic"><Heart size={17} strokeWidth={liked ? 0 : 1.8} fill={liked ? 'currentColor' : 'none'} /></span>
-                        <span className="fx-act-n">{compactCount(likeN)}</span>
-                      </button>
-                      <button type="button" data-kind="down" className={`fx-act ${disliked ? 'is-on' : ''}`} onClick={() => handleCommentDislike(c.id, c.reactionsData)} aria-pressed={disliked} aria-label="Katılmıyorum">
-                        <span className="fx-act-ic"><ThumbsDown size={16} strokeWidth={1.8} fill={disliked ? 'currentColor' : 'none'} /></span>
-                        <span className="fx-act-n">{compactCount(downN)}</span>
-                      </button>
-                      <button type="button" data-kind="save" className={`fx-act ${saved ? 'is-on' : ''}`} onClick={() => handleCommentBookmark(c.id, c.bookmarksData)} aria-pressed={saved} aria-label="Kaydet">
-                        <span className="fx-act-ic"><Bookmark size={17} strokeWidth={saved ? 0 : 1.8} fill={saved ? 'currentColor' : 'none'} /></span>
-                        <span className="fx-act-n">{compactCount(saveN)}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="fx-act"
-                        onClick={async () => {
-                          try { await navigator.clipboard.writeText(`${window.location.origin}/forum?thread=${p.id}`); toast.success('Bağlantı panoya kopyalandı'); }
-                          catch { toast.error('Bağlantı kopyalanamadı'); }
-                        }}
-                        aria-label="Bağlantıyı kopyala"
-                      >
-                        <span className="fx-act-ic"><Share size={16} strokeWidth={1.8} /></span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
+          threadRoots.map(c => renderComment(c, false))
         )}
       </section>
 

@@ -1724,3 +1724,36 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-name-anon { cursor: default; }
 .fx-name-anon:hover { text-decoration: none; }
 .fx-anon-mine { font-size: .78rem; font-weight: 600; color: var(--fx-ink-2); background: var(--fx-soft); border-radius: 6px; padding: 1px 6px; }
+
+/* Yorumlara verilen yanıtlar: kök yorumun avatarından inen çizgiyle girintili */
+.fx-comment.has-kids:hover { background: none; }
+.fx-comment-kids {
+  margin: 2px 0 4px 19px;
+  border-left: 2px solid var(--fx-line-strong);
+}
+.fx-comment.is-child {
+  padding: 10px 0 4px 19px;
+  border-bottom: 0;
+  border-radius: 0 12px 12px 0;
+}
+.fx-comment.is-child .fx-post-grid { grid-template-columns: 32px minmax(0, 1fr); gap: 10px; }
+.fx-replying-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0 2px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--fx-link);
+  border-radius: 0 10px 10px 0;
+  background: var(--fx-soft);
+  font-size: .86rem;
+  color: var(--fx-ink-2);
+}
+.fx-replying-quote b { color: var(--fx-ink); font-weight: 700; }
+.fx-replying-quote span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 699px) {
+  .fx-comment-kids { margin-left: 19px; }
+  .fx-comment.is-child { padding-left: 12px; }
+}
+.fx-compose textarea:focus, .fx-compose textarea:focus-visible { outline: 0 !important; border: 0 !important; box-shadow: none !important; }
+.fx-reply-to .fx-text-btn { margin-left: 6px; }
