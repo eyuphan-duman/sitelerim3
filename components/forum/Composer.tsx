@@ -422,14 +422,15 @@ export default function Composer({
           placeholder="Aklından ne geçiyor?"
           value={body}
           maxLength={LIMIT}
-          rows={autoFocus ? 5 : 2}
+          rows={autoFocus ? 5 : isMobile ? 1 : 2}
           onChange={e => change(e.target.value)}
           aria-label="Gönderi metni"
         />
         {preview}
         {anon && <p className="fx-anon-note">İsimsiz paylaşıyorsun. Adın, kullanıcı adın ve profilin gösterilmez; bildirimler yine sana gelir.</p>}
-        <div className="fx-compose-policy-row">{policyButton}</div>
-        <div className="fx-compose-bar">
+        {/* Mobilde dokununca tam ekran açılır; akıştaki kutu yalnızca yazma alanını gösterir */}
+        {!isMobile && <div className="fx-compose-policy-row">{policyButton}</div>}
+        {!isMobile && <div className="fx-compose-bar">
           <div className="fx-compose-tools">
             {photoInput()}
             {anonToggle}
@@ -441,7 +442,7 @@ export default function Composer({
               {posting ? 'Paylaşılıyor…' : 'Paylaş'}
             </button>
           </div>
-        </div>
+        </div>}
       </div>
       {policySheet}
     </div>
