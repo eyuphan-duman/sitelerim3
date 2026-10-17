@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="İsimsiz kullanıcı">
+  <rect width="120" height="120" fill="#2b3647"/>
+  <circle cx="60" cy="47" r="22" fill="#8c98ab"/>
+  <path d="M18 120c3-27 20-42 42-42s39 15 42 42z" fill="#8c98ab"/>
+  <path d="M33 42c8-5 17-6 27-6s19 1 27 6c1 6-1 12-7 14-5 2-10 0-13-4-2-2-4-3-7-3s-5 1-7 3c-3 4-8 6-13 4-6-2-8-8-7-14z" fill="#141b26"/>
+  <ellipse cx="47" cy="46" rx="5" ry="3.4" fill="#2b3647"/>
+  <ellipse cx="73" cy="46" rx="5" ry="3.4" fill="#2b3647"/>
+</svg>

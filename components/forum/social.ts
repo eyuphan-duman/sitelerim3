@@ -287,3 +287,32 @@ export async function blockUser(meUid: string, targetUid: string) {
 export async function unblockUser(meUid: string, targetUid: string) {
   await deleteDoc(doc(db, 'blocks', `${meUid}_${targetUid}`));
 }
+
+/* ─── İsimsiz gönderilerim ───
+ * anon_owners/{postId} = { uid } yalnızca sahibine ve yöneticiye okunur. Sahibi kendi
+ * isimsiz gönderilerini bu sayede tanır (silme, "senin paylaşımın" işareti, isimsiz yanıt).
+ */
+let anonOwner: string | null = null;
+let anonIds: string[] = [];
+let anonStop: (() => void) | null = null;
+const anonSubs = new Set<(ids: string[]) => void>();
+
+export function useMyAnonPosts(uid?: string | null) {
+  const [ids, setIds] = useState<string[]>(uid && anonOwner === uid ? anonIds : []);
+  useEffect(() => {
+    if (!uid) { setIds([]); return; }
+    if (anonOwner !== uid) {
+      anonStop?.();
+      anonOwner = uid;
+      anonIds = [];
+      anonStop = onSnapshot(query(collection(db, 'anon_owners'), where('uid', '==', uid)), s => {
+        anonIds = s.docs.map(d => d.id);
+        anonSubs.forEach(fn => fn(anonIds));
+      }, () => {});
+    }
+    setIds(anonIds);
+    anonSubs.add(setIds);
+    return () => { anonSubs.delete(setIds); };
+  }, [uid]);
+  return useMemo(() => new Set(ids), [ids]);
+}

@@ -7,8 +7,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import { X, Loader2, Image as ImageIcon, Camera, Undo2, Redo2, Globe, Users, BadgeCheck, Ban, FileText, Trash2 } from 'lucide-react';
-import { addDoc, collection, doc, increment, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { X, Loader2, Image as ImageIcon, Camera, Undo2, Redo2, Globe, Users, BadgeCheck, Ban, FileText, Trash2, VenetianMask } from 'lucide-react';
+import { collection, doc, increment, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import { ANON_AVATAR, ANON_NAME, ANON_UID } from '@/lib/notify';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { notifyMentions } from '@/lib/mentionUtils';
@@ -27,7 +28,7 @@ export const REPLY_POLICIES: { id: ReplyPolicy; label: string; hint: string; Ico
   { id: 'nobody', label: 'Hiç kimse', hint: 'Kimse yanıtlayamaz', Icon: Ban },
 ];
 
-type Draft = { id: string; body: string; cat: string; imageUrl: string; replyPolicy: ReplyPolicy; at: number };
+type Draft = { id: string; body: string; cat: string; imageUrl: string; replyPolicy: ReplyPolicy; anon?: boolean; at: number };
 
 const draftKey = (uid: string) => `logos-drafts:${uid}`;
 const readDrafts = (uid: string): Draft[] => {
@@ -93,6 +94,7 @@ export default function Composer({
   const [imageUrl, setImageUrl] = useState('');
   const [replyPolicy, setReplyPolicy] = useState<ReplyPolicy>('everyone');
   const [pendingPolicy, setPendingPolicy] = useState<ReplyPolicy>('everyone');
+  const [anon, setAnon] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [full, setFull] = useState(Boolean(startFull));
@@ -136,7 +138,7 @@ export default function Composer({
   const change = (v: string) => { const s = v.slice(0, LIMIT); setBody(s); hist.record(s); };
 
   const clear = () => {
-    setBody(''); setImageUrl(''); setReplyPolicy('everyone'); setCat('Psikanaliz'); hist.reset();
+    setBody(''); setImageUrl(''); setReplyPolicy('everyone'); setCat('Psikanaliz'); setAnon(false); hist.reset();
   };
 
   const close = () => {
@@ -171,29 +173,32 @@ export default function Composer({
     setPosting(true);
     const showBadge = isPsych && !userProfile?.hideBadge;
     try {
-      const data = {
-        body,
-        category: cat,
-        imageUrl,
-        replyPolicy,
-        authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
-        authorUsername: userProfile?.username || '',
-        authorIsPsychologist: showBadge,
-        authorHideBadge: Boolean(userProfile?.hideBadge),
-        uid: user.uid,
-        commentCount: 0,
-        createdAt: serverTimestamp(),
-        reactionsData: {},
-      };
-      const ref = await addDoc(collection(db, 'forum'), data);
+      const base = { body, category: cat, imageUrl, replyPolicy, commentCount: 0, createdAt: serverTimestamp(), reactionsData: {} };
+      // İsimsiz gönderide kimlik alanları boş kalır; gerçek sahibi yalnızca gizli anon_owners kaydında tutulur
+      const data = anon
+        ? { ...base, isAnonymous: true, uid: ANON_UID, authorName: ANON_NAME, authorUsername: '', authorIsPsychologist: false, authorHideBadge: false }
+        : {
+            ...base,
+            authorName: userProfile?.displayName || user.displayName || 'Kullanıcı',
+            authorUsername: userProfile?.username || '',
+            authorIsPsychologist: showBadge,
+            authorHideBadge: Boolean(userProfile?.hideBadge),
+            uid: user.uid,
+          };
+      const ref = doc(collection(db, 'forum'));
+      const batch = writeBatch(db);
+      batch.set(ref, data);
+      if (anon) batch.set(doc(db, 'anon_owners', ref.id), { uid: user.uid, createdAt: serverTimestamp() });
+      await batch.commit();
       if (imageUrl && !isPsych && !isAdmin) {
         try { await updateDoc(doc(db, 'users', user.uid), { photoUploadsUsed: increment(1) }); } catch {}
       }
-      try { await notifyMentions({ text: body, postId: ref.id, currentUser: user, userProfile }); } catch {}
+      // Bahsetme bildirimi göndereni gösterdiği için isimsiz gönderide gönderilmez
+      if (!anon) { try { await notifyMentions({ text: body, postId: ref.id, currentUser: user, userProfile }); } catch {} }
       onPosted?.({ ...data, id: ref.id, createdAt: new Date() });
       clear();
       if (open) close();
-      toast.success('Paylaşıldı');
+      toast.success(anon ? 'İsimsiz olarak paylaşıldı' : 'Paylaşıldı');
     } catch (err: any) {
       toast.error('Paylaşılamadı: ' + (err.message || ''));
     } finally {
@@ -202,7 +207,7 @@ export default function Composer({
   };
 
   const saveDraft = () => {
-    const list = [{ id: String(Date.now()), body, cat, imageUrl, replyPolicy, at: Date.now() }, ...readDrafts(user.uid)];
+    const list = [{ id: String(Date.now()), body, cat, imageUrl, replyPolicy, anon, at: Date.now() }, ...readDrafts(user.uid)];
     writeDrafts(user.uid, list);
     clear();
     close();
@@ -210,7 +215,7 @@ export default function Composer({
   };
 
   const loadDraft = (d: Draft) => {
-    setBody(d.body); setCat(d.cat); setImageUrl(d.imageUrl); setReplyPolicy(d.replyPolicy || 'everyone');
+    setBody(d.body); setCat(d.cat); setImageUrl(d.imageUrl); setReplyPolicy(d.replyPolicy || 'everyone'); setAnon(Boolean(d.anon));
     hist.reset(d.body);
     const rest = readDrafts(user.uid).filter(x => x.id !== d.id);
     writeDrafts(user.uid, rest);
@@ -245,6 +250,27 @@ export default function Composer({
     </select>
   );
 
+  // Takipçi kısıtı isimsiz gönderide işlemez (sahibi bilinmez); bu durumda "Herkes"e döner
+  const toggleAnon = () => {
+    setAnon(v => {
+      if (!v && replyPolicy === 'followers') setReplyPolicy('everyone');
+      return !v;
+    });
+  };
+
+  const anonToggle = (
+    <button
+      type="button"
+      className={`fx-tool fx-anon-toggle ${anon ? 'is-on' : ''}`}
+      onClick={toggleAnon}
+      aria-pressed={anon}
+      title={anon ? 'İsimsiz paylaşım açık' : 'İsimsiz paylaş'}
+    >
+      <VenetianMask size={21} />
+      {anon && <span>İsimsiz</span>}
+    </button>
+  );
+
   const policyButton = (
     <button type="button" className="fx-policy-btn" onClick={() => { setPendingPolicy(replyPolicy); setPanel('policy'); }} aria-haspopup="dialog">
       <policy.Icon size={15} strokeWidth={2.4} />
@@ -260,7 +286,7 @@ export default function Composer({
           <button type="button" className="fx-icon-btn" onClick={() => setPanel(null)} aria-label="Kapat"><X size={22} /></button>
         </div>
         <div role="radiogroup" aria-label="Yanıt izni">
-          {REPLY_POLICIES.map(p => (
+          {REPLY_POLICIES.filter(p => !(anon && p.id === 'followers')).map(p => (
             <button key={p.id} type="button" role="radio" aria-checked={pendingPolicy === p.id} className="fx-actsheet-row" onClick={() => setPendingPolicy(p.id)}>
               <p.Icon size={24} strokeWidth={1.8} className="fx-policy-ico" />
               <span className="fx-actsheet-label">{p.label}</span>
@@ -299,7 +325,7 @@ export default function Composer({
             </button>
           )}
           <div className="fx-compose fx-compose-full">
-            <Avatar src={userProfile?.photoURL || user.photoURL} name={userProfile?.displayName || user.displayName} size={40} />
+            <Avatar src={anon ? ANON_AVATAR : userProfile?.photoURL || user.photoURL} name={anon ? ANON_NAME : userProfile?.displayName || user.displayName} size={40} />
             <div className="fx-compose-body">
               <textarea
                 ref={fullInput}
@@ -310,6 +336,7 @@ export default function Composer({
                 aria-label="Gönderi metni"
               />
               {preview}
+              {anon && <p className="fx-anon-note">İsimsiz paylaşıyorsun. Adın, kullanıcı adın ve profilin gösterilmez; bildirimler yine sana gelir.</p>}
             </div>
           </div>
         </div>
@@ -330,6 +357,7 @@ export default function Composer({
             <div className="fx-compose-tools">
               {photoInput()}
               {photoInput(true)}
+              {anonToggle}
               {categorySelect}
             </div>
             <CharRing length={body.length} limit={LIMIT} />
@@ -380,7 +408,7 @@ export default function Composer({
 
   return (
     <div className="fx-compose">
-      <Avatar src={userProfile?.photoURL || user.photoURL} name={userProfile?.displayName || user.displayName} size={40} />
+      <Avatar src={anon ? ANON_AVATAR : userProfile?.photoURL || user.photoURL} name={anon ? ANON_NAME : userProfile?.displayName || user.displayName} size={40} />
       <div className="fx-compose-body">
         <textarea
           autoFocus={autoFocus && !isMobile}
@@ -395,10 +423,12 @@ export default function Composer({
           aria-label="Gönderi metni"
         />
         {preview}
+        {anon && <p className="fx-anon-note">İsimsiz paylaşıyorsun. Adın, kullanıcı adın ve profilin gösterilmez; bildirimler yine sana gelir.</p>}
         <div className="fx-compose-policy-row">{policyButton}</div>
         <div className="fx-compose-bar">
           <div className="fx-compose-tools">
             {photoInput()}
+            {anonToggle}
             {categorySelect}
           </div>
           <div className="fx-compose-send">

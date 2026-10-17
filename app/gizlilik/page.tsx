@@ -87,6 +87,7 @@ export default function GizlilikPage() {
                 <tr><td>Takip ettiklerin ve takipçilerin</td><td>Herkes. Hesabın gizliyse yalnızca takipçilerin.</td></tr>
                 <tr><td>Kaydettiğin gönderiler ve bildirimlerin</td><td>Yalnızca sen.</td></tr>
                 <tr><td>Engellediğin kişiler</td><td>Engelleme listeni yalnızca sen görürsün. Engellediğin kişiye bildirim gitmez, ama profilini açarsa engellendiğini görür.</td></tr>
+                <tr><td>İsimsiz paylaştığın gönderiler ve bu gönderilere verdiğin yanıtlar</td><td>İçerik herkese açıktır ama kimin paylaştığı gösterilmez. Gönderinin sana ait olduğunu yalnızca sen ve site yöneticisi bilir. Yönetici bu bilgiyi yalnızca kötüye kullanım ve yasal zorunluluk durumlarında kullanır.</td></tr>
                 <tr><td>Gönderi taslakların</td><td>Yalnızca sen. Taslaklar sunucuya gönderilmez, kaydettiğin cihazın tarayıcısında kalır.</td></tr>
                 <tr><td>Şikayetler, iletişim formu mesajları, randevu talepleri</td><td>Yalnızca site yöneticisi.</td></tr>
                 <tr><td>Psikolog başvurusundaki diploma ve belgeler</td><td>Yalnızca site yöneticisi. Yalnızca başvuruyu doğrulamak için kullanılır.</td></tr>
@@ -117,6 +118,7 @@ export default function GizlilikPage() {
             <li><b>Gizli hesap:</b> Gönderilerini ve takip listelerini yalnızca takipçilerin görür. Gönderilerin genel akışta ve aramada çıkmaz.</li>
             <li><b>Beğenilerimi gizle, yanıtlarımı gizle:</b> Profilindeki bu sekmeleri yalnızca sen görürsün.</li>
             <li><b>Yanıt izni:</b> Her gönderiyi paylaşırken kimlerin yanıt verebileceğini seçersin: Herkes, Takipçilerim, Sadece psikologlar ya da Hiç kimse.</li>
+            <li><b>İsimsiz paylaşım:</b> Paylaşırken maske simgesine basarsan gönderin &quot;İsimsiz kullanıcı&quot; adıyla ve sabit bir görselle yayınlanır. Profiline gidilemez ve gönderi profilinde görünmez. Bu gönderiye gelen beğeni ve yanıt bildirimleri yine sana gelir. Kendi isimsiz gönderine verdiğin yanıtlar da isimsiz görünür. İsimsiz gönderide başkalarından bahsetsen bile onlara bildirim gönderilmez, çünkü bildirim kim olduğunu gösterirdi.</li>
             <li><b>Engelleme:</b> Engellediğin kişi seni takip edemez, gönderilerini göremez ve sana yanıt yazamaz. Onun gönderileri ve bildirimleri de sana gösterilmez. Engelleyince aranızdaki takipler kaldırılır. Engellediklerini Ayarlar › Engellenen hesaplar bölümünden yönetirsin.</li>
             <li><b>Şikayet:</b> Uygunsuz bir gönderiyi şikayet edebilirsin. Şikayetler yalnızca yöneticiye iletilir. Şikayet edilen kişi kimin şikayet ettiğini göremez.</li>
             <li><b>Silme ve dondurma:</b> Gönderilerini ve yanıtlarını istediğin zaman silebilirsin. Hesabını dondurursan profilin ve gönderilerin diğer kullanıcılardan gizlenir.</li>
@@ -132,6 +134,7 @@ export default function GizlilikPage() {
           <ul>
             <li>Senin adına gönderi, yanıt, takip ya da bildirim oluşturmak.</li>
             <li>Senin e-posta adresini, ad soyadını, doğum tarihini, kaydettiklerini ya da bildirimlerini okumak.</li>
+            <li>İsimsiz bir gönderinin kime ait olduğunu öğrenmek ya da başkasının isimsiz gönderisini silmek.</li>
             <li>Onaylı psikolog olmadan psikolog rozeti taşımak.</li>
             <li>Yanıt iznini ya da engellemeyi aşarak sana yanıt yazmak veya seni takip etmek.</li>
             <li>Başkasının beğeni ya da kaydetme bilgisini değiştirmek.</li>

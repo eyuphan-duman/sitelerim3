@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc, startAfter } from 'firebase/firestore';
 import { loadDirectory, useBlocks } from '@/components/forum/social';
 import { db } from '@/lib/firebase';
+import { sendNotification } from '@/lib/notify';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
@@ -29,6 +30,8 @@ interface Post {
   authorUsername?: string;
   uid: string;
   commentCount: number;
+  isAnonymous?: boolean;
+  originalIsAnonymous?: boolean;
   createdAt: any;
   reactionsData?: Record<string, string>;
   repostsData?: Record<string, any>;
@@ -426,7 +429,7 @@ export default function ForumClient() {
       await updateDoc(postRef, { [`reactionsData.${user.uid}`]: 'like' });
       if (thread.uid && thread.uid !== user.uid) {
         try {
-          await addDoc(collection(db, 'notifications'), {
+          await sendNotification({
             toUid: thread.uid,
             fromUid: user.uid,
             fromUser: userProfile?.displayName || user.displayName || 'Kullanıcı',
@@ -514,6 +517,7 @@ export default function ForumClient() {
         originalAuthorUsername: thread.originalAuthorUsername || thread.authorUsername || (thread.authorName || '').toLowerCase().replace(/\s+/g, ''),
         originalAuthorPhotoURL: thread.originalAuthorPhotoURL || thread.authorPhotoURL || '',
         originalAuthorIsPsychologist: thread.originalAuthorIsPsychologist ?? thread.authorIsPsychologist ?? false,
+        originalIsAnonymous: Boolean(thread.originalIsAnonymous ?? thread.isAnonymous),
         originalCreatedAt: thread.createdAt instanceof Date ? thread.createdAt : new Date(),
       });
 
@@ -521,7 +525,7 @@ export default function ForumClient() {
 
       if (thread.uid && thread.uid !== user.uid) {
         try {
-          await addDoc(collection(db, 'notifications'), {
+          await sendNotification({
             toUid: thread.uid,
             fromUid: user.uid,
             fromUser: userProfile?.displayName || user.displayName || 'Kullanıcı',
@@ -656,7 +660,7 @@ export default function ForumClient() {
 
     if (activeThread.uid && activeThread.uid !== user.uid) {
       try {
-        await addDoc(collection(db, 'notifications'), {
+        await sendNotification({
           toUid: activeThread.uid,
           fromUid: user.uid,
           fromUser: userProfile?.displayName || user.displayName || 'Kullanıcı',

@@ -1592,7 +1592,7 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-fullcompose-history .fx-icon-btn:disabled { color: var(--fx-ink-3); opacity: .45; cursor: default; background: none; }
 .fx-fullcompose-main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .fx-compose-full { border-bottom: 0; padding-top: 8px; }
-.fx-compose-full textarea { min-height: 120px; field-sizing: content; font-size: 1.15rem; padding-top: 8px; }
+.fx-compose-full textarea { min-height: 64px; field-sizing: content; font-size: 1.15rem; padding-top: 8px; }
 .fx-fullcompose-tools .fx-compose-tools { min-width: 0; flex: 1; }
 .fx-fullcompose-tools .fx-select { max-width: 150px; margin-left: 6px; }
 .fx-drafts-link {
@@ -1715,3 +1715,12 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-follow.is-blocked:hover span { display: none; }
 .fx-follow.is-blocked:hover::after { content: attr(data-label-hover); }
 .fx-prof-actions .fx-menu { min-width: 260px; }
+
+/* İsimsiz paylaşım */
+.fx-anon-toggle.is-on { color: var(--fx-ink); background: var(--fx-soft); padding: 0 10px; }
+.fx-anon-toggle span { font-size: .84rem; font-weight: 700; }
+.fx-anon-note { margin: 4px 0 8px; font-size: .84rem; color: var(--fx-ink-2); }
+.fx-anon-avatar { display: block; cursor: default; }
+.fx-name-anon { cursor: default; }
+.fx-name-anon:hover { text-decoration: none; }
+.fx-anon-mine { font-size: .78rem; font-weight: 600; color: var(--fx-ink-2); background: var(--fx-soft); border-radius: 6px; padding: 1px 6px; }

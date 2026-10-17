@@ -47,6 +47,22 @@ service cloud.firestore {
           myProfile().get('photoUploadsUsed', 0) < 1);
     }
 
+    // ── İsimsiz paylaşım ──
+    // İsimsiz gönderide uid = 'anonymous'; gerçek sahibi anon_owners/{postId} kaydındadır.
+    function anonOwnerOf(postId) {
+      return get(/databases/$(database)/documents/anon_owners/$(postId)).data.uid;
+    }
+
+    // Yeni isimsiz gönderi: aynı toplu yazımda sahiplik kaydı da oluşturulmalı
+    function validAnonPost(postId) {
+      return request.resource.data.uid == 'anonymous' &&
+        request.resource.data.isAnonymous == true &&
+        request.resource.data.get('authorIsPsychologist', false) == false &&
+        request.resource.data.get('authorUsername', '') == '' &&
+        request.resource.data.get('replyPolicy', 'everyone') != 'followers' &&
+        getAfter(/databases/$(database)/documents/anon_owners/$(postId)).data.uid == request.auth.uid;
+    }
+
     // İki kişiden biri diğerini engellemiş mi?
     function blockedBetween(a, b) {
       return exists(/databases/$(database)/documents/blocks/$(a + '_' + b)) ||
@@ -169,7 +185,8 @@ service cloud.firestore {
       allow read: if true;
 
       allow create: if signedIn() &&
-        request.resource.data.uid == request.auth.uid &&
+        ((request.resource.data.uid == request.auth.uid && request.resource.data.get('isAnonymous', false) == false) ||
+          validAnonPost(postId)) &&
         notBanned() &&
         isEmailVerified() &&
         withinPostLimits() &&
@@ -184,18 +201,26 @@ service cloud.firestore {
         (changedKeys().hasOnly(['viewsCount']) && counterStep('viewsCount', [1]));
 
       allow delete: if isAdmin() ||
-        (signedIn() && resource.data.uid == request.auth.uid);
+        (signedIn() && resource.data.uid == request.auth.uid) ||
+        (signedIn() && resource.data.uid == 'anonymous' && anonOwnerOf(postId) == request.auth.uid);
 
       match /comments/{commentId} {
         allow read: if true;
 
         allow create: if signedIn() &&
-          request.resource.data.uid == request.auth.uid &&
           notBanned() &&
           isEmailVerified() &&
           withinCommentLimits() &&
-          canReplyTo(postId) &&
-          validPsychBadge();
+          validPsychBadge() && (
+            (request.resource.data.uid == request.auth.uid &&
+              request.resource.data.get('isAnonymous', false) == false &&
+              canReplyTo(postId)) ||
+            // İsimsiz gönderinin sahibi kendi gönderisine isimsiz yanıt verir
+            (request.resource.data.uid == 'anonymous' &&
+              request.resource.data.isAnonymous == true &&
+              request.resource.data.get('authorIsPsychologist', false) == false &&
+              anonOwnerOf(postId) == request.auth.uid)
+          );
 
         allow update: if isAdmin() ||
           (signedIn() && resource.data.uid == request.auth.uid &&
@@ -207,9 +232,23 @@ service cloud.firestore {
         allow delete: if isAdmin() ||
           (signedIn() && (
             resource.data.uid == request.auth.uid ||
-            get(/databases/$(database)/documents/forum/$(postId)).data.uid == request.auth.uid
+            get(/databases/$(database)/documents/forum/$(postId)).data.uid == request.auth.uid ||
+            (get(/databases/$(database)/documents/forum/$(postId)).data.uid == 'anonymous' &&
+              anonOwnerOf(postId) == request.auth.uid)
           ));
       }
+    }
+
+    // ───────── İsimsiz gönderi sahiplikleri ─────────
+    // Yalnızca sahibi ve yönetici okur. Yalnızca gönderiyle aynı anda oluşturulabilir.
+    match /anon_owners/{postId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn() &&
+        request.resource.data.keys().hasOnly(['uid', 'createdAt']) &&
+        request.resource.data.uid == request.auth.uid &&
+        !exists(/databases/$(database)/documents/forum/$(postId)) &&
+        getAfter(/databases/$(database)/documents/forum/$(postId)).data.uid == 'anonymous';
+      allow update, delete: if false;
     }
 
     // ───────── Takip ─────────

@@ -6,6 +6,7 @@ import {
   addDoc, collection, deleteDoc, deleteField, doc, getDocs, query, serverTimestamp, setDoc, updateDoc, where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { sendNotification } from '@/lib/notify';
 import { useAuth } from '@/contexts/AuthContext';
 
 type AnyPost = Record<string, any> & { id: string; uid: string };
@@ -24,7 +25,7 @@ export function usePostActions({ onNeedAuth, onPatch }: { onNeedAuth: () => void
   const notify = async (thread: AnyPost, type: string, message: string) => {
     if (!user || !thread.uid || thread.uid === user.uid) return;
     try {
-      await addDoc(collection(db, 'notifications'), {
+      await sendNotification({
         toUid: thread.uid,
         fromUid: user.uid,
         fromUser: userProfile?.displayName || user.displayName || 'Kullanıcı',
@@ -129,6 +130,7 @@ export function usePostActions({ onNeedAuth, onPatch }: { onNeedAuth: () => void
         originalAuthorUsername: thread.originalAuthorUsername || thread.authorUsername || '',
         originalAuthorPhotoURL: thread.originalAuthorPhotoURL || thread.authorPhotoURL || '',
         originalAuthorIsPsychologist: thread.originalAuthorIsPsychologist ?? thread.authorIsPsychologist ?? false,
+        originalIsAnonymous: Boolean(thread.originalIsAnonymous ?? thread.isAnonymous),
       });
       setMapKey('repostsData', thread.id, u.uid, repost.id);
       await updateDoc(doc(db, 'forum', target), { [`repostsData.${u.uid}`]: repost.id });

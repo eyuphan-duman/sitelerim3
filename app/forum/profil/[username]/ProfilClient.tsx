@@ -1017,7 +1017,7 @@ export default function ProfilClient({ username }: { username: string }) {
                     ))}
                   </div>
 
-                  {tab === 'posts' && isOwn && !pd.isFrozen && <Composer onPosted={(np) => setPosts(prev => [np, ...prev])} />}
+                  {tab === 'posts' && isOwn && !pd.isFrozen && <Composer onPosted={(np) => { if (!np.isAnonymous) setPosts(prev => [np, ...prev]); }} />}
                   {tab === 'posts' && renderPosts(posts, isOwn ? 'Henüz gönderi paylaşmadın' : 'Henüz gönderi yok', isOwn ? 'İlk düşünceni ya da sorunu paylaştığında burada görünecek.' : `@${handle} henüz bir şey paylaşmadı.`)}
 
                   {tab === 'replies' && (

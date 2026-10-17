@@ -10,7 +10,8 @@ import { doc, onSnapshot, collection, addDoc, serverTimestamp } from 'firebase/f
 import { db } from '@/lib/firebase';
 import { formatTimeAgo, formatPostDate, renderTextWithMentions } from './ThreadView';
 import { Avatar, VerifiedMark, ReportDialog, compactCount } from './ui';
-import { useUsers, blockUser } from './social';
+import { useUsers, blockUser, useMyAnonPosts } from './social';
+import { ANON_AVATAR, ANON_NAME, ANON_UID } from '@/lib/notify';
 import { confirmBlock } from './confirm';
 import toast from 'react-hot-toast';
 
@@ -37,6 +38,8 @@ interface Post {
   originalAuthorUsername?: string;
   originalAuthorPhotoURL?: string;
   originalAuthorIsPsychologist?: boolean;
+  isAnonymous?: boolean;
+  originalIsAnonymous?: boolean;
 }
 
 interface Props {
@@ -70,11 +73,14 @@ export default function ForumPost({
   onTopic,
 }: Props) {
   const isRepost = Boolean(post.isRepost);
-  const displayAuthorName = isRepost && post.originalAuthorName ? post.originalAuthorName : (post.authorName || 'Kullanıcı');
+  const anon = Boolean(isRepost ? post.originalIsAnonymous : post.isAnonymous);
+  const myAnon = useMyAnonPosts(currentUserUid);
+  const ownsAnon = anon && myAnon.has(isRepost ? post.originalPostId || '' : post.id);
+  const displayAuthorName = anon ? ANON_NAME : isRepost && post.originalAuthorName ? post.originalAuthorName : (post.authorName || 'Kullanıcı');
   const displayAuthorUsername = isRepost && post.originalAuthorUsername ? post.originalAuthorUsername : (post.authorUsername || (displayAuthorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici');
-  const displayAuthorPhoto = isRepost && post.originalAuthorPhotoURL ? post.originalAuthorPhotoURL : post.authorPhotoURL;
-  const canDelete = (currentUserUid && currentUserUid === post.uid) || adminEmails.includes(currentUserEmail || '');
-  const hasPsychBadge = !post.authorHideBadge && Boolean(isPsychologist || post.authorIsPsychologist || (isRepost && post.originalAuthorIsPsychologist));
+  const displayAuthorPhoto = anon ? ANON_AVATAR : isRepost && post.originalAuthorPhotoURL ? post.originalAuthorPhotoURL : post.authorPhotoURL;
+  const canDelete = (currentUserUid && currentUserUid === post.uid) || (!isRepost && ownsAnon) || adminEmails.includes(currentUserEmail || '');
+  const hasPsychBadge = !anon && !post.authorHideBadge && Boolean(isPsychologist || post.authorIsPsychologist || (isRepost && post.originalAuthorIsPsychologist));
   const users = useUsers();
   const authorTitle = (!isRepost || !post.originalAuthorName) ? users[post.uid]?.title : undefined;
   const profileHref = `/forum/profil/${encodeURIComponent(displayAuthorUsername)}`;
@@ -168,16 +174,26 @@ export default function ForumPost({
         )}
 
         <div className="fx-post-grid">
-          <Link href={profileHref} onClick={e => e.stopPropagation()} aria-label={displayAuthorName}>
-            <Avatar src={liveAuthorPhoto || displayAuthorPhoto} name={displayAuthorName} size={40} />
-          </Link>
+          {anon ? (
+            <span className="fx-anon-avatar" aria-label={ANON_NAME}>
+              <Avatar src={ANON_AVATAR} name={ANON_NAME} size={40} />
+            </span>
+          ) : (
+            <Link href={profileHref} onClick={e => e.stopPropagation()} aria-label={displayAuthorName}>
+              <Avatar src={liveAuthorPhoto || displayAuthorPhoto} name={displayAuthorName} size={40} />
+            </Link>
+          )}
 
           <div className="fx-post-body">
             <div className="fx-post-meta">
               <div className="fx-post-meta-main">
-                <Link href={profileHref} onClick={e => e.stopPropagation()} className="fx-name">{displayAuthorName}</Link>
+                {anon ? (
+                  <span className="fx-name fx-name-anon">{ANON_NAME}</span>
+                ) : (
+                  <Link href={profileHref} onClick={e => e.stopPropagation()} className="fx-name">{displayAuthorName}</Link>
+                )}
                 {hasPsychBadge && <VerifiedMark label={authorTitle} />}
-                <span className="fx-handle">@{displayAuthorUsername}</span>
+                {anon ? (ownsAnon && <span className="fx-anon-mine">Senin paylaşımın</span>) : <span className="fx-handle">@{displayAuthorUsername}</span>}
                 <span className="fx-sep" aria-hidden="true">·</span>
                 <time className="fx-time" title={formatPostDate(post.createdAt)}>{formatTimeAgo(post.createdAt)}</time>
               </div>
@@ -202,7 +218,7 @@ export default function ForumPost({
                       <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setReportModalOpen(true); }}>
                         <Flag size={17} /> Gönderiyi şikayet et
                       </button>
-                      {currentUserUid && post.uid && currentUserUid !== post.uid && (
+                      {currentUserUid && post.uid && post.uid !== ANON_UID && !anon && currentUserUid !== post.uid && (
                         <button type="button" role="menuitem" onClick={async () => {
                           setMenuOpen(false);
                           const handle = post.authorUsername || post.authorName || 'kullanici';

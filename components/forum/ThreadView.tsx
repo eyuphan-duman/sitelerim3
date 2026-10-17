@@ -8,7 +8,8 @@ import {
   Share, Trash2, Loader, Image as ImageIcon, X, MoreHorizontal, Link as LinkIcon, Flag
 } from 'lucide-react';
 import { Avatar, VerifiedMark, CharRing, ReportDialog, compactCount } from './ui';
-import { useUsers, useBlocks, unblockUser } from './social';
+import { useUsers, useBlocks, unblockUser, useMyAnonPosts } from './social';
+import { ANON_AVATAR, ANON_NAME, ANON_UID } from '@/lib/notify';
 import { confirmUnblock } from './confirm';
 import {
   doc, updateDoc, deleteField, increment, collection,
@@ -16,6 +17,7 @@ import {
   getDocs, where, setDoc, getDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { sendNotification } from '@/lib/notify';
 import toast from 'react-hot-toast';
 import { notifyMentions } from '@/lib/mentionUtils';
 
@@ -140,6 +142,10 @@ export default function ThreadView({
   const [replyText, setReplyText] = useState('');
   const [followsAuthor, setFollowsAuthor] = useState(false);
   const blocks = useBlocks(currentUser && !currentUser.isAnonymous ? currentUser.uid : null);
+  const myAnon = useMyAnonPosts(currentUser && !currentUser.isAnonymous ? currentUser.uid : null);
+  const pAnon = Boolean(currentPost?.isAnonymous);
+  // İsimsiz gönderinin sahibi yanıtlarını da isimsiz verir
+  const ownsAnon = pAnon && myAnon.has(currentPost?.id || '');
   const replyPolicy: string = currentPost?.replyPolicy || 'everyone';
   useEffect(() => {
     if (replyPolicy !== 'followers' || !currentUser || currentUser.isAnonymous || !currentPost?.uid || currentPost.uid === currentUser.uid) return;
@@ -260,9 +266,9 @@ export default function ThreadView({
   }, [post?.id]);
 
   const p = currentPost || post;
-  const username = p.authorUsername || (p.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
+  const username = pAnon ? '' : p.authorUsername || (p.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
   const isAdmin = adminEmails.includes(currentUser?.email || '');
-  const canDeletePost = (currentUser?.uid && currentUser.uid === p.uid) || isAdmin;
+  const canDeletePost = (currentUser?.uid && currentUser.uid === p.uid) || ownsAnon || isAdmin;
 
   // Reaction states
   const userReaction = p.reactionsData?.[currentUser?.uid || ''];
@@ -291,7 +297,7 @@ export default function ThreadView({
       await updateDoc(postRef, { [`reactionsData.${currentUser.uid}`]: 'like' });
       if (p.uid && p.uid !== currentUser.uid) {
         try {
-          await addDoc(collection(db, 'notifications'), {
+          await sendNotification({
             toUid: p.uid,
             fromUid: currentUser.uid,
             fromUser: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
@@ -378,6 +384,7 @@ export default function ThreadView({
         originalAuthorUsername: p.originalAuthorUsername || username,
         originalAuthorPhotoURL: p.originalAuthorPhotoURL || p.authorPhotoURL || '',
         originalAuthorIsPsychologist: p.originalAuthorIsPsychologist ?? p.authorIsPsychologist ?? false,
+        originalIsAnonymous: Boolean(p.originalIsAnonymous ?? p.isAnonymous),
         originalCreatedAt: p.createdAt instanceof Date ? p.createdAt : new Date(),
       });
 
@@ -385,7 +392,7 @@ export default function ThreadView({
 
       if (p.uid && p.uid !== currentUser.uid) {
         try {
-          await addDoc(collection(db, 'notifications'), {
+          await sendNotification({
             toUid: p.uid,
             fromUid: currentUser.uid,
             fromUser: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
@@ -496,6 +503,9 @@ export default function ThreadView({
       );
       const usesNewPhoto = Boolean(replyImageUrl) && !isPsychologist;
 
+      const anonFields = ownsAnon
+        ? { isAnonymous: true, uid: ANON_UID, authorName: ANON_NAME, authorUsername: '', authorIsPsychologist: false, authorHideBadge: false, authorPhotoURL: '' }
+        : {};
       await addDoc(collection(db, 'forum', p.id, 'comments'), {
         authorName: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
         authorUsername: userProfile?.username || (currentUser.displayName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici',
@@ -509,7 +519,8 @@ export default function ThreadView({
         reactionsData: {},
         repostsData: {},
         bookmarksData: {},
-        uid: currentUser.uid
+        uid: currentUser.uid,
+        ...anonFields,
       });
 
       if (usesNewPhoto) {
@@ -522,7 +533,7 @@ export default function ThreadView({
 
       if (p.uid && p.uid !== currentUser.uid) {
         try {
-          await addDoc(collection(db, 'notifications'), {
+          await sendNotification({
             toUid: p.uid,
             fromUid: currentUser.uid,
             fromUser: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
@@ -538,8 +549,8 @@ export default function ThreadView({
         } catch {}
       }
 
-      // Notify any mentioned users in reply
-      try {
+      // Notify any mentioned users in reply (isimsiz yanıtta kimlik açığa çıkmasın diye gönderilmez)
+      if (!ownsAnon) try {
         await notifyMentions({
           text: replyText,
           postId: p.originalPostId || p.id,
@@ -632,7 +643,8 @@ export default function ThreadView({
         originalAuthorName: c.authorName,
         originalAuthorUsername: c.authorUsername || (c.authorName || '').toLowerCase().replace(/\s+/g, ''),
         originalAuthorPhotoURL: c.authorPhotoURL || '',
-        originalAuthorIsPsychologist: c.authorIsPsychologist || false
+        originalAuthorIsPsychologist: c.authorIsPsychologist || false,
+        originalIsAnonymous: Boolean(c.isAnonymous)
       });
       await updateDoc(commentRef, { [`repostsData.${currentUser.uid}`]: repostDoc.id });
       toast.success('Yeniden paylaşıldı');
@@ -656,15 +668,15 @@ export default function ThreadView({
   const amPsych = Boolean((userProfile?.isPsychologist && (userProfile?.psychologistStatus === 'approved' || !userProfile?.psychologistStatus)) || userProfile?.role === 'psychologist');
   const authorBlockedMe = Boolean(currentPost?.uid && blocks.blockedBy.has(currentPost.uid));
   const iBlockedAuthor = Boolean(currentPost?.uid && blocks.blocked.has(currentPost.uid));
-  const canReply = !authorBlockedMe && !iBlockedAuthor && (!isMember || replyPolicy === 'everyone' || currentPost?.uid === currentUser?.uid ||
+  const canReply = !authorBlockedMe && !iBlockedAuthor && (!isMember || replyPolicy === 'everyone' || currentPost?.uid === currentUser?.uid || ownsAnon ||
     adminEmails.includes(currentUser?.email?.toLowerCase() || '') ||
     (replyPolicy === 'psychologists' && amPsych) || (replyPolicy === 'followers' && followsAuthor));
   const replyNote = replyPolicy === 'nobody' ? 'Bu gönderiye yanıt kapalı.'
     : replyPolicy === 'psychologists' ? 'Bu gönderiyi yalnızca psikologlar yanıtlayabilir.'
     : replyPolicy === 'followers' ? `Bu gönderiyi yalnızca @${currentPost?.authorUsername || 'yazarın'} adlı kişinin takipçileri yanıtlayabilir.` : '';
   const authorPhoto = authorProfilePhoto || p.authorPhotoURL || (currentUser?.uid === p.uid ? (userProfile?.photoURL || currentUser?.photoURL) : '');
-  const myPhoto = userProfile?.photoURL || currentUser?.photoURL || '';
-  const myName = userProfile?.displayName || currentUser?.displayName || '';
+  const myPhoto = ownsAnon ? ANON_AVATAR : userProfile?.photoURL || currentUser?.photoURL || '';
+  const myName = ownsAnon ? ANON_NAME : userProfile?.displayName || currentUser?.displayName || '';
   const timeLabel = formatPostTime(p.createdAt);
 
   const notifText: Record<string, string> = {
@@ -733,16 +745,28 @@ export default function ThreadView({
 
       <article className="fx-detail">
         <div className="fx-detail-head">
-          <Link href={`/forum/profil/${encodeURIComponent(username)}`} aria-label={p.authorName}>
-            <Avatar src={authorPhoto} name={p.authorName} size={44} />
-          </Link>
-          <div className="fx-detail-who">
-            <div className="fx-post-meta-main">
-              <Link href={`/forum/profil/${encodeURIComponent(username)}`} className="fx-name">{p.authorName}</Link>
-              {(post.authorIsPsychologist || p.authorIsPsychologist) && !p.authorHideBadge && <VerifiedMark label={users[p.uid]?.title} />}
-            </div>
-            <div className="fx-handle">@{username}</div>
-          </div>
+          {pAnon ? (
+            <>
+              <span className="fx-anon-avatar"><Avatar src={ANON_AVATAR} name={ANON_NAME} size={44} /></span>
+              <div className="fx-detail-who">
+                <div className="fx-post-meta-main"><span className="fx-name fx-name-anon">{ANON_NAME}</span></div>
+                <div className="fx-handle">{ownsAnon ? 'Senin isimsiz paylaşımın' : 'Profili gizli'}</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link href={`/forum/profil/${encodeURIComponent(username)}`} aria-label={p.authorName}>
+                <Avatar src={authorPhoto} name={p.authorName} size={44} />
+              </Link>
+              <div className="fx-detail-who">
+                <div className="fx-post-meta-main">
+                  <Link href={`/forum/profil/${encodeURIComponent(username)}`} className="fx-name">{p.authorName}</Link>
+                  {(post.authorIsPsychologist || p.authorIsPsychologist) && !p.authorHideBadge && <VerifiedMark label={users[p.uid]?.title} />}
+                </div>
+                <div className="fx-handle">@{username}</div>
+              </div>
+            </>
+          )}
 
           <div className="fx-menu-wrap">
             <button type="button" className="fx-icon-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Diğer seçenekler" aria-expanded={menuOpen}>
@@ -827,8 +851,14 @@ export default function ThreadView({
           <Avatar src={myPhoto} name={myName} size={40} />
           <div className="fx-compose-body">
             <div className="fx-reply-to">
-              <Link href={`/forum/profil/${encodeURIComponent(replyToUser || username)}`} className="fx-mention">@{replyToUser || username}</Link>
-              <span> adlı kişiye yanıt</span>
+              {replyToUser || username ? (
+                <>
+                  <Link href={`/forum/profil/${encodeURIComponent(replyToUser || username)}`} className="fx-mention">@{replyToUser || username}</Link>
+                  <span> adlı kişiye yanıt</span>
+                </>
+              ) : (
+                <span>{ownsAnon ? 'İsimsiz olarak yanıt veriyorsun' : 'İsimsiz kullanıcıya yanıt'}</span>
+              )}
               {replyToUser && replyToUser !== username && (
                 <button type="button" className="fx-text-btn" onClick={() => setReplyToUser(username)}>gönderiye dön</button>
               )}
@@ -882,7 +912,7 @@ export default function ThreadView({
         ) : (
           comments.filter(c => !blocks.hidden.has(c.uid)).map(c => {
             const commentAuthorUsername = c.authorUsername || (c.authorName || '').toLowerCase().replace(/\s+/g, '') || 'kullanici';
-            const canDeleteComment = (currentUser?.uid && currentUser.uid === c.uid) || isAdmin;
+            const canDeleteComment = (currentUser?.uid && currentUser.uid === c.uid) || (c.isAnonymous && ownsAnon) || isAdmin;
             const uid = currentUser?.uid || '';
             const liked = c.reactionsData?.[uid] === 'like';
             const disliked = c.reactionsData?.[uid] === 'dislike';
@@ -898,15 +928,28 @@ export default function ThreadView({
             return (
               <div key={c.id} className="fx-post fx-comment">
                 <div className="fx-post-grid">
-                  <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} aria-label={c.authorName}>
-                    <Avatar src={c.authorPhotoURL} name={c.authorName} size={40} />
-                  </Link>
+                  {c.isAnonymous ? (
+                    <span className="fx-anon-avatar"><Avatar src={ANON_AVATAR} name={ANON_NAME} size={40} /></span>
+                  ) : (
+                    <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} aria-label={c.authorName}>
+                      <Avatar src={c.authorPhotoURL} name={c.authorName} size={40} />
+                    </Link>
+                  )}
                   <div className="fx-post-body">
                     <div className="fx-post-meta">
                       <div className="fx-post-meta-main">
-                        <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} className="fx-name">{c.authorName}</Link>
-                        {c.authorIsPsychologist && !c.authorHideBadge && <VerifiedMark label={users[c.uid]?.title} />}
-                        <span className="fx-handle">@{commentAuthorUsername}</span>
+                        {c.isAnonymous ? (
+                          <>
+                            <span className="fx-name fx-name-anon">{ANON_NAME}</span>
+                            <span className="fx-anon-mine">Gönderi sahibi</span>
+                          </>
+                        ) : (
+                          <>
+                            <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} className="fx-name">{c.authorName}</Link>
+                            {c.authorIsPsychologist && !c.authorHideBadge && <VerifiedMark label={users[c.uid]?.title} />}
+                            <span className="fx-handle">@{commentAuthorUsername}</span>
+                          </>
+                        )}
                         <span className="fx-sep" aria-hidden="true">·</span>
                         <time className="fx-time" title={formatPostDate(c.createdAt)}>{formatTimeAgo(c.createdAt)}</time>
                       </div>
