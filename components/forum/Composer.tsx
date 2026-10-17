@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import { X, Loader2, Image as ImageIcon, Camera, Undo2, Redo2, Globe, Users, BadgeCheck, Ban, Check, FileText, Trash2 } from 'lucide-react';
+import { X, Loader2, Image as ImageIcon, Camera, Undo2, Redo2, Globe, Users, BadgeCheck, Ban, FileText, Trash2 } from 'lucide-react';
 import { addDoc, collection, doc, increment, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -92,6 +92,7 @@ export default function Composer({
   const [cat, setCat] = useState('Psikanaliz');
   const [imageUrl, setImageUrl] = useState('');
   const [replyPolicy, setReplyPolicy] = useState<ReplyPolicy>('everyone');
+  const [pendingPolicy, setPendingPolicy] = useState<ReplyPolicy>('everyone');
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [full, setFull] = useState(Boolean(startFull));
@@ -245,7 +246,7 @@ export default function Composer({
   );
 
   const policyButton = (
-    <button type="button" className="fx-policy-btn" onClick={() => setPanel('policy')} aria-haspopup="dialog">
+    <button type="button" className="fx-policy-btn" onClick={() => { setPendingPolicy(replyPolicy); setPanel('policy'); }} aria-haspopup="dialog">
       <policy.Icon size={15} strokeWidth={2.4} />
       <span>{policy.hint}</span>
     </button>
@@ -253,17 +254,21 @@ export default function Composer({
 
   const policySheet = panel === 'policy' && (
     <div className="fx-actsheet-scrim" onClick={() => setPanel(null)}>
-      <div className="fx-actsheet" role="dialog" aria-label="Kimler yanıtlayabilir?" onClick={e => e.stopPropagation()}>
-        <div className="fx-actsheet-grip" />
-        <h3>Kimler yanıtlayabilir?</h3>
-        <p>Gönderine kimlerin yanıt verebileceğini seç. Sen her zaman yanıtlayabilirsin.</p>
-        {REPLY_POLICIES.map(p => (
-          <button key={p.id} type="button" className="fx-actsheet-row" onClick={() => { setReplyPolicy(p.id); setPanel(null); }}>
-            <span className="fx-actsheet-ico"><p.Icon size={18} /></span>
-            <span className="fx-actsheet-label">{p.label}</span>
-            {replyPolicy === p.id && <Check size={18} className="fx-actsheet-check" />}
-          </button>
-        ))}
+      <div className="fx-actsheet fx-policy-sheet" role="dialog" aria-label="Kimler yanıtlayabilir?" onClick={e => e.stopPropagation()}>
+        <div className="fx-policy-head">
+          <h3>Kimler yanıtlayabilir?</h3>
+          <button type="button" className="fx-icon-btn" onClick={() => setPanel(null)} aria-label="Kapat"><X size={22} /></button>
+        </div>
+        <div role="radiogroup" aria-label="Yanıt izni">
+          {REPLY_POLICIES.map(p => (
+            <button key={p.id} type="button" role="radio" aria-checked={pendingPolicy === p.id} className="fx-actsheet-row" onClick={() => setPendingPolicy(p.id)}>
+              <p.Icon size={24} strokeWidth={1.8} className="fx-policy-ico" />
+              <span className="fx-actsheet-label">{p.label}</span>
+              <span className={`fx-radio ${pendingPolicy === p.id ? 'is-on' : ''}`} aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+        <button type="button" className="fx-btn fx-policy-apply" onClick={() => { setReplyPolicy(pendingPolicy); setPanel(null); }}>Uygula</button>
       </div>
     </div>
   );
@@ -278,22 +283,14 @@ export default function Composer({
         aria-label="Yeni gönderi"
         style={vv ? { height: vv.h, top: vv.top } : undefined}
       >
-        <header className="fx-fullcompose-head">
+        <div className="fx-fullcompose-head">
           <button type="button" className="fx-text-btn fx-fullcompose-cancel" onClick={() => (isEmpty ? (clear(), close()) : setPanel('leave'))}>
-            İptal
+            İptal et
           </button>
-          <div className="fx-fullcompose-history">
-            <button type="button" className="fx-icon-btn" disabled={!hist.canUndo} onClick={() => setBody(hist.undo())} aria-label="Geri al">
-              <Undo2 size={20} />
-            </button>
-            <button type="button" className="fx-icon-btn" disabled={!hist.canRedo} onClick={() => setBody(hist.redo())} aria-label="Yinele">
-              <Redo2 size={20} />
-            </button>
-          </div>
           <button type="button" className="fx-btn fx-btn-primary fx-btn-sm" disabled={posting || isEmpty} onClick={post}>
             {posting ? 'Paylaşılıyor…' : 'Paylaş'}
           </button>
-        </header>
+        </div>
 
         <div className="fx-fullcompose-main">
           {isEmpty && drafts.length > 0 && (
@@ -317,8 +314,18 @@ export default function Composer({
           </div>
         </div>
 
-        <footer className="fx-fullcompose-foot">
-          <div className="fx-fullcompose-policy">{policyButton}</div>
+        <div className="fx-fullcompose-foot">
+          <div className="fx-fullcompose-policy">
+            {policyButton}
+            <div className="fx-fullcompose-history">
+              <button type="button" className="fx-icon-btn" disabled={!hist.canUndo} onClick={() => setBody(hist.undo())} aria-label="Geri al">
+                <Undo2 size={22} />
+              </button>
+              <button type="button" className="fx-icon-btn" disabled={!hist.canRedo} onClick={() => setBody(hist.redo())} aria-label="Yinele">
+                <Redo2 size={22} />
+              </button>
+            </div>
+          </div>
           <div className="fx-fullcompose-tools">
             <div className="fx-compose-tools">
               {photoInput()}
@@ -327,7 +334,7 @@ export default function Composer({
             </div>
             <CharRing length={body.length} limit={LIMIT} />
           </div>
-        </footer>
+        </div>
 
         {policySheet}
 
