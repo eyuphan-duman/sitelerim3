@@ -77,6 +77,8 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
   const router = useRouter();
   const [isDark, toggleTheme, setTheme] = useForumTheme();
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  useEffect(() => { if (!authOpen) setAuthMode('signin'); }, [authOpen]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [q, setQ] = useState('');
@@ -234,8 +236,8 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
               <span>Soru sor, psikologların ve topluluğun yanıtlarını oku.</span>
             </div>
             <div className="fx-guest-actions">
-              <button type="button" className="fx-btn fx-btn-ghost" onClick={() => setAuthOpen(true)}>Giriş yap</button>
-              <button type="button" className="fx-btn fx-btn-solid" onClick={() => setAuthOpen(true)}>Kayıt ol</button>
+              <button type="button" className="fx-btn fx-btn-ghost" onClick={() => { setAuthMode('signin'); setAuthOpen(true); }}>Giriş yap</button>
+              <button type="button" className="fx-btn fx-btn-solid" onClick={() => { setAuthMode('signup'); setAuthOpen(true); }}>Kayıt ol</button>
             </div>
           </div>
         </div>
@@ -306,7 +308,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
         </div>
       )}
 
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} isDark={isDark} />
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} isDark={isDark} initialMode={authMode} />
       <ConfirmHost />
     </div>
   );

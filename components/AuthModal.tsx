@@ -16,6 +16,8 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   isDark?: boolean;
+  /** Açılırken hangi sekmeyle başlasın */
+  initialMode?: 'signin' | 'signup';
 }
 
 type Mode = 'signin' | 'signup' | 'google' | 'forgot';
@@ -86,7 +88,7 @@ function GoogleLogo() {
   );
 }
 
-export default function AuthModal({ isOpen, onClose, isDark }: Props) {
+export default function AuthModal({ isOpen, onClose, isDark, initialMode = 'signin' }: Props) {
   const {
     signIn,
     signUp,
@@ -99,6 +101,7 @@ export default function AuthModal({ isOpen, onClose, isDark }: Props) {
   } = useAuth();
 
   const [mode, setMode] = useState<Mode>('signin');
+  useEffect(() => { if (isOpen) setMode(initialMode); }, [isOpen, initialMode]);
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [show, setShow] = useState(false);
