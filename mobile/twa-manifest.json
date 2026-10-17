@@ -1,0 +1,46 @@
+{
+  "packageId": "com.pskfurkanmanav.logos",
+  "host": "www.pskfurkanmanav.com",
+  "name": "Logos — Psikoloji Forumu",
+  "launcherName": "Logos",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#ffffff",
+  "themeColorDark": "#08111f",
+  "navigationColor": "#ffffff",
+  "navigationColorDark": "#08111f",
+  "navigationDividerColor": "#e8ecf1",
+  "navigationDividerColorDark": "#1c2a40",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": false,
+  "startUrl": "/forum",
+  "iconUrl": "https://www.pskfurkanmanav.com/icons/logos-512.png",
+  "maskableIconUrl": "https://www.pskfurkanmanav.com/icons/logos-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "../../logos-android-anahtar/logos-upload.jks",
+    "alias": "logos"
+  },
+  "appVersionCode": 1,
+  "appVersion": "1.0.0",
+  "shortcuts": [
+    {
+      "name": "Yeni gönderi",
+      "shortName": "Paylaş",
+      "url": "https://www.pskfurkanmanav.com/forum?compose=open",
+      "chosenIconUrl": "https://www.pskfurkanmanav.com/icons/logos-192.png"
+    },
+    {
+      "name": "Bildirimler",
+      "shortName": "Bildirimler",
+      "url": "https://www.pskfurkanmanav.com/bildirimler",
+      "chosenIconUrl": "https://www.pskfurkanmanav.com/icons/logos-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-core",
+  "webManifestUrl": "https://www.pskfurkanmanav.com/logos.webmanifest",
+  "fallbackType": "customtabs",
+  "enableSiteSettingsShortcut": false,
+  "minSdkVersion": 24,
+  "features": {}
+}

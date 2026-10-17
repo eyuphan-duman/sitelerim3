@@ -1,0 +1,7 @@
+# Üretilen Android projesi ve derleme çıktıları (build-android.mjs yeniden üretir)
+android/
+*.aab
+*.apk
+*.jks
+*.keystore
+cikti/
