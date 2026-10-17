@@ -28,9 +28,42 @@ export async function POST(req: Request) {
     const caller = await getAuth(app).verifyIdToken(token).catch(() => null);
     if (!caller) return NextResponse.json({ ok: false }, { status: 401 });
 
-    const { postId, type, postTitle } = await req.json();
+    const { postId, type, postTitle, fromOwner, commentId } = await req.json();
     if (typeof postId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(postId) || !MESSAGES[type]) {
       return NextResponse.json({ ok: false }, { status: 400 });
+    }
+
+    // Ters yön: isimsiz gönderinin sahibi bir yoruma isimsiz yanıt verdi. Yorum sahibine giden
+    // bildirimde sahibinin kimliği yer almaz (istemci kendi kimliği olmadan bildirim yazamaz).
+    if (fromOwner) {
+      if (typeof commentId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(commentId)) return NextResponse.json({ ok: false }, { status: 400 });
+      const [owner, comment] = await Promise.all([
+        db.collection('anon_owners').doc(postId).get(),
+        db.collection('forum').doc(postId).collection('comments').doc(commentId).get(),
+      ]);
+      if (owner.data()?.uid !== caller.uid) return NextResponse.json({ ok: false }, { status: 403 });
+      const toUid = comment.data()?.uid as string | undefined;
+      if (!toUid || toUid === 'anonymous' || toUid === caller.uid) return NextResponse.json({ ok: true });
+      const [b1, b2] = await Promise.all([
+        db.collection('blocks').doc(`${toUid}_${caller.uid}`).get(),
+        db.collection('blocks').doc(`${caller.uid}_${toUid}`).get(),
+      ]);
+      if (b1.exists || b2.exists) return NextResponse.json({ ok: true });
+      const added = await db.collection('notifications').add({
+        toUid,
+        fromUid: 'anonymous',
+        fromUser: 'İsimsiz kullanıcı',
+        fromUsername: '',
+        fromPhotoURL: '',
+        type: 'comment',
+        message: 'yanıtına yanıt verdi.',
+        postId,
+        postTitle: typeof postTitle === 'string' ? postTitle.slice(0, 50) : '',
+        read: false,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      await pushNotification(app, db, added.id).catch(() => 0);
+      return NextResponse.json({ ok: true });
     }
 
     const [owner, post] = await Promise.all([

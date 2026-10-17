@@ -601,14 +601,24 @@ export default function ThreadView({
       } catch {}
 
       // Yanıtlanan yorumun sahibine de haber ver (gönderi sahibi zaten yukarıda bildirildi)
-      if (replyTo && replyTo.uid && replyTo.uid !== currentUser.uid && replyTo.uid !== p.uid) {
+      if (replyTo && replyTo.uid && replyTo.uid !== currentUser.uid && replyTo.uid !== p.uid && ownsAnon) {
+        // İsimsiz sahibin kimliği bildirimde görünmesin: sunucu kimliksiz yazar
+        const token = await currentUser.getIdToken().catch(() => null);
+        if (token) {
+          fetch('/api/forum/notify-anon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ postId: p.id, type: 'comment', fromOwner: true, commentId: replyTo.id, postTitle: replyText.trim().slice(0, 50) }),
+          }).catch(() => {});
+        }
+      } else if (replyTo && replyTo.uid && replyTo.uid !== currentUser.uid && replyTo.uid !== p.uid) {
         try {
           await sendNotification({
             toUid: replyTo.uid,
             fromUid: currentUser.uid,
-            fromUser: ownsAnon ? ANON_NAME : userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
-            fromUsername: ownsAnon ? '' : userProfile?.username || '',
-            fromPhotoURL: ownsAnon ? '' : userProfile?.photoURL || currentUser.photoURL || '',
+            fromUser: userProfile?.displayName || currentUser.displayName || 'Kullanıcı',
+            fromUsername: userProfile?.username || '',
+            fromPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
             type: 'comment',
             message: 'yanıtına yanıt verdi.',
             postId: p.originalPostId || p.id,
