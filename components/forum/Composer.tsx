@@ -5,6 +5,7 @@
  * dokunulunca tam ekran açılır (geri/ileri, fotoğraf, kamera, yanıt izni, taslaklar).
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { X, Loader2, Image as ImageIcon, Camera, Undo2, Redo2, Globe, Users, BadgeCheck, Ban, Check, FileText, Trash2 } from 'lucide-react';
 import { addDoc, collection, doc, increment, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -268,7 +269,8 @@ export default function Composer({
   );
 
   if (open) {
-    return (
+    const host = (document.querySelector('[data-forum-page]') as HTMLElement | null) || document.body;
+    return createPortal(
       <div
         className="fx-fullcompose"
         role="dialog"
@@ -311,7 +313,6 @@ export default function Composer({
                 aria-label="Gönderi metni"
               />
               {preview}
-              {categorySelect}
             </div>
           </div>
         </div>
@@ -322,6 +323,7 @@ export default function Composer({
             <div className="fx-compose-tools">
               {photoInput()}
               {photoInput(true)}
+              {categorySelect}
             </div>
             <CharRing length={body.length} limit={LIMIT} />
           </div>
@@ -362,7 +364,8 @@ export default function Composer({
             </div>
           </div>
         )}
-      </div>
+      </div>,
+      host
     );
   }
 
@@ -385,7 +388,7 @@ export default function Composer({
           aria-label="Gönderi metni"
         />
         {preview}
-        {!isEmpty && <div className="fx-compose-policy-row">{policyButton}</div>}
+        <div className="fx-compose-policy-row">{policyButton}</div>
         <div className="fx-compose-bar">
           <div className="fx-compose-tools">
             {photoInput()}
