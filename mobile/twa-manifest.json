@@ -40,7 +40,7 @@
   "generatorApp": "bubblewrap-core",
   "webManifestUrl": "https://www.pskfurkanmanav.com/logos.webmanifest",
   "fallbackType": "customtabs",
-  "enableSiteSettingsShortcut": false,
+  "enableSiteSettingsShortcut": true,
   "minSdkVersion": 24,
   "features": {}
 }
