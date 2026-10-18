@@ -30,7 +30,7 @@ export default function AdminPage() {
   const [articles, setArticles] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'psychologists' | 'appointments' | 'posts' | 'faq' | 'videos' | 'messages'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'psychologists' | 'appointments' | 'posts' | 'faq' | 'videos' | 'messages' | 'appeals'>('hero');
   const [psychApplications, setPsychApplications] = useState<any[]>([]);
   const [psychFilter, setPsychFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [psychSubTab, setPsychSubTab] = useState<'users' | 'applications'>('users');
@@ -43,6 +43,10 @@ export default function AdminPage() {
   const [processingBanUid, setProcessingBanUid] = useState<string | null>(null);
   const [subTab, setSubTab] = useState<'pending' | 'approved'>('pending');
   const [messages, setMessages] = useState<any[]>([]);
+  // Ban itirazları ve yöneticinin yanıt taslakları
+  const [appeals, setAppeals] = useState<any[]>([]);
+  const [appealReply, setAppealReply] = useState<Record<string, string>>({});
+  const [appealBusy, setAppealBusy] = useState<string | null>(null);
   const [editingMsg, setEditingMsg] = useState<string | null>(null);
   const [editMsgText, setEditMsgText] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -63,7 +67,7 @@ export default function AdminPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam === 'hero' || tabParam === 'about' || tabParam === 'psychologists' || tabParam === 'posts' || tabParam === 'faq' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appointments') {
+      if (tabParam === 'hero' || tabParam === 'about' || tabParam === 'psychologists' || tabParam === 'posts' || tabParam === 'faq' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appeals' || tabParam === 'appointments') {
         setActiveTab(tabParam as any);
       }
     }
@@ -90,6 +94,7 @@ export default function AdminPage() {
     const u8 = onSnapshot(query(collection(db, 'faq'), orderBy('createdAt', 'desc')), snap => setFaqs(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const u3 = onSnapshot(query(collection(db, 'reels'), orderBy('createdAt', 'desc')), snap => setVideos(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const u4 = onSnapshot(query(collection(db, 'messages'), orderBy('createdAt', 'desc')), snap => setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const uAppeals = onSnapshot(query(collection(db, 'ban_appeals'), orderBy('updatedAt', 'desc')), snap => setAppeals(snap.docs.map(d => ({ id: d.id, ...d.data() }))), () => setAppeals([]));
     const u5 = onSnapshot(doc(db, 'settings', 'hero'), snap => {
       if (snap.exists()) {
         const data = snap.data();
@@ -173,7 +178,7 @@ export default function AdminPage() {
       }).catch(() => {});
     }
 
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); uAbout(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); uAbout(); uAppeals(); };
   }, [user]);
 
   const [adminUploadingDiploma, setAdminUploadingDiploma] = useState<string | null>(null);
@@ -210,6 +215,28 @@ export default function AdminPage() {
       toast.error('Belge yüklenirken hata: ' + (err.message || ''));
     } finally {
       setAdminUploadingDiploma(null);
+    }
+  };
+
+  // Ban itirazı: kabulde ban kaldırılır; retteki yanıt kullanıcıya forumdaki uyarıda gösterilir
+  const decideAppeal = async (a: any, accept: boolean) => {
+    const reply = (appealReply[a.id] || '').trim().slice(0, 1000);
+    if (!accept && !reply && !confirm('Gerekçe yazmadan reddedilsin mi? Kullanıcı yalnızca "İtirazın reddedildi" görecek.')) return;
+    setAppealBusy(a.id);
+    try {
+      if (accept) {
+        await updateDoc(doc(db, 'users', a.id), { isBanned: false, banUntil: null, banDuration: null });
+      }
+      await updateDoc(doc(db, 'ban_appeals', a.id), {
+        status: accept ? 'accepted' : 'rejected',
+        adminReply: reply,
+        reviewedAt: serverTimestamp(),
+      });
+      toast.success(accept ? 'Ban kaldırıldı.' : 'İtiraz reddedildi.');
+    } catch (err: any) {
+      toast.error('İşlem yapılamadı: ' + (err.message || ''));
+    } finally {
+      setAppealBusy(null);
     }
   };
 
@@ -796,6 +823,7 @@ export default function AdminPage() {
     { id: 'faq', label: 'Sıkça Sorulan Sorular', icon: <HelpCircle size={18}/> },
     { id: 'videos', label: 'Videolarım', icon: <Video size={18}/> },
     { id: 'messages', label: 'Mesajlar', icon: <Mail size={18}/> },
+    { id: 'appeals', label: 'Ban itirazları', icon: <ShieldCheck size={18}/> },
   ] as const;
 
   return (
@@ -1041,6 +1069,11 @@ export default function AdminPage() {
               {m.id === 'psychologists' && psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length > 0 && (
                 <span style={{ marginLeft: 'auto', background: '#f59e0b', color: 'white', fontSize: '0.65rem', fontWeight: 800, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {psychApplications.filter(a => a.psychologistStatus === 'pending' || a.role === 'psychologist_pending').length}
+                </span>
+              )}
+              {m.id === 'appeals' && appeals.filter(a => a.status === 'pending').length > 0 && (
+                <span style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', fontSize: '0.65rem', fontWeight: 800, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {appeals.filter(a => a.status === 'pending').length}
                 </span>
               )}
               {m.id === 'messages' && messages.filter(msg => msg.status === 'unread').length > 0 && (
@@ -3263,6 +3296,55 @@ export default function AdminPage() {
         )}
 
         {/* MESSAGES TAB */}
+        {activeTab === 'appeals' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+              Banlı kullanıcıların itirazları. Kabul edersen ban hemen kalkar; reddedersen yazdığın gerekçe kullanıcıya forumda gösterilir ve 24 saat sonra yeniden itiraz edebilir.
+            </p>
+            {appeals.length === 0 && <div style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Henüz itiraz yok.</div>}
+            {appeals.map(a => {
+              const when = a.updatedAt?.toDate ? format(a.updatedAt.toDate(), 'd MMMM yyyy HH:mm', { locale: tr }) : '';
+              const pending = a.status === 'pending';
+              return (
+                <div key={a.id} className="admin-card-inner" style={{ background: 'white', borderRadius: 8, border: pending ? '2px solid var(--gold)' : '1px solid #e2e8f0', padding: 20, boxShadow: '0 2px 8px rgba(10,22,40,0.04)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--navy)' }}>{a.displayName || 'Kullanıcı'} <span style={{ color: '#64748b', fontWeight: 500 }}>@{a.username || a.id.slice(0, 6)}</span></div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{when}</div>
+                    </div>
+                    <span style={{ alignSelf: 'flex-start', fontSize: '0.72rem', fontWeight: 800, padding: '3px 10px', borderRadius: 999,
+                      background: pending ? '#fef3c7' : a.status === 'accepted' ? '#dcfce7' : '#fee2e2',
+                      color: pending ? '#92400e' : a.status === 'accepted' ? '#166534' : '#991b1b' }}>
+                      {pending ? 'Bekliyor' : a.status === 'accepted' ? 'Kabul edildi, ban kaldırıldı' : 'Reddedildi'}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{a.message}</p>
+                  {!pending && a.adminReply && (
+                    <p style={{ margin: '10px 0 0', padding: '10px 12px', background: '#f8fafc', borderRadius: 6, color: '#334155', fontSize: '0.88rem' }}><b>Yanıtın:</b> {a.adminReply}</p>
+                  )}
+                  {pending && (
+                    <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <textarea
+                        value={appealReply[a.id] || ''}
+                        onChange={e => setAppealReply(prev => ({ ...prev, [a.id]: e.target.value }))}
+                        maxLength={1000}
+                        placeholder="Kullanıcıya iletilecek yanıt (reddederken gerekçe yazman önerilir)"
+                        style={{ width: '100%', minHeight: 70, border: '1.5px solid #e2e8f0', borderRadius: 6, padding: '10px 12px', fontSize: '0.9rem', fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        <button disabled={appealBusy === a.id} onClick={() => decideAppeal(a, false)}
+                          style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: 6, padding: '8px 14px', cursor: 'pointer', fontWeight: 700 }}>Reddet</button>
+                        <button disabled={appealBusy === a.id} onClick={() => decideAppeal(a, true)}
+                          style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 6, padding: '8px 14px', cursor: 'pointer', fontWeight: 700 }}>Banı kaldır</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {activeTab === 'messages' && (
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -3276,6 +3358,13 @@ export default function AdminPage() {
                         {msg.status === 'unread' && <span style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999 }}>YENİ</span>}
                       </div>
                       <div style={{ fontSize: '0.82rem', color: '#64748b' }}>{msg.email} • {msg.subject}</div>
+                      {msg.source === 'forum' && (
+                        <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                          <span style={{ background: '#e0f2fe', color: '#075985', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999 }}>Logos forumu</span>
+                          {msg.category && <span style={{ background: msg.category === 'sikayet' ? '#fee2e2' : '#f1f5f9', color: msg.category === 'sikayet' ? '#991b1b' : '#334155', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999 }}>{({ istek: 'İstek', oneri: 'Öneri', sikayet: 'Şikayet', diger: 'Diğer' } as Record<string, string>)[msg.category] || msg.category}</span>}
+                          {msg.username && <span style={{ fontSize: '0.75rem', color: '#64748b' }}>@{msg.username}</span>}
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {msg.status === 'unread' && (
@@ -3283,6 +3372,12 @@ export default function AdminPage() {
                           style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Eye size={14}/> Okundu
                         </button>
+                      )}
+                      {msg.email && (
+                        <a href={`mailto:${encodeURIComponent(msg.email)}?subject=${encodeURIComponent(`Re: ${msg.subject || 'Mesajınız'}`)}`}
+                          style={{ background: '#0f172a', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}>
+                          <Mail size={14}/> E-postayla yanıtla
+                        </a>
                       )}
                       <button onClick={() => { setEditingMsg(msg.id); setEditMsgText(msg.message); }} title="Düzenle"
                         style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>

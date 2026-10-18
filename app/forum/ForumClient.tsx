@@ -9,6 +9,7 @@ import { sendNotification } from '@/lib/notify';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 import ForumPost from '@/components/forum/ForumPost';
+import BanAppeal from '@/components/forum/BanAppeal';
 import ThreadView from '@/components/forum/ThreadView';
 import Composer, { useIsMobile } from '@/components/forum/Composer';
 import { Search, Bell, Users, Home, X, Loader2, User, Bookmark, Heart, Sun, Moon, Menu, LogOut, Settings, Feather, ArrowLeft, Image as ImageIcon } from 'lucide-react';
@@ -936,11 +937,7 @@ export default function ForumClient() {
                   </section>
                 )}
 
-                {userProfile?.isBanned && (
-                  <div className="fx-alert" role="status">
-                    Hesabın yönetici tarafından askıya alındı. Gönderi paylaşamaz, yanıt yazamaz ve etkileşimde bulunamazsın.
-                  </div>
-                )}
+                <BanAppeal />
 
                 {isMember && !userProfile?.isBanned && !searchQuery && (
                   <div className="fx-compose-desktop"><Composer /></div>

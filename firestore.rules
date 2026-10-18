@@ -448,12 +448,49 @@ service cloud.firestore {
     }
 
     // ───────── İletişim mesajları ─────────
-    // Herkes gönderebilir, yalnızca admin okuyabilir/yönetebilir
+    // Sitenin iletişim sayfasından ve forumun İletişim sekmesinden gelir. Herkes gönderebilir; geri dönüş
+    // yapılabilmesi için geçerli bir e-posta zorunludur. Yalnızca admin okuyabilir/yönetebilir.
+    function validContactMessage() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['name', 'email', 'subject', 'message', 'status', 'createdAt', 'source', 'category', 'uid', 'username']) &&
+        d.status == 'unread' &&
+        d.get('message', '') is string && d.get('message', '').size() > 0 && d.get('message', '').size() <= 5000 &&
+        d.get('email', '') is string && d.get('email', '').size() <= 200 &&
+        d.get('email', '').matches('[^@ ]+@[^@ ]+[.][^@ ]+') &&
+        d.get('name', '') is string && d.get('name', '').size() <= 100 &&
+        d.get('subject', '') is string && d.get('subject', '').size() <= 200 &&
+        d.get('category', 'diger') in ['istek', 'oneri', 'sikayet', 'diger'] &&
+        // Üye olarak gönderiliyorsa kimlik kendisine ait olmalı
+        (!d.keys().hasAny(['uid']) || (signedIn() && d.uid == request.auth.uid));
+    }
+
     match /messages/{messageId} {
-      allow create: if request.resource.data.status == 'unread' &&
-        request.resource.data.get('message', '') is string &&
-        request.resource.data.get('message', '').size() <= 5000;
+      allow create: if validContactMessage();
       allow read, update, delete: if isAdmin();
+    }
+
+    // ───────── Ban itirazları ─────────
+    // Banlı kullanıcı kendi banına itiraz eder (belge kimliği kendi uid'si). Bekleyen itirazını düzenleyebilir;
+    // reddedilen itirazdan 24 saat sonra yeniden itiraz edebilir. Sonucu (kabul/ret ve yanıt) yalnızca yönetici yazar.
+    function validAppeal() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['uid', 'username', 'displayName', 'message', 'status', 'createdAt', 'updatedAt']) &&
+        d.uid == request.auth.uid &&
+        d.status == 'pending' &&
+        d.message is string && d.message.size() >= 10 && d.message.size() <= 2000 &&
+        d.updatedAt == request.time;
+    }
+
+    match /ban_appeals/{uid} {
+      allow read: if isAdmin() || isSelf(uid);
+      allow create: if isSelf(uid) && myProfile().get('isBanned', false) == true && validAppeal();
+      allow update: if isAdmin() || (
+        isSelf(uid) && myProfile().get('isBanned', false) == true && validAppeal() && (
+          resource.data.status in ['pending', 'accepted'] ||
+          (resource.data.status == 'rejected' &&
+            resource.data.get('reviewedAt', request.time) < request.time - duration.value(24, 'h'))
+        ));
+      allow delete: if isAdmin();
     }
 
     // ───────── Psikolog başvuruları ─────────

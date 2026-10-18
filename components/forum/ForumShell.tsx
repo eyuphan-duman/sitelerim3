@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { Home, Search, Bell, Users, Bookmark, User, Settings, Sun, Moon, Feather, LogOut, Heart, Trophy } from 'lucide-react';
+import { Home, Search, Bell, Users, Bookmark, User, Settings, Sun, Moon, Feather, LogOut, Heart, Trophy, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +22,7 @@ import { ConfirmHost } from './confirm';
 import { InteractionsHost } from './Interactions';
 import './forum.css';
 
-export type NavKey = 'home' | 'explore' | 'notif' | 'following' | 'saved' | 'profile' | 'settings' | 'leaders';
+export type NavKey = 'home' | 'explore' | 'notif' | 'following' | 'saved' | 'profile' | 'settings' | 'leaders' | 'contact';
 
 export type ShellApi = {
   isDark: boolean;
@@ -114,6 +114,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     following: needMember(() => go('/forum?feed=following')),
     saved: needMember(() => go(`${myProfileHref}?tab=bookmarks`)),
     leaders: () => go('/forum/liderler'),
+    contact: () => go('/forum/iletisim'),
     profile: needMember(() => go(myProfileHref)),
     settings: needMember(() => go(`${myProfileHref}?settings=open`)),
   };
@@ -139,6 +140,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     { key: 'saved', label: 'Yer işaretleri', icon: Bookmark },
     { key: 'profile', label: 'Profil', icon: User },
     { key: 'settings', label: 'Ayarlar', icon: Settings },
+    { key: 'contact', label: 'İletişim', icon: Mail },
   ];
 
   return (
@@ -302,6 +304,10 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
                 ))}
               </div>
             )}
+
+            <button type="button" className="fx-drawer-link" onClick={() => { setDrawerOpen(false); go('/forum/iletisim'); }}>
+              <Mail size={24} strokeWidth={1.8} /> İletişim
+            </button>
 
             <div className="fx-drawer-sub">
               <Link href="/" className="fx-drawer-link" onClick={() => setDrawerOpen(false)}>Web sitesine dön</Link>

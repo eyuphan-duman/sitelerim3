@@ -1925,3 +1925,40 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-leader-item.is-top .fx-leader-rank { width: 28px; height: 28px; }
 .fx-leader-rules { padding: 14px 16px 24px; }
 .fx-leader-rules summary { cursor: pointer; color: var(--fx-link); font-weight: 600; }
+
+/* ═══ Ban itirazı ═══ */
+.fx-ban { display: flex; flex-direction: column; gap: 10px; }
+.fx-ban-state { color: var(--fx-ink); font-weight: 500; }
+.fx-ban-btn { align-self: flex-start; }
+.fx-ban-form { display: flex; flex-direction: column; gap: 8px; }
+.fx-ban-form label { color: var(--fx-ink); font-weight: 700; }
+.fx-ban-form .fx-field { min-height: 120px; font-weight: 400; }
+.fx-ban-foot { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.fx-ban-foot span { margin-right: auto; color: var(--fx-ink-2); font-weight: 500; font-size: .82rem; }
+
+/* ═══ Logos iletişim ═══ */
+.fx-contact { padding: 16px; display: flex; flex-direction: column; max-width: 620px; }
+.fx-contact-intro { margin: 0 0 12px; color: var(--fx-ink-2); line-height: 1.5; }
+.fx-contact-label { display: block; margin: 14px 0 6px; font-weight: 700; font-size: .92rem; color: var(--fx-ink); }
+.fx-contact-label small { font-weight: 500; color: var(--fx-ink-2); }
+.fx-contact-cats { display: flex; flex-wrap: wrap; gap: 8px; }
+.fx-contact-cat {
+  height: 36px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--fx-line-strong);
+  background: transparent; color: var(--fx-ink); font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer;
+}
+.fx-contact-cat:hover { background: var(--fx-hover); }
+.fx-contact-cat.is-on { background: var(--fx-ink); border-color: var(--fx-ink); color: var(--fx-bg); }
+.fx-contact-input {
+  width: 100%; height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--fx-line-strong);
+  background: var(--fx-bg); color: var(--fx-ink); font: inherit; font-size: .95rem; outline: 0;
+}
+.fx-contact-input:focus { border-color: var(--fx-link); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fx-link) 18%, transparent); }
+.fx-contact-input.is-bad { border-color: var(--fx-danger); }
+.fx-contact-help { display: block; margin-top: 6px; font-size: .8rem; color: var(--fx-ink-2); }
+.fx-contact-help.is-bad { color: var(--fx-danger); }
+.fx-contact .fx-field { min-height: 160px; }
+.fx-contact-foot { display: flex; justify-content: flex-end; margin-top: 14px; }
+.fx-contact-done { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 48px 24px; color: var(--fx-ink); }
+.fx-contact-done svg { color: var(--fx-repost, #0b9a6a); }
+.fx-contact-done h3 { margin: 6px 0 0; font-size: 1.25rem; }
+.fx-contact-done p { margin: 0 0 12px; color: var(--fx-ink-2); }
