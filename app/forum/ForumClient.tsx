@@ -1,7 +1,7 @@
 'use client';
 import { uploadFetch } from '@/lib/notify';
 import React, { useState, useEffect, useRef } from 'react';
-import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc, startAfter } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc, startAfter, getCountFromServer, Timestamp } from 'firebase/firestore';
 import { createLimited, SpamError } from '@/components/forum/antiSpam';
 import { loadDirectory, useBlocks } from '@/components/forum/social';
 import { db } from '@/lib/firebase';
@@ -153,14 +153,79 @@ export default function ForumClient() {
     });
     return () => { on = false; };
   }, []);
-  useEffect(() => {
-    const q = query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
-    return onSnapshot(q, snap => {
-      setLivePosts(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() })) as Post[]);
-      if (!lastDocRef.current) lastDocRef.current = snap.docs[snap.docs.length - 1] || null;
-      setHasMore(prev => prev || snap.size === PAGE_SIZE);
-    });
+  // Veritabanı tasarrufu: akış canlı dinlenmez (her beğeni ve görüntülenme herkes için okuma demekti).
+  // İlk sayfa bir kez yüklenir; yeni gönderiler dakikada bir yalnızca sayılır (1 okuma), sayı değişince
+  // yeni belgeler bir kez okunup bekletilir ve "N yeni gönderi"ye tıklanınca akışa eklenir.
+  const toPost = (d: any) => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate() || new Date() }) as Post;
+  const newestRef = useRef<Timestamp | null>(null);
+  const knownIds = useRef<Set<string>>(new Set());
+  const lastCount = useRef(0);
+  const [pendingNew, setPendingNew] = useState<Post[]>([]);
+
+  const loadFirstPage = React.useCallback(async () => {
+    const snap = await getDocs(query(collection(db, 'forum'), orderBy('createdAt', 'desc'), limit(PAGE_SIZE)));
+    setLivePosts(snap.docs.map(toPost));
+    setOlderPosts([]);
+    lastDocRef.current = snap.docs[snap.docs.length - 1] || null;
+    newestRef.current = (snap.docs[0]?.data().createdAt as Timestamp) || Timestamp.now();
+    knownIds.current = new Set(snap.docs.map(d => d.id));
+    lastCount.current = 0;
+    setPendingNew([]);
+    setHasMore(snap.size === PAGE_SIZE);
   }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- akış açılışta bir kez yüklenir
+  useEffect(() => { loadFirstPage().catch(() => {}); }, [loadFirstPage]);
+
+  useEffect(() => {
+    let busy = false;
+    const check = async () => {
+      if (busy || document.visibilityState !== 'visible' || !newestRef.current) return;
+      busy = true;
+      try {
+        const newer = query(collection(db, 'forum'), where('createdAt', '>', newestRef.current));
+        const count = (await getCountFromServer(newer)).data().count;
+        if (count !== lastCount.current) {
+          lastCount.current = count;
+          if (count > 0) {
+            const snap = await getDocs(query(collection(db, 'forum'), where('createdAt', '>', newestRef.current), orderBy('createdAt', 'desc'), limit(50)));
+            setPendingNew(snap.docs.map(toPost).filter(p => !p.isRepost && !knownIds.current.has(p.id)));
+          }
+        }
+      } catch {} finally { busy = false; }
+    };
+    const timer = setInterval(check, 60_000);
+    const onVisible = () => { if (document.visibilityState === 'visible') check(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
+
+  const showNewPosts = () => {
+    setLivePosts(prev => [...pendingNew, ...prev]);
+    pendingNew.forEach(p => knownIds.current.add(p.id));
+    if (pendingNew[0]) newestRef.current = Timestamp.fromDate(new Date(pendingNew[0].createdAt));
+    lastCount.current = 0;
+    setPendingNew([]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Kendi paylaşımın sayılmaz: hemen akışın başına eklenir
+  const addOwnPost = (p: any) => {
+    if (!p?.id) return;
+    knownIds.current.add(p.id);
+    setLivePosts(prev => [{ ...p, createdAt: p.createdAt instanceof Date ? p.createdAt : new Date() } as Post, ...prev]);
+  };
+
+  // Canlı dinleme olmadığı için kendi etkileşimlerin ekranda yerel olarak güncellenir
+  const patchKey = (id: string, field: 'reactionsData' | 'repostsData' | 'bookmarksData', value: unknown) => {
+    if (!user) return;
+    setThreads(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      const m = { ...((t as any)[field] || {}) };
+      if (value === undefined) delete m[user.uid]; else m[user.uid] = value;
+      return { ...t, [field]: m };
+    }));
+  };
 
   const loadMore = async () => {
     if (!lastDocRef.current || loadingMore) return;
@@ -427,8 +492,10 @@ export default function ForumClient() {
     const postRef = doc(db, 'forum', thread.id);
     const userReaction = thread.reactionsData?.[user.uid];
     if (userReaction === 'like' || userReaction === 'heart') {
+      patchKey(thread.id, 'reactionsData', undefined);
       await updateDoc(postRef, { [`reactionsData.${user.uid}`]: deleteField() });
     } else {
+      patchKey(thread.id, 'reactionsData', 'like');
       await updateDoc(postRef, { [`reactionsData.${user.uid}`]: 'like' });
       if (thread.uid && thread.uid !== user.uid) {
         try {
@@ -457,8 +524,10 @@ export default function ForumClient() {
     const postRef = doc(db, 'forum', thread.id);
     const userReaction = thread.reactionsData?.[user.uid];
     if (userReaction === 'dislike') {
+      patchKey(thread.id, 'reactionsData', undefined);
       await updateDoc(postRef, { [`reactionsData.${user.uid}`]: deleteField() });
     } else {
+      patchKey(thread.id, 'reactionsData', 'dislike');
       await updateDoc(postRef, { [`reactionsData.${user.uid}`]: 'dislike' });
     }
   };
@@ -475,6 +544,7 @@ export default function ForumClient() {
       : null;
 
     if (hasReposted) {
+      patchKey(targetPostId, 'repostsData', undefined);
       await updateDoc(postRef, { [`repostsData.${user.uid}`]: deleteField() });
       if (existingRepostDocId) {
         try { await deleteDoc(doc(db, 'forum', existingRepostDocId)); } catch {}
@@ -525,6 +595,8 @@ export default function ForumClient() {
       }).catch((err) => { toast.error(err instanceof SpamError ? err.message : 'Yeniden paylaşılamadı.'); return null; });
       if (!repostDoc) return;
 
+      knownIds.current.add(repostDoc.id);
+      patchKey(targetPostId, 'repostsData', repostDoc.id);
       await updateDoc(postRef, { [`repostsData.${user.uid}`]: repostDoc.id });
 
       if (thread.uid && thread.uid !== user.uid) {
@@ -559,10 +631,12 @@ export default function ForumClient() {
     const hasBookmarked = Boolean(thread.bookmarksData?.[user.uid]);
 
     if (hasBookmarked) {
+      patchKey(targetPostId, 'bookmarksData', undefined);
       await updateDoc(postRef, { [`bookmarksData.${user.uid}`]: deleteField() });
       try { await deleteDoc(userBookmarkRef); } catch {}
       toast.success('Yer işaretlerinden kaldırıldı');
     } else {
+      patchKey(targetPostId, 'bookmarksData', true);
       await updateDoc(postRef, { [`bookmarksData.${user.uid}`]: true });
       try {
         await setDoc(userBookmarkRef, {
@@ -940,7 +1014,15 @@ export default function ForumClient() {
                 <BanAppeal />
 
                 {isMember && !userProfile?.isBanned && !searchQuery && (
-                  <div className="fx-compose-desktop"><Composer /></div>
+                  <div className="fx-compose-desktop"><Composer onPosted={addOwnPost} /></div>
+                )}
+
+                {pendingNew.length > 0 && !searchQuery && (
+                  <div className="fx-new-posts">
+                    <button type="button" onClick={showNewPosts}>
+                      {pendingNew.length >= 50 ? '50+' : pendingNew.length} yeni gönderi
+                    </button>
+                  </div>
                 )}
 
                 {filtered.length === 0 ? (
@@ -1028,7 +1110,7 @@ export default function ForumClient() {
 
             {/* ── Paylaşım penceresi ── */}
             {composeModalOpen && (isMobile ? (
-              <Composer startFull onClose={() => setComposeModalOpen(false)} />
+              <Composer startFull onClose={() => setComposeModalOpen(false)} onPosted={addOwnPost} />
             ) : (
               <div className="fx-sheet-scrim" onClick={() => setComposeModalOpen(false)}>
                 <div className="fx-sheet" role="dialog" aria-modal="true" aria-label="Yeni gönderi" onClick={e => e.stopPropagation()}>
@@ -1037,7 +1119,7 @@ export default function ForumClient() {
                       <X size={22} />
                     </button>
                   </div>
-                  <Composer autoFocus onPosted={() => setComposeModalOpen(false)} />
+                  <Composer autoFocus onPosted={p => { addOwnPost(p); setComposeModalOpen(false); }} />
                 </div>
               </div>
             ))}

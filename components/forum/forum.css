@@ -1967,3 +1967,12 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-notif-alert { cursor: default; }
 .fx-notif-alert .fx-notif-top b { color: var(--fx-ink); }
 .fx-alert-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+/* ═══ Yeni gönderi bildirimi (akış canlı dinlenmez; tıklayınca yüklenir) ═══ */
+.fx-new-posts { position: sticky; top: 64px; z-index: 6; display: flex; justify-content: center; height: 0; overflow: visible; }
+.fx-new-posts button {
+  margin-top: 8px; height: 36px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer;
+  background: var(--fx-link); color: #fff; font: inherit; font-weight: 700; font-size: .9rem;
+  box-shadow: 0 6px 18px rgba(10, 22, 40, .22);
+}
+.fx-new-posts button:hover { filter: brightness(1.08); }
