@@ -7,6 +7,8 @@ import { auth, db, googleProvider } from '@/lib/firebase';
 import { sanitizeUsername, getUsernameValidationError } from '@/lib/usernameUtils';
 import { getBirthDateValidationError } from '@/lib/ageUtils';
 import { getPasswordError } from '@/lib/passwordUtils';
+import { getDeviceId } from '@/lib/device';
+import toast from 'react-hot-toast';
 
 export interface UserRegistrationData {
   fullName?: string;
@@ -26,7 +28,7 @@ interface AuthContextType {
   loading: boolean;
   userProfile?: any;
   emailVerified: boolean;
-  signIn: (usernameOrEmail: string, password: string) => Promise<UserCredential>;
+  signIn: (usernameOrEmail: string, password: string, captchaToken?: string) => Promise<UserCredential>;
   signUp: (username: string, email: string, password: string, extraData?: UserRegistrationData) => Promise<void>;
   startGoogleSignup: () => Promise<{ email: string; displayName: string }>;
   completeGoogleSignup: (chosenUsername: string, password: string, termsAccepted: boolean, extraData?: UserRegistrationData) => Promise<void>;
@@ -64,6 +66,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      // Hesap güvenlik askısındaysa (sahibi "Ben değilim" dediyse) oturum kapatılır; şifre değişince askı kalkar
+      if (u && !u.isAnonymous) {
+        try {
+          const token = await u.getIdToken();
+          const r = await fetch('/api/auth/session', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+          const d = await r.json().catch(() => ({}));
+          if (d?.locked) {
+            await signOut(auth);
+            toast.error('Hesabın güvenlik nedeniyle askıya alındı ve verilerin koruma altında. Şifreni sıfırladıktan sonra yeniden giriş yapabilirsin.', { duration: 9000 });
+            return;
+          }
+        } catch {}
+      }
       const userEmail = (u?.email || '').toLowerCase().trim();
       const isAdminEmail = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail);
 
@@ -214,19 +229,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signIn = async (usernameOrEmail: string, password: string) => {
-    let authEmail = usernameOrEmail.trim();
-    // Check if it's not an email, assume it's a username
-    if (!authEmail.includes('@')) {
-      const res = await fetch('/api/auth/resolve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: sanitizeUsername(authEmail), password }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.email) throw new Error(data.error || 'Kullanıcı adı veya şifre hatalı.');
-      authEmail = data.email;
+  const signIn = async (usernameOrEmail: string, password: string, captchaToken?: string) => {
+    const raw = usernameOrEmail.trim();
+    // Şifreli giriş önce sunucudaki korumadan geçer: hatalı deneme sayacı, reCAPTCHA, cihaz kilidi ve hesap askısı
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identifier: raw.includes('@') ? raw : sanitizeUsername(raw),
+        password,
+        deviceId: getDeviceId(),
+        captchaToken,
+        platform: 'web',
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.email) {
+      const err: any = new Error(data.error || 'Kullanıcı adı, e-posta ya da şifre hatalı.');
+      err.code = data.code || 'invalid';
+      err.captchaRequired = Boolean(data.captchaRequired);
+      throw err;
     }
+    const authEmail = data.email as string;
     const cred = await signInWithEmailAndPassword(auth, authEmail, password);
     const userEmail = (cred.user.email || '').toLowerCase().trim();
     const isAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userEmail);

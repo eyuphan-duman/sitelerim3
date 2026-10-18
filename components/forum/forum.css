@@ -1962,3 +1962,8 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-contact-done svg { color: var(--fx-repost, #0b9a6a); }
 .fx-contact-done h3 { margin: 6px 0 0; font-size: 1.25rem; }
 .fx-contact-done p { margin: 0 0 12px; color: var(--fx-ink-2); }
+
+/* ═══ Giriş güvenliği uyarısı ═══ */
+.fx-notif-alert { cursor: default; }
+.fx-notif-alert .fx-notif-top b { color: var(--fx-ink); }
+.fx-alert-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }

@@ -13,6 +13,7 @@ const PUSH_TEXT: Record<string, string[]> = {
   comment: ['gönderine yanıt verdi.', 'yanıtına yanıt verdi.', 'isimsiz gönderine yanıt verdi.'],
   mention: ['senden bahsetti.'],
   follow: ['seni takip etmeye başladı.'],
+  login_alert: ['hesabına art arda yanlış şifreyle giriş denendi. Bu sen misin?'],
 };
 
 export async function pushNotification(app: App, db: Firestore, notifId: string) {
@@ -31,7 +32,9 @@ export async function pushNotification(app: App, db: Firestore, notifId: string)
 
   // Metin istemciden gelen alanlara güvenilmeden kurulur: gönderen adı gerçek profilden, ileti türüne göre sabit
   let who = 'İsimsiz kullanıcı';
-  if (claimed.fromUid && claimed.fromUid !== 'anonymous') {
+  if (claimed.fromUid === 'system') {
+    who = String(claimed.fromUser || 'Logos');
+  } else if (claimed.fromUid && claimed.fromUid !== 'anonymous') {
     const sender = (await db.collection('users').doc(String(claimed.fromUid)).get()).data();
     who = (sender?.displayName as string) || 'Biri';
   }

@@ -11,10 +11,12 @@ import ForumShell from '@/components/forum/ForumShell';
 import { Avatar } from '@/components/forum/ui';
 import { useBlocks } from '@/components/forum/social';
 import { formatTimeAgo } from '@/components/forum/ThreadView';
+import LoginAlertCard from '@/components/forum/LoginAlertCard';
 
 interface Notification {
   id: string;
-  type: 'comment' | 'reaction' | 'mention' | 'repost' | 'follow';
+  type: 'comment' | 'reaction' | 'mention' | 'repost' | 'follow' | 'login_alert';
+  answered?: 'yes' | 'no' | null;
   fromUid?: string;
   fromUser: string;
   fromUsername: string;
@@ -147,6 +149,9 @@ export default function BildirimlerPage() {
             </div>
           ) : (
             list.map(n => {
+              if (n.type === 'login_alert') {
+                return <LoginAlertCard key={n.id} id={n.id} device={n.postTitle} when={formatTimeAgo(n.createdAt)} answered={n.answered} unread={!n.read} />;
+              }
               const t = TYPE_ICON[n.type] || TYPE_ICON.comment;
               const quote = n.type === 'comment' || n.type === 'mention';
               return (

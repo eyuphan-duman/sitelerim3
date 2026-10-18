@@ -17,8 +17,20 @@ service cloud.firestore {
         );
     }
 
+    // Hesap güvenlik askısında mı? (sahibi "Bu sen misin?" uyarısına "Ben değilim" dediyse)
+    // Askı sürerken hesap hiçbir şey yazamaz ve gizli bilgilerini okuyamaz; şifre değişince sunucu askıyı kaldırır.
+    function notLocked() {
+      return !exists(/databases/$(database)/documents/security/$(request.auth.uid)) ||
+        get(/databases/$(database)/documents/security/$(request.auth.uid)).data.get('locked', false) != true;
+    }
+
+    // Yazma izinlerinde kullanılan oturum denetimi: giriş yapmış ve askıda olmayan hesap
+    function active() {
+      return signedIn() && notLocked();
+    }
+
     function isSelf(uid) {
-      return signedIn() && request.auth.uid == uid;
+      return active() && request.auth.uid == uid;
     }
 
     function myProfile() {
@@ -261,7 +273,7 @@ service cloud.firestore {
     match /forum/{postId} {
       allow read: if true;
 
-      allow create: if signedIn() &&
+      allow create: if active() &&
         ((request.resource.data.uid == request.auth.uid && request.resource.data.get('isAnonymous', false) == false) ||
           validAnonPost(postId)) &&
         notBanned() &&
@@ -273,22 +285,22 @@ service cloud.firestore {
           : rateOk('post', 30, 10, request.resource.data.get('body', '')));
 
       allow update: if isAdmin() ||
-        (signedIn() && resource.data.uid == request.auth.uid &&
+        (active() && resource.data.uid == request.auth.uid &&
           request.resource.data.uid == resource.data.uid &&
           !changedKeys().hasAny(protectedContentKeys()) &&
           (!changedKeys().hasAny(['authorIsPsychologist']) || validPsychBadge())) ||
-        (signedIn() && validInteraction()) ||
+        (active() && validInteraction()) ||
         // Ziyaretçilerin görüntülenme sayacı
         (changedKeys().hasOnly(['viewsCount']) && counterStep('viewsCount', [1]));
 
       allow delete: if isAdmin() ||
-        (signedIn() && resource.data.uid == request.auth.uid) ||
-        (signedIn() && resource.data.uid == 'anonymous' && anonOwnerOf(postId) == request.auth.uid);
+        (active() && resource.data.uid == request.auth.uid) ||
+        (active() && resource.data.uid == 'anonymous' && anonOwnerOf(postId) == request.auth.uid);
 
       match /comments/{commentId} {
         allow read: if true;
 
-        allow create: if signedIn() &&
+        allow create: if active() &&
           notBanned() &&
           isEmailVerified() &&
           withinCommentLimits() &&
@@ -305,15 +317,15 @@ service cloud.firestore {
           );
 
         allow update: if isAdmin() ||
-          (signedIn() && resource.data.uid == request.auth.uid &&
+          (active() && resource.data.uid == request.auth.uid &&
             request.resource.data.uid == resource.data.uid &&
             !changedKeys().hasAny(protectedContentKeys()) &&
             !changedKeys().hasAny(['authorIsPsychologist'])) ||
-          (signedIn() && validInteraction());
+          (active() && validInteraction());
 
         // Yorum sahibi, gönderi sahibi veya admin silebilir
         allow delete: if isAdmin() ||
-          (signedIn() && (
+          (active() && (
             resource.data.uid == request.auth.uid ||
             get(/databases/$(database)/documents/forum/$(postId)).data.uid == request.auth.uid ||
             (get(/databases/$(database)/documents/forum/$(postId)).data.uid == 'anonymous' &&
@@ -337,11 +349,18 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ───────── Güvenlik askısı ─────────
+    // Yalnızca sunucu yazar (Ben değilim yanıtı); sahibi askıda olduğunu görebilsin diye okuyabilir.
+    match /security/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow write: if false;
+    }
+
     // ───────── İsimsiz gönderi sahiplikleri ─────────
     // Yalnızca sahibi ve yönetici okur. Yalnızca gönderiyle aynı anda oluşturulabilir.
     match /anon_owners/{postId} {
       allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
-      allow create: if signedIn() &&
+      allow create: if active() &&
         request.resource.data.keys().hasOnly(['uid', 'createdAt']) &&
         request.resource.data.uid == request.auth.uid &&
         !exists(/databases/$(database)/documents/forum/$(postId)) &&
@@ -352,13 +371,13 @@ service cloud.firestore {
     // ───────── Takip ─────────
     match /follows/{followId} {
       allow read: if true;
-      allow create: if signedIn() &&
+      allow create: if active() &&
         request.resource.data.followerId == request.auth.uid &&
         followId == request.auth.uid + '_' + request.resource.data.followingId &&
         !blockedBetween(request.auth.uid, request.resource.data.followingId);
       // Takip eden takibi bırakabilir, takip edilen takipçiyi çıkarabilir
       allow delete: if isAdmin() ||
-        (signedIn() && (resource.data.followerId == request.auth.uid ||
+        (active() && (resource.data.followerId == request.auth.uid ||
                         resource.data.followingId == request.auth.uid));
       allow update: if false;
     }
@@ -368,13 +387,13 @@ service cloud.firestore {
     match /blocks/{blockId} {
       allow read: if signedIn() &&
         (resource.data.blockerId == request.auth.uid || resource.data.blockedId == request.auth.uid);
-      allow create: if signedIn() &&
+      allow create: if active() &&
         request.resource.data.keys().hasOnly(['blockerId', 'blockedId', 'createdAt']) &&
         request.resource.data.blockerId == request.auth.uid &&
         request.resource.data.blockedId is string &&
         request.resource.data.blockedId != request.auth.uid &&
         blockId == request.auth.uid + '_' + request.resource.data.blockedId;
-      allow delete: if isAdmin() || (signedIn() && resource.data.blockerId == request.auth.uid);
+      allow delete: if isAdmin() || (active() && resource.data.blockerId == request.auth.uid);
       allow update: if false;
     }
 
@@ -383,10 +402,10 @@ service cloud.firestore {
     // anahtarları yalnızca sunucu okur (bildirim gönderirken).
     match /push_tokens/{token} {
       allow read: if false;
-      allow create, update: if signedIn() &&
+      allow create, update: if active() &&
         request.resource.data.keys().hasOnly(['uid', 'platform', 'updatedAt']) &&
         request.resource.data.uid == request.auth.uid;
-      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow delete: if active() && resource.data.uid == request.auth.uid;
     }
 
     // ───────── Bildirimler ─────────
@@ -428,20 +447,20 @@ service cloud.firestore {
 
     match /notifications/{notifId} {
       allow read: if isAdmin() || (signedIn() && resource.data.toUid == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid &&
+      allow create: if active() && request.resource.data.fromUid == request.auth.uid &&
         !blockedBetween(request.auth.uid, request.resource.data.get('toUid', '')) &&
         validNotification() &&
         validNotificationId(notifId);
-      allow update: if signedIn() && resource.data.toUid == request.auth.uid &&
+      allow update: if active() && resource.data.toUid == request.auth.uid &&
         changedKeys().hasOnly(['read']);
       allow delete: if isAdmin() ||
-        (signedIn() && (resource.data.toUid == request.auth.uid ||
+        (active() && (resource.data.toUid == request.auth.uid ||
                         resource.data.fromUid == request.auth.uid));
     }
 
     // ───────── Şikayetler ─────────
     match /reports/{reportId} {
-      allow create: if signedIn() && request.resource.data.status == 'pending' &&
+      allow create: if active() && request.resource.data.status == 'pending' &&
         request.resource.data.reason is string &&
         request.resource.data.reason.size() <= 2000;
       allow read, update, delete: if isAdmin();
@@ -533,12 +552,12 @@ service cloud.firestore {
 
       match /comments/{commentId} {
         allow read: if true;
-        allow create: if signedIn() &&
+        allow create: if active() &&
           request.resource.data.userId == request.auth.uid &&
           notBanned();
         allow update: if false;
         allow delete: if isAdmin() ||
-          (signedIn() && resource.data.userId == request.auth.uid);
+          (active() && resource.data.userId == request.auth.uid);
       }
     }
 

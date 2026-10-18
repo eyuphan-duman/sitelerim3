@@ -1,5 +1,6 @@
 'use client';
 
+import Recaptcha from '@/components/Recaptcha';
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -117,6 +118,9 @@ export default function AuthModal({ isOpen, onClose, isDark, initialMode = 'sign
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [resetSentEmail, setResetSentEmail] = useState<string | null>(null);
+  const [captchaNeeded, setCaptchaNeeded] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [unverifiedNotice, setUnverifiedNotice] = useState<{ message: string; identifier: string } | null>(null);
   const [resendingVerification, setResendingVerification] = useState(false);
 
@@ -200,10 +204,15 @@ export default function AuthModal({ isOpen, onClose, isDark, initialMode = 'sign
     e.preventDefault();
     const id = identifier.trim();
     if (!id || !password) return;
+    if (captchaNeeded && !captchaToken) {
+      toast.error('Devam etmek için "Ben robot değilim" doğrulamasını tamamla.');
+      return;
+    }
     setBusy(true);
     setUnverifiedNotice(null);
     try {
-      await signIn(id, password);
+      await signIn(id, password, captchaToken || undefined);
+      setCaptchaNeeded(false);
       toast.success('Giriş başarılı, hoş geldin!');
       setPassword('');
       onClose();
@@ -216,6 +225,10 @@ export default function AuthModal({ isOpen, onClose, isDark, initialMode = 'sign
         });
         return;
       }
+      // 5. hatalı denemeden sonra her denemede reCAPTCHA istenir (doğrulama tek kullanımlıktır)
+      if (err.captchaRequired || err.code === 'captcha_required') setCaptchaNeeded(true);
+      setCaptchaToken('');
+      setCaptchaKey(k => k + 1);
       let msg = err.message || 'Giriş yapılamadı.';
       if (err.code === 'auth/user-not-found') msg = 'Bu kullanıcı adına veya e-posta adresine ait hesap bulunamadı.';
       else if (err.code === 'auth/invalid-email') msg = 'Geçersiz bir e-posta adresi girildi.';
@@ -565,7 +578,13 @@ export default function AuthModal({ isOpen, onClose, isDark, initialMode = 'sign
                 <div className={styles.linkRow}>
                   <button type="button" className={styles.linkBtn} onClick={() => switchMode('forgot')}>Şifreni mi unuttun?</button>
                 </div>
-                <button type="submit" className={styles.primary} disabled={busy || !identifier.trim() || !password}>
+                {captchaNeeded && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                    <p style={{ margin: 0, fontSize: '0.85rem', textAlign: 'center', opacity: 0.85 }}>Çok fazla hatalı deneme yapıldı. Devam etmek için doğrulamayı tamamla.</p>
+                    <Recaptcha key={captchaKey} dark={dark} onToken={setCaptchaToken} />
+                  </div>
+                )}
+                <button type="submit" className={styles.primary} disabled={busy || !identifier.trim() || !password || (captchaNeeded && !captchaToken)}>
                   {busy && <Loader size={18} className={styles.spin} />}
                   Giriş Yap
                 </button>
