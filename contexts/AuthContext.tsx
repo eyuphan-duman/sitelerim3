@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (u && !u.isAnonymous) {
         try {
           const token = await u.getIdToken();
-          const r = await fetch('/api/auth/session', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+          const r = await fetch('/api/auth/session', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ deviceId: getDeviceId() }) });
           const d = await r.json().catch(() => ({}));
           if (d?.locked) {
             await signOut(auth);

@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
 import { adminDb, getAdminApp } from '@/lib/firebaseAdmin';
-import { attemptLogin, requestMeta } from '@/lib/loginGuard';
+import { DEVICE_RE, attemptLogin, requestMeta } from '@/lib/loginGuard';
 
 /**
- * Şifreli giriş kapısı: deneme sayaçları, reCAPTCHA, cihaz kilidi/yasağı ve hesap askısı burada uygulanır.
+ * Şifreli giriş kapısı: deneme sayaçları, reCAPTCHA, cihaz kilidi, yeni cihaz kapanması ve hesap askısı burada uygulanır.
  * Başarılı olursa istemci aynı bilgilerle Firebase oturumunu açar.
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const DEVICE_RE = /^[A-Za-z0-9_-]{16,64}$/;
 
 export async function POST(req: Request) {
   try {
