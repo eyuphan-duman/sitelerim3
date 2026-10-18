@@ -1,5 +1,6 @@
 'use client';
 
+import { ADMIN_PATH } from '@/lib/adminPath';
 import { safeHtml } from '@/lib/sanitize';
 import React from 'react';
 import Link from 'next/link';
@@ -51,7 +52,7 @@ export default function FaqDetailClient({ id, initialFaq: faq }: Props) {
 
           {isAdmin && (
             <div className="yz-detail-admin-bar-minimal">
-              <Link href={`/admin?tab=faq`} className="yz-admin-edit-btn-min">
+              <Link href={`${ADMIN_PATH}?tab=faq`} className="yz-admin-edit-btn-min">
                 <Edit3 size={14} /> Admin Panelinden Düzenle
               </Link>
             </div>

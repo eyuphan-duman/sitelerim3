@@ -1,5 +1,6 @@
 'use client';
 
+import { ADMIN_PATH } from '@/lib/adminPath';
 import { jsonLdString } from '@/lib/sanitizeServer';
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
@@ -302,7 +303,7 @@ export default function SssPage() {
 
           {isAdmin && (
             <div style={{ marginTop: 24 }}>
-              <Link href="/admin?tab=faq" className="yz-new-btn">
+              <Link href={`${ADMIN_PATH}?tab=faq`} className="yz-new-btn">
                 <Plus size={18} /> Yeni Soru-Cevap Ekle
               </Link>
             </div>

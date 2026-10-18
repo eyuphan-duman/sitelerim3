@@ -1,4 +1,5 @@
 'use client';
+import { ADMIN_PATH } from '@/lib/adminPath';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -34,7 +35,7 @@ export default function Navbar() {
     return onSnapshot(q, snap => setUnreadCount(snap.size));
   }, [user]);
   const isForumPage = pathname === '/forum' || pathname?.startsWith('/forum/') || pathname === '/bildirimler';
-  const isAdminPage = pathname === '/admin' || pathname?.startsWith('/admin/');
+  const isAdminPage = pathname === ADMIN_PATH || pathname?.startsWith(`${ADMIN_PATH}/`);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 50);

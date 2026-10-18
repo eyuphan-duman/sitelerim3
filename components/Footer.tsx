@@ -1,4 +1,5 @@
 'use client';
+import { ADMIN_PATH } from '@/lib/adminPath';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { MapPin, Phone, Mail, ArrowUpRight } from 'lucide-react';
@@ -30,11 +31,11 @@ export default function Footer() {
   const isExcludedRoute =
     Boolean(pathname?.startsWith('/forum')) ||
     Boolean(pathname?.startsWith('/bildirimler')) ||
-    Boolean(pathname?.startsWith('/admin')) ||
+    Boolean(pathname?.startsWith(ADMIN_PATH)) ||
     (typeof window !== 'undefined' && (
       window.location.pathname.startsWith('/forum') ||
       window.location.pathname.startsWith('/bildirimler') ||
-      window.location.pathname.startsWith('/admin')
+      window.location.pathname.startsWith(ADMIN_PATH)
     ));
 
   if (isExcludedRoute) {

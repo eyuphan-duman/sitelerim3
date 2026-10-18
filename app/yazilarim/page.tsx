@@ -1,5 +1,6 @@
 'use client';
 
+import { ADMIN_PATH } from '@/lib/adminPath';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
@@ -114,7 +115,7 @@ export default function YazilarimPage() {
             İnsan ruhunun derinliklerine dair yazılar, analizler ve düşünceler.
           </p>
           {isAdmin && (
-            <Link href="/admin?tab=posts" className="yz-new-btn">
+            <Link href={`${ADMIN_PATH}?tab=posts`} className="yz-new-btn">
               <Plus size={18} /> Yeni Yazı Yayımla
             </Link>
           )}

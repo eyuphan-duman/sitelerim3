@@ -1,4 +1,5 @@
 'use client';
+import { ADMIN_PATH } from '@/lib/adminPath';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Phone, Mail, X, MessageCircle } from 'lucide-react';
@@ -31,11 +32,11 @@ export default function QuickContact() {
   const isExcludedRoute = 
     Boolean(pathname?.startsWith('/forum')) || 
     Boolean(pathname?.startsWith('/bildirimler')) ||
-    Boolean(pathname?.startsWith('/admin')) ||
+    Boolean(pathname?.startsWith(ADMIN_PATH)) ||
     (typeof window !== 'undefined' && (
       window.location.pathname.startsWith('/forum') || 
       window.location.pathname.startsWith('/bildirimler') ||
-      window.location.pathname.startsWith('/admin')
+      window.location.pathname.startsWith(ADMIN_PATH)
     ));
 
   if (isExcludedRoute) {

@@ -1,5 +1,6 @@
 'use client';
 
+import { ADMIN_PATH } from '@/lib/adminPath';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -13,7 +14,7 @@ export default function AdminCreateButton() {
 
   return (
     <div className="flex justify-center mt-8">
-      <Link href="/admin?tab=posts" className="inline-flex items-center gap-2 bg-[var(--navy)] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-[var(--gold)] hover:text-[var(--navy)] transition-colors">
+      <Link href={`${ADMIN_PATH}?tab=posts`} className="inline-flex items-center gap-2 bg-[var(--navy)] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-[var(--gold)] hover:text-[var(--navy)] transition-colors">
         <Plus size={20} />
         Yeni Yazı Yayımla
       </Link>
