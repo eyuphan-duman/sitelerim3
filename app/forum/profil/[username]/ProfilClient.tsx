@@ -31,6 +31,8 @@ import { usePostActions } from '@/components/forum/usePostActions';
 import { useMyGraph, loadUsers, loadRecentPosts, setFollow, useBlocks, blockUser, unblockUser, useScores } from '@/components/forum/social';
 import { confirmUnfollow, confirmBlock, confirmUnblock } from '@/components/forum/confirm';
 import BlockedList from '@/components/forum/BlockedList';
+import ProfileOverview from '@/components/forum/ProfileOverview';
+import ProfileExtrasEditor, { cleanExtras, type Extras } from '@/components/forum/ProfileExtrasEditor';
 
 interface Post { 
   id: string; body: string; authorName: string; authorUsername?: string; uid: string; 
@@ -84,6 +86,10 @@ export default function ProfilClient({ username }: { username: string }) {
     hideReplies: false,
     isPrivate: false,
   });
+  // Özgeçmiş alanları (başlık, eğitim, sertifikalar, sosyal medya)
+  const [extras, setExtras] = useState<Extras>({ headline: '', education: [], certificates: [], socials: {} });
+  // Profil önce özgeçmiş görünümüyle açılır; tüm paylaşımlar istenince sekmeli görünüm
+  const [showAll, setShowAll] = useState(false);
   const [saving, setSaving] = useState(false);
   const [upPhoto, setUpPhoto] = useState(false);
   const [upCover, setUpCover] = useState(false);
@@ -304,6 +310,12 @@ export default function ProfilClient({ username }: { username: string }) {
             hideReplies: Boolean(data.hideReplies),
             isPrivate: Boolean(data.isPrivate),
           });
+          setExtras({
+            headline: data.headline || '',
+            education: Array.isArray(data.education) ? data.education : [],
+            certificates: Array.isArray(data.certificates) ? data.certificates : [],
+            socials: data.socials || {},
+          });
 
           // Fetch primary user posts first
           try {
@@ -391,6 +403,7 @@ export default function ProfilClient({ username }: { username: string }) {
     const isViewerOwn = Boolean(user && pd && user.uid === pd.uid);
     const s = searchParams.get('settings');
     const t = searchParams.get('tab');
+    if (t && t !== 'settings') setShowAll(true);
     if (s === 'open' || s === '1' || t === 'settings') {
       if (isViewerOwn) {
         setSettingsOpen(true);
@@ -543,6 +556,7 @@ export default function ProfilClient({ username }: { username: string }) {
         hideLikes: Boolean(ed.hideLikes),
         hideReplies: Boolean(ed.hideReplies),
         isPrivate: Boolean(ed.isPrivate),
+        ...cleanExtras(extras),
       };
 
       await updateDoc(doc(db, 'users', user.uid), payload);
@@ -953,7 +967,8 @@ export default function ProfilClient({ username }: { username: string }) {
                   {followsMe && !isOwn && !iBlocked && !blockedMe && <span className="fx-follows-you">Seni takip ediyor</span>}
                 </div>
 
-                {pd.bio && <p className="fx-prof-bio">{renderTextWithMentions(pd.bio)}</p>}
+                {pd.headline && <p className="fx-prof-headline">{pd.headline}</p>}
+                {pd.bio && showAll && <p className="fx-prof-bio">{renderTextWithMentions(pd.bio)}</p>}
 
                 <div className="fx-prof-meta">
                   {pd.location && <span><MapPin size={16} />{pd.location}</span>}
@@ -967,6 +982,9 @@ export default function ProfilClient({ username }: { username: string }) {
                 </div>
 
                 <div className="fx-prof-counts">
+                  <button type="button" onClick={() => (locked ? null : setShowAll(true))} disabled={locked}>
+                    <b>{posts.length}</b> Gönderi
+                  </button>
                   <button type="button" onClick={() => (locked ? null : setListMode('following'))} disabled={locked}>
                     <b>{followings}</b> Takip edilen
                   </button>
@@ -1023,8 +1041,18 @@ export default function ProfilClient({ username }: { username: string }) {
                     </>
                   )}
                 </div>
+              ) : !showAll ? (
+                <ProfileOverview
+                  pd={pd}
+                  isOwn={isOwn}
+                  postCount={posts.length}
+                  preview={renderPosts(posts.slice(0, 3), isOwn ? 'Henüz gönderi paylaşmadın' : 'Henüz gönderi yok', isOwn ? 'İlk düşünceni ya da sorunu paylaştığında burada görünecek.' : `@${handle} henüz bir şey paylaşmadı.`)}
+                  onShowAll={() => { setShowAll(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onEdit={() => setEditOpen(true)}
+                />
               ) : (
                 <>
+                  <button type="button" className="fx-cv-back" onClick={() => setShowAll(false)}><ArrowLeft size={16} /> Profile dön</button>
                   <div className="fx-tabs fx-tabs-scroll" role="tablist">
                     {profileTabs.map(t => (
                       <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`fx-tab ${tab === t.id ? 'is-active' : ''}`} onClick={() => setTab(t.id as any)}>
@@ -1105,9 +1133,9 @@ export default function ProfilClient({ username }: { username: string }) {
                       <small>Küçük harf (a-z), rakam ve alt çizgi. Bahsetmelerde (@ad) kullanılır.</small>
                     </label>
                     <label className="fx-input">
-                      <span>Biyografi</span>
-                      <textarea rows={3} maxLength={160} value={ed.bio} onChange={e => setEd({ ...ed, bio: e.target.value })} />
-                      <small>{ed.bio.length}/160</small>
+                      <span>Hakkında</span>
+                      <textarea rows={5} maxLength={600} value={ed.bio} onChange={e => setEd({ ...ed, bio: e.target.value })} />
+                      <small>{ed.bio.length}/600</small>
                     </label>
                     <label className="fx-input">
                       <span>Konum</span>
@@ -1118,6 +1146,7 @@ export default function ProfilClient({ username }: { username: string }) {
                       <input value={ed.website} maxLength={100} inputMode="url" onChange={e => setEd({ ...ed, website: e.target.value })} />
                     </label>
                   </div>
+                  <ProfileExtrasEditor value={extras} onChange={setExtras} />
                 </div>
               </div>
             </div>

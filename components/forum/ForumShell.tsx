@@ -8,7 +8,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { Home, Search, Bell, Users, Bookmark, User, Settings, Sun, Moon, Feather, LogOut, Heart, Trophy, Mail } from 'lucide-react';
+import { Home, Search, Bell, Users, Bookmark, User, Settings, Sun, Moon, Feather, LogOut, Heart, Trophy, Mail, NotebookPen } from 'lucide-react';
+import { isApprovedPsych } from '@/components/practice/data';
 import toast from 'react-hot-toast';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +23,7 @@ import { ConfirmHost } from './confirm';
 import { InteractionsHost } from './Interactions';
 import './forum.css';
 
-export type NavKey = 'home' | 'explore' | 'notif' | 'following' | 'saved' | 'profile' | 'settings' | 'leaders' | 'contact';
+export type NavKey = 'home' | 'explore' | 'notif' | 'following' | 'saved' | 'profile' | 'settings' | 'leaders' | 'contact' | 'practice';
 
 export type ShellApi = {
   isDark: boolean;
@@ -87,6 +88,8 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
   const trends = useTrends();
 
   const isMember = Boolean(user && !user.isAnonymous);
+  // Danışanlarım yalnızca onaylı psikologlara görünür
+  const isPsych = isMember && isApprovedPsych(userProfile);
   const myUsername = userProfile?.username || (user?.displayName || '').toLowerCase().replace(/\s+/g, '') || (user?.email ? user.email.split('@')[0].toLowerCase() : '') || user?.uid || '';
   const myProfileHref = myUsername ? `/forum/profil/${encodeURIComponent(myUsername)}` : '/forum';
   const myName = userProfile?.displayName || user?.displayName || '';
@@ -115,6 +118,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     saved: needMember(() => go(`${myProfileHref}?tab=bookmarks`)),
     leaders: () => go('/forum/liderler'),
     contact: () => go('/forum/iletisim'),
+    practice: () => go('/forum/danisanlar'),
     profile: needMember(() => go(myProfileHref)),
     settings: needMember(() => go(`${myProfileHref}?settings=open`)),
   };
@@ -137,6 +141,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     { key: 'notif', label: 'Bildirimler', icon: Bell, badge: unread },
     { key: 'following', label: 'Takip ettiklerin', icon: Users },
     { key: 'leaders', label: 'Liderlik', icon: Trophy },
+    ...(isPsych ? [{ key: 'practice' as NavKey, label: 'Danışanlarım', icon: NotebookPen }] : []),
     { key: 'saved', label: 'Yer işaretleri', icon: Bookmark },
     { key: 'profile', label: 'Profil', icon: User },
     { key: 'settings', label: 'Ayarlar', icon: Settings },
@@ -294,6 +299,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
                   { label: 'Profil', icon: User, href: myProfileHref },
                   { label: 'Takip ettiklerin', icon: Users, href: '/forum?feed=following' },
                   { label: 'Liderlik', icon: Trophy, href: '/forum/liderler' },
+                  ...(isPsych ? [{ label: 'Danışanlarım', icon: NotebookPen, href: '/forum/danisanlar' }] : []),
                   { label: 'Yer işaretleri', icon: Bookmark, href: `${myProfileHref}?tab=bookmarks` },
                   { label: 'Beğendiklerin', icon: Heart, href: `${myProfileHref}?tab=likes` },
                   { label: 'Ayarlar', icon: Settings, href: `${myProfileHref}?settings=open` },

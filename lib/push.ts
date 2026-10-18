@@ -64,3 +64,23 @@ export async function pushNotification(app: App, db: Firestore, notifId: string)
   await Promise.all(dead.map(t => db.collection('push_tokens').doc(t).delete().catch(() => {})));
   return res.successCount;
 }
+
+/**
+ * Bir kullanıcının tüm cihazlarına doğrudan anlık bildirim (bildirim kaydı olmadan; ör. seans hatırlatmaları).
+ */
+export async function pushToUser(app: App, db: Firestore, uid: string, msg: { title: string; body: string; tag: string; data?: Record<string, string> }) {
+  const tokensSnap = await db.collection('push_tokens').where('uid', '==', uid).limit(20).get();
+  const tokens = tokensSnap.docs.map(d => d.id);
+  if (!tokens.length) return 0;
+  const res = await getMessaging(app).sendEachForMulticast({
+    tokens,
+    notification: { title: msg.title, body: msg.body.slice(0, 240) },
+    data: msg.data || {},
+    android: { priority: 'high', notification: { channelId: 'default', color: '#0a1628', tag: msg.tag } },
+  });
+  const dead = res.responses
+    .map((r, i) => (!r.success && /registration-token-not-registered|invalid-registration-token|invalid-argument/.test(r.error?.code || '') ? tokens[i] : null))
+    .filter(Boolean) as string[];
+  await Promise.all(dead.map(t => db.collection('push_tokens').doc(t).delete().catch(() => {})));
+  return res.successCount;
+}

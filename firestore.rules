@@ -229,6 +229,18 @@ service cloud.firestore {
       return !request.resource.data.keys().hasAny(['email', 'fullName', 'birthDate', 'diplomaUrl']);
     }
 
+    // Profildeki özgeçmiş alanları (isteğe bağlı): başlık, eğitim, sertifikalar, sosyal medya kullanıcı adları
+    function validProfileExtras() {
+      let d = request.resource.data;
+      return (!d.keys().hasAny(['headline']) || (d.headline is string && d.headline.size() <= 80)) &&
+        (!d.keys().hasAny(['education']) || (d.education is list && d.education.size() <= 6)) &&
+        (!d.keys().hasAny(['certificates']) || (d.certificates is list && d.certificates.size() <= 20)) &&
+        (!d.keys().hasAny(['socials']) || (d.socials is map &&
+          d.socials.keys().hasOnly(['instagram', 'x', 'tiktok', 'youtube']) &&
+          d.socials.get('instagram', '').size() <= 40 && d.socials.get('x', '').size() <= 40 &&
+          d.socials.get('tiktok', '').size() <= 40 && d.socials.get('youtube', '').size() <= 60));
+    }
+
     match /users/{uid} {
       // Forum ve profil için herkese açık (yalnızca açık profil bilgileri)
       allow read: if true;
@@ -241,7 +253,7 @@ service cloud.firestore {
       );
 
       allow update: if isAdmin() || (
-        isSelf(uid) && noPrivateFields() &&
+        isSelf(uid) && noPrivateFields() && validProfileExtras() &&
         // Yöneticinin dondurduğu hesabın dondurma durumu kullanıcı tarafından değiştirilemez
         !(resource.data.get('frozenByAdmin', false) == true && changedKeys().hasAny(['isFrozen', 'frozenAt'])) && (
           !changedKeys().hasAny(protectedUserKeys()) ||
@@ -510,6 +522,13 @@ service cloud.firestore {
             resource.data.get('reviewedAt', request.time) < request.time - duration.value(24, 'h'))
         ));
       allow delete: if isAdmin();
+    }
+
+    // ───────── Danışanlarım (psikolog çalışma alanı) ─────────
+    // Danışan dosyaları, seanslar ve seans notları özel nitelikli kişisel veridir: yalnızca kaydı tutan onaylı
+    // psikolog okuyup yazabilir. Yönetici dahil başka hiç kimsenin erişimi yoktur.
+    match /practice/{uid}/{document=**} {
+      allow read, write: if isSelf(uid) && isVerifiedPsychologist();
     }
 
     // ───────── Psikolog başvuruları ─────────
