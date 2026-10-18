@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 /** İsimsiz gönderilerin `uid` alanı: gerçek sahibi yalnızca gizli anon_owners kaydında durur */
@@ -24,6 +24,16 @@ async function senderFields(uid: string) {
 }
 
 /**
+ * Tekrarlanmaması gereken bildirimlerin sabit kimliği (firestore.rules içindeki notificationKey ile aynı).
+ * Diğer türlerde (yanıt, bahsetme) her olay ayrı bildirimdir; null döner.
+ */
+export function dedupeKey(type: string, fromUid: string, toUid: string, postId?: string): string | null {
+  if (type === 'follow') return `follow_${fromUid}_${toUid}`;
+  if ((type === 'reaction' || type === 'repost') && postId) return `${type}_${fromUid}_${postId}`;
+  return null;
+}
+
+/**
  * Bildirim gönderir. Alıcı isimsiz bir gönderinin sahibiyse kimliği istemcide
  * bilinmediğinden bildirim sunucu üzerinden iletilir.
  */
@@ -31,12 +41,26 @@ export async function sendNotification(data: Record<string, any>) {
   if (data.toUid !== ANON_UID) {
     const me = auth.currentUser?.uid;
     if (!me) return;
-    const ref = await addDoc(collection(db, 'notifications'), {
+    const payload = {
       ...data,
       fromUid: me,
       ...(await senderFields(me)),
       postTitle: typeof data.postTitle === 'string' ? data.postTitle.slice(0, 60) : '',
-    });
+    };
+    // Beğeni, yeniden paylaşım ve takip için kişi başına tek bildirim: geri alıp yeniden yapınca
+    // aynı kayıt kullanılır (kurallar var olan kaydın üzerine yazmaya izin vermez), yeni bildirim düşmez
+    const key = dedupeKey(data.type, me, data.toUid, data.postId);
+    if (key) {
+      const ref = doc(db, 'notifications', key);
+      try {
+        await setDoc(ref, payload);
+      } catch {
+        return; // zaten bildirilmiş
+      }
+      requestPush(ref.id);
+      return ref;
+    }
+    const ref = await addDoc(collection(db, 'notifications'), payload);
     requestPush(ref.id);
     return ref;
   }

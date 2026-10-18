@@ -417,11 +417,21 @@ service cloud.firestore {
         d.get('fromPhotoURL', '') in ['', me.get('photoURL', '')];
     }
 
+    // Beğeni, yeniden paylaşım ve takip bildirimleri kişi başına tektir: kimlikleri sabittir
+    // (tür_gönderen_gönderi ya da follow_gönderen_alıcı). Geri alıp yeniden yapınca yeni kayıt açılamaz;
+    // var olan kaydın üzerine yazmak da (update) yalnızca alıcının okundu işaretine izin verdiği için reddedilir.
+    function validNotificationId(notifId) {
+      let d = request.resource.data;
+      return !(d.type in ['reaction', 'repost', 'follow']) ||
+        notifId == d.type + '_' + request.auth.uid + '_' + (d.type == 'follow' ? d.toUid : d.get('postId', ''));
+    }
+
     match /notifications/{notifId} {
       allow read: if isAdmin() || (signedIn() && resource.data.toUid == request.auth.uid);
       allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid &&
         !blockedBetween(request.auth.uid, request.resource.data.get('toUid', '')) &&
-        validNotification();
+        validNotification() &&
+        validNotificationId(notifId);
       allow update: if signedIn() && resource.data.toUid == request.auth.uid &&
         changedKeys().hasOnly(['read']);
       allow delete: if isAdmin() ||
