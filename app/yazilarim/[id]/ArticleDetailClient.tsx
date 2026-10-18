@@ -1,5 +1,7 @@
 'use client';
 
+import { safeHtml } from '@/lib/sanitize';
+import { uploadFetch } from '@/lib/notify';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
@@ -204,7 +206,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
                     const fd = new FormData();
                     fd.append('file', file);
                     fd.append('folder', 'manav-platform/covers');
-                    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                    const res = await uploadFetch({ method: 'POST', body: fd });
                     const data = await res.json();
                     if (!data.success) throw new Error(data.error);
                     setEditForm(prev => ({ ...prev, featuredImage: data.url }));
@@ -288,7 +290,7 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
         <div className="yz-detail-content-wrapper">
           <div
             className="yz-detail-content ql-editor-view"
-            dangerouslySetInnerHTML={{ __html: article.content || '' }}
+            dangerouslySetInnerHTML={{ __html: safeHtml(article.content || '') }}
           />
         </div>
 

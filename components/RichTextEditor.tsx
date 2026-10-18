@@ -1,4 +1,5 @@
 'use client';
+import { uploadFetch } from '@/lib/notify';
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import 'react-quill-new/dist/quill.snow.css';
 import toast from 'react-hot-toast';
@@ -109,7 +110,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
       formData.append('file', file);
       formData.append('folder', 'manav-platform/articles');
 
-      const res = await fetch('/api/upload', {
+      const res = await uploadFetch({
         method: 'POST',
         body: formData,
       });

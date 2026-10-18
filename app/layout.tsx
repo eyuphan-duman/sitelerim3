@@ -1,3 +1,4 @@
+import { jsonLdString } from '@/lib/sanitizeServer';
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -152,7 +153,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://img.youtube.com" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
         />
       </head>
       <body>

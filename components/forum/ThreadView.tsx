@@ -1,5 +1,6 @@
 'use client';
 
+import { uploadFetch } from '@/lib/notify';
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useIsMobile } from './Composer';
@@ -516,7 +517,7 @@ export default function ThreadView({
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'manav-platform/forum');
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const res = await uploadFetch({ method: 'POST', body: fd });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Yükleme başarısız');
       setReplyImageUrl(data.url);

@@ -1,4 +1,5 @@
 'use client';
+import { uploadFetch } from '@/lib/notify';
 import React, { useState, useEffect, useRef } from 'react';
 import { addDoc, collection, serverTimestamp, orderBy, query, updateDoc, doc, increment, onSnapshot, deleteDoc, deleteField, where, getDocs, getDoc, limit, setDoc, startAfter } from 'firebase/firestore';
 import { createLimited, SpamError } from '@/components/forum/antiSpam';
@@ -357,7 +358,7 @@ export default function ForumClient() {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'manav-platform/forum');
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const res = await uploadFetch({ method: 'POST', body: fd });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
       setForm(prev => ({ ...prev, imageUrl: data.url }));

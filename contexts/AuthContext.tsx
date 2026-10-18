@@ -32,7 +32,7 @@ interface AuthContextType {
   completeGoogleSignup: (chosenUsername: string, password: string, termsAccepted: boolean, extraData?: UserRegistrationData) => Promise<void>;
   cancelGoogleSignup: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
-  resetPassword: (usernameOrEmail: string) => Promise<string>;
+  resetPassword: (usernameOrEmail: string) => Promise<string | null>;
   resendVerificationEmail: () => Promise<void>;
   resendVerificationByCredentials: (usernameOrEmail: string, password?: string) => Promise<void>;
   refreshEmailVerification: () => Promise<boolean>;
@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       psychologistStatus: isPsychSignup ? 'pending' : (snap.exists() ? (snap.data().psychologistStatus || 'none') : 'none'),
       title: extraData?.title || (isPsychSignup ? 'Psikolog' : ''),
       university: extraData?.university || '',
-      diplomaUrl: extraData?.diplomaUrl || '',
+      // Mezun belgesi herkese açık profilde tutulmaz; yalnızca gizli başvuru kaydındadır
     };
 
     if (!snap.exists()) {
@@ -181,7 +181,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (extraData?.fullName) {
         updatePayload.displayName = extraData.fullName;
       }
-      if (extraData?.diplomaUrl) updatePayload.diplomaUrl = extraData.diplomaUrl;
       if (extraData?.university) updatePayload.university = extraData.university;
       if (extraData?.title) updatePayload.title = extraData.title;
       if (isPsychSignup) {
@@ -277,11 +276,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Error sending verification email:', e);
       }
 
-      // Explicit write to guarantee psychologist application and diplomaUrl persist
+      // Explicit write to guarantee the psychologist application persists (belge yalnızca başvuru kaydında)
       if (extraData?.isPsychologist) {
         const userDocRef = doc(db, 'users', cred.user.uid);
         await updateDoc(userDocRef, {
-          diplomaUrl: extraData.diplomaUrl || '',
           university: extraData.university || '',
           title: extraData.title || 'Psikolog',
           role: 'psychologist_pending',
@@ -417,7 +415,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Optional: No user doc for true guests, or create a thin one
   };
 
-  const resetPassword = async (usernameOrEmail: string): Promise<string> => {
+  const resetPassword = async (usernameOrEmail: string): Promise<string | null> => {
     let authEmail = usernameOrEmail.trim();
     if (!authEmail) {
       throw new Error('Lütfen kullanıcı adı veya e-posta adresinizi girin.');
@@ -430,7 +428,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.error || 'Şifre sıfırlama bağlantısı gönderilemedi.');
-    return data.sentTo;
+    return data.sentTo || null;
   };
 
   const logout = async () => {

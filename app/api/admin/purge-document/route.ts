@@ -3,6 +3,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb, getAdminApp } from '@/lib/firebaseAdmin';
 import { deleteFromCloudinary } from '@/lib/cloudinary';
+import { isAdminToken } from '@/lib/adminAuth';
 
 /**
  * Psikolog başvurusu kontrol edildikten (onay ya da ret) sonra e-Devlet mezun belgesini
@@ -11,7 +12,6 @@ import { deleteFromCloudinary } from '@/lib/cloudinary';
  */
 export const runtime = 'nodejs';
 
-const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
 export async function POST(req: Request) {
   try {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
     const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
     const caller = token ? await getAuth(app).verifyIdToken(token).catch(() => null) : null;
-    const isAdmin = Boolean(caller?.email && ADMIN_EMAILS.includes(caller.email.toLowerCase()));
+    const isAdmin = isAdminToken(caller);
     if (!isAdmin) return NextResponse.json({ ok: false }, { status: 403 });
 
     const { uid } = await req.json().catch(() => ({}));

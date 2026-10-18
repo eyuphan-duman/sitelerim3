@@ -1,5 +1,6 @@
 'use client';
 
+import { safeHtml } from '@/lib/sanitize';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -151,7 +152,7 @@ export default function YazilarimClient() {
               overflowWrap: 'break-word',
               hyphens: 'none'
             }}
-            dangerouslySetInnerHTML={{ __html: selectedPost.content || '' }}
+            dangerouslySetInnerHTML={{ __html: safeHtml(selectedPost.content || '') }}
           />
         </div>
 

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getAuth } from 'firebase-admin/auth';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { getAdminApp } from '@/lib/firebaseAdmin';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import fs from 'fs';
@@ -13,6 +15,19 @@ const ALLOWED_TYPES: Record<string, number> = {
 
 const ALLOWED_EXT = /\.(jpe?g|png|webp|gif|avif|pdf|mp4|webm|mov)$/i;
 
+// Giriş yapmamış kişi yalnızca kayıt sırasında e-Devlet mezun belgesi (resim ya da PDF) yükleyebilir
+const GUEST_FOLDER = 'manav-platform/diplomas';
+const GUEST_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
+/** Yükleme yalnızca oturum açmış kişilere açıktır (Cloudinary kotasının kötüye kullanılmaması için) */
+async function signedInUid(request: Request): Promise<string | null> {
+  const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const app = getAdminApp();
+  if (!token || !app) return null;
+  const decoded = await getAuth(app).verifyIdToken(token).catch(() => null);
+  return decoded?.uid || null;
+}
+
 export async function POST(request: Request) {
   try {
     const data = await request.formData();
@@ -25,6 +40,11 @@ export async function POST(request: Request) {
 
     // Klasör yalnızca manav-platform altında ve güvenli karakterlerle olabilir
     const folder = /^manav-platform(\/[a-z0-9_-]{1,40}){0,2}$/i.test(rawFolder) ? rawFolder : 'manav-platform';
+
+    const uid = await signedInUid(request);
+    if (!uid && (folder !== GUEST_FOLDER || !GUEST_TYPES.includes(file.type))) {
+      return NextResponse.json({ success: false, error: 'Dosya yüklemek için giriş yapmalısın.' }, { status: 401 });
+    }
 
     const maxMb = ALLOWED_TYPES[file.type];
     if (!maxMb || !ALLOWED_EXT.test(file.name)) {

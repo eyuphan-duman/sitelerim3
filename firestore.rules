@@ -9,8 +9,12 @@ service cloud.firestore {
 
     function isAdmin() {
       return signedIn() &&
-        request.auth.token.email != null &&
-        request.auth.token.email.lower() in ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
+        request.auth.token.email != null && (
+          request.auth.token.email.lower() == 'furkan@furkanmanav.com' ||
+          // Bu adres Firebase'de kayıtlı olmadığından yalnızca doğrulanmış e-postayla (ör. Google ile giriş) kabul edilir;
+          // aksi halde biri bu adresle şifreli hesap açıp yönetici olabilirdi
+          (request.auth.token.email.lower() == 'pskfurkan.manav@gmail.com' && request.auth.token.email_verified == true)
+        );
     }
 
     function isSelf(uid) {
@@ -174,6 +178,14 @@ service cloud.firestore {
       return (request.resource.data.get(field, 0) - resource.data.get(field, 0)) in allowed;
     }
 
+    // İçerik sahibinin bile doğrudan değiştiremeyeceği alanlar: etkileşimler yalnızca validInteraction()
+    // ile (herkes yalnızca kendi anahtarını) değişir; tarih ve tür sabittir. Böylece sahte beğeni ya da
+    // tarih oynatarak puan/sıralama hilesi yapılamaz.
+    function protectedContentKeys() {
+      return ['reactionsData', 'repostsData', 'bookmarksData', 'commentCount', 'viewsCount',
+        'createdAt', 'isRepost', 'originalPostId', 'isAnonymous'];
+    }
+
     // Başkasının gönderisi/yorumu üzerinde izin verilen etkileşimler:
     // beğeni, repost, kaydetme, yorum sayacı (±1), görüntülenme (+1)
     function validInteraction() {
@@ -189,7 +201,7 @@ service cloud.firestore {
     // Kullanıcının kendisinin değiştiremeyeceği yetki alanları
     function protectedUserKeys() {
       return ['isPsychologist', 'psychologistStatus', 'role', 'isBanned', 'reviewedAt', 'uid',
-        'banUntil', 'banDuration', 'bannedAt', 'photoUploadsUsed'];
+        'banUntil', 'banDuration', 'bannedAt', 'photoUploadsUsed', 'frozenByAdmin'];
     }
 
     // Kullanıcı yalnızca "psikolog başvurusu beklemede" durumuna geçebilir
@@ -199,9 +211,10 @@ service cloud.firestore {
         request.resource.data.get('role', 'member') in ['member', 'psychologist_pending'];
     }
 
-    // Herkese açık profilde e-posta, tam ad ve doğum tarihi tutulmaz (bkz. private_users)
+    // Herkese açık profilde e-posta, tam ad, doğum tarihi ve mezun belgesi tutulmaz
+    // (bkz. private_users ve psychologist_applications)
     function noPrivateFields() {
-      return !request.resource.data.keys().hasAny(['email', 'fullName', 'birthDate']);
+      return !request.resource.data.keys().hasAny(['email', 'fullName', 'birthDate', 'diplomaUrl']);
     }
 
     match /users/{uid} {
@@ -216,7 +229,9 @@ service cloud.firestore {
       );
 
       allow update: if isAdmin() || (
-        isSelf(uid) && noPrivateFields() && (
+        isSelf(uid) && noPrivateFields() &&
+        // Yöneticinin dondurduğu hesabın dondurma durumu kullanıcı tarafından değiştirilemez
+        !(resource.data.get('frozenByAdmin', false) == true && changedKeys().hasAny(['isFrozen', 'frozenAt'])) && (
           !changedKeys().hasAny(protectedUserKeys()) ||
           (!changedKeys().hasAny(['isBanned', 'uid', 'reviewedAt']) && selfPsychApplication()) ||
           // Fotoğraf hakkı sayacı yalnızca tek tek ve yukarı yönde kendi kendine güncellenebilir
@@ -260,6 +275,7 @@ service cloud.firestore {
       allow update: if isAdmin() ||
         (signedIn() && resource.data.uid == request.auth.uid &&
           request.resource.data.uid == resource.data.uid &&
+          !changedKeys().hasAny(protectedContentKeys()) &&
           (!changedKeys().hasAny(['authorIsPsychologist']) || validPsychBadge())) ||
         (signedIn() && validInteraction()) ||
         // Ziyaretçilerin görüntülenme sayacı
@@ -291,6 +307,7 @@ service cloud.firestore {
         allow update: if isAdmin() ||
           (signedIn() && resource.data.uid == request.auth.uid &&
             request.resource.data.uid == resource.data.uid &&
+            !changedKeys().hasAny(protectedContentKeys()) &&
             !changedKeys().hasAny(['authorIsPsychologist'])) ||
           (signedIn() && validInteraction());
 
@@ -373,10 +390,38 @@ service cloud.firestore {
     }
 
     // ───────── Bildirimler ─────────
+    // Bildirim metni türüne göre sabittir; gönderen adı, kullanıcı adı ve fotoğrafı kişinin kendi
+    // profiliyle aynı olmalıdır. Böylece başkası adına ya da serbest metinli (oltalama) bildirim yazılamaz.
+    function notificationMessages() {
+      return {
+        'reaction': ['gönderini beğendi.'],
+        'repost': ['gönderini yeniden paylaştı.'],
+        'comment': ['gönderine yanıt verdi.', 'yanıtına yanıt verdi.'],
+        'mention': ['senden bahsetti.'],
+        'follow': ['seni takip etmeye başladı.']
+      };
+    }
+
+    function validNotification() {
+      let d = request.resource.data;
+      let me = myProfile();
+      return d.keys().hasOnly(['toUid', 'fromUid', 'fromUser', 'fromUsername', 'fromPhotoURL', 'type', 'message',
+          'postId', 'postTitle', 'read', 'createdAt']) &&
+        d.toUid is string && d.toUid != '' &&
+        d.type in notificationMessages() &&
+        d.message in notificationMessages()[d.type] &&
+        d.get('read', false) == false &&
+        d.get('postTitle', '') is string && d.get('postTitle', '').size() <= 80 &&
+        d.get('fromUser', '') in [me.get('displayName', ''), 'Kullanıcı'] &&
+        d.get('fromUsername', '') == me.get('username', '') &&
+        d.get('fromPhotoURL', '') in ['', me.get('photoURL', '')];
+    }
+
     match /notifications/{notifId} {
       allow read: if isAdmin() || (signedIn() && resource.data.toUid == request.auth.uid);
       allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid &&
-        !blockedBetween(request.auth.uid, request.resource.data.get('toUid', ''));
+        !blockedBetween(request.auth.uid, request.resource.data.get('toUid', '')) &&
+        validNotification();
       allow update: if signedIn() && resource.data.toUid == request.auth.uid &&
         changedKeys().hasOnly(['read']);
       allow delete: if isAdmin() ||
@@ -386,7 +431,7 @@ service cloud.firestore {
 
     // ───────── Şikayetler ─────────
     match /reports/{reportId} {
-      allow create: if request.resource.data.status == 'pending' &&
+      allow create: if signedIn() && request.resource.data.status == 'pending' &&
         request.resource.data.reason is string &&
         request.resource.data.reason.size() <= 2000;
       allow read, update, delete: if isAdmin();

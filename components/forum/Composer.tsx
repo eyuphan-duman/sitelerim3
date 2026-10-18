@@ -4,6 +4,7 @@
  * Gönderi kutusu. Masaüstünde akış içinde satır olarak durur; mobilde yazı alanına
  * dokunulunca tam ekran açılır (geri/ileri, fotoğraf, kamera, yanıt izni, taslaklar).
  */
+import { uploadFetch } from '@/lib/notify';
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
@@ -162,7 +163,7 @@ export default function Composer({
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'manav-platform/forum');
-      const data = await (await fetch('/api/upload', { method: 'POST', body: fd })).json();
+      const data = await (await uploadFetch({ method: 'POST', body: fd })).json();
       if (!data.success) throw new Error(data.error);
       setImageUrl(data.url);
     } catch (err: any) {

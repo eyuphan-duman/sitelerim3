@@ -1,5 +1,6 @@
 'use client';
 
+import { jsonLdString } from '@/lib/sanitizeServer';
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
@@ -178,7 +179,7 @@ export default function SssPage() {
     <div className="yz-page">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
       />
       {/* ── HERO ── */}
       <header className="yz-hero">

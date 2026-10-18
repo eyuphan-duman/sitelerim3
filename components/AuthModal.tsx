@@ -367,8 +367,7 @@ export default function AuthModal({ isOpen, onClose, isDark, initialMode = 'sign
     setBusy(true);
     try {
       const sent = await resetPassword(id);
-      setResetSentEmail(sent);
-      toast.success('Şifre sıfırlama bağlantısı gönderildi!');
+      setResetSentEmail(sent || '');
     } catch (err: any) {
       toast.error(err.message || 'Şifre sıfırlama bağlantısı gönderilemedi.');
     } finally {
@@ -648,12 +647,12 @@ export default function AuthModal({ isOpen, onClose, isDark, initialMode = 'sign
 
           {/* ---------------- FORGOT ---------------- */}
           {mode === 'forgot' && (
-            resetSentEmail ? (
+            resetSentEmail !== null ? (
               <div className={styles.sentBox}>
                 <CheckCircle2 size={34} className={styles.chipIcon} />
-                <div className={styles.sentTitle}>Sıfırlama bağlantısı gönderildi</div>
+                <div className={styles.sentTitle}>İsteğin alındı</div>
                 <p className={styles.sentText}>
-                  <strong>{resetSentEmail}</strong> adresine şifre sıfırlama bağlantısı iletildi. Gelen kutunu ve gerekirse spam klasörünü kontrol et.
+                  Bu bilgilerle kayıtlı bir hesap varsa {resetSentEmail ? <><strong>{resetSentEmail}</strong> adresine</> : 'hesabın e-posta adresine'} şifre sıfırlama bağlantısı gönderdik. Birkaç dakika içinde gelmezse spam klasörünü kontrol et ya da yazımı gözden geçirip tekrar dene.
                 </p>
                 <button type="button" className={styles.primary} onClick={() => switchMode('signin')}>Giriş yapmaya dön</button>
               </div>

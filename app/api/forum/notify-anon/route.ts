@@ -80,11 +80,24 @@ export async function POST(req: Request) {
     ]);
     if (b1.exists || b2.exists) return NextResponse.json({ ok: true });
 
-    // Aynı kişiden aynı gönderiye aynı türde art arda bildirim yazılmasın
+    // Bildirim yalnızca gerçekten yapılmış bir etkileşim için yazılır (sahte bildirim yağdırılamaz)
+    const p = post.data() || {};
+    if (type === 'reaction' && !['like', 'heart'].includes(p.reactionsData?.[caller.uid])) return NextResponse.json({ ok: true });
+    if (type === 'repost' && !p.repostsData?.[caller.uid]) return NextResponse.json({ ok: true });
+    if (type === 'comment') {
+      const mine = await db.collection('forum').doc(postId).collection('comments').where('uid', '==', caller.uid).limit(50).get();
+      const recent = mine.docs.some(d => (d.get('createdAt')?.toMillis?.() || 0) > Date.now() - 5 * 60_000);
+      if (!recent) return NextResponse.json({ ok: true });
+    }
+
+    // Aynı kişiden aynı gönderiye aynı türde art arda bildirim yazılmasın (yanıtta en fazla 10 saniyede bir)
     const dupe = await db.collection('notifications')
       .where('toUid', '==', ownerUid).where('fromUid', '==', caller.uid).where('postId', '==', postId).where('type', '==', type)
-      .limit(1).get();
-    if (!dupe.empty && type !== 'comment') return NextResponse.json({ ok: true });
+      .limit(50).get();
+    if (type !== 'comment' && !dupe.empty) return NextResponse.json({ ok: true });
+    if (type === 'comment' && dupe.docs.some(d => (d.get('createdAt')?.toMillis?.() || 0) > Date.now() - 10_000)) {
+      return NextResponse.json({ ok: true });
+    }
 
     const me = (await db.collection('users').doc(caller.uid).get()).data() || {};
     const added = await db.collection('notifications').add({

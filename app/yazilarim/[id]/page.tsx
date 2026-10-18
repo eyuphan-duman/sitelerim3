@@ -1,3 +1,4 @@
+import { cleanHtml, jsonLdString } from '@/lib/sanitizeServer';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -45,6 +46,7 @@ async function getArticle(id: string) {
     return {
       id: docSnap.id,
       ...serialized,
+      content: cleanHtml(serialized.content),
       createdAt: serialized.createdAt || null
     };
   } catch (err) {
@@ -128,7 +130,7 @@ export default async function ArticlePage({ params }: { params: any }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
       />
       <ArticleDetailClient id={id} initialArticle={article} />
     </>

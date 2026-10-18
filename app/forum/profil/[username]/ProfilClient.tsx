@@ -1,4 +1,5 @@
 'use client';
+import { uploadFetch } from '@/lib/notify';
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, onSnapshot, updateDoc, serverTimestamp, limit, addDoc } from 'firebase/firestore';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup, sendPasswordResetEmail, deleteUser } from 'firebase/auth';
@@ -64,6 +65,12 @@ export default function ProfilClient({ username }: { username: string }) {
   const [settingsTab, setSettingsTab] = useState<'profile' | 'security' | 'appearance' | 'privacy' | 'blocked' | 'policy' | 'badge' | 'danger'>('profile');
   const [profMenu, setProfMenu] = useState(false);
   const scores = useScores();
+  // Mezun belgesi herkese açık profilde değil, gizli başvuru kaydında durur; yalnızca sahibine gösterilir
+  const [myDiploma, setMyDiploma] = useState('');
+  useEffect(() => {
+    if (!user || !pd?.uid || user.uid !== pd.uid) return;
+    getDoc(doc(db, 'psychologist_applications', user.uid)).then(s => setMyDiploma(s.data()?.diplomaUrl || '')).catch(() => {});
+  }, [user, pd?.uid]);
   const blocks = useBlocks(user && !user.isAnonymous ? user.uid : null);
   const [sendingVerification, setSendingVerification] = useState(false);
   const [checkingVerification, setCheckingVerification] = useState(false);
@@ -137,13 +144,11 @@ export default function ProfilClient({ username }: { username: string }) {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('folder', 'manav-platform/diplomas');
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await uploadFetch({ method: 'POST', body: formData });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Yükleme başarısız');
 
-      await updateDoc(doc(db, 'users', user.uid), {
-        diplomaUrl: data.url,
-      });
+      // Belge yalnızca gizli başvuru kaydına yazılır (herkese açık profile değil)
       try {
         await setDoc(doc(db, 'psychologist_applications', user.uid), {
           uid: user.uid,
@@ -449,7 +454,7 @@ export default function ProfilClient({ username }: { username: string }) {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('folder', `manav-platform/${path.split('/')[0]}`);
-    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    const res = await uploadFetch({ method: 'POST', body: fd });
     const data = await res.json();
     if (!data.success) {
       throw new Error(data.error || 'Yükleme başarısız oldu');
@@ -984,8 +989,10 @@ export default function ProfilClient({ username }: { username: string }) {
                 )}
                 {isOwn && pd.isFrozen && (
                   <div className="fx-callout">
-                    <div><b>Hesabın dondurulmuş.</b> Profilin ve gönderilerin diğer kullanıcılardan gizli.</div>
-                    <button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={handleToggleFreeze} disabled={freezing}>{freezing ? 'Etkinleştiriliyor…' : 'Hesabı etkinleştir'}</button>
+                    {pd.frozenByAdmin
+                      ? <div><b>Hesabın yönetici tarafından donduruldu.</b> Profilin ve gönderilerin diğer kullanıcılardan gizli. Bir yanlışlık olduğunu düşünüyorsan bizimle iletişime geç.</div>
+                      : <div><b>Hesabın dondurulmuş.</b> Profilin ve gönderilerin diğer kullanıcılardan gizli.</div>}
+                    {!pd.frozenByAdmin && <button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={handleToggleFreeze} disabled={freezing}>{freezing ? 'Etkinleştiriliyor…' : 'Hesabı etkinleştir'}</button>}
                   </div>
                 )}
               </div>
@@ -1279,10 +1286,10 @@ export default function ProfilClient({ username }: { username: string }) {
                             </div>
                             <div className="fx-set-actions">
                               <label className="fx-btn fx-btn-outline fx-btn-sm" style={{ cursor: 'pointer' }}>
-                                <Upload size={14} /> {uploadingDiploma ? 'Yükleniyor…' : pd.diplomaUrl ? 'Belgeyi güncelle' : 'Mezun belgesi yükle'}
+                                <Upload size={14} /> {uploadingDiploma ? 'Yükleniyor…' : (pd.diplomaUrl || myDiploma) ? 'Belgeyi güncelle' : 'Mezun belgesi yükle'}
                                 <input type="file" accept="image/*,application/pdf" hidden onChange={handleUploadDiploma} disabled={uploadingDiploma} />
                               </label>
-                              {pd.diplomaUrl && <a className="fx-text-btn" href={pd.diplomaUrl} target="_blank" rel="noreferrer">Yüklenen belgeyi gör</a>}
+                              {(pd.diplomaUrl || myDiploma) && <a className="fx-text-btn" href={pd.diplomaUrl || myDiploma} target="_blank" rel="noreferrer">Yüklenen belgeyi gör</a>}
                             </div>
                           </>
                         ) : (
@@ -1315,6 +1322,7 @@ export default function ProfilClient({ username }: { username: string }) {
                           <h3>{pd.isFrozen ? 'Hesabı etkinleştir' : 'Hesabı dondur'}</h3>
                           <p className="fx-set-note">Dondurulan hesabın profili, gönderileri ve etkileşimleri diğer kullanıcılardan gizlenir. İstediğin zaman geri açabilirsin.</p>
                           {pd.isFrozen ? (
+                            pd.frozenByAdmin ? <p className="fx-set-note">Hesabın yönetici tarafından donduruldu; yeniden açmak için bizimle iletişime geç.</p> :
                             <div className="fx-set-actions"><button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={handleToggleFreeze} disabled={freezing}>{freezing ? 'Etkinleştiriliyor…' : 'Hesabı etkinleştir'}</button></div>
                           ) : !freezeModalOpen ? (
                             <div className="fx-set-actions"><button type="button" className="fx-btn fx-btn-outline fx-btn-sm" onClick={() => setFreezeModalOpen(true)}>Hesabı dondur</button></div>

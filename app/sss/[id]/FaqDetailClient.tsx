@@ -1,5 +1,6 @@
 'use client';
 
+import { safeHtml } from '@/lib/sanitize';
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,7 +69,7 @@ export default function FaqDetailClient({ id, initialFaq: faq }: Props) {
         <div className="yz-detail-content-wrapper">
           <div
             className="yz-detail-content ql-editor-view"
-            dangerouslySetInnerHTML={{ __html: faq.content || '' }}
+            dangerouslySetInnerHTML={{ __html: safeHtml(faq.content || '') }}
           />
         </div>
 

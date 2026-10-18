@@ -1,4 +1,5 @@
 'use client';
+import { uploadFetch } from '@/lib/notify';
 import React, { useState } from 'react';
 import { X, Send, Trash2, Heart, Lightbulb, ThumbsUp, Flame, Camera, Loader, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -59,7 +60,7 @@ export default function ForumModal({ post, comments, currentUser, userProfile, a
       const fd = new FormData();
       fd.append('file', file);
       fd.append('folder', 'manav-platform/forum');
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const res = await uploadFetch({ method: 'POST', body: fd });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
       setCommentImageUrl(data.url);

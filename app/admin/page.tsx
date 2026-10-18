@@ -1,5 +1,6 @@
 'use client';
 
+import { uploadFetch } from '@/lib/notify';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, setDoc, getDoc, getDocs } from 'firebase/firestore';
@@ -187,7 +188,7 @@ export default function AdminPage() {
       formData.append('file', file);
       formData.append('folder', 'manav-platform/diplomas');
 
-      const res = await fetch('/api/upload', {
+      const res = await uploadFetch({
         method: 'POST',
         body: formData,
       });
@@ -195,10 +196,7 @@ export default function AdminPage() {
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Yükleme başarısız');
 
-      await updateDoc(doc(db, 'users', applicantId), {
-        diplomaUrl: data.url,
-      });
-
+      // Belge yalnızca gizli başvuru kaydına yazılır (herkese açık profile değil)
       try {
         await setDoc(doc(db, 'psychologist_applications', applicantId), {
           uid: applicantId,
@@ -437,7 +435,7 @@ export default function AdminPage() {
       formData.append('file', file);
       formData.append('folder', 'manav-platform/hero');
 
-      const res = await fetch('/api/upload', {
+      const res = await uploadFetch({
         method: 'POST',
         body: formData,
       });
@@ -491,7 +489,7 @@ export default function AdminPage() {
       formData.append('file', file);
       formData.append('folder', 'manav-platform/about');
 
-      const res = await fetch('/api/upload', {
+      const res = await uploadFetch({
         method: 'POST',
         body: formData,
       });
@@ -727,7 +725,7 @@ export default function AdminPage() {
 
       setUploadProgress(50); // Yükleniyor hissi için sahte progress
       
-      const res = await fetch('/api/upload', {
+      const res = await uploadFetch({
         method: 'POST',
         body: formData,
       });
@@ -2984,7 +2982,7 @@ export default function AdminPage() {
                           const fd = new FormData();
                           fd.append('file', file);
                           fd.append('folder', 'manav-platform/covers');
-                          const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                          const res = await uploadFetch({ method: 'POST', body: fd });
                           const data = await res.json();
                           if (!data.success) throw new Error(data.error);
                           setPostForm(prev => ({ ...prev, featuredImage: data.url }));
@@ -3095,7 +3093,7 @@ export default function AdminPage() {
                           const fd = new FormData();
                           fd.append('file', file);
                           fd.append('folder', 'manav-platform/faq');
-                          const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                          const res = await uploadFetch({ method: 'POST', body: fd });
                           const data = await res.json();
                           if (!data.success) throw new Error(data.error);
                           setFaqForm(prev => ({ ...prev, featuredImage: data.url }));

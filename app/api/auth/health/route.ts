@@ -16,5 +16,5 @@ export async function GET() {
   }
   let configured = false;
   try { configured = Boolean(getAdminApp()); } catch { reason = reason === 'ok' ? 'init-failed' : reason; }
-  return NextResponse.json({ configured, reason, length: raw ? raw.length : 0, env: process.env.VERCEL_ENV || 'local' });
+  return NextResponse.json({ configured, reason, env: process.env.VERCEL_ENV || 'local' });
 }

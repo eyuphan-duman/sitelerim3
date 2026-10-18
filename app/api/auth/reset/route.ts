@@ -8,17 +8,13 @@ import { emailForUsername, getAdminApp } from '@/lib/firebaseAdmin';
  *  - e-posta biçimi doğru,
  *  - alan adı gerçekten e-posta alabilen (MX kaydı olan) ve
  *  - sitede kayıtlı bir hesaba ait
- * olduğunda gönderilir. Kullanıcı adıyla istenirse e-posta maskeli döner.
+ * olduğunda gönderilir. Hesabın kayıtlı olup olmadığı yanıttan anlaşılmaz (bir e-postanın
+ * foruma üye olup olmadığı öğrenilemesin); kayıtlı olsa da olmasa da aynı yanıt döner.
  */
 export const runtime = 'nodejs';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
 
-const mask = (email: string) => {
-  const [name, domain] = email.split('@');
-  const shown = name.length <= 2 ? name[0] : name.slice(0, 2);
-  return `${shown}${'•'.repeat(Math.max(3, name.length - shown.length))}@${domain}`;
-};
 
 async function domainAcceptsMail(domain: string) {
   try {
@@ -39,7 +35,8 @@ export async function POST(req: Request) {
     if (!getAdminApp()) return fail('Şifre sıfırlama şu an kullanılamıyor. Lütfen biraz sonra tekrar dene.', 503);
 
     let email: string | null;
-    let byUsername = false;
+    // Kayıtlı olsun olmasın aynı yanıt: yalnızca kişinin kendi yazdığı e-posta geri gösterilir
+    const done = () => NextResponse.json({ ok: true, sentTo: raw.includes('@') ? raw.toLowerCase() : null });
 
     if (raw.includes('@')) {
       email = raw.toLowerCase();
@@ -50,13 +47,12 @@ export async function POST(req: Request) {
       try {
         await getAuth(getAdminApp()!).getUserByEmail(email);
       } catch (e: any) {
-        if (e?.code === 'auth/user-not-found') return fail('Bu e-posta adresiyle kayıtlı bir hesap yok.', 404);
+        if (e?.code === 'auth/user-not-found') return done();
         throw e;
       }
     } else {
-      byUsername = true;
       email = await emailForUsername(raw.toLowerCase().replace(/^@/, ''));
-      if (!email) return fail('Bu kullanıcı adıyla kayıtlı bir hesap yok.', 404);
+      if (!email) return done();
     }
 
     const key = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
@@ -72,7 +68,7 @@ export async function POST(req: Request) {
       }
       return fail('Sıfırlama bağlantısı gönderilemedi. Lütfen tekrar dene.', 502);
     }
-    return NextResponse.json({ ok: true, sentTo: byUsername ? mask(email!) : email });
+    return done();
   } catch {
     return fail('İşlem yapılamadı. Lütfen tekrar dene.', 500);
   }

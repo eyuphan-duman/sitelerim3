@@ -1,5 +1,6 @@
 'use client';
 
+import { uploadFetch } from '@/lib/notify';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -44,7 +45,7 @@ export default function PsychologistRegisterPage() {
       formData.append('file', file);
       formData.append('folder', 'manav-platform/diplomas');
 
-      const res = await fetch('/api/upload', {
+      const res = await uploadFetch({
         method: 'POST',
         body: formData,
       });

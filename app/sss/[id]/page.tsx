@@ -1,3 +1,4 @@
+import { cleanHtml, jsonLdString } from '@/lib/sanitizeServer';
 import { LOCAL_FAQ } from '@/data/local-faq';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -41,6 +42,7 @@ async function getFaq(id: string) {
     return {
       id: docSnap.id,
       ...serialized,
+      content: cleanHtml(serialized.content),
       createdAt: serialized.createdAt || null
     };
   } catch (err) {
@@ -120,7 +122,7 @@ export default async function FaqPage({ params }: { params: any }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }}
       />
       <FaqDetailClient id={id} initialFaq={faq} />
     </>
