@@ -90,7 +90,7 @@ export default function GizlilikPage() {
                 <tr><td>İsimsiz paylaştığın gönderiler ve bu gönderilere verdiğin yanıtlar</td><td>İçerik herkese açıktır ama kimin paylaştığı gösterilmez. Gönderinin sana ait olduğunu yalnızca sen ve site yöneticisi bilir. Yönetici bu bilgiyi yalnızca kötüye kullanım ve yasal zorunluluk durumlarında kullanır.</td></tr>
                 <tr><td>Gönderi taslakların</td><td>Yalnızca sen. Taslaklar sunucuya gönderilmez, kaydettiğin cihazın tarayıcısında kalır.</td></tr>
                 <tr><td>Şikayetler, iletişim formu mesajları, randevu talepleri</td><td>Yalnızca site yöneticisi.</td></tr>
-                <tr><td>Psikolog başvurusundaki e-Devlet mezun belgesi</td><td>Yalnızca site yöneticisi, yalnızca başvuruyu doğrulamak için. Başvuru onaylandığında ya da reddedildiğinde belge sistemden otomatik olarak kalıcı biçimde silinir.</td></tr>
+                <tr><td>Psikolog başvurusundaki e-Devlet mezun belgesi</td><td>Yalnızca site yöneticisi, yalnızca başvuruyu doğrulamak için. Belge, yönetici tarafından bir kez görüntülendiği anda sistemden kalıcı biçimde silinir ve yeniden açılamaz; görüntülenmeden karar verilirse karar anında silinir.</td></tr>
               </tbody>
             </table>
           </div>

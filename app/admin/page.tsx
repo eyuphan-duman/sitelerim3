@@ -213,6 +213,37 @@ export default function AdminPage() {
     }
   };
 
+  // Mezun belgesi tek seferlik görüntülenir: sunucu belgeyi okuyup gösterir ve aynı anda kalıcı olarak siler
+  const [docView, setDocView] = useState<{ appId: string; name: string; urls: { url: string; pdf: boolean }[] } | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+  const closeDocView = () => {
+    docView?.urls.forEach(u => URL.revokeObjectURL(u.url));
+    setDocView(null);
+  };
+  const viewDocumentOnce = async (applicant: any) => {
+    if (!confirm('Mezun belgesi görüntülendiği anda sistemden kalıcı olarak silinir ve bir daha açılamaz.\n\nBelgeyi açılan pencerede inceleyip kararını orada verebilirsin. Devam edilsin mi?')) return;
+    setViewingDoc(applicant.id);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const r = await fetch('/api/admin/view-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ uid: applicant.id }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.ok) throw new Error(data.error || 'Belge gösterilemedi.');
+      const urls = (data.pages as { mime: string; data: string }[]).map(pg => {
+        const bytes = Uint8Array.from(atob(pg.data), ch => ch.charCodeAt(0));
+        return { url: URL.createObjectURL(new Blob([bytes], { type: pg.mime })), pdf: pg.mime === 'application/pdf' };
+      });
+      setDocView({ appId: applicant.id, name: applicant.fullName || applicant.displayName || 'Aday', urls });
+    } catch (err: any) {
+      toast.error(err.message || 'Belge gösterilemedi.');
+    } finally {
+      setViewingDoc(null);
+    }
+  };
+
   // Başvuru kontrol edildikten sonra mezun belgesi sistemden kalıcı olarak silinir (güvenlik prosedürü)
   const purgeDocument = async (uid: string) => {
     try {
@@ -2682,33 +2713,36 @@ export default function AdminPage() {
                               <div>
                                 <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>Yüklenen Diploma / Mezuniyet Belgesi</div>
                                 <div style={{ fontSize: '0.78rem', color: app.diplomaUrl ? '#166534' : '#b45309', fontWeight: 600 }}>
-                                  {app.diplomaUrl ? 'Aday onay belgesi sistemde mevcut' : 'Belge henüz yüklenmedi (Buradan belge yükleyebilirsiniz)'}
+                                  {app.diplomaUrl ? 'Belge sistemde; görüntülendiği anda silinir'
+                                    : app.documentViewedAt ? 'Belge görüntülendi ve sistemden kalıcı olarak silindi'
+                                    : app.documentDeletedAt ? 'Belge inceleme sonrası sistemden silindi'
+                                    : 'Belge henüz yüklenmedi (Buradan belge yükleyebilirsiniz)'}
                                 </div>
                               </div>
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                               {app.diplomaUrl && (
-                                <a
-                                  href={app.diplomaUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button
+                                  type="button"
+                                  onClick={() => viewDocumentOnce(app)}
+                                  disabled={viewingDoc === app.id}
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: 6,
                                     background: '#0f172a',
                                     color: 'white',
+                                    border: 'none',
                                     padding: '8px 16px',
                                     borderRadius: 6,
                                     fontSize: '0.82rem',
                                     fontWeight: 700,
-                                    textDecoration: 'none',
-                                    transition: 'background 0.15s'
+                                    cursor: viewingDoc === app.id ? 'wait' : 'pointer',
                                   }}
                                 >
-                                  <ExternalLink size={14} /> Diplomayı Görüntüle
-                                </a>
+                                  <Eye size={14} /> {viewingDoc === app.id ? 'Açılıyor…' : 'Belgeyi görüntüle (tek seferlik)'}
+                                </button>
                               )}
 
                               <label
@@ -2740,21 +2774,30 @@ export default function AdminPage() {
                             </div>
                           </div>
 
-                          {/* Inline preview if document exists */}
-                          {app.diplomaUrl && (
-                            <div style={{ marginTop: 4, paddingTop: 10, borderTop: '1px dashed #e2e8f0' }}>
-                              {app.diplomaUrl.match(/\.(jpg|jpeg|png|webp)($|\?)/i) || (app.diplomaUrl.includes('cloudinary.com') && !app.diplomaUrl.endsWith('.pdf')) ? (
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                                  <a href={app.diplomaUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', borderRadius: 8, overflow: 'hidden', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
-                                    <img src={app.diplomaUrl} alt="Diploma Belgesi" style={{ maxHeight: 160, maxWidth: 260, objectFit: 'contain', display: 'block', background: '#ffffff' }} />
-                                  </a>
-                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Büyük boyutta incelemek için görselin veya &quot;Diplomayı Görüntüle&quot; butonunun üzerine tıklayabilirsiniz.</span>
+                          {/* Tek seferlik belge görüntüleme penceresi (belge sunucuda zaten silindi) */}
+                          {docView && docView.appId === app.id && (
+                            <div role="dialog" aria-modal="true" aria-label="Mezun belgesi" onClick={closeDocView}
+                              style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.72)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+                              <div onClick={e => e.stopPropagation()}
+                                style={{ background: '#fff', borderRadius: 12, width: 'min(920px, 100%)', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: 800, color: '#0f172a' }}>{docView.name} · e-Devlet mezun belgesi</div>
+                                    <div style={{ fontSize: '0.78rem', color: '#b45309', fontWeight: 600 }}>Belge sistemden kalıcı olarak silindi. Bu görüntü yalnızca bu pencere açıkken duruyor.</div>
+                                  </div>
+                                  <button type="button" onClick={closeDocView} aria-label="Kapat" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#334155' }}><X size={20} /></button>
                                 </div>
-                              ) : (
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1e40af', fontSize: '0.82rem', fontWeight: 600 }}>
-                                  <FileText size={16} /> PDF Mezuniyet / Diploma Dosyası
+                                <div style={{ overflow: 'auto', padding: 16, background: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                                  {docView.urls.map((u, idx) => u.pdf
+                                    ? <iframe key={idx} src={u.url} title={`Belge ${idx + 1}`} style={{ width: '100%', height: '70vh', border: 'none', background: '#fff' }} />
+                                    : <img key={idx} src={u.url} alt={`Belge sayfa ${idx + 1}`} style={{ maxWidth: '100%', background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />)}
                                 </div>
-                              )}
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 16px', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+                                  <button type="button" onClick={closeDocView} style={{ background: '#fff', color: '#334155', border: '1px solid #cbd5e1', padding: '8px 14px', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>Kapat</button>
+                                  <button type="button" onClick={async () => { await handleRejectPsychologist(app); closeDocView(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>Reddet</button>
+                                  <button type="button" onClick={async () => { await handleApprovePsychologist(app); closeDocView(); }} style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>Onayla</button>
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
