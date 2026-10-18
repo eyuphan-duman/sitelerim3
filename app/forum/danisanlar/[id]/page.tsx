@@ -7,12 +7,12 @@ import { ArrowLeft, CalendarPlus, NotebookPen, Pencil, ShieldAlert, Trash2, Vide
 import ForumShell from '@/components/forum/ForumShell';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  MODE_LABEL, RISK_LABEL, SESSION_LABEL, STATUS_LABEL,
+  MODE_LABEL, RISK_LABEL, STATUS_LABEL,
   deleteClient, deleteNote, deleteSession, fmtDate, fmtDay, fmtMoney, fmtTime, getClient, initials, isApprovedPsych,
   listClients, notesOf, sessionsOf, updateSession,
   type Client, type Note, type Session,
 } from '@/components/practice/data';
-import { ClientForm, NoteForm, SessionForm } from '@/components/practice/Forms';
+import { ClientForm, NoteForm, SessionForm, StatusSelect } from '@/components/practice/Forms';
 
 type Tab = 'sessions' | 'notes' | 'info';
 
@@ -81,16 +81,13 @@ function ClientFile({ uid, id }: { uid: string; id: string }) {
         <div className="pr-slot-body">
           <div className="pr-slot-meta" style={{ marginTop: 0 }}>
             {s.mode === 'online' ? <Video size={13} /> : <MapPin size={13} />} {MODE_LABEL[s.mode]} · {s.duration} dk{s.fee ? ` · ${fmtMoney(s.fee)}` : ''}
-            <span className={`pr-chip is-${s.status}`}>{SESSION_LABEL[s.status]}</span>
+            <StatusSelect status={s.status} onChange={v => mark(s, { status: v })} />
             {s.fee && s.status !== 'planned' && s.status !== 'cancelled' ? <button type="button" className={`pr-paid ${s.paid ? 'is-on' : ''}`} onClick={() => mark(s, { paid: !s.paid })}>{s.paid ? 'Ödendi' : 'Ödeme bekliyor'}</button> : null}
           </div>
           {note && <button type="button" className="pr-note-peek" onClick={() => setModal({ kind: 'note', note })}>{[note.discussed, note.observations, note.plan].find(Boolean)?.slice(0, 140)}</button>}
         </div>
         <div className="pr-slot-actions">
           {!note && <button type="button" className="fx-btn fx-btn-outline fx-btn-sm" onClick={() => setModal({ kind: 'note', s })}><NotebookPen size={14} /> Not</button>}
-          <select aria-label="Seans durumu" value={s.status} onChange={e => mark(s, { status: e.target.value as Session['status'] })}>
-            {Object.entries(SESSION_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
           <button type="button" className="fx-icon-btn" aria-label="Seansı sil" onClick={() => removeSession(s)}><Trash2 size={16} /></button>
         </div>
       </article>

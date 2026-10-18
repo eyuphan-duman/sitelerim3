@@ -7,12 +7,12 @@ import { CalendarPlus, Check, Clock, Lock, NotebookPen, Plus, Search, ShieldAler
 import ForumShell from '@/components/forum/ForumShell';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  DEFAULT_SETTINGS, MODE_LABEL, SESSION_LABEL, STATUS_LABEL,
+  DEFAULT_SETTINGS, MODE_LABEL, STATUS_LABEL,
   addDays, fmtDay, fmtMoney, fmtTime, initials, isApprovedPsych, listClients, loadSettings, relTime,
   saveSettings, sessionsBetween, startOfDay, updateSession,
   type Client, type ClientStatus, type Session, type Settings,
 } from '@/components/practice/data';
-import { ClientForm, NoteForm, SessionForm } from '@/components/practice/Forms';
+import { ChipRow, ClientForm, NoteForm, SessionForm, StatusSelect } from '@/components/practice/Forms';
 
 type Tab = 'agenda' | 'clients' | 'reminders';
 
@@ -169,17 +169,14 @@ function Agenda({ sessions, clients, now, onMark, onNote }: {
                     {c?.risk === 'high' && <span className="pr-risk" title="Yüksek risk">!</span>}
                   </Link>
                   <div className="pr-slot-meta">
+                    <StatusSelect status={s.status} onChange={v => onMark(s, { status: v })} />
                     {s.mode === 'online' ? <Video size={13} /> : <MapPin size={13} />} {MODE_LABEL[s.mode]} · {s.duration} dk{s.fee ? ` · ${fmtMoney(s.fee)}` : ''}
-                    {s.status !== 'planned' && <span className={`pr-chip is-${s.status}`}>{SESSION_LABEL[s.status]}</span>}
                     {s.fee ? <button type="button" className={`pr-paid ${s.paid ? 'is-on' : ''}`} onClick={() => onMark(s, { paid: !s.paid })}>{s.paid ? 'Ödendi' : 'Ödeme bekliyor'}</button> : null}
                   </div>
                 </div>
                 <div className="pr-slot-actions">
                   <button type="button" className="fx-btn fx-btn-outline fx-btn-sm" onClick={() => onNote(s)}><NotebookPen size={14} /> Not</button>
                   {s.status === 'planned' && past && <button type="button" className="fx-btn fx-btn-primary fx-btn-sm" onClick={() => onMark(s, { status: 'done' })}><Check size={14} /> Yapıldı</button>}
-                  <select aria-label="Seans durumu" value={s.status} onChange={e => onMark(s, { status: e.target.value as Session['status'] })}>
-                    {Object.entries(SESSION_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
                 </div>
               </article>
             );
@@ -244,16 +241,15 @@ function Reminders({ uid, settings, onChange }: { uid: string; settings: Setting
       <section className="fx-cv-card">
         <h3 className="fx-cv-title">Seans öncesi hatırlatma</h3>
         <p className="pr-hint">Logos uygulamasında her seanstan önce telefonuna bildirim gelir. Bildirimde danışanın adı değil, yalnızca baş harfleri yazar.</p>
-        <select value={settings.reminderMinutes} onChange={e => save({ reminderMinutes: parseInt(e.target.value, 10) })}>
-          {[[0, 'Hatırlatma yok'], [10, '10 dakika önce'], [15, '15 dakika önce'], [30, '30 dakika önce'], [60, '1 saat önce'], [120, '2 saat önce'], [1440, '1 gün önce']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
+        <ChipRow label="Seans öncesi hatırlatma" value={settings.reminderMinutes} onChange={v => save({ reminderMinutes: v })}
+          options={[[0, 'Kapalı'], [10, '10 dk'], [15, '15 dk'], [30, '30 dk'], [60, '1 saat'], [120, '2 saat'], [1440, '1 gün']]} />
       </section>
-      <section className="fx-cv-card">
-        <h3 className="fx-cv-title">Günlük özet</h3>
-        <label className="pr-check">
-          <input type="checkbox" checked={settings.dailySummary} onChange={e => save({ dailySummary: e.target.checked })} />
-          <span>Seans olan günlerde sabah 08:00&apos;de &ldquo;Bugün N seansın var&rdquo; bildirimi gönder</span>
-        </label>
+      <section className="fx-cv-card pr-switch-card">
+        <div>
+          <h3 className="fx-cv-title">Günlük özet</h3>
+          <p className="pr-hint">Seans olan günlerde sabah 08:00&apos;de &ldquo;Bugün N seansın var&rdquo; bildirimi.</p>
+        </div>
+        <button type="button" role="switch" aria-checked={settings.dailySummary} aria-label="Günlük özet" className={`fx-switch ${settings.dailySummary ? 'is-on' : ''}`} onClick={() => save({ dailySummary: !settings.dailySummary })}><span /></button>
       </section>
     </div>
   );

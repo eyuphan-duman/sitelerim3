@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
-  MODE_LABEL, RISK_LABEL, STATUS_LABEL, planSessions, saveClient, saveNote,
-  type Client, type ClientStatus, type Mode, type Note, type Risk,
+  MODE_LABEL, RISK_LABEL, SESSION_LABEL, STATUS_LABEL, addDays, planSessions, saveClient, saveNote, startOfDay,
+  type Client, type ClientStatus, type Mode, type Note, type Risk, type SessionStatus,
 } from './data';
 
 function Modal({ title, onClose, onSave, saving, saveLabel = 'Kaydet', children }: {
@@ -39,6 +39,64 @@ function Choice<T extends string>({ value, options, onChange }: { value: T; opti
       {(Object.keys(options) as T[]).map(k => (
         <button key={k} type="button" role="radio" aria-checked={value === k} className={value === k ? 'is-on' : ''} onClick={() => onChange(k)}>{options[k]}</button>
       ))}
+    </div>
+  );
+}
+
+/** Sayısal ya da metin seçenekler için çip satırı (uygulamadaki Chip dizisiyle aynı) */
+export function ChipRow<T extends string | number>({ value, options, onChange, scroll, label }: {
+  value: T; options: [T, string][]; onChange: (v: T) => void; scroll?: boolean; label?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Fareyle kullananlar için: yatay satırda dikey tekerlek hareketi satırı kaydırır (uçlara gelince sayfa kayar)
+  useEffect(() => {
+    const el = ref.current;
+    if (!scroll || !el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const max = el.scrollWidth - el.clientWidth;
+      if ((e.deltaY < 0 && el.scrollLeft <= 0) || (e.deltaY > 0 && el.scrollLeft >= max - 1)) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [scroll]);
+  return (
+    <div ref={ref} className={`pr-choice ${scroll ? 'pr-choice-scroll' : ''}`} role="radiogroup" aria-label={label}>
+      {options.map(([k, l]) => (
+        <button key={String(k)} type="button" role="radio" aria-checked={value === k} className={value === k ? 'is-on' : ''} onClick={() => onChange(k)}>{l}</button>
+      ))}
+    </div>
+  );
+}
+
+/** Seans durumu: renkli çip, dokununca durum listesi açılır */
+export function StatusSelect({ status, onChange }: { status: SessionStatus; onChange: (s: SessionStatus) => void }) {
+  return (
+    <span className={`pr-status is-${status}`}>
+      <select aria-label="Seans durumu" value={status} onChange={e => onChange(e.target.value as SessionStatus)}>
+        {(Object.keys(SESSION_LABEL) as SessionStatus[]).map(k => <option key={k} value={k}>{SESSION_LABEL[k]}</option>)}
+      </select>
+    </span>
+  );
+}
+
+/** Seans tarihi ve saati: önümüzdeki 60 gün ve 07:00–22:45 arası 15 dakikalık aralıklar */
+function DateTimePicker({ value, onChange }: { value: Date; onChange: (d: Date) => void }) {
+  const days = useMemo(() => Array.from({ length: 61 }, (_, i) => addDays(startOfDay(), i)), []);
+  const dayKey = (d: Date) => d.toDateString();
+  const hours = Array.from({ length: 16 }, (_, i) => i + 7);
+  const at = (y: Date, h: number, m: number) => new Date(y.getFullYear(), y.getMonth(), y.getDate(), h, m);
+  return (
+    <div className="pr-dt">
+      <b>{value.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })} · {String(value.getHours()).padStart(2, '0')}:{String(value.getMinutes()).padStart(2, '0')}</b>
+      <ChipRow scroll label="Gün" value={dayKey(value)} onChange={k => { const d = days.find(x => dayKey(x) === k)!; onChange(at(d, value.getHours(), value.getMinutes())); }}
+        options={days.map((d, i) => [dayKey(d), i === 0 ? 'Bugün' : i === 1 ? 'Yarın' : d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', weekday: 'short' })])} />
+      <ChipRow scroll label="Saat" value={value.getHours()} onChange={h => onChange(at(value, h, value.getMinutes()))}
+        options={hours.map(h => [h, `${String(h).padStart(2, '0')}:00`])} />
+      <ChipRow label="Dakika" value={value.getMinutes()} onChange={m => onChange(at(value, value.getHours(), m))}
+        options={[0, 15, 30, 45].map(m => [m, `:${String(m).padStart(2, '0')}`])} />
     </div>
   );
 }
@@ -94,17 +152,14 @@ export function ClientForm({ uid, client, onClose, onSaved }: { uid: string; cli
 }
 
 /* ── Seans planla ── */
-const pad = (n: number) => String(n).padStart(2, '0');
-const toLocalInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
 export function SessionForm({ uid, clients, clientId, onClose, onSaved }: {
   uid: string; clients: Client[]; clientId?: string; onClose: () => void; onSaved: () => void;
 }) {
   const first = clients.find(x => x.id === clientId) || clients.find(x => x.status === 'active') || clients[0];
-  const next = new Date(); next.setMinutes(0, 0, 0); next.setHours(next.getHours() + 1);
   const [cid, setCid] = useState(first?.id || '');
   const sel = clients.find(x => x.id === cid);
-  const [when, setWhen] = useState(toLocalInput(next));
+  const [when, setWhen] = useState(() => { const d = new Date(); d.setMinutes(0, 0, 0); d.setHours(d.getHours() + 1); return d; });
   const [duration, setDuration] = useState(sel?.duration || 50);
   const [mode, setMode] = useState<Mode>(sel?.mode || 'face');
   const [fee, setFee] = useState<number | null>(sel?.fee ?? null);
@@ -119,11 +174,9 @@ export function SessionForm({ uid, clients, clientId, onClose, onSaved }: {
 
   const save = async () => {
     if (!sel) return toast.error('Önce bir danışan seç.');
-    const start = new Date(when);
-    if (Number.isNaN(start.getTime())) return toast.error('Tarih ve saat seç.');
     setSaving(true);
     try {
-      await planSessions(uid, { clientId: sel.id, clientName: sel.name, start, duration: duration || 50, mode, fee, repeatWeeks: repeat });
+      await planSessions(uid, { clientId: sel.id, clientName: sel.name, start: when, duration: duration || 50, mode, fee, repeatWeeks: repeat });
       toast.success(repeat > 1 ? `${repeat} seans planlandı` : 'Seans planlandı');
       onSaved();
     } catch {
@@ -138,20 +191,22 @@ export function SessionForm({ uid, clients, clientId, onClose, onSaved }: {
   }
   return (
     <Modal title="Seans planla" onClose={onClose} onSave={save} saving={saving} saveLabel="Planla">
-      <Field label="Danışan" wide>
-        <select value={cid} onChange={e => pick(e.target.value)}>
-          {clients.filter(x => x.status !== 'ended' || x.id === cid).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
-        </select>
-      </Field>
-      <Field label="Tarih ve saat"><input type="datetime-local" value={when} onChange={e => setWhen(e.target.value)} /></Field>
+      <div className="fx-input" style={{ gridColumn: '1 / -1' }}>
+        <span>Danışan</span>
+        <ChipRow label="Danışan" value={cid} onChange={pick} options={clients.filter(x => x.status !== 'ended' || x.id === cid).map(x => [x.id, x.name])} />
+      </div>
+      <div className="fx-input" style={{ gridColumn: '1 / -1' }}>
+        <span>Tarih ve saat</span>
+        <DateTimePicker value={when} onChange={setWhen} />
+      </div>
       <Field label="Süre (dk)"><input inputMode="numeric" value={duration} maxLength={3} onChange={e => setDuration(Math.min(240, parseInt(e.target.value.replace(/\D/g, ''), 10) || 0))} /></Field>
       <Field label="Görüşme biçimi"><Choice<Mode> value={mode} options={MODE_LABEL} onChange={setMode} /></Field>
       <Field label="Ücret (₺)"><input inputMode="numeric" value={fee ?? ''} maxLength={7} onChange={e => { const n = parseInt(e.target.value.replace(/\D/g, ''), 10); setFee(Number.isFinite(n) ? n : null); }} /></Field>
-      <Field label="Haftalık tekrarla" hint={repeat > 1 ? `Aynı gün ve saatte ${repeat} hafta boyunca seans oluşturulur.` : 'Tek seans'} wide>
-        <select value={repeat} onChange={e => setRepeat(parseInt(e.target.value, 10))}>
-          {[1, 2, 4, 6, 8, 12, 16, 24].map(n => <option key={n} value={n}>{n === 1 ? 'Tekrarlama' : `${n} hafta`}</option>)}
-        </select>
-      </Field>
+      <div className="fx-input" style={{ gridColumn: '1 / -1' }}>
+        <span>Haftalık tekrarla</span>
+        <ChipRow label="Haftalık tekrarla" value={repeat} onChange={setRepeat} options={[1, 2, 4, 6, 8, 12, 16, 24].map(n => [n, n === 1 ? 'Tekrarlama' : `${n} hafta`])} />
+        {repeat > 1 && <small>Aynı gün ve saatte {repeat} hafta boyunca seans oluşturulur.</small>}
+      </div>
     </Modal>
   );
 }
