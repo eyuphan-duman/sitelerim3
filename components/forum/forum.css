@@ -25,6 +25,10 @@
   --fx-scrim: rgba(8, 14, 26, 0.55);
   --fx-shadow: 0 1px 2px rgba(10, 22, 40, 0.06), 0 8px 28px rgba(10, 22, 40, 0.12);
   --fx-blur-bg: rgba(255, 255, 255, 0.86);
+  --fx-canvas: #eef2f7;
+  --fx-tile-on: #0a1628;
+  --fx-tile-on-ink: #d9b573;
+  --fx-cta-ic: #d9b573;
 
   --fx-font: var(--font-inter), -apple-system, 'Segoe UI', sans-serif;
   --fx-nav-w: 275px;
@@ -61,6 +65,10 @@
   --fx-scrim: rgba(2, 6, 14, 0.72);
   --fx-shadow: 0 0 0 1px #1f2f49, 0 12px 32px rgba(0, 0, 0, 0.55);
   --fx-blur-bg: rgba(8, 17, 31, 0.84);
+  --fx-canvas: #050b16;
+  --fx-tile-on: #d9b573;
+  --fx-tile-on-ink: #0a1628;
+  --fx-cta-ic: #a27a35;
   color-scheme: dark;
 }
 
@@ -82,12 +90,15 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 /* ─── Kabuk ─── */
 .fx-shell {
   display: grid;
-  grid-template-columns: var(--fx-nav-w) var(--fx-feed-w) var(--fx-aside-w);
+  grid-template-columns: var(--fx-aside-w) var(--fx-feed-w) var(--fx-nav-w);
+  grid-template-areas: "aside main nav";
   justify-content: center;
   min-height: 100vh;
 }
 
 .fx-main {
+  grid-area: main;
+  background: var(--fx-bg);
   border-left: 1px solid var(--fx-line);
   border-right: 1px solid var(--fx-line);
   min-height: 100vh;
@@ -95,16 +106,28 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   padding-bottom: 96px;
 }
 
-/* ─── Sol menü ─── */
+/* ─── Sağdaki menü: tek parça "dok" ───
+   Logo, profilin, paylaş düğmesi ve üç grup halinde menü. Seçili sayfanın simge karosu
+   logodaki gibi lacivert üzerine altın (koyu temada altın üzerine lacivert). */
 .fx-nav {
+  grid-area: nav;
   position: sticky;
   top: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 10px 12px 16px;
+  padding: 12px 0 12px 20px;
   overflow-y: auto;
   scrollbar-width: none;
+}
+.fx-dock {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 10px 10px;
+  border: 1px solid var(--fx-line);
+  border-radius: 24px;
+  background: var(--fx-raised);
 }
 
 .fx-logo {
@@ -112,8 +135,8 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   align-items: center;
   height: 52px;
   padding: 0 12px;
-  margin-bottom: 4px;
-  border-radius: 999px;
+  margin-bottom: 6px;
+  border-radius: 16px;
   align-self: flex-start;
 }
 .fx-logo-icon { display: none; }
@@ -121,53 +144,36 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-logo .fx-logo-icon { display: none; }
 .fx-logo:hover { background: var(--fx-hover); }
 
-.fx-nav-item {
+.fx-dock-me {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 11px 14px;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
   border: 0;
-  background: none;
-  border-radius: 999px;
+  border-radius: 16px;
+  background: var(--fx-soft);
   color: var(--fx-ink);
-  font-size: 1.15rem;
-  font-weight: 400;
+  font: inherit;
+  text-align: left;
   text-decoration: none;
   cursor: pointer;
-  align-self: flex-start;
-  position: relative;
   transition: background-color .15s;
 }
-.fx-nav-item:hover { background: var(--fx-hover); }
-.fx-nav-item.is-active { font-weight: 700; }
-.fx-nav-item svg { flex-shrink: 0; }
-
-.fx-dot-count {
-  position: absolute;
-  top: 5px;
-  left: 28px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--fx-link);
-  color: #fff;
-  font-size: .7rem;
-  font-weight: 700;
-  display: grid;
-  place-items: center;
-  border: 2px solid var(--fx-bg);
-}
+.fx-dock-me:hover { background: color-mix(in srgb, var(--fx-ink) 7%, var(--fx-soft)); }
+.fx-me-text { min-width: 0; flex: 1; display: flex; flex-direction: column; line-height: 1.25; }
+.fx-me-name { font-weight: 700; font-size: .94rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-me-handle { color: var(--fx-ink-2); font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .fx-post-cta {
-  margin: 14px 0 8px;
-  width: 90%;
-  height: 52px;
-  border-radius: 999px;
+  margin: 10px 0 8px;
+  width: 100%;
+  height: 46px;
+  border-radius: 14px;
   border: 0;
   background: var(--fx-brand);
   color: var(--fx-on-brand);
-  font-size: 1.02rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -177,23 +183,62 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   transition: opacity .15s;
 }
 .fx-post-cta:hover { opacity: .9; }
-.fx-post-cta .fx-cta-icon { display: none; }
+.fx-post-cta .fx-cta-icon { color: var(--fx-cta-ic); }
 
-.fx-me {
-  margin-top: auto;
+.fx-nav-group { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 1px solid var(--fx-line); }
+.fx-nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 999px;
+  gap: 12px;
+  width: 100%;
+  padding: 4px 10px 4px 4px;
+  border: 0;
+  background: none;
+  border-radius: 14px;
+  color: var(--fx-ink-2);
+  font-size: .98rem;
+  font-weight: 500;
+  text-align: left;
   text-decoration: none;
-  color: var(--fx-ink);
-  min-width: 0;
+  cursor: pointer;
+  position: relative;
+  transition: background-color .15s, color .15s;
 }
-.fx-me:hover { background: var(--fx-hover); }
-.fx-me-text { min-width: 0; flex: 1; line-height: 1.25; }
-.fx-me-name { font-weight: 700; font-size: .94rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fx-me-handle { color: var(--fx-ink-2); font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-nav-item:hover { background: var(--fx-hover); color: var(--fx-ink); }
+.fx-nav-item.is-active { color: var(--fx-ink); font-weight: 700; }
+.fx-nav-ic {
+  position: relative;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--fx-ink);
+  transition: background-color .15s, color .15s;
+}
+.fx-nav-item:hover .fx-nav-ic { background: var(--fx-soft); }
+.fx-nav-item.is-active .fx-nav-ic { background: var(--fx-tile-on); color: var(--fx-tile-on-ink); }
+.fx-nav-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-nav-badge {
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--fx-gold);
+  color: #fff;
+  font-size: .74rem;
+  font-weight: 800;
+}
+[data-forum-dark="true"] .fx-nav-badge { color: #0a1628; }
+.fx-nav-dot { display: none; position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--fx-gold); border: 2px solid var(--fx-raised); }
+.fx-dock-out { margin-top: auto; color: var(--fx-ink-3); font-size: .92rem; }
+.fx-dock-out .fx-nav-ic { color: var(--fx-ink-3); }
+.fx-dock-out:hover { color: var(--fx-danger); }
+.fx-dock-out:hover .fx-nav-ic { color: var(--fx-danger); background: color-mix(in srgb, var(--fx-danger) 10%, transparent); }
 
 .fx-icon-btn {
   width: 36px;
@@ -692,12 +737,13 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 
 /* ─── Sağ sütun ─── */
 .fx-aside {
+  grid-area: aside;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
   scrollbar-width: none;
-  padding: 0 0 24px 28px;
+  padding: 0 24px 24px 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -706,13 +752,14 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   position: sticky;
   top: 0;
   z-index: 5;
-  padding: 6px 0 6px;
-  background: var(--fx-bg);
+  padding: 12px 0 6px;
+  background: var(--fx-canvas);
 }
 .fx-panel {
   flex-shrink: 0;
   border: 1px solid var(--fx-line);
-  border-radius: 16px;
+  border-radius: 20px;
+  background: var(--fx-raised);
   overflow: hidden;
 }
 .fx-panel-title { padding: 12px 16px 4px; margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -.01em; color: var(--fx-ink); }
@@ -786,7 +833,7 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  transform: translateX(calc(var(--fx-nav-w) / 2));
+  transform: translateX(calc(var(--fx-nav-w) / -2));
 }
 .fx-guest-copy strong { display: block; font-size: 1.2rem; font-weight: 800; letter-spacing: -.01em; }
 .fx-guest-copy span { font-size: .92rem; opacity: .8; }
@@ -880,22 +927,24 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 
 @media (max-width: 1279px) {
   [data-forum-page] { --fx-aside-w: 310px; --fx-nav-w: 88px; }
-  .fx-nav { align-items: center; padding: 10px 8px 16px; }
-  .fx-logo { align-self: center; padding: 0 10px; }
+  .fx-nav { padding: 12px 0 12px 12px; }
+  .fx-dock { align-items: center; padding: 8px 6px; }
+  .fx-logo { align-self: center; padding: 0 8px; }
   .fx-logo .fx-logo-full { display: none; }
   .fx-logo .fx-logo-icon { display: flex; }
-  .fx-nav-item { align-self: center; padding: 12px; }
-  .fx-nav-item span.fx-nav-label { display: none; }
-  .fx-post-cta { width: 52px; padding: 0; }
+  .fx-dock-me { width: auto; padding: 4px; background: none; }
+  .fx-dock-me .fx-me-text { display: none; }
+  .fx-post-cta { width: 46px; padding: 0; }
   .fx-post-cta .fx-cta-label { display: none; }
-  .fx-post-cta .fx-cta-icon { display: block; }
-  .fx-me { padding: 8px; }
-  .fx-me-text, .fx-me .fx-icon-btn { display: none; }
-  .fx-guest-inner { transform: translateX(calc(var(--fx-nav-w) / 2)); }
+  .fx-nav-group { width: 100%; align-items: center; }
+  .fx-nav-item { width: auto; padding: 4px; }
+  .fx-nav-item .fx-nav-label, .fx-nav-item .fx-nav-badge { display: none; }
+  .fx-nav-dot { display: block; }
+  .fx-guest-inner { transform: translateX(calc(var(--fx-nav-w) / -2)); }
 }
 
 @media (max-width: 1099px) {
-  .fx-shell { grid-template-columns: var(--fx-nav-w) minmax(0, var(--fx-feed-w)); }
+  .fx-shell { grid-template-columns: minmax(0, var(--fx-feed-w)) var(--fx-nav-w); grid-template-areas: "main nav"; }
   .fx-aside { display: none; }
   .fx-head-search { display: block; }
   .fx-guest-inner { max-width: var(--fx-feed-w); }
@@ -2277,3 +2326,13 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 .fx-prof-practice small { color: var(--fx-ink-2); font-size: .84rem; }
 .fx-prof-practice-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--fx-link) 12%, var(--fx-bg)); color: var(--fx-link); }
 .fx-prof-tabs { scroll-margin-top: 53px; }
+
+/* ─── Masaüstü zemini: akış beyaz kâğıt, yan sütunlar masanın üzerinde ─── */
+@media (min-width: 700px) {
+  [data-forum-page] { background: var(--fx-canvas); }
+  body:has([data-forum-page]) { background: #eef2f7; }
+  body:has([data-forum-page][data-forum-dark="true"]) { background: #050b16; }
+}
+@media (max-width: 699px) {
+  .fx-aside-search { background: var(--fx-bg); }
+}

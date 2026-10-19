@@ -159,6 +159,12 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     { key: 'settings', label: 'Ayarlar', icon: Settings },
     { key: 'contact', label: 'İletişim', icon: Mail },
   ];
+  const byKey = Object.fromEntries(items.map(i => [i.key, i]));
+  const groups = [
+    ['home', 'explore', 'following', 'leaders'],
+    ['notif', 'messages', 'practice', 'saved', 'profile'],
+    ['settings', 'contact'],
+  ].map(g => g.map(k => byKey[k]).filter(Boolean));
 
   return (
     <div data-forum-page="true" data-forum-dark={isDark ? 'true' : 'false'}>
@@ -166,49 +172,65 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
 
       <div className="fx-shell">
         <nav className="fx-nav" aria-label="Logos menüsü">
-          <Link href="/" className="fx-logo" title="Web sitesine dön">
-            <span className="fx-logo-full"><LogosMark height={44} /></span>
-            <span className="fx-logo-icon"><LogosMark variant="icon" height={34} /></span>
-          </Link>
+          <div className="fx-dock">
+            <Link href="/" className="fx-logo" title="Web sitesine dön">
+              <span className="fx-logo-full"><LogosMark height={44} /></span>
+              <span className="fx-logo-icon"><LogosMark variant="icon" height={34} /></span>
+            </Link>
 
-          {items.map(({ key, label, icon: Icon, badge }) => (
-            <button key={key} type="button" className={`fx-nav-item ${active === key ? 'is-active' : ''}`} onClick={nav(key)} aria-current={active === key ? 'page' : undefined} title={label}>
-              <Icon size={26} strokeWidth={active === key ? 2.4 : 1.8} />
-              {badge ? <span className="fx-dot-count">{badge > 99 ? '99+' : badge}</span> : null}
-              <span className="fx-nav-label">{label}</span>
-            </button>
-          ))}
-
-          <button type="button" className="fx-nav-item" onClick={toggleTheme} title={isDark ? 'Açık tema' : 'Koyu tema'}>
-            {isDark ? <Sun size={26} strokeWidth={1.8} /> : <Moon size={26} strokeWidth={1.8} />}
-            <span className="fx-nav-label">{isDark ? 'Açık tema' : 'Koyu tema'}</span>
-          </button>
-
-          <button type="button" className="fx-post-cta" onClick={compose}>
-            <span className="fx-cta-label">Gönderi paylaş</span>
-            <Feather size={22} className="fx-cta-icon" />
-          </button>
-
-          {isMember && (
-            <div className="fx-me">
-              <Link href={myProfileHref} onClick={skipSplash} style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1, color: 'inherit', textDecoration: 'none' }} title="Profilin">
+            {isMember ? (
+              <Link href={myProfileHref} onClick={skipSplash} className="fx-dock-me" title="Profilin">
                 <Avatar src={myPhoto} name={myName} size={40} />
                 <span className="fx-me-text">
-                  <div className="fx-me-name">{myName || 'Profilin'}</div>
-                  <div className="fx-me-handle">@{myUsername}</div>
+                  <span className="fx-me-name">{myName || 'Profilin'}</span>
+                  <span className="fx-me-handle">@{myUsername}</span>
                 </span>
               </Link>
+            ) : (
+              <button type="button" className="fx-dock-me fx-dock-join" onClick={() => setAuthOpen(true)} title="Giriş yap">
+                <span className="fx-nav-ic"><User size={21} /></span>
+                <span className="fx-me-text"><span className="fx-me-name">Giriş yap</span><span className="fx-me-handle">ya da kayıt ol</span></span>
+              </button>
+            )}
+
+            <button type="button" className="fx-post-cta" onClick={compose} title="Gönderi paylaş">
+              <Feather size={19} className="fx-cta-icon" />
+              <span className="fx-cta-label">Gönderi paylaş</span>
+            </button>
+
+            {groups.map((group, gi) => (
+              <div key={gi} className="fx-nav-group">
+                {group.map(({ key, label, icon: Icon, badge }) => (
+                  <button key={key} type="button" className={`fx-nav-item ${active === key ? 'is-active' : ''}`} onClick={nav(key)} aria-current={active === key ? 'page' : undefined} title={label}>
+                    <span className="fx-nav-ic">
+                      <Icon size={21} strokeWidth={active === key ? 2.3 : 1.9} />
+                      {badge ? <i className="fx-nav-dot" /> : null}
+                    </span>
+                    <span className="fx-nav-label">{label}</span>
+                    {badge ? <span className="fx-nav-badge">{badge > 99 ? '99+' : badge}</span> : null}
+                  </button>
+                ))}
+                {gi === groups.length - 1 && (
+                  <button type="button" className="fx-nav-item" onClick={toggleTheme} title={isDark ? 'Açık tema' : 'Koyu tema'}>
+                    <span className="fx-nav-ic">{isDark ? <Sun size={21} strokeWidth={1.9} /> : <Moon size={21} strokeWidth={1.9} />}</span>
+                    <span className="fx-nav-label">{isDark ? 'Açık tema' : 'Koyu tema'}</span>
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {isMember && (
               <button
                 type="button"
-                className="fx-icon-btn"
+                className="fx-nav-item fx-dock-out"
                 title="Çıkış yap"
-                aria-label="Çıkış yap"
                 onClick={async () => { try { await logout(); toast.success('Çıkış yapıldı'); } catch (e: any) { toast.error('Çıkış yapılamadı: ' + e.message); } }}
               >
-                <LogOut size={18} />
+                <span className="fx-nav-ic"><LogOut size={19} strokeWidth={1.9} /></span>
+                <span className="fx-nav-label">Çıkış yap</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </nav>
 
         <main className="fx-main">
