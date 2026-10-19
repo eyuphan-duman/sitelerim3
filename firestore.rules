@@ -224,7 +224,9 @@ service cloud.firestore {
     // Kullanıcının kendisinin değiştiremeyeceği yetki alanları
     function protectedUserKeys() {
       return ['isPsychologist', 'psychologistStatus', 'role', 'isBanned', 'reviewedAt', 'uid',
-        'banUntil', 'banDuration', 'bannedAt', 'photoUploadsUsed', 'frozenByAdmin'];
+        'banUntil', 'banDuration', 'bannedAt', 'photoUploadsUsed', 'frozenByAdmin',
+        // Haftanın / ayın birincisi olma sayısı yalnızca sunucuda artar
+        'weeklyWins', 'monthlyWins'];
     }
 
     // Kullanıcı yalnızca "psikolog başvurusu beklemede" durumuna geçebilir
@@ -244,6 +246,7 @@ service cloud.firestore {
     function validProfileExtras() {
       let d = request.resource.data;
       return (!d.keys().hasAny(['headline']) || (d.headline is string && d.headline.size() <= 80)) &&
+        (!d.keys().hasAny(['showWins']) || d.showWins is bool) &&
         (!d.keys().hasAny(['education']) || (d.education is list && d.education.size() <= 6)) &&
         (!d.keys().hasAny(['certificates']) || (d.certificates is list && d.certificates.size() <= 20)) &&
         (!d.keys().hasAny(['socials']) || (d.socials is map &&
@@ -268,7 +271,9 @@ service cloud.firestore {
         // Yöneticinin dondurduğu hesabın dondurma durumu kullanıcı tarafından değiştirilemez
         !(resource.data.get('frozenByAdmin', false) == true && changedKeys().hasAny(['isFrozen', 'frozenAt'])) && (
           !changedKeys().hasAny(protectedUserKeys()) ||
-          (!changedKeys().hasAny(['isBanned', 'uid', 'reviewedAt']) && selfPsychApplication()) ||
+          // Psikolog başvurusu: yalnızca başvuru alanları değişebilir (diğer korumalı alanlar değil)
+          (!changedKeys().hasAny(protectedUserKeys().removeAll(['isPsychologist', 'psychologistStatus', 'role'])) &&
+            selfPsychApplication()) ||
           // Fotoğraf hakkı sayacı yalnızca tek tek ve yukarı yönde kendi kendine güncellenebilir
           (changedKeys().hasOnly(['photoUploadsUsed']) && counterStep('photoUploadsUsed', [1]))
         )
@@ -544,6 +549,13 @@ service cloud.firestore {
     // psikolog okuyup yazabilir. Yönetici dahil başka hiç kimsenin erişimi yoktur.
     match /practice/{uid}/{document=**} {
       allow read, write: if isSelf(uid) && isVerifiedPsychologist();
+    }
+
+    // ───────── Haftanın ve ayın birincileri ─────────
+    // Yalnızca sunucu yazar (dönem bitince bir kez); herkes okuyabilir.
+    match /champions/{key} {
+      allow read: if true;
+      allow write: if false;
     }
 
     // ───────── Psikolog başvuruları ─────────

@@ -7,6 +7,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { sendNotification } from '@/lib/notify';
+import { periodStarts, type Champion } from '@/lib/periods';
 
 export type ForumUser = {
   uid: string;
@@ -331,14 +332,31 @@ export type ScoreBoard = {
   rules: { like: number; bookmark: number; repost: number };
   levelSize: number;
   at: number;
+  weekStart?: number;
+  monthStart?: number;
+  /** Son biten haftanın ve ayın birincileri */
+  champions?: { week: Champion | null; month: Champion | null };
 };
 const EMPTY_SCORES: ScoreBoard = { users: {}, weekly: [], monthly: [], allTime: [], rules: { like: 2, bookmark: 2, repost: 3 }, levelSize: 100, at: 0 };
+
+/**
+ * Sunucudaki puanlar 30 dakikaya kadar önbellekte kalabilir. Hafta ya da ay o arada bittiyse eski
+ * dönemin puanları gösterilmez: haftalık puan pazartesi 00:00'da, aylık puan ayın 1'inde sıfırdan başlar.
+ */
+function freshScores(d: ScoreBoard): ScoreBoard {
+  const p = periodStarts();
+  const staleW = (d.weekStart || 0) < p.weekStart;
+  const staleM = (d.monthStart || 0) < p.monthStart;
+  if (!d.at || (!staleW && !staleM)) return d;
+  const users = Object.fromEntries(Object.entries(d.users).map(([k, u]) => [k, { ...u, week: staleW ? 0 : u.week, month: staleM ? 0 : u.month }]));
+  return { ...d, users, weekly: staleW ? [] : d.weekly, monthly: staleM ? [] : d.monthly };
+}
 let scoresCache: Promise<ScoreBoard> | null = null;
 let scoresAt = 0;
 export function loadScores(): Promise<ScoreBoard> {
   if (!scoresCache || Date.now() - scoresAt > 600_000) {
     scoresAt = Date.now();
-    scoresCache = fetch('/api/forum/scores').then(r => r.json()).then(d => ({ ...EMPTY_SCORES, ...d })).catch(() => { scoresCache = null; return EMPTY_SCORES; });
+    scoresCache = fetch('/api/forum/scores').then(r => r.json()).then(d => freshScores({ ...EMPTY_SCORES, ...d })).catch(() => { scoresCache = null; return EMPTY_SCORES; });
   }
   return scoresCache;
 }

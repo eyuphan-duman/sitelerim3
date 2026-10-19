@@ -11,7 +11,7 @@ import {
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
   Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User,
   Settings, Lock, EyeOff, Shield, SlidersHorizontal, Plus, Award, Key, AlertTriangle, Snowflake, ArrowRight,
-  MoreHorizontal, Flag, LogOut, Sun, Moon, Mail, Send, RefreshCw, ChevronRight, Ban, ScrollText, MessagesSquare, NotebookPen
+  MoreHorizontal, Flag, LogOut, Sun, Moon, Mail, Send, RefreshCw, ChevronRight, Ban, ScrollText, MessagesSquare, NotebookPen, Trophy
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -33,6 +33,7 @@ import { confirmUnfollow, confirmBlock, confirmUnblock } from '@/components/foru
 import BlockedList from '@/components/forum/BlockedList';
 import { ProfileCVModal, ProfileSummary } from '@/components/forum/ProfileOverview';
 import { getThread, isBadged, threadId } from '@/components/dm/data';
+import { useWeekChampions } from '@/components/forum/Champions';
 import ProfileExtrasEditor, { cleanExtras, type Extras } from '@/components/forum/ProfileExtrasEditor';
 
 interface Post { 
@@ -86,12 +87,14 @@ export default function ProfilClient({ username }: { username: string }) {
     hideLikes: false,
     hideReplies: false,
     isPrivate: false,
+    showWins: false,
   });
   // Özgeçmiş alanları (başlık, eğitim, sertifikalar, sosyal medya)
   const [extras, setExtras] = useState<Extras>({ headline: '', education: [], certificates: [], socials: {} });
   // Profil önce özgeçmiş görünümüyle açılır; tüm paylaşımlar istenince sekmeli görünüm
   const [cvOpen, setCvOpen] = useState(false);
   const [dmAllowed, setDmAllowed] = useState(false);
+  const weekChamps = useWeekChampions();
   const [saving, setSaving] = useState(false);
   const [upPhoto, setUpPhoto] = useState(false);
   const [upCover, setUpCover] = useState(false);
@@ -311,6 +314,7 @@ export default function ProfilClient({ username }: { username: string }) {
             hideLikes: Boolean(data.hideLikes),
             hideReplies: Boolean(data.hideReplies),
             isPrivate: Boolean(data.isPrivate),
+            showWins: Boolean(data.showWins),
           });
           setExtras({
             headline: data.headline || '',
@@ -570,6 +574,7 @@ export default function ProfilClient({ username }: { username: string }) {
         hideLikes: Boolean(ed.hideLikes),
         hideReplies: Boolean(ed.hideReplies),
         isPrivate: Boolean(ed.isPrivate),
+        showWins: Boolean(ed.showWins),
         ...cleanExtras(extras),
       };
 
@@ -921,6 +926,7 @@ export default function ProfilClient({ username }: { username: string }) {
                   <div className="fx-prof-avatar">
                     <input ref={photoRef} type="file" accept="image/*" hidden onChange={handlePhoto} />
                     <Avatar src={pd.photoURL} name={pd.displayName || handle} size={134} />
+                    {weekChamps.has(pd.uid) && <span className="fx-champ-ribbon"><Trophy size={13} strokeWidth={2.4} /> Haftanın 1.si</span>}
                   </div>
                   <div className="fx-prof-actions">
                     {isOwn ? (
@@ -988,6 +994,12 @@ export default function ProfilClient({ username }: { username: string }) {
 
                 {pd.headline && <p className="fx-prof-headline">{pd.headline}</p>}
                 {pd.bio && <p className="fx-prof-bio">{renderTextWithMentions(pd.bio)}</p>}
+                {pd.showWins && ((pd.weeklyWins || 0) > 0 || (pd.monthlyWins || 0) > 0) && (
+                  <div className="fx-wins">
+                    {(pd.weeklyWins || 0) > 0 && <span><Trophy size={14} /> {pd.weeklyWins} kez haftanın birincisi</span>}
+                    {(pd.monthlyWins || 0) > 0 && <span><Trophy size={14} /> {pd.monthlyWins} kez ayın birincisi</span>}
+                  </div>
+                )}
                 {(!locked || isOwn) && <ProfileSummary pd={pd} isOwn={isOwn} onOpen={() => setCvOpen(true)} onEdit={() => setEditOpen(true)} />}
 
                 <div className="fx-prof-meta">
@@ -1164,6 +1176,15 @@ export default function ProfilClient({ username }: { username: string }) {
                       <span>Web sitesi</span>
                       <input value={ed.website} maxLength={100} inputMode="url" onChange={e => setEd({ ...ed, website: e.target.value })} />
                     </label>
+                  </div>
+                  <div className="fx-set-row fx-wins-toggle">
+                    <div className="fx-set-text">
+                      <b>Birinciliklerimi profilimde göster</b>
+                      <small>{(pd.weeklyWins || 0) + (pd.monthlyWins || 0) > 0
+                        ? `Şu ana kadar ${pd.weeklyWins || 0} kez haftanın, ${pd.monthlyWins || 0} kez ayın birincisi oldun.`
+                        : 'Haftanın ya da ayın birincisi olduğunda kaç kez birinci olduğun hakkında yazının altında görünür.'}</small>
+                    </div>
+                    <Toggle label="Birinciliklerimi profilimde göster" on={ed.showWins} onChange={() => setEd(p => ({ ...p, showWins: !p.showWins }))} />
                   </div>
                   <ProfileExtrasEditor value={extras} onChange={setExtras} />
                 </div>

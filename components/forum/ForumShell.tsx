@@ -22,6 +22,7 @@ import { WeeklyLeaders } from './Scores';
 import { loadRecentPosts } from './social';
 import { ConfirmHost } from './confirm';
 import { InteractionsHost } from './Interactions';
+import { ChampionAnnouncement } from './Champions';
 import './forum.css';
 
 export type NavKey = 'home' | 'explore' | 'notif' | 'messages' | 'following' | 'saved' | 'profile' | 'settings' | 'leaders' | 'contact' | 'practice';
@@ -360,6 +361,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
         </div>
       )}
 
+      <ChampionAnnouncement />
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} isDark={isDark} initialMode={authMode} />
       <ConfirmHost />
       <InteractionsHost />

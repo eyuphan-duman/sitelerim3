@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/practice", "schedule": "0 5 * * *" }
+    { "path": "/api/cron/practice", "schedule": "0 5 * * *" },
+    { "path": "/api/cron/champions", "schedule": "0 21 * * *" }
   ]
 }

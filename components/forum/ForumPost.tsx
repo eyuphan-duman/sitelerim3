@@ -15,6 +15,7 @@ import { ANON_AVATAR, ANON_NAME, ANON_UID } from '@/lib/notify';
 import { confirmBlock } from './confirm';
 import { openInteractions } from './Interactions';
 import toast from 'react-hot-toast';
+import { ChampMark } from './Champions';
 
 interface Post {
   id: string;
@@ -181,8 +182,9 @@ export default function ForumPost({
               <Avatar src={ANON_AVATAR} name={ANON_NAME} size={40} />
             </span>
           ) : (
-            <Link href={profileHref} onClick={e => e.stopPropagation()} aria-label={displayAuthorName}>
+            <Link href={profileHref} onClick={e => e.stopPropagation()} aria-label={displayAuthorName} className="fx-champ-host">
               <Avatar src={liveAuthorPhoto || displayAuthorPhoto} name={displayAuthorName} size={40} />
+              <ChampMark uid={post.uid} />
             </Link>
           )}
 

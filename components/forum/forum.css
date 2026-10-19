@@ -2338,3 +2338,33 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 @media (max-width: 699px) {
   .fx-aside-search { background: var(--fx-bg); }
 }
+
+/* ─── Haftanın ve ayın birincileri ─── */
+.fx-champ-host { position: relative; display: inline-block; line-height: 0; align-self: flex-start; }
+.fx-champ-mark { position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: #d9a441; color: #3b2a07; border: 2px solid var(--fx-bg); box-shadow: 0 1px 3px rgba(10, 22, 40, .25); }
+.fx-champ-person .fx-champ-mark { width: 26px; height: 26px; right: -2px; bottom: -2px; border-color: var(--fx-raised); }
+.fx-champ-list.is-many .fx-champ-mark { width: 20px; height: 20px; }
+.fx-champ-ribbon { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; background: #d9a441; color: #3b2a07; font-size: .74rem; font-weight: 800; line-height: 1.2; white-space: nowrap; border: 2px solid var(--fx-bg); box-shadow: 0 2px 6px rgba(10, 22, 40, .2); }
+.fx-wins { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.fx-wins span { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, #d9a441 16%, var(--fx-bg)); color: var(--fx-ink); font-size: .84rem; font-weight: 700; }
+.fx-wins svg { color: #b8862b; }
+.fx-wins-toggle { padding: 4px 0 8px; border-bottom: 1px solid var(--fx-line); margin-bottom: 4px; }
+.fx-champ-modal { position: relative; max-width: 420px; padding: 28px 24px 22px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; overflow: hidden; }
+.fx-champ-x { position: absolute; top: 10px; right: 10px; color: var(--fx-ink); }
+.fx-champ-cup { position: relative; width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; background: #0a1628; color: #d9b573; box-shadow: 0 6px 18px rgba(10, 22, 40, .25); }
+[data-forum-dark="true"] .fx-champ-cup { background: #d9b573; color: #0a1628; }
+.fx-champ-modal h2 { position: relative; margin: 10px 0 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -.01em; color: var(--fx-ink); }
+.fx-champ-when { margin: 0; color: var(--fx-ink-2); font-size: .92rem; }
+.fx-champ-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 14px 0 4px; }
+.fx-champ-list.is-many { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-self: stretch; gap: 6px; }
+.fx-champ-list.is-many .fx-champ-person { min-width: 0; padding: 8px 4px; }
+.fx-champ-list.is-many .fx-champ-name { font-size: .95rem; max-width: 100%; }
+.fx-champ-list.is-many .fx-champ-person small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fx-champ-person { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 10px; border: 0; border-radius: 16px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.fx-champ-person:hover { background: var(--fx-hover); }
+.fx-champ-name { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-weight: 800; font-size: 1.05rem; color: var(--fx-ink); }
+.fx-champ-person small { color: var(--fx-ink-2); font-size: .86rem; }
+.fx-champ-person .fx-champ-host { align-self: center; }
+.fx-champ-pts { padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, #d9a441 18%, transparent); color: var(--fx-ink); font-size: .8rem; font-weight: 800; }
+.fx-champ-note { margin: 6px 0 4px; color: var(--fx-ink-2); font-size: .9rem; line-height: 1.5; }
+.fx-champ-ok { align-self: stretch; height: 44px; margin-top: 8px; }

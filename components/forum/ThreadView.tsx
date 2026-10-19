@@ -25,6 +25,7 @@ import { db } from '@/lib/firebase';
 import { sendNotification } from '@/lib/notify';
 import toast from 'react-hot-toast';
 import { notifyMentions } from '@/lib/mentionUtils';
+import { ChampMark } from './Champions';
 
 const COMMENT_CHAR_LIMIT = 140;
 
@@ -873,8 +874,9 @@ export default function ThreadView({
                   {c.isAnonymous ? (
                     <span className="fx-anon-avatar"><Avatar src={ANON_AVATAR} name={ANON_NAME} size={isChild ? 32 : 40} /></span>
                   ) : (
-                    <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} aria-label={c.authorName}>
+                    <Link href={`/forum/profil/${encodeURIComponent(commentAuthorUsername)}`} aria-label={c.authorName} className="fx-champ-host">
                       <Avatar src={c.authorPhotoURL} name={c.authorName} size={isChild ? 32 : 40} />
+                      <ChampMark uid={c.uid} />
                     </Link>
                   )}
                   <div className="fx-post-body">
@@ -991,8 +993,9 @@ export default function ThreadView({
             </>
           ) : (
             <>
-              <Link href={`/forum/profil/${encodeURIComponent(username)}`} aria-label={p.authorName}>
+              <Link href={`/forum/profil/${encodeURIComponent(username)}`} aria-label={p.authorName} className="fx-champ-host">
                 <Avatar src={authorPhoto} name={p.authorName} size={44} />
+                <ChampMark uid={p.uid} />
               </Link>
               <div className="fx-detail-who">
                 <div className="fx-post-meta-main">
