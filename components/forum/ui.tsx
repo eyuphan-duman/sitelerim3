@@ -79,13 +79,15 @@ export function compactCount(n: number): string {
   return `${(n / 1_000_000).toFixed(1).replace('.', ',').replace(',0', '')} Mn`;
 }
 
-export function ReportDialog({ reason, setReason, submitting, onClose, onSubmit, title = 'Gönderiyi şikayet et' }: {
+export function ReportDialog({ reason, setReason, submitting, onClose, onSubmit, title = 'Gönderiyi şikayet et', note }: {
   reason: string;
   setReason: (v: string) => void;
   submitting: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   title?: string;
+  /** Varsayılan açıklamanın yerine gösterilir */
+  note?: string;
 }) {
   return (
     <div className="fx-modal-scrim" onClick={(e) => { e.stopPropagation(); onClose(); }}>
@@ -95,7 +97,7 @@ export function ReportDialog({ reason, setReason, submitting, onClose, onSubmit,
           <div className="fx-modal-title">{title}</div>
         </div>
         <form className="fx-modal-body" onSubmit={onSubmit}>
-          <p>Neyin topluluk kurallarına aykırı olduğunu kısaca yaz. Şikayetini yalnızca yöneticiler görür.</p>
+          <p>{note || 'Neyin topluluk kurallarına aykırı olduğunu kısaca yaz. Şikayetini yalnızca yöneticiler görür.'}</p>
           <textarea
             autoFocus
             required

@@ -11,7 +11,7 @@ import {
   Bell, Search, TrendingUp, Hash, X, Check, Share2, CheckCircle, UserX, Clock,
   Upload, ExternalLink, ShieldCheck, Loader, Bookmark, Repeat2, User,
   Settings, Lock, EyeOff, Shield, SlidersHorizontal, Plus, Award, Key, AlertTriangle, Snowflake, ArrowRight,
-  MoreHorizontal, Flag, LogOut, Sun, Moon, Mail, Send, RefreshCw, ChevronRight, Ban, ScrollText
+  MoreHorizontal, Flag, LogOut, Sun, Moon, Mail, Send, RefreshCw, ChevronRight, Ban, ScrollText, MessagesSquare, NotebookPen
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -31,7 +31,8 @@ import { usePostActions } from '@/components/forum/usePostActions';
 import { useMyGraph, loadUsers, loadRecentPosts, setFollow, useBlocks, blockUser, unblockUser, useScores } from '@/components/forum/social';
 import { confirmUnfollow, confirmBlock, confirmUnblock } from '@/components/forum/confirm';
 import BlockedList from '@/components/forum/BlockedList';
-import ProfileOverview from '@/components/forum/ProfileOverview';
+import { ProfileCVModal, ProfileSummary } from '@/components/forum/ProfileOverview';
+import { getThread, isBadged, threadId } from '@/components/dm/data';
 import ProfileExtrasEditor, { cleanExtras, type Extras } from '@/components/forum/ProfileExtrasEditor';
 
 interface Post { 
@@ -89,7 +90,8 @@ export default function ProfilClient({ username }: { username: string }) {
   // Özgeçmiş alanları (başlık, eğitim, sertifikalar, sosyal medya)
   const [extras, setExtras] = useState<Extras>({ headline: '', education: [], certificates: [], socials: {} });
   // Profil önce özgeçmiş görünümüyle açılır; tüm paylaşımlar istenince sekmeli görünüm
-  const [showAll, setShowAll] = useState(false);
+  const [cvOpen, setCvOpen] = useState(false);
+  const [dmAllowed, setDmAllowed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [upPhoto, setUpPhoto] = useState(false);
   const [upCover, setUpCover] = useState(false);
@@ -399,11 +401,23 @@ export default function ProfilClient({ username }: { username: string }) {
     };
   }, [username, user, userProfile]);
 
+  // Mesaj gönder: rozetli psikoloğa herkes yazabilir; rozetli kişi rozetsiz birine yalnızca o kişi önce yazdıysa
+  useEffect(() => {
+    const me = user && !user.isAnonymous ? user.uid : null;
+    const target = pd?.uid;
+    let on = true;
+    const set = (v: boolean) => { if (on) setDmAllowed(v); };
+    if (!me || !target || target === me) set(false);
+    else if (isBadged(pd)) set(true);
+    else if (!isBadged(userProfile)) set(false);
+    else getThread(threadId(me, target)).then(t => set(Boolean(t && t.starter === target))).catch(() => set(false));
+    return () => { on = false; };
+  }, [user, pd, userProfile]);
+
   useEffect(() => {
     const isViewerOwn = Boolean(user && pd && user.uid === pd.uid);
     const s = searchParams.get('settings');
     const t = searchParams.get('tab');
-    if (t && t !== 'settings') setShowAll(true);
     if (s === 'open' || s === '1' || t === 'settings') {
       if (isViewerOwn) {
         setSettingsOpen(true);
@@ -938,6 +952,11 @@ export default function ProfilClient({ username }: { username: string }) {
                             </>
                           )}
                         </div>
+                        {dmAllowed && !iBlocked && !blockedMe && user && (
+                          <button type="button" className="fx-icon-btn fx-icon-outline" onClick={() => skipSplashAndGo(`/forum/mesajlar/${threadId(user.uid, pd.uid)}`)} aria-label="Mesaj gönder" title="Mesaj gönder">
+                            <MessagesSquare size={18} />
+                          </button>
+                        )}
                         {iBlocked ? (
                           <button type="button" className="fx-btn fx-follow is-blocked" data-label-hover="Engeli kaldır" onClick={() => toggleBlock(shell.openAuth)}>
                             <span>Engellendi</span>
@@ -968,7 +987,8 @@ export default function ProfilClient({ username }: { username: string }) {
                 </div>
 
                 {pd.headline && <p className="fx-prof-headline">{pd.headline}</p>}
-                {pd.bio && showAll && <p className="fx-prof-bio">{renderTextWithMentions(pd.bio)}</p>}
+                {pd.bio && <p className="fx-prof-bio">{renderTextWithMentions(pd.bio)}</p>}
+                {(!locked || isOwn) && <ProfileSummary pd={pd} isOwn={isOwn} onOpen={() => setCvOpen(true)} onEdit={() => setEditOpen(true)} />}
 
                 <div className="fx-prof-meta">
                   {pd.location && <span><MapPin size={16} />{pd.location}</span>}
@@ -982,7 +1002,7 @@ export default function ProfilClient({ username }: { username: string }) {
                 </div>
 
                 <div className="fx-prof-counts">
-                  <button type="button" onClick={() => (locked ? null : setShowAll(true))} disabled={locked}>
+                  <button type="button" onClick={() => { if (!locked) { setTab('posts'); document.querySelector('.fx-prof-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }} disabled={locked}>
                     <b>{posts.length}</b> Gönderi
                   </button>
                   <button type="button" onClick={() => (locked ? null : setListMode('following'))} disabled={locked}>
@@ -993,6 +1013,13 @@ export default function ProfilClient({ username }: { username: string }) {
                   </button>
                 </div>
                 {isOwn && <LevelCard score={scores.users[pd.uid]} />}
+                {isOwn && isApproved && (
+                  <button type="button" className="fx-prof-practice" onClick={() => skipSplashAndGo('/forum/danisanlar')}>
+                    <span className="fx-prof-practice-ic"><NotebookPen size={20} /></span>
+                    <span><b>Danışanlarım</b><small>Danışan dosyaların, seans takvimin ve seans notların</small></span>
+                    <ChevronRight size={18} />
+                  </button>
+                )}
 
                 {isOwn && !isAdmin && !emailVerified && !user?.emailVerified && (
                   <div className="fx-callout is-warn">
@@ -1041,19 +1068,9 @@ export default function ProfilClient({ username }: { username: string }) {
                     </>
                   )}
                 </div>
-              ) : !showAll ? (
-                <ProfileOverview
-                  pd={pd}
-                  isOwn={isOwn}
-                  postCount={posts.length}
-                  preview={renderPosts(posts.slice(0, 3), isOwn ? 'Henüz gönderi paylaşmadın' : 'Henüz gönderi yok', isOwn ? 'İlk düşünceni ya da sorunu paylaştığında burada görünecek.' : `@${handle} henüz bir şey paylaşmadı.`)}
-                  onShowAll={() => { setShowAll(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                  onEdit={() => setEditOpen(true)}
-                />
               ) : (
                 <>
-                  <button type="button" className="fx-cv-back" onClick={() => setShowAll(false)}><ArrowLeft size={16} /> Profile dön</button>
-                  <div className="fx-tabs fx-tabs-scroll" role="tablist">
+                  <div className="fx-tabs fx-tabs-scroll fx-prof-tabs" role="tablist">
                     {profileTabs.map(t => (
                       <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`fx-tab ${tab === t.id ? 'is-active' : ''}`} onClick={() => setTab(t.id as any)}>
                         {t.label}
@@ -1100,6 +1117,8 @@ export default function ProfilClient({ username }: { username: string }) {
               )}
             </>
           )}
+
+          {cvOpen && <ProfileCVModal pd={pd} name={pd.displayName || handle} onClose={() => setCvOpen(false)} />}
 
           {/* ── Profili düzenle ── */}
           {editOpen && isOwn && (

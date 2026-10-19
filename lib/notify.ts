@@ -84,6 +84,17 @@ export function requestPush(notificationId: string) {
     .catch(() => {});
 }
 
+/** Özel mesaj alıcısının telefonuna "yeni mesaj" bildirimi gönderilmesini ister (içerik gönderilmez) */
+export function requestDmPush(tid: string, mid: string) {
+  auth.currentUser?.getIdToken()
+    .then(token => fetch('/api/push/dm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ tid, mid }),
+    }))
+    .catch(() => {});
+}
+
 /** Yükleme ucuna (Cloudinary) oturum anahtarıyla istek gönderir */
 export async function uploadFetch(init: { method?: string; body: FormData }) {
   const token = await auth.currentUser?.getIdToken().catch(() => null);

@@ -8,8 +8,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { Home, Search, Bell, Users, Bookmark, User, Settings, Sun, Moon, Feather, LogOut, Heart, Trophy, Mail, NotebookPen } from 'lucide-react';
+import { Home, Search, Bell, Users, Bookmark, User, Settings, Sun, Moon, Feather, LogOut, Heart, Trophy, Mail, NotebookPen, MessagesSquare } from 'lucide-react';
 import { isApprovedPsych } from '@/components/practice/data';
+import { unreadThreads, watchThreads } from '@/components/dm/data';
 import toast from 'react-hot-toast';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +24,7 @@ import { ConfirmHost } from './confirm';
 import { InteractionsHost } from './Interactions';
 import './forum.css';
 
-export type NavKey = 'home' | 'explore' | 'notif' | 'following' | 'saved' | 'profile' | 'settings' | 'leaders' | 'contact' | 'practice';
+export type NavKey = 'home' | 'explore' | 'notif' | 'messages' | 'following' | 'saved' | 'profile' | 'settings' | 'leaders' | 'contact' | 'practice';
 
 export type ShellApi = {
   isDark: boolean;
@@ -84,6 +85,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
   useEffect(() => { if (!authOpen) setAuthMode('signin'); }, [authOpen]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [dm, setDm] = useState({ uid: '', n: 0 });
   const [q, setQ] = useState('');
   const trends = useTrends();
 
@@ -100,6 +102,14 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     return onSnapshot(query(collection(db, 'notifications'), where('toUid', '==', user.uid), where('read', '==', false)), s => setUnread(s.size));
   }, [isMember, user]);
 
+  // Okunmamış özel mesajı olan sohbet sayısı
+  useEffect(() => {
+    if (!isMember || !user) return;
+    const me = user.uid;
+    return watchThreads(me, list => setDm({ uid: me, n: unreadThreads(list, me) }));
+  }, [isMember, user]);
+  const dmUnread = isMember && user && dm.uid === user.uid ? dm.n : 0;
+
   // Alt bileşenler giriş gerektiğinde bu olayı yayınlar
   useEffect(() => {
     const open = () => setAuthOpen(true);
@@ -114,6 +124,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     home: () => go('/forum'),
     explore: () => go('/forum?q=open'),
     notif: needMember(() => go('/bildirimler')),
+    messages: needMember(() => go('/forum/mesajlar')),
     following: needMember(() => go('/forum?feed=following')),
     saved: needMember(() => go(`${myProfileHref}?tab=bookmarks`)),
     leaders: () => go('/forum/liderler'),
@@ -139,6 +150,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
     { key: 'home', label: 'Ana sayfa', icon: Home },
     { key: 'explore', label: 'Keşfet', icon: Search },
     { key: 'notif', label: 'Bildirimler', icon: Bell, badge: unread },
+    { key: 'messages', label: 'Mesajlar', icon: MessagesSquare, badge: dmUnread },
     { key: 'following', label: 'Takip ettiklerin', icon: Users },
     { key: 'leaders', label: 'Liderlik', icon: Trophy },
     ...(isPsych ? [{ key: 'practice' as NavKey, label: 'Danışanlarım', icon: NotebookPen }] : []),
@@ -259,13 +271,13 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
         {([
           { key: 'home', icon: Home, label: 'Ana sayfa' },
           { key: 'explore', icon: Search, label: 'Ara' },
-          { key: 'following', icon: Users, label: 'Takip ettiklerin' },
+          { key: 'messages', icon: MessagesSquare, label: dmUnread ? `Mesajlar, ${dmUnread} okunmamış sohbet` : 'Mesajlar' },
           { key: 'notif', icon: Bell, label: unread ? `Bildirimler, ${unread} okunmamış` : 'Bildirimler' },
           { key: 'profile', icon: User, label: 'Profil' },
         ] as { key: NavKey; icon: any; label: string }[]).map(({ key, icon: Icon, label }) => (
           <button key={key} type="button" className={`fx-tabbar-btn ${active === key ? 'is-active' : ''}`} onClick={nav(key)} aria-label={label}>
             <Icon size={26} strokeWidth={active === key ? 2.4 : 1.8} />
-            {key === 'notif' && unread > 0 && <span className="fx-tabbar-dot" />}
+            {((key === 'notif' && unread > 0) || (key === 'messages' && dmUnread > 0)) && <span className="fx-tabbar-dot" />}
           </button>
         ))}
       </nav>

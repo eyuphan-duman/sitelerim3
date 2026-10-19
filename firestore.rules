@@ -160,6 +160,17 @@ service cloud.firestore {
       );
     }
 
+    // Mesajlaşma türleri için: sayaç yalnızca o yolda yeni bir belge aynı yazımda oluşturulurken değişir
+    function rlRefOk(kind, pattern) {
+      let ref = request.resource.data.get(kind + 'Ref', '');
+      return !rlFieldsChanged(kind) || (
+        request.resource.data.get(kind + 'At', null) == request.time &&
+        ref is string && ref.matches(pattern) &&
+        existsAfter(path('/databases/' + database + '/documents/' + ref)) &&
+        !exists(path('/databases/' + database + '/documents/' + ref))
+      );
+    }
+
     function withinCommentLimits() {
       return request.resource.data.get('text', '').size() <= 560 &&
         (request.resource.data.get('imageUrl', '') == '' ||
@@ -354,10 +365,14 @@ service cloud.firestore {
         request.resource.data.keys().hasOnly([
           'postAt', 'postWin', 'postCount', 'postText', 'postRef',
           'commentAt', 'commentWin', 'commentCount', 'commentText', 'commentRef',
-          'repostAt', 'repostWin', 'repostCount', 'repostText', 'repostRef']) &&
+          'repostAt', 'repostWin', 'repostCount', 'repostText', 'repostRef',
+          'dmAt', 'dmWin', 'dmCount', 'dmText', 'dmRef',
+          'dmtAt', 'dmtWin', 'dmtCount', 'dmtText', 'dmtRef']) &&
         rlKindOk('post', false, false) &&
         rlKindOk('comment', false, true) &&
-        rlKindOk('repost', true, false);
+        rlKindOk('repost', true, false) &&
+        rlRefOk('dm', 'dm_threads/[^/]+/msgs/[^/]+') &&
+        rlRefOk('dmt', 'dm_threads/[^/]+');
       allow delete: if isAdmin();
     }
 
@@ -578,6 +593,94 @@ service cloud.firestore {
         allow delete: if isAdmin() ||
           (active() && resource.data.userId == request.auth.uid);
       }
+    }
+
+    // ───────── Özel mesajlar ─────────
+    // Sohbet kimliği iki üyenin uid'lerinin sıralı birleşimidir: "<küçük>_<büyük>".
+    // Kurallar:
+    //  • Herkes rozetli (onaylı ve rozeti görünür) bir psikoloğa yazabilir; rozetliler birbirine yazabilir.
+    //  • Rozetli kişi rozetsiz birine yalnızca o kişinin başlattığı sohbette yanıt verebilir.
+    //  • Mesajlaşma kurallarını onaylamayan, banlı, askıdaki ya da engelleşmiş kişiler yazamaz.
+    //  • Mesajları yalnızca sohbetin iki üyesi okuyabilir; yöneticiler dahil başka kimse okuyamaz.
+    function badgedPsych(uid) {
+      let u = get(/databases/$(database)/documents/users/$(uid)).data;
+      return ((u.get('isPsychologist', false) == true && u.get('psychologistStatus', 'approved') == 'approved') ||
+        u.get('role', '') == 'psychologist') && u.get('hideBadge', false) != true;
+    }
+
+    function dmAccepted() {
+      return exists(/databases/$(database)/documents/dm_consent/$(request.auth.uid));
+    }
+
+    function dmOther(members) {
+      return members[0] == request.auth.uid ? members[1] : members[0];
+    }
+
+    function dmPreviewOk(d) {
+      return d.lastText is string && d.lastText.size() <= 200 &&
+        d.lastFrom == request.auth.uid && d.lastAt == request.time &&
+        d.unread is map && d.unread.keys().hasOnly(d.members);
+    }
+
+    match /dm_consent/{uid} {
+      allow read: if isSelf(uid);
+      allow create: if isSelf(uid) &&
+        request.resource.data.keys().hasOnly(['acceptedAt', 'version']) &&
+        request.resource.data.acceptedAt == request.time &&
+        request.resource.data.version is int;
+      allow update, delete: if false;
+    }
+
+    match /dm_threads/{tid} {
+      allow get: if active() && request.auth.uid in tid.split('_');
+      allow list: if active() && request.auth.uid in resource.data.members;
+
+      // Yeni sohbet: yalnızca rozetli bir psikologla başlatılabilir (ilk mesajla aynı yazımda)
+      allow create: if active() && notBanned() && dmAccepted() &&
+        request.resource.data.keys().hasOnly(['members', 'starter', 'createdAt', 'lastText', 'lastFrom', 'lastAt', 'unread']) &&
+        request.resource.data.members is list && request.resource.data.members.size() == 2 &&
+        request.resource.data.members == tid.split('_') &&
+        request.resource.data.members[0] < request.resource.data.members[1] &&
+        request.auth.uid in request.resource.data.members &&
+        request.resource.data.starter == request.auth.uid &&
+        request.resource.data.createdAt == request.time &&
+        dmPreviewOk(request.resource.data) &&
+        badgedPsych(dmOther(request.resource.data.members)) &&
+        !blockedBetween(request.auth.uid, dmOther(request.resource.data.members)) &&
+        rateOk('dmt', 5, 20, '');
+
+      // Son mesaj özeti ve okunmamış sayaçları; özet yalnızca yeni mesajı yazan tarafından değişir
+      allow update: if active() && request.auth.uid in resource.data.members &&
+        changedKeys().hasOnly(['lastText', 'lastFrom', 'lastAt', 'unread']) &&
+        request.resource.data.unread is map && request.resource.data.unread.keys().hasOnly(resource.data.members) &&
+        (!changedKeys().hasAny(['lastText', 'lastFrom', 'lastAt']) || dmPreviewOk(request.resource.data));
+      allow delete: if false;
+
+      match /msgs/{mid} {
+        allow read: if active() && request.auth.uid in tid.split('_');
+        allow create: if active() && notBanned() && dmAccepted() &&
+          request.resource.data.keys().hasOnly(['from', 'text', 'createdAt']) &&
+          request.resource.data.from == request.auth.uid &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 2000 &&
+          dmCanSend(tid) &&
+          rateOk('dm', 1, 200, '');
+        // Kişi yalnızca kendi mesajını silebilir; mesajlar düzenlenemez
+        allow delete: if active() && resource.data.from == request.auth.uid;
+        allow update: if false;
+      }
+    }
+
+    // Mesaj gönderme izni: sohbet aynı yazımda güncellenmiş olmalı (özet bu mesaja ait) ve karşı taraf
+    // rozetli bir psikolog olmalı ya da sohbeti karşı taraf başlatmış olmalı.
+    function dmCanSend(tid) {
+      let th = getAfter(/databases/$(database)/documents/dm_threads/$(tid)).data;
+      let other = dmOther(th.members);
+      return request.auth.uid in th.members &&
+        th.lastAt == request.time && th.lastFrom == request.auth.uid &&
+        (th.starter == other || badgedPsych(other)) &&
+        !blockedBetween(request.auth.uid, other);
     }
 
     // Tanımlanmamış her şey kapalı
