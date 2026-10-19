@@ -173,7 +173,7 @@ export default function ForumShell({ active = null, onNav, onCompose, asideTop, 
       <div className="fx-shell">
         <nav className="fx-nav" aria-label="Logos menüsü">
           <div className="fx-dock">
-            <Link href="/" className="fx-logo" title="Web sitesine dön">
+            <Link href="/forum" className="fx-logo" title="Forum ana sayfası" onClick={e => { if (onNav?.home) { e.preventDefault(); onNav.home(); } else skipSplash(); }}>
               <span className="fx-logo-full"><LogosMark height={44} /></span>
               <span className="fx-logo-icon"><LogosMark variant="icon" height={34} /></span>
             </Link>

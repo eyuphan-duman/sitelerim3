@@ -31,9 +31,11 @@
   --fx-cta-ic: #d9b573;
 
   --fx-font: var(--font-inter), -apple-system, 'Segoe UI', sans-serif;
-  --fx-nav-w: 275px;
-  --fx-feed-w: 600px;
-  --fx-aside-w: 350px;
+  /* Sütunlar ekranla birlikte genişler: 1280'de 1208, 1440'ta 1325, 1920'de 1510 piksel */
+  --fx-nav-w: clamp(260px, 21vw, 330px);
+  --fx-feed-w: clamp(600px, 44.5vw, 740px);
+  --fx-aside-w: clamp(330px, 26.5vw, 440px);
+  --fx-col-gap: clamp(20px, 2vw, 40px);
   --fx-header-h: 53px;
   --fx-tabbar-h: 56px;
 
@@ -116,7 +118,7 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 12px 0 12px 20px;
+  padding: 12px 0 12px var(--fx-col-gap);
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -743,7 +745,7 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
   height: 100vh;
   overflow-y: auto;
   scrollbar-width: none;
-  padding: 0 24px 24px 0;
+  padding: 0 var(--fx-col-gap) 24px 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -926,7 +928,7 @@ body:has([data-forum-page][data-forum-dark="true"]) { background: #08111f; }
 /* ════════════ Duyarlı yerleşim ════════════ */
 
 @media (max-width: 1279px) {
-  [data-forum-page] { --fx-aside-w: 310px; --fx-nav-w: 88px; }
+  [data-forum-page] { --fx-aside-w: clamp(300px, 26vw, 340px); --fx-nav-w: 88px; }
   .fx-nav { padding: 12px 0 12px 12px; }
   .fx-dock { align-items: center; padding: 8px 6px; }
   .fx-logo { align-self: center; padding: 0 8px; }
