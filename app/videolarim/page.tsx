@@ -86,50 +86,81 @@ export default function VideolarimPage() {
   }, [allReels]);
 
   const [dragY, setDragY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const [animatingTarget, setAnimatingTarget] = useState<'next' | 'prev' | 'cancel' | null>(null);
   const isDraggingRef = useRef(false);
   const dragStartYRef = useRef(0);
   const dragStartTimeRef = useRef(0);
+  const currentDragYRef = useRef(0);
   const lastWheelTime = useRef(0);
+  const isTransitioningRef = useRef(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [showPlayIcon, setShowPlayIcon] = useState(false);
 
+  const transitionToNext = () => {
+    if (isTransitioningRef.current) return;
+    if (expandedReelIndex === null || expandedReelIndex >= allReels.length - 1) {
+      setAnimatingTarget('cancel');
+      setTimeout(() => {
+        setDragY(0);
+        setAnimatingTarget(null);
+      }, 220);
+      return;
+    }
+    isTransitioningRef.current = true;
+    setAnimatingTarget('next');
+    setTimeout(() => {
+      setExpandedReelIndex(prev => (prev !== null ? prev + 1 : null));
+      setDragY(0);
+      setAnimatingTarget(null);
+      isTransitioningRef.current = false;
+      setIsPlaying(true);
+    }, 280);
+  };
+
+  const transitionToPrev = () => {
+    if (isTransitioningRef.current) return;
+    if (expandedReelIndex === null || expandedReelIndex <= 0) {
+      setAnimatingTarget('cancel');
+      setTimeout(() => {
+        setDragY(0);
+        setAnimatingTarget(null);
+      }, 220);
+      return;
+    }
+    isTransitioningRef.current = true;
+    setAnimatingTarget('prev');
+    setTimeout(() => {
+      setExpandedReelIndex(prev => (prev !== null ? prev - 1 : null));
+      setDragY(0);
+      setAnimatingTarget(null);
+      isTransitioningRef.current = false;
+      setIsPlaying(true);
+    }, 280);
+  };
+
   // Wheel event for desktop Instagram-style vertical scroll
   const handleWheel = (e: React.WheelEvent) => {
+    if (isTransitioningRef.current) return;
     const now = Date.now();
-    if (now - lastWheelTime.current < 450) return; // 450ms cooldown
-    if (e.deltaY > 35) {
+    if (now - lastWheelTime.current < 450) return;
+    if (e.deltaY > 30) {
       lastWheelTime.current = now;
-      handleNextReel();
-    } else if (e.deltaY < -35) {
+      transitionToNext();
+    } else if (e.deltaY < -30) {
       lastWheelTime.current = now;
-      handlePrevReel();
-    }
-  };
-
-  const handleNextReel = () => {
-    if (expandedReelIndex !== null && expandedReelIndex < allReels.length - 1) {
-      setExpandedReelIndex(expandedReelIndex + 1);
-      setIsPlaying(true);
-    }
-  };
-
-  const handlePrevReel = () => {
-    if (expandedReelIndex !== null && expandedReelIndex > 0) {
-      setExpandedReelIndex(expandedReelIndex - 1);
-      setIsPlaying(true);
+      transitionToPrev();
     }
   };
 
   // Keyboard navigation (Arrow keys & Escape)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (expandedReelIndex === null) return;
+      if (expandedReelIndex === null || isTransitioningRef.current) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-        handleNextReel();
+        transitionToNext();
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-        handlePrevReel();
+        transitionToPrev();
       } else if (e.key === 'Escape') {
         setExpandedReelIndex(null);
       }
@@ -140,64 +171,91 @@ export default function VideolarimPage() {
 
   // Touch Swipe Gesture Handlers (Instagram Reels Style)
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isTransitioningRef.current) return;
     isDraggingRef.current = true;
     dragStartYRef.current = e.touches[0].clientY;
     dragStartTimeRef.current = Date.now();
-    setIsDragging(true);
+    currentDragYRef.current = 0;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || isTransitioningRef.current) return;
     const currentY = e.touches[0].clientY;
-    const delta = currentY - dragStartYRef.current;
+    let delta = currentY - dragStartYRef.current;
+
+    // Resistance at bounds
+    if (expandedReelIndex === 0 && delta > 0) {
+      delta = delta * 0.28;
+    } else if (expandedReelIndex === allReels.length - 1 && delta < 0) {
+      delta = delta * 0.28;
+    }
+
+    currentDragYRef.current = delta;
     setDragY(delta);
   };
 
   const handleTouchEnd = () => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
-    setIsDragging(false);
     const elapsed = Date.now() - dragStartTimeRef.current;
-    finishGesture(dragY, elapsed);
+    finishGesture(currentDragYRef.current, elapsed);
   };
 
   // Mouse Drag Handlers for Desktop
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isTransitioningRef.current) return;
     isDraggingRef.current = true;
     dragStartYRef.current = e.clientY;
     dragStartTimeRef.current = Date.now();
-    setIsDragging(true);
+    currentDragYRef.current = 0;
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingRef.current) return;
-    const delta = e.clientY - dragStartYRef.current;
+    if (!isDraggingRef.current || isTransitioningRef.current) return;
+    let delta = e.clientY - dragStartYRef.current;
+
+    // Resistance at bounds
+    if (expandedReelIndex === 0 && delta > 0) {
+      delta = delta * 0.28;
+    } else if (expandedReelIndex === allReels.length - 1 && delta < 0) {
+      delta = delta * 0.28;
+    }
+
+    currentDragYRef.current = delta;
     setDragY(delta);
   };
 
   const handleMouseUp = () => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
-    setIsDragging(false);
     const elapsed = Date.now() - dragStartTimeRef.current;
-    finishGesture(dragY, elapsed);
+    finishGesture(currentDragYRef.current, elapsed);
   };
 
   const finishGesture = (deltaY: number, elapsed: number) => {
-    setDragY(0);
-    // Tap detection (< 10px hareket ve < 300ms) -> oynat / duraklat
-    if (Math.abs(deltaY) < 10 && elapsed < 300) {
+    if (isTransitioningRef.current) return;
+
+    // Tap detection (< 10px hareket ve < 280ms) -> oynat / duraklat
+    if (Math.abs(deltaY) < 10 && elapsed < 280) {
+      setDragY(0);
       togglePlay();
       return;
     }
 
-    const threshold = 50; // 50px eşik değeri
+    const threshold = 55; // 55px eşik değeri
     if (deltaY < -threshold) {
-      // Parmağı yukarı kaydırma -> Sonraki Video (Instagram Reels akışı)
-      handleNextReel();
+      // Parmağı yukarı kaydırma -> Sonraki Video (aşağıdaki video yukarı çekilir)
+      transitionToNext();
     } else if (deltaY > threshold) {
-      // Parmağı aşağı kaydırma -> Önceki Video
-      handlePrevReel();
+      // Parmağı aşağı kaydırma -> Önceki Video (yukarıdaki video aşağı çekilir)
+      transitionToPrev();
+    } else {
+      // Eşik geçilmediyse yumuşakça yerine geri döner
+      setAnimatingTarget('cancel');
+      setTimeout(() => {
+        setDragY(0);
+        setAnimatingTarget(null);
+      }, 220);
     }
   };
 
@@ -407,7 +465,7 @@ export default function VideolarimPage() {
           {/* Önceki Video (Desktop) */}
           {expandedReelIndex > 0 && (
             <button
-              onClick={handlePrevReel}
+              onClick={transitionToPrev}
               className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-[2100] w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full items-center justify-center text-white transition-colors"
               title="Önceki Video (Sol / Yukarı Ok)"
             >
@@ -418,7 +476,7 @@ export default function VideolarimPage() {
           {/* Sonraki Video (Desktop) */}
           {expandedReelIndex < allReels.length - 1 && (
             <button
-              onClick={handleNextReel}
+              onClick={transitionToNext}
               className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 z-[2100] w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full items-center justify-center text-white transition-colors"
               title="Sonraki Video (Sağ / Aşağı Ok)"
             >
@@ -426,47 +484,125 @@ export default function VideolarimPage() {
             </button>
           )}
 
-          {/* Dikey Video Çerçevesi (9:16 Sinematik Odak & Instagram Jest Kontrolü) */}
+          {/* Dikey Video Görüntüleme Penceresi (Sabit 9:16 Çerçeve, İçerik Dikey Şerit Olarak Akar) */}
           <div 
-            className="relative w-full max-w-[460px] h-full max-h-[92vh] aspect-[9/16] rounded-[24px] overflow-hidden bg-black border border-white/10 shadow-2xl flex flex-col justify-center items-center group select-none"
+            className="relative w-full max-w-[460px] h-full max-h-[92vh] aspect-[9/16] rounded-[24px] overflow-hidden bg-black border border-white/10 shadow-2xl select-none flex flex-col justify-center items-center"
             onWheel={handleWheel}
-            style={{
-              transform: `translate3d(0, ${dragY}px, 0)`,
-              transition: isDragging ? 'none' : 'transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)',
-            }}
           >
             {/* Üst İlerleme ve İpucu Rozeti */}
             <div className="absolute top-4 inset-x-0 flex justify-center pointer-events-none z-30">
               <span className="text-[11px] text-white/70 bg-black/60 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow-lg">
                 <span className="font-semibold">{expandedReelIndex + 1} / {allReels.length}</span>
                 <span className="opacity-40">•</span>
-                <span>Aşağı / Yukarı kaydır</span>
+                <span>Kaydırarak geçiş yap</span>
               </span>
             </div>
 
-            {/* Video Oynatıcı */}
-            {allReels[expandedReelIndex].youtubeId ? (
-              <iframe
-                ref={iframeRef}
-                src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`}
-                title={allReels[expandedReelIndex].title}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="w-full h-full aspect-[9/16] object-cover pointer-events-none"
-              ></iframe>
-            ) : (
-              <video 
-                src={allReels[expandedReelIndex].videoUrl} 
-                autoPlay 
-                loop 
-                controls={false}
-                playsInline
-                className="w-full h-full object-contain pointer-events-none"
-              />
-            )}
+            {/* DİKEY 3'LÜ ŞERİT (Önceki - Aktif - Sonraki): Parmakla çektikçe aşağıdaki video görsel olarak yukarı gelir */}
+            <div
+              className="w-full h-full relative"
+              style={{
+                transform: animatingTarget === 'next'
+                  ? 'translate3d(0, -100%, 0)'
+                  : animatingTarget === 'prev'
+                  ? 'translate3d(0, 100%, 0)'
+                  : animatingTarget === 'cancel'
+                  ? 'translate3d(0, 0, 0)'
+                  : `translate3d(0, ${dragY}px, 0)`,
+                transition: animatingTarget
+                  ? 'transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                  : 'none',
+                willChange: 'transform'
+              }}
+            >
+              {/* 1. Önceki Video (Üstte bekleyen kapak: top: -100%) */}
+              {expandedReelIndex > 0 && allReels[expandedReelIndex - 1] && (
+                <div
+                  className="absolute inset-x-0 w-full h-full bg-black flex flex-col justify-center items-center overflow-hidden pointer-events-none"
+                  style={{ top: '-100%' }}
+                >
+                  <img
+                    src={allReels[expandedReelIndex - 1].youtubeId ? `/video-covers/${allReels[expandedReelIndex - 1].youtubeId}.jpg` : `${allReels[expandedReelIndex - 1].videoUrl}#t=0.5`}
+                    alt={allReels[expandedReelIndex - 1].title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1">
+                    <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
+                      @pskfurkanmanav
+                    </span>
+                    <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
+                      {allReels[expandedReelIndex - 1].title}
+                    </h3>
+                  </div>
+                </div>
+              )}
 
-            {/* ŞEFFAF DOKUNMATİK JEST KATMANI: Instagram Reels gibi parmakla aşağı/yukarı kaydırmayı ve dokunarak duraklatmayı sağlar */}
+              {/* 2. Aktif Video (Ortada oynayan video: top: 0%) */}
+              {allReels[expandedReelIndex] && (
+                <div
+                  className="absolute inset-0 w-full h-full bg-black flex flex-col justify-center items-center overflow-hidden"
+                  style={{ top: '0%' }}
+                >
+                  {allReels[expandedReelIndex].youtubeId ? (
+                    <iframe
+                      ref={iframeRef}
+                      src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`}
+                      title={allReels[expandedReelIndex].title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      className="w-full h-full aspect-[9/16] object-cover pointer-events-none"
+                    />
+                  ) : (
+                    <video
+                      src={allReels[expandedReelIndex].videoUrl}
+                      autoPlay
+                      loop
+                      controls={false}
+                      playsInline
+                      className="w-full h-full object-contain pointer-events-none"
+                    />
+                  )}
+
+                  {/* Alt Başlık & Kanal Bilgisi */}
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1 pointer-events-none z-10">
+                    <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
+                      @pskfurkanmanav
+                    </span>
+                    <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
+                      {allReels[expandedReelIndex].title}
+                    </h3>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Sonraki Video (Altta bekleyen kapak: top: 100%) - Parmakla yukarı çekildikçe aşağıdan yukarı kayarak girer */}
+              {expandedReelIndex < allReels.length - 1 && allReels[expandedReelIndex + 1] && (
+                <div
+                  className="absolute inset-x-0 w-full h-full bg-black flex flex-col justify-center items-center overflow-hidden pointer-events-none"
+                  style={{ top: '100%' }}
+                >
+                  <img
+                    src={allReels[expandedReelIndex + 1].youtubeId ? `/video-covers/${allReels[expandedReelIndex + 1].youtubeId}.jpg` : `${allReels[expandedReelIndex + 1].videoUrl}#t=0.5`}
+                    alt={allReels[expandedReelIndex + 1].title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1">
+                    <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
+                      @pskfurkanmanav
+                    </span>
+                    <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
+                      {allReels[expandedReelIndex + 1].title}
+                    </h3>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ŞEFFAF DOKUNMATİK JEST KATMANI: Tüm parmak sürüklemelerini yakalar */}
             <div
               className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing touch-none"
               onTouchStart={handleTouchStart}
@@ -476,7 +612,7 @@ export default function VideolarimPage() {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              title="Kaydırarak diğer videoya geçin, dokunarak duraklatın"
+              title="Aşağı / yukarı kaydırarak geçiş yapın, dokunarak duraklatın"
             />
 
             {/* Oynat / Duraklat Görsel Geri Bildirimi */}
@@ -485,17 +621,6 @@ export default function VideolarimPage() {
                 {isPlaying ? <Play size={28} fill="currentColor" /> : <Pause size={28} fill="currentColor" />}
               </div>
             )}
-
-            {/* Alt Başlık & Kanal Bilgisi */}
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1 pointer-events-none z-10">
-              <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
-                @pskfurkanmanav
-              </span>
-              <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
-                {allReels[expandedReelIndex].title}
-              </h3>
-            </div>
           </div>
         </div>
       )}
