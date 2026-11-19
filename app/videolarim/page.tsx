@@ -489,15 +489,6 @@ export default function VideolarimPage() {
             className="relative w-full max-w-[460px] h-full max-h-[92vh] aspect-[9/16] rounded-[24px] overflow-hidden bg-black border border-white/10 shadow-2xl select-none flex flex-col justify-center items-center"
             onWheel={handleWheel}
           >
-            {/* Üst İlerleme ve İpucu Rozeti */}
-            <div className="absolute top-4 inset-x-0 flex justify-center pointer-events-none z-30">
-              <span className="text-[11px] text-white/70 bg-black/60 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow-lg">
-                <span className="font-semibold">{expandedReelIndex + 1} / {allReels.length}</span>
-                <span className="opacity-40">•</span>
-                <span>Kaydırarak geçiş yap</span>
-              </span>
-            </div>
-
             {/* DİKEY 3'LÜ ŞERİT (Önceki - Aktif - Sonraki): Parmakla çektikçe aşağıdaki video görsel olarak yukarı gelir */}
             <div
               className="w-full h-full relative"
