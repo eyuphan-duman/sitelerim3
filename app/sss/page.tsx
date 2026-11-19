@@ -259,7 +259,6 @@ export default function SssPage() {
                 } catch {}
               }
               const excerpt = faq.excerpt || stripHtml(faq.content || '').slice(0, 185);
-              const qNo = String(idx + 1).padStart(2, '0');
 
               return (
                 <Link href={`/sss/${faq.id}`} key={faq.id} className="hm-article-card ed-grid-card">
@@ -272,11 +271,9 @@ export default function SssPage() {
                         className="hm-article-img"
                       />
                       <div className="hm-article-img-shade" aria-hidden="true" />
-                      <span className="hm-article-badge-no">Soru № {qNo}</span>
                     </div>
                   ) : (
                     <div className="ed-faq-band">
-                      <span>SORU № {qNo}</span>
                       <span>{faq.category || 'Terapi Süreci'}</span>
                     </div>
                   )}

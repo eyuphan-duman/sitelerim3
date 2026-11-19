@@ -586,7 +586,6 @@ export default function HomePage() {
                 }
 
                 const cardExcerpt = a.excerpt || (a.content ? truncateText(stripHtml(a.content), 175) : '');
-                const issueNo = String(idx + 1).padStart(2, '0');
                 const coverImage = getArticleCoverImage(a);
 
                 return (
@@ -601,14 +600,12 @@ export default function HomePage() {
                             className="hm-article-img"
                           />
                           <div className="hm-article-img-shade" aria-hidden="true" />
-                          <span className="hm-article-badge-no">№ {issueNo}</span>
                         </>
                       ) : (
                         <div className="hm-monograph-cover">
                           <div className="hm-monograph-frame">
                             <div className="hm-monograph-top">
                               <span>PSİKANALİTİK DEFTER</span>
-                              <span>№ {issueNo}</span>
                             </div>
                             <div className="hm-monograph-center">
                               <span className="hm-monograph-ornament" aria-hidden="true">§</span>

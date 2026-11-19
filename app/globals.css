@@ -1303,16 +1303,7 @@ body {
 }
 
 .hm-article-badge-no {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  padding: 4px 10px;
-  background: rgba(9, 18, 33, 0.82);
-  border: 1px solid rgba(243, 239, 231, 0.22);
-  font-family: var(--font-playfair), serif;
-  font-style: italic;
-  font-size: 0.78rem;
-  color: #f3efe7;
+  display: none !important;
 }
 
 /* Görseli olmayan yazılar için editoryal kitap/monografi kapağı */
