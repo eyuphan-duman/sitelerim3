@@ -12,6 +12,7 @@ import Script from "next/script";
 import CookieConsent from "@/components/CookieConsent";
 import SwipeBackNavigation from "@/components/SwipeBackNavigation";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import SiteIntroLoader from "@/components/SiteIntroLoader";
 import { Inter, Playfair_Display, Crimson_Text, Montserrat } from "next/font/google";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -201,6 +202,7 @@ export default function RootLayout({
         </Script>
         <AuthProvider>
           <SearchProvider>
+            <SiteIntroLoader />
             <AnalyticsTracker />
             <GlobalSearchModal />
 

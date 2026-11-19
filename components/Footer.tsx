@@ -43,8 +43,8 @@ export default function Footer() {
   }
 
   return (
-    <footer style={{ background: '#0b1633' }} className="text-white border-t border-white/10">
-      <div className="max-w-7xl mx-auto px-6 py-16">
+    <footer style={{ background: '#091221' }} className="text-[#f4f7fb] border-t border-white/10">
+      <div className="hm-wrap py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8">
           {/* Brand - 4 columns */}
           <div className="lg:col-span-4 flex flex-col justify-between">
@@ -53,11 +53,11 @@ export default function Footer() {
                 <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: 'white', letterSpacing: '0.02em' }}>
                   Psikolog Furkan Manav
                 </h3>
-                <p className="text-xs uppercase tracking-[0.18em] text-[#d4aa70] font-medium mt-1">
+                <p className="text-xs uppercase tracking-[0.18em] text-[#8eb4db] font-medium mt-1">
                   Varoluşçu-Psikanalitik Psikoterapi
                 </p>
               </div>
-              <div className="w-12 h-0.5 bg-[#b8965a]/60 my-4" />
+              <div className="w-12 h-0.5 bg-[#7da2c8]/50 my-4" />
               <p
                 className="text-white/65 leading-relaxed text-sm max-w-sm"
                 style={{ fontFamily: 'Crimson Text, serif', fontSize: '1.05rem', fontStyle: 'italic' }}
@@ -71,7 +71,7 @@ export default function Footer() {
                 href="https://www.instagram.com/pskfurkanmanav/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#d4aa70] hover:bg-white/10 hover:border-[#b8965a]/50 transition-all"
+                className="w-9 h-9 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#9ec0e6] hover:bg-white/10 hover:border-[#7da2c8]/50 transition-all"
                 title="Instagram"
                 aria-label="Instagram"
               >
@@ -81,7 +81,7 @@ export default function Footer() {
                 href="https://www.youtube.com/@pskfurkanmanav"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#d4aa70] hover:bg-white/10 hover:border-[#b8965a]/50 transition-all"
+                className="w-9 h-9 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#9ec0e6] hover:bg-white/10 hover:border-[#7da2c8]/50 transition-all"
                 title="YouTube"
                 aria-label="YouTube"
               >
@@ -91,7 +91,7 @@ export default function Footer() {
                 href="https://www.linkedin.com/in/pskfurkanmanav/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#d4aa70] hover:bg-white/10 hover:border-[#b8965a]/50 transition-all"
+                className="w-9 h-9 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-[#9ec0e6] hover:bg-white/10 hover:border-[#7da2c8]/50 transition-all"
                 title="LinkedIn"
                 aria-label="LinkedIn"
               >
@@ -102,7 +102,7 @@ export default function Footer() {
 
           {/* Sayfalar - 2 columns */}
           <div className="lg:col-span-2">
-            <h4 className="text-xs uppercase tracking-[0.16em] text-[#e8c187] font-semibold mb-5 pb-1 border-b border-white/5 inline-block">
+            <h4 className="text-xs uppercase tracking-[0.16em] text-[#9ec0e6] font-semibold mb-5 pb-1 border-b border-white/10 inline-block">
               Hızlı Erişim
             </h4>
             <ul className="space-y-3">
@@ -116,7 +116,7 @@ export default function Footer() {
                 <li key={l.href}>
                   <Link
                     href={l.href}
-                    className="text-white/80 hover:text-[#e8c187] hover:translate-x-1 inline-block transition-all text-sm"
+                    className="text-white/80 hover:text-[#b8d0eb] hover:translate-x-1 inline-block transition-all text-sm"
                   >
                     {l.label}
                   </Link>
@@ -127,7 +127,7 @@ export default function Footer() {
 
           {/* Topluluk & Hizmetler - 3 columns */}
           <div className="lg:col-span-3">
-            <h4 className="text-xs uppercase tracking-[0.16em] text-[#e8c187] font-semibold mb-5 pb-1 border-b border-white/5 inline-block">
+            <h4 className="text-xs uppercase tracking-[0.16em] text-[#9ec0e6] font-semibold mb-5 pb-1 border-b border-white/10 inline-block">
               Topluluk & Destek
             </h4>
             <ul className="space-y-3">
@@ -140,7 +140,7 @@ export default function Footer() {
                 <li key={l.href}>
                   <Link
                     href={l.href}
-                    className="text-white/80 hover:text-[#e8c187] hover:translate-x-1 inline-flex items-center gap-1.5 transition-all text-sm"
+                    className="text-white/80 hover:text-[#b8d0eb] hover:translate-x-1 inline-flex items-center gap-1.5 transition-all text-sm"
                   >
                     <span>{l.label}</span>
                   </Link>
@@ -151,12 +151,12 @@ export default function Footer() {
 
           {/* İletişim - 3 columns */}
           <div className="lg:col-span-3">
-            <h4 className="text-xs uppercase tracking-[0.16em] text-[#e8c187] font-semibold mb-5 pb-1 border-b border-white/5 inline-block">
+            <h4 className="text-xs uppercase tracking-[0.16em] text-[#9ec0e6] font-semibold mb-5 pb-1 border-b border-white/10 inline-block">
               İletişim & Konum
             </h4>
             <ul className="space-y-3.5">
               <li className="flex items-start gap-3 text-sm text-white/80 group">
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#e8c187] group-hover:bg-[#b8965a]/15 transition-colors mt-0.5">
+                <div className="w-8 h-8 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#9ec0e6] group-hover:bg-[#7da2c8]/15 transition-colors mt-0.5">
                   <MapPin size={15} />
                 </div>
                 <div className="leading-snug">
@@ -165,18 +165,18 @@ export default function Footer() {
                 </div>
               </li>
               <li className="flex items-center gap-3 text-sm text-white/80 group">
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#e8c187] group-hover:bg-[#b8965a]/15 transition-colors">
+                <div className="w-8 h-8 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#9ec0e6] group-hover:bg-[#7da2c8]/15 transition-colors">
                   <Phone size={15} />
                 </div>
-                <a href="tel:+905078751503" className="hover:text-[#e8c187] text-white/90 transition-colors">
+                <a href="tel:+905078751503" className="hover:text-[#b8d0eb] text-white/90 transition-colors">
                   +90 507 875 15 03
                 </a>
               </li>
               <li className="flex items-center gap-3 text-sm text-white/80 group">
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#e8c187] group-hover:bg-[#b8965a]/15 transition-colors">
+                <div className="w-8 h-8 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[#9ec0e6] group-hover:bg-[#7da2c8]/15 transition-colors">
                   <Mail size={15} />
                 </div>
-                <a href="mailto:pskfurkan.manav@gmail.com" className="hover:text-[#e8c187] text-white/90 transition-colors break-all">
+                <a href="mailto:pskfurkan.manav@gmail.com" className="hover:text-[#b8d0eb] text-white/90 transition-colors break-all">
                   pskfurkan.manav@gmail.com
                 </a>
               </li>
@@ -190,11 +190,11 @@ export default function Footer() {
             © {new Date().getFullYear()} Psikolog Furkan Manav. Tüm hakları saklıdır.
           </p>
           <div className="flex items-center gap-4 text-xs text-white/70 flex-wrap justify-center">
-            <Link href="/kullanici-sozlesmesi" className="hover:text-[#e8c187] transition-colors">Kullanıcı Sözleşmesi</Link>
+            <Link href="/kullanici-sozlesmesi" className="hover:text-[#b8d0eb] transition-colors">Kullanıcı Sözleşmesi</Link>
             <span>·</span>
-            <Link href="/gizlilik" className="hover:text-[#e8c187] transition-colors">Gizlilik Politikası</Link>
+            <Link href="/gizlilik" className="hover:text-[#b8d0eb] transition-colors">Gizlilik Politikası</Link>
             <span>·</span>
-            <Link href="/iletisim" className="hover:text-[#e8c187] transition-colors">İletişim</Link>
+            <Link href="/iletisim" className="hover:text-[#b8d0eb] transition-colors">İletişim</Link>
             <span>·</span>
             <span>Varoluşçu-Psikanalitik Düşünce</span>
           </div>

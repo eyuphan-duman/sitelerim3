@@ -98,14 +98,14 @@ export default function QuickContact() {
           text-decoration: none;
         }
         .quick-contact-label {
-          background: #0a1628;
-          color: #e8dcc8;
+          background: #091221;
+          color: #f4f7fb;
           font-size: 0.75rem;
           font-weight: 600;
           padding: 8px 14px;
-          border-radius: 4px;
-          border: 1px solid rgba(201, 169, 110, 0.3);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+          border-radius: 3px;
+          border: 1px solid rgba(142, 180, 219, 0.35);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
           opacity: 0;
           transform: translateX(10px);
           transition: transform 0.25s ease, opacity 0.25s ease;
@@ -135,32 +135,33 @@ export default function QuickContact() {
           transform: scale(1.1);
         }
         .quick-contact-main-btn {
-          width: 58px;
-          height: 58px;
+          width: 56px;
+          height: 56px;
           border-radius: 50%;
-          background: var(--gold);
-          color: var(--navy);
+          background: #091221;
+          color: #f4f7fb;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1.5px solid rgba(158, 192, 230, 0.45);
           cursor: pointer;
-          box-shadow: 0 6px 22px rgba(201, 169, 110, 0.35);
-          transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          box-shadow: 0 10px 28px rgba(9, 18, 33, 0.35);
+          transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.25s ease;
           will-change: transform;
           position: relative;
         }
         .quick-contact-main-btn:hover {
           transform: scale(1.06);
+          border-color: #9ec0e6;
         }
         .quick-contact-main-pulse {
           position: absolute;
           top: 0; left: 0; right: 0; bottom: 0;
           border-radius: 50%;
-          border: 2px solid var(--gold);
-          animation: quick-contact-pulse 2s infinite;
+          border: 1.5px solid rgba(142, 180, 219, 0.55);
+          animation: quick-contact-pulse 2.2s infinite;
           pointer-events: none;
-          opacity: 0.6;
+          opacity: 0.5;
           z-index: -1;
         }
         @keyframes quick-contact-pulse {
@@ -241,7 +242,7 @@ export default function QuickContact() {
         className="quick-contact-main-btn" 
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Hızlı İletişim Seçenekleri"
-        style={{ transform: isOpen ? 'rotate(135deg)' : 'none', background: isOpen ? '#f43f5e' : 'var(--gold)', color: isOpen ? 'white' : 'var(--navy)' }}
+        style={{ transform: isOpen ? 'rotate(135deg)' : 'none', background: isOpen ? '#1e293b' : '#091221', color: '#f4f7fb' }}
       >
         {isOpen ? (
           <X size={24} style={{ transform: 'rotate(-135deg)' }} />

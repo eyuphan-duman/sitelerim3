@@ -1,7 +1,7 @@
 'use client';
 // ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - YOUTUBE SHORTS ENTEGRASYONU AKTİF.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Film, Play, Heart, MessageCircle, Send, X, Share2, ThumbsUp, ThumbsDown, CheckCircle, ArrowRight } from 'lucide-react';
+import { Film, Play, Heart, MessageCircle, Send, X, Share2, ThumbsUp, ThumbsDown, CheckCircle, ArrowRight, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -10,6 +10,9 @@ import AuthModal from '@/components/AuthModal';
 import Link from 'next/link';
 
 const YOUTUBE_SHORTS = [
+  { id: 'qrttUFp0eEg', title: "DUYU HASSASİYETİ", youtubeId: 'qrttUFp0eEg' },
+  { id: 'O7tneYILgkQ', title: "KAPALI HAVANIN PSİKOLOJİMİZE ETKİSİ", youtubeId: 'O7tneYILgkQ' },
+  { id: '6fmxBmSzsDM', title: "TERAPİNİN ESAS BELİRLEYİCİSİ", youtubeId: '6fmxBmSzsDM' },
   { id: 'ABmIev4nIkg', title: "MİTOMANİ", youtubeId: 'ABmIev4nIkg' },
   { id: 'h6QcOFJXhEk', title: "İYİLEŞMEK, YÜZLEŞMENİN YAN ETKİSİDİR.", youtubeId: 'h6QcOFJXhEk' },
   { id: 'MqNcDuOdAN4', title: "PSİKANALİZ VE TEDAVİ?", youtubeId: 'MqNcDuOdAN4' },
@@ -62,10 +65,25 @@ export default function VideolarimPage() {
   
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
   const [firebaseVideos, setFirebaseVideos] = useState<any[]>([]);
+  const [youtubeShorts, setYoutubeShorts] = useState(YOUTUBE_SHORTS);
 
   useEffect(() => {
     const w = localStorage.getItem('manav_watched_reels');
     if (w) setWatchedVideos(JSON.parse(w));
+
+    fetch('/api/youtube-shorts')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data?.shorts) && data.shorts.length > 0) {
+          const seen = new Set(data.shorts.map((s: any) => s.youtubeId));
+          const merged = [
+            ...data.shorts,
+            ...YOUTUBE_SHORTS.filter(s => !seen.has(s.youtubeId)),
+          ];
+          setYoutubeShorts(merged);
+        }
+      })
+      .catch(() => {});
 
     const q = query(collection(db, 'reels'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, snap => {
@@ -74,7 +92,7 @@ export default function VideolarimPage() {
     return () => unsub();
   }, []);
 
-  const allReels = useMemo(() => [...firebaseVideos, ...YOUTUBE_SHORTS], [firebaseVideos]);
+  const allReels = useMemo(() => [...firebaseVideos, ...youtubeShorts], [firebaseVideos, youtubeShorts]);
 
   // URL query parameter check to auto-open video
   useEffect(() => {
@@ -307,87 +325,116 @@ export default function VideolarimPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fafafa' }}>
-      
-      {/* ─── HEADER ─── */}
-      <div style={{ paddingTop: '130px', paddingBottom: '24px', background: 'white', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-        <div className="container-main" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <div className="inline-flex items-center justify-center p-3 mb-4 rounded-2xl bg-gradient-to-tr from-gray-800 to-black shadow-md">
-            <Film size={32} color="white" strokeWidth={2} />
+    <div className="ed-page">
+      {/* ─── ÜST KAPAK (MASTHEAD) ─── */}
+      <header className="ed-hero">
+        <div className="hx-grain" aria-hidden="true" />
+        <div className="hm-wrap">
+          <div className="ed-hero-bar">
+            <span className="ed-hero-eyebrow">Psikoloji · Psikanaliz · Kısa Kayıtlar</span>
+            <span className="ed-hero-rule" aria-hidden="true" />
+            <span className="ed-hero-place">{allReels.length} Video</span>
           </div>
-          
-          <div className="gold-line" style={{ marginBottom: '20px' }} />
-          
-          <p style={{ fontFamily: 'Inter, sans-serif', color: 'var(--muted)', fontSize: '1.05rem', fontWeight: 500, lineHeight: 1.6, maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-            Psikoloji ve varoluş analizleri odaklı reels serisi. İncelemek için videolara tıklayın.
-          </p>
-        </div>
-      </div>
 
-      {/* ─── GRID ─── */}
-      <div style={{ maxWidth: '1720px', margin: '0 auto', padding: '0 24px' }} className="pt-6 pb-16">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4 sm:gap-6">
-          
+          <div className="ed-hero-grid">
+            <div>
+              <h1 className="ed-hero-title">Videolarım</h1>
+              <p className="ed-hero-sub">
+                Psikanalitik kavramlar, ilişki döngüleri, savunma mekanizmaları ve varoluşsal meseleler üzerine kısa video kayıtları.
+              </p>
+            </div>
+            <div className="ed-hero-actions">
+              <Link href="/yazilarim" className="hx-link">
+                Yazılı Denemelere Göz Atın
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ─── VİDEOLAR IZGARASI (1480px) ─── */}
+      <div className="hm-wrap ed-body">
+        <div className="ed-videos-grid">
           {allReels.map((reel, index) => {
             const hasWatched = watchedVideos.includes(reel.id);
             const isLocal = !!YOUTUBE_SHORTS.find(r => r.id === reel.id);
-            const thumbUrl = reel.youtubeId 
+            const thumbUrl = reel.youtubeId
               ? `https://img.youtube.com/vi/${reel.youtubeId}/hqdefault.jpg`
               : `${reel.videoUrl}#t=0.5`;
 
             return (
-              <div 
-                key={reel.id} 
+              <div
+                key={reel.id}
                 onClick={() => setExpandedReelIndex(index)}
-                className="bg-black rounded-xl overflow-hidden shadow-sm relative group cursor-pointer aspect-[9/16] transition-transform duration-300 hover:scale-[1.02] hover:shadow-xl border border-gray-200"
+                className="hm-video-card ed-video-item"
+                style={{ cursor: 'pointer' }}
               >
-                {reel.youtubeId ? (
-                  <img 
-                    src={thumbUrl} 
-                    alt={reel.title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                  />
-                ) : (
-                  <video 
-                    src={thumbUrl} 
-                    preload="metadata" 
-                    muted 
-                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                  />
-                )}
+                <div className="hm-video-frame">
+                  {reel.youtubeId ? (
+                    <img
+                      src={thumbUrl}
+                      alt={reel.title}
+                      className="hm-video-thumb"
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <video
+                      src={thumbUrl}
+                      preload="metadata"
+                      muted
+                      className="hm-video-thumb"
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )}
+                  <div className="hm-video-overlay" aria-hidden="true" />
 
-                <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80 pointer-events-none" />
+                  {hasWatched && (
+                    <span className="ed-video-watched" style={{ position: 'absolute', top: 14, right: 14, zIndex: 3 }}>
+                      <CheckCircle size={11} /> İzlendi
+                    </span>
+                  )}
 
-                <div className="absolute top-4 left-3 right-3 z-10 pointer-events-none">
-                  <h2 className="text-white font-bold text-[14px] leading-tight drop-shadow-md">
-                    {reel.title}
-                  </h2>
-                </div>
+                  {ADMIN_EMAILS.includes(user?.email || '') && (
+                    <button
+                      onClick={(e) => deleteVideoDoc(reel.id, isLocal, e)}
+                      className="absolute top-3 left-3 bg-red-600/90 hover:bg-red-600 text-white p-1.5 rounded-full z-20 shadow-lg transition-transform hover:scale-110"
+                      title="Videoyu Sil"
+                    >
+                      <X size={13} strokeWidth={2.5} />
+                    </button>
+                  )}
 
-                {ADMIN_EMAILS.includes(user?.email || '') && (
-                  <button 
-                    onClick={(e) => deleteVideoDoc(reel.id, isLocal, e)}
-                    className="absolute top-3 right-3 bg-red-600/90 hover:bg-red-600 text-white p-1.5 rounded-full z-20 shadow-lg transition-transform hover:scale-110"
-                    title="Videoyu Sil"
-                  >
-                    <X size={14} strokeWidth={3} />
-                  </button>
-                )}
+                  <div className="hm-video-play" aria-hidden="true">
+                    <Play size={16} fill="currentColor" strokeWidth={1.5} style={{ marginLeft: 2 }} />
+                  </div>
 
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg pointer-events-none">
-                    <Play size={20} fill="white" color="white" className="ml-1"/>
+                  <div className="hm-video-bottom">
+                    <h2 className="hm-video-title">{reel.title}</h2>
+                    <span className="hm-video-cta">
+                      <span>Kaydı İzle</span>
+                      <ArrowUpRight size={14} strokeWidth={1.6} />
+                    </span>
                   </div>
                 </div>
-
-                {hasWatched && (
-                  <div className="absolute bottom-3 right-3 bg-blue-600 border border-blue-400 text-white text-[11px] font-bold px-2 py-1 rounded shadow-lg flex items-center gap-1 opacity-90 z-10">
-                    <CheckCircle size={12}/> İzledin
-                  </div>
-                )}
               </div>
             );
           })}
+        </div>
+
+        <div className="bk-bottom-banner" style={{ marginTop: 64 }}>
+          <div>
+            <span className="bk-bottom-eyebrow">Derinlemesine İncelemeler</span>
+            <h2>Düşüncelerim ve Psikanalitik Yazılarım</h2>
+          </div>
+          <div className="bk-bottom-actions">
+            <Link href="/yazilarim" className="hx-btn">
+              <span>Yazılarıma Göz Atın</span>
+              <ArrowRight size={15} strokeWidth={1.6} />
+            </Link>
+            <Link href="/forum" className="hx-link">
+              Logos Forum’da Tartışmalara Katılın
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -640,24 +687,6 @@ export default function VideolarimPage() {
           </div>
         </div>
       )}
-
-      {/* ─── CTA: YAZILARIMA GÖZ ATIN ─── */}
-      <div style={{ background: 'white', borderTop: '1px solid rgba(0,0,0,0.05)', padding: '64px 24px', textAlign: 'center', marginTop: '16px' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold)', display: 'block', marginBottom: '12px' }}>
-            Derinlemesine Analizler
-          </span>
-          <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '16px' }}>
-            Düşüncelerim ve Yazılarım
-          </h3>
-          <p style={{ fontFamily: 'Inter, sans-serif', color: 'var(--muted)', fontSize: '0.98rem', lineHeight: 1.6, marginBottom: '28px' }}>
-            İnsan psikolojisi, psikanaliz ve varoluşsal sorgulamalara dair kaleme aldığım yazılarıma da göz atabilirsiniz.
-          </p>
-          <Link href="/yazilarim" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--navy)', color: 'white', fontWeight: 600, padding: '12px 28px', borderRadius: '30px', transition: 'all 0.3s ease', textDecoration: 'none', border: '1px solid var(--navy)', fontFamily: 'Inter, sans-serif', fontSize: '0.9rem' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--navy)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--navy)'; e.currentTarget.style.color = 'white'; }}>
-             Yazılarıma Göz Atın <ArrowRight size={16} />
-          </Link>
-        </div>
-      </div>
 
       {/* Required for "Üye olunmalı" restriction */}
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0b172a" />
+      <stop offset="100%" stop-color="#060d18" />
+    </linearGradient>
+    <linearGradient id="ice" x1="12" y1="10" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c6daf0" />
+      <stop offset="100%" stop-color="#7da2c8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Deep Midnight Navy Architectural Plate -->
+  <rect width="64" height="64" rx="10" fill="url(#bg)" />
+
+  <!-- Outer & Inner Editorial Hairline Frame -->
+  <rect x="4.5" y="4.5" width="55" height="55" rx="7" stroke="url(#ice)" stroke-opacity="0.4" stroke-width="1.1" />
+  <rect x="7.5" y="7.5" width="49" height="49" rx="5" stroke="#9ec0e6" stroke-opacity="0.14" stroke-width="0.8" />
+
+  <!-- Corner Accents -->
+  <path d="M8.5 13.5V8.5H13.5" stroke="#9ec0e6" stroke-width="1.2" stroke-linecap="square" />
+  <path d="M55.5 50.5V55.5H50.5" stroke="#9ec0e6" stroke-width="1.2" stroke-linecap="square" />
+
+  <!-- Classical Didone Serif Monogram: F  M -->
+  <!-- Letter F (Alabaster White) -->
+  <path
+    d="M12.2 19.5H26.4V23.2H24.7C24.2 21.7 23.3 21.3 21.2 21.3H17.8V30.5H20.8C22.4 30.5 23.0 29.9 23.3 28.4H24.9V34.4H23.3C23.0 32.9 22.4 32.3 20.8 32.3H17.8V41.5C17.8 42.9 18.3 43.3 20.0 43.3V44.8H12.2V43.3C13.7 43.3 14.2 42.9 14.2 41.5V22.8C14.2 21.4 13.7 21 12.2 21V19.5Z"
+    fill="#F8FAFD"
+  />
+
+  <!-- Letter M (Ice-Steel Blue Accent) -->
+  <path
+    d="M28.8 43.3C30.1 43.3 30.6 42.8 30.6 41.3V22.8C30.6 21.4 30.1 21 28.8 21V19.5H34.8L40.4 36.9L46.0 19.5H51.8V21C50.4 21 49.9 21.4 49.9 22.8V41.5C49.9 42.9 50.4 43.3 51.8 43.3V44.8H44.6V43.3C45.9 43.3 46.4 42.9 46.4 41.5V24.8L39.9 44.8H38.6L32.3 25.1V41.3C32.3 42.8 32.8 43.3 34.2 43.3V44.8H28.8V43.3Z"
+    fill="url(#ice)"
+  />
+</svg>

@@ -2,27 +2,27 @@
 import React, { useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle, Zap } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, CheckCircle, ArrowUpRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const InstagramIcon = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
   </svg>
 );
 
 const YoutubeIcon = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
   </svg>
 );
 
 const LinkedInIcon = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-    <rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+    <rect x="2" y="9" width="4" height="12" /><circle cx="4" cy="4" r="2" />
   </svg>
 );
 
@@ -32,17 +32,16 @@ export default function IletisimPage() {
   const [sent, setSent] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setSubmitting(true);
+    e.preventDefault();
+    setSubmitting(true);
     try {
-      // 1. Veritabanına kaydet (Asıl işlem)
       await addDoc(collection(db, 'messages'), { ...form, createdAt: serverTimestamp(), status: 'unread' });
-      
-      // 2. E-posta bildirimini tetikle (Yardımcı işlem - hata oluşursa ana akışı bozmaz)
+
       try {
         const res = await fetch('/api/contact', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form)
+          body: JSON.stringify(form),
         });
         if (!res.ok) {
           console.warn('E-posta bildirimi gönderilemedi, ancak mesaj veritabanına başarıyla kaydedildi.');
@@ -51,11 +50,9 @@ export default function IletisimPage() {
         console.error('E-posta API çağrısı sırasında hata oluştu:', emailError);
       }
 
-      // Mesaj Firestore'a başarıyla kaydedildiği için kullanıcıya başarı mesajı gösteriyoruz
-      setSent(true); 
+      setSent(true);
       toast.success('Mesajınız gönderildi!');
 
-      // Google Ads Conversion Tracking
       if (typeof window !== 'undefined' && (window as any).gtag) {
         (window as any).gtag('event', 'ads_conversion_Ki_i_1');
       }
@@ -64,144 +61,198 @@ export default function IletisimPage() {
     } catch (error) {
       console.error('Mesaj veritabanına kaydedilirken hata oluştu:', error);
       toast.error('Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyin.');
+    } finally {
+      setSubmitting(false);
     }
-    finally { setSubmitting(false); }
   };
 
   const infos = [
-    { icon: <MapPin size={18} color="var(--gold)"/>, label: 'Adres', val: 'Çankaya/Ankara\nPolatlı/Ankara', href: undefined },
-    { icon: <Phone size={18} color="var(--gold)"/>, label: 'Telefon', val: '+90 507 875 15 03', href: 'tel:+905078751503' },
-    { icon: <Mail size={18} color="var(--gold)"/>, label: 'E-posta', val: 'pskfurkan.manav@gmail.com', href: 'mailto:pskfurkan.manav@gmail.com' },
-    { icon: <Clock size={18} color="var(--gold)"/>, label: 'Çalışma Saatleri', val: 'Pzt–Cuma: 09:00–18:00\nCumartesi: 10:00–14:00', href: undefined },
+    { no: '01', icon: <Phone size={16} />, label: 'Telefon & Doğrudan Arama', val: '+90 507 875 15 03', href: 'tel:+905078751503' },
+    { no: '02', icon: <Mail size={16} />, label: 'E-posta Adresi', val: 'pskfurkan.manav@gmail.com', href: 'mailto:pskfurkan.manav@gmail.com' },
+    { no: '03', icon: <MapPin size={16} />, label: 'Yüz Yüze Görüşme Lokasyonları', val: 'Çankaya / Ankara  ·  Polatlı / Ankara', href: undefined },
+    { no: '04', icon: <Clock size={16} />, label: 'Çalışma Saatleri', val: 'Pazartesi – Cuma: 09:00 – 18:00\nCumartesi: 10:00 – 14:00', href: undefined },
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--sand-light)' }}>
-      {/* Page Header */}
-      <div className="page-header">
-        <div className="page-header-inner">
-          <div className="eyebrow" style={{ marginBottom: 20 }}>Ankara & Online</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.8rem,5vw,4.5rem)', fontWeight: 700, color: 'white', lineHeight: 1.05, marginBottom: 24 }}>
-            İletişim
-          </h1>
-          <div className="gold-line" style={{ marginBottom: 24 }}/>
-          <p className="crimson" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '1.1rem', maxWidth: 520 }}>
-            Sorularınız veya herhangi bir konuda iletişime geçebilirsiniz. En geç 24 saat içinde dönüş yapılır.
-          </p>
-        </div>
-      </div>
+    <div className="ed-page">
+      {/* ── ÜST KAPAK (MASTHEAD) ── */}
+      <header className="ed-hero">
+        <div className="hx-grain" aria-hidden="true" />
+        <div className="hm-wrap">
+          <div className="ed-hero-bar">
+            <span className="ed-hero-eyebrow">Yüz Yüze & Online Psikoterapi</span>
+            <span className="ed-hero-rule" aria-hidden="true" />
+            <span className="ed-hero-place">Çankaya · Polatlı · Online</span>
+          </div>
 
-      <div className="container-main" style={{ paddingTop: 64, paddingBottom: 80 }}>
-        <div className="iletisim-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 40, alignItems: 'start' }}>
-
-          {/* Left column */}
-          <div>
-            {/* Hızlı İletişim Uyarı Bannerı */}
-            <div style={{ 
-              background: 'rgba(201, 169, 110, 0.08)', 
-              border: '1px solid rgba(201, 169, 110, 0.25)', 
-              borderRadius: 4, 
-              padding: '16px 20px', 
-              marginBottom: 24, 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 14 
-            }}>
-              <div style={{ flexShrink: 0, color: 'var(--gold-dim)' }}>
-                <Zap size={22} />
-              </div>
-              <p style={{ color: 'var(--navy)', fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.5, margin: 0 }}>
-                <strong style={{ color: 'var(--gold-dim)' }}>En Hızlı İletişim Yöntemi:</strong> Randevu ve acil konular için telefon üzerinden doğrudan arama yapmak (+90 507 875 15 03) kullanıcılarımız için en hızlı ve etkili iletişim yöntemidir.
+          <div className="ed-hero-grid">
+            <div>
+              <h1 className="ed-hero-title">İletişim</h1>
+              <p className="ed-hero-sub">
+                Yüz yüze veya online seans süreçleri hakkında bilgi almak, ön görüşme planlamak ya da sorularınızı iletmek için ulaşabilirsiniz.
               </p>
             </div>
+            <div className="ed-hero-actions">
+              <a href="tel:+905078751503" className="hx-btn">
+                <Phone size={15} strokeWidth={1.7} />
+                <span>+90 507 875 15 03</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
 
-            {/* Contact cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
+      {/* ── İLETİŞİM GÖVDESİ (1480px 2 SÜTUN) ── */}
+      <div className="hm-wrap ed-body">
+        <div className="il-layout">
+          {/* Sol Sütun: İletişim Fihristi & Hızlı Arama Notu */}
+          <div className="il-left">
+            <div className="il-direct-box">
+              <div className="il-direct-head">
+                <span>ÖNCELİKLİ İLETİŞİM NOTU</span>
+                <span>DOĞRUDAN HAT</span>
+              </div>
+              <h3>Randevu ve seans planlaması için en hızlı yöntem</h3>
+              <p>
+                Randevu oluşturmak veya acil bilgi almak için telefon üzerinden doğrudan arama yapmak (<strong>+90 507 875 15 03</strong>) en hızlı ve etkili iletişim yöntemidir.
+              </p>
+              <a href="tel:+905078751503" className="il-direct-cta">
+                <span>Telefonla Hemen Ara</span>
+                <ArrowUpRight size={15} strokeWidth={1.6} />
+              </a>
+            </div>
+
+            <div className="il-ledger">
+              <div className="il-ledger-head">
+                <span>İLETİŞİM BİLGİLERİ</span>
+                <span>01 — 04</span>
+              </div>
               {infos.map(item => (
-                <div key={item.label} className="contact-row">
-                  <div style={{ width: 40, height: 40, borderRadius: 3, background: 'rgba(201,169,110,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {item.icon}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 5 }}>{item.label}</div>
+                <div key={item.label} className="il-ledger-row">
+                  <span className="il-ledger-no">{item.no}</span>
+                  <div className="il-ledger-content">
+                    <span className="il-ledger-label">
+                      {item.icon}
+                      {item.label}
+                    </span>
                     {item.href ? (
-                      <a href={item.href} style={{ color: 'var(--navy)', fontWeight: 600, fontSize: '0.92rem', textDecoration: 'none' }}>{item.val}</a>
+                      <a href={item.href} className="il-ledger-val is-link">{item.val}</a>
                     ) : (
-                      <p style={{ color: 'var(--navy)', fontWeight: 500, fontSize: '0.88rem', whiteSpace: 'pre-line', lineHeight: 1.5 }}>{item.val}</p>
+                      <p className="il-ledger-val">{item.val}</p>
                     )}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Social links */}
-            <div style={{ background: 'white', borderRadius: 4, padding: '20px 24px', border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 2px 8px rgba(10,22,40,0.04)', marginBottom: 28 }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 16 }}>Sosyal Medya</div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div className="il-social-box">
+              <span className="il-social-title">Sosyal Medya & Dijital Kanallar</span>
+              <div className="il-social-links">
                 {[
-                  { label: 'Instagram', icon: <InstagramIcon/>, href: 'https://www.instagram.com/pskfurkanmanav/' },
-                  { label: 'YouTube', icon: <YoutubeIcon/>, href: 'https://www.youtube.com/@pskfurkanmanav' },
-                  { label: 'LinkedIn', icon: <LinkedInIcon/>, href: 'https://www.linkedin.com/in/pskfurkanmanav/' },
+                  { label: 'Instagram', icon: <InstagramIcon />, href: 'https://www.instagram.com/pskfurkanmanav/' },
+                  { label: 'YouTube', icon: <YoutubeIcon />, href: 'https://www.youtube.com/@pskfurkanmanav' },
+                  { label: 'LinkedIn', icon: <LinkedInIcon />, href: 'https://www.linkedin.com/in/pskfurkanmanav/' },
                 ].map(s => (
-                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 3, border: '1px solid rgba(0,0,0,0.1)', fontSize: '0.78rem', fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', transition: 'all 0.2s ease' }}
-                    onMouseOver={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--gold)'; (e.currentTarget as HTMLElement).style.color = 'var(--gold-dim)'; }}
-                    onMouseOut={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,0,0,0.1)'; (e.currentTarget as HTMLElement).style.color = 'var(--muted)'; }}>
-                    {s.icon} {s.label}
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="il-social-btn"
+                  >
+                    <span>{s.icon} {s.label}</span>
+                    <ArrowUpRight size={14} strokeWidth={1.5} />
                   </a>
                 ))}
               </div>
             </div>
-
           </div>
 
-          {/* Right column — Form */}
-          <div style={{ background: 'white', borderRadius: 4, padding: 'clamp(24px, 4vw, 44px) clamp(20px, 4vw, 40px)', border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 4px 24px rgba(10,22,40,0.07)' }}>
+          {/* Sağ Sütun: Editoryal Mesaj Formu */}
+          <div className="il-form-card">
             {sent ? (
-              <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid #86efac', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                  <CheckCircle size={28} color="#22c55e"/>
+              <div className="il-sent-box">
+                <div className="il-sent-icon">
+                  <CheckCircle size={28} strokeWidth={1.6} />
                 </div>
-                <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>Mesajınız Alındı!</h3>
-                <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginBottom: 28, lineHeight: 1.6 }}>
-                  En geç 24 saat içinde size dönüş yapılacaktır. E-postanızı kontrol etmeyi unutmayın.
+                <h3>Mesajınız Kaydedildi</h3>
+                <p>
+                  İletiniz başarıyla alındı. En geç 24 saat içinde belirttiğiniz e-posta adresi üzerinden size dönüş yapılacaktır.
                 </p>
-                <button onClick={() => setSent(false)} className="btn-dark-outline">
+                <button type="button" onClick={() => setSent(false)} className="hm-btn-outline">
                   Yeni Mesaj Gönder
                 </button>
               </div>
             ) : (
               <>
-                <div className="gold-line" style={{ marginBottom: 24 }}/>
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 8 }}>
-                  Mesaj Gönderin
-                </h2>
-                <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginBottom: 32 }}>
-                  Tüm mesajlara 24 saat içinde yanıt verilmektedir.
-                </p>
+                <div className="il-form-head">
+                  <span className="il-form-eyebrow">Yazılı İletişim Formu</span>
+                  <h2>Mesaj Gönderin</h2>
+                  <p>Gönderdiğiniz tüm iletilere en geç 24 saat içinde yanıt verilmektedir.</p>
+                </div>
 
-                <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                  <div className="iletisim-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    {[{k:'name',lbl:'Adınız',ph:'Adınız Soyadınız',t:'text'},{k:'email',lbl:'E-posta',ph:'ornek@mail.com',t:'email'}].map(f => (
-                      <div key={f.k}>
-                        <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>{f.lbl}</label>
-                        <input type={f.t} className="input-field" placeholder={f.ph} required value={(form as Record<string,string>)[f.k]} onChange={e => setForm({...form, [f.k]: e.target.value})}/>
-                      </div>
-                    ))}
+                <form onSubmit={submit} className="il-form">
+                  <div className="il-form-row">
+                    <div>
+                      <label htmlFor="il-name">Adınız Soyadınız</label>
+                      <input
+                        id="il-name"
+                        type="text"
+                        className="il-input"
+                        placeholder="Adınız Soyadınız"
+                        required
+                        value={form.name}
+                        onChange={e => setForm({ ...form, name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="il-email">E-posta Adresiniz</label>
+                      <input
+                        id="il-email"
+                        type="email"
+                        className="il-input"
+                        placeholder="ornek@mail.com"
+                        required
+                        value={form.email}
+                        onChange={e => setForm({ ...form, email: e.target.value })}
+                      />
+                    </div>
                   </div>
+
                   <div>
-                    <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Konu</label>
-                    <input className="input-field" placeholder="Mesajınızın konusu" required value={form.subject} onChange={e => setForm({...form, subject: e.target.value})}/>
+                    <label htmlFor="il-subject">Konu</label>
+                    <input
+                      id="il-subject"
+                      type="text"
+                      className="il-input"
+                      placeholder="Örn: Ön görüşme talebi, seans bilgisi..."
+                      required
+                      value={form.subject}
+                      onChange={e => setForm({ ...form, subject: e.target.value })}
+                    />
                   </div>
+
                   <div>
-                    <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>Mesajınız</label>
-                    <textarea className="input-field" style={{ minHeight: 160, resize: 'none' }} placeholder="Mesajınızı buraya yazın..." required value={form.message} onChange={e => setForm({...form, message: e.target.value})}/>
+                    <label htmlFor="il-message">Mesajınız</label>
+                    <textarea
+                      id="il-message"
+                      className="il-input il-textarea"
+                      placeholder="Sormak veya paylaşmak istediğiniz konuyu buraya yazabilirsiniz..."
+                      required
+                      value={form.message}
+                      onChange={e => setForm({ ...form, message: e.target.value })}
+                    />
                   </div>
-                  <button type="submit" disabled={submitting} className="btn-gold" style={{ justifyContent: 'center' }}>
-                    <Send size={14}/> {submitting ? 'Gönderiliyor...' : 'Mesaj Gönder'}
-                  </button>
-                  <p style={{ textAlign: 'center', fontSize: '0.72rem', color: '#ccc' }}>
-                    Gönderilen mesajlar gizlilik politikamız çerçevesinde işlenir.
-                  </p>
+
+                  <div className="il-form-foot">
+                    <p className="il-privacy-note">
+                      Gönderilen tüm iletiler mesleki gizlilik ilkeleri çerçevesinde korunur.
+                    </p>
+                    <button type="submit" disabled={submitting} className="hm-btn-dark">
+                      <Send size={14} />
+                      <span>{submitting ? 'Gönderiliyor...' : 'Mesajı İlet'}</span>
+                    </button>
+                  </div>
                 </form>
               </>
             )}

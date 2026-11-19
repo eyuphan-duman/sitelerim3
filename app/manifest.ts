@@ -7,12 +7,22 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Varoluşçu ve psikanalitik yaklaşımla psikoterapi ve psikoloji topluluğu.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#1c1c1e',
+    background_color: '#f7f9fc',
+    theme_color: '#091221',
     icons: [
       {
-        src: '/favicon.ico',
+        src: '/icon.svg',
         sizes: 'any',
+        type: 'image/svg+xml',
+      },
+      {
+        src: '/apple-icon.png',
+        sizes: '180x180',
+        type: 'image/png',
+      },
+      {
+        src: '/favicon.ico',
+        sizes: '48x48',
         type: 'image/x-icon',
       },
     ],

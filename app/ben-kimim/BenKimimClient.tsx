@@ -1,247 +1,269 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { GraduationCap, Heart, Clock, Shield, ChevronDown, ChevronUp } from 'lucide-react';
+import { GraduationCap, Heart, Clock, Shield, ArrowRight, ArrowUpRight, MapPin } from 'lucide-react';
 
-const sections = [
+const chapters = [
   {
+    id: 'giris',
     num: '01',
+    roman: 'I',
+    eyebrow: 'Biyografi & Perspektif',
     title: 'Giriş',
-    content: `Ben Psikolog Furkan Manav. Varoluşçu-Psikanalitik yönelimli bir yaklaşımla, yetişkinlere yönelik bireysel psikolojik danışmanlık hizmeti sunmaktayım.
-
-Geçmiş değiştirilemez belki ama geçmişle kurulan ilişki ve bağ değişebilir. Bastırılmış ya da reddedilmiş yaşantılara yer açıldığında, kişi kendi hikâyesine yeni bir anlam kazandırabilir. Varoluşçu Psikanalitik Psikoterapi, bu dönüşümü mümkün kılan derin bir karşılaşmadır.
-
-Terapide kişi; yalnızca ne hissettiğini değil, neden öyle hissettiğini ve düşüncelerinin ardında hangi anlamların gizlendiğini keşfetmeye başlar. Semptomlar çoğu zaman yalnızca birer şikâyet değil, daha derin psikolojik süreçlerin birer yansımasıdır. Bu süreçte, sözcüklerin ötesine geçerek bilinçdışı örüntüleri anlamaya ve kişinin kendi hakikatiyle karşılaşmasına eşlik ediyorum.`,
+    paragraphs: [
+      'Ben Psikolog Furkan Manav. Varoluşçu-Psikanalitik yönelimli bir yaklaşımla, yetişkinlere yönelik bireysel psikolojik danışmanlık hizmeti sunmaktayım.',
+      'Geçmiş değiştirilemez belki ama geçmişle kurulan ilişki ve bağ değişebilir. Bastırılmış ya da reddedilmiş yaşantılara yer açıldığında, kişi kendi hikâyesine yeni bir anlam kazandırabilir. Varoluşçu Psikanalitik Psikoterapi, bu dönüşümü mümkün kılan derin bir karşılaşmadır.',
+      'Terapide kişi; yalnızca ne hissettiğini değil, neden öyle hissettiğini ve düşüncelerinin ardında hangi anlamların gizlendiğini keşfetmeye başlar. Semptomlar çoğu zaman yalnızca birer şikâyet değil, daha derin psikolojik süreçlerin birer yansımasıdır. Bu süreçte, sözcüklerin ötesine geçerek bilinçdışı örüntüleri anlamaya ve kişinin kendi hakikatiyle karşılaşmasına eşlik ediyorum.',
+    ],
+    pullQuote: 'Geçmiş değiştirilemez belki ama geçmişle kurulan ilişki ve bağ değişebilir.',
   },
   {
+    id: 'yaklasim',
     num: '02',
+    roman: 'II',
+    eyebrow: 'Kuramsal Çerçeve',
     title: 'Terapötik Yaklaşımım',
-    content: `Çalışmalarımda Varoluşçu-Psikanalitik kuramı temel alıyorum. Bu yaklaşımda terapist, hazır reçeteler sunan bir otorite değil; danışanın kendi iç dünyasını keşfetmesine alan açan etkin bir dinleyicidir. Terapi odası, eski örüntülerin canlı biçimde ortaya çıktığı ve güvenle çalışılabildiği bir alandır.
-
-Neden Varoluşçu Psikanalitik Bakış?
-
-Yaşamın getirdiği kaygı, yalnızlık, özgürlük ve anlam arayışı gibi temel meseleler; kaçınılması gereken sorunlar değil, insanın kendi hakikatine giden kapılardır. Terapide amacımız bu kapıları kapatmak değil, ardındakileri cesaretle anlamlandırmaktır. Kişinin kendi seçimlerinin sorumluluğunu alabildiği, varoluşunu daha sahici bir yerden kurabildiği bir zemin oluşturmayı hedefliyorum.
-
-Sessizlikler, rüyalar, dil sürçmeleri ve tekrarlayan yaşam temaları çalışmamızın temel malzemelerini oluşturur. Belirtiler (semptomlar), bilinçdışında henüz dile gelmemiş olanı duyurmaya çalışır; biz bu işaretleri birlikte tercüme ederiz.`,
-  },
-  {
-    num: '03',
-    title: 'Eğitim ve Deneyim',
-    content: `Lisans eğitimimi Bülent Ecevit Üniversitesi Psikoloji Bölümü'nde onur derecesiyle tamamladım. Akademik temelimi, insanın derindeki anlam arayışına ve ruhsal yapısına temas eden Varoluşçu-Psikanalitik Psikoterapi alanındaki uzmanlaşma eğitimleriyle derinleştirdim.
-
-Klinik deneyimimi pratiğimde edindiğim tecrübelerle zenginleştirirken; etik ilkeler gereği ve mesleki derinliğimi korumak adına süpervizyon süreçlerime düzenli olarak devam etmekteyim. Benim için terapi, sadece bir teknik uygulama değil, sürekli devam eden bir öğrenme ve karşılaşma halidir.`,
-  },
-  {
-    num: '04',
-    title: 'Çalışma Alanları',
-    content: 'list',
-    listItems: [
-      'Anksiyete ve Kaygı Bozuklukları',
-      'Depresyon',
-      'Travma ve TSSB',
-      'Kayıp ve Yas Süreçleri',
-      'İlişki ve İletişim Sorunları',
-      'Psikosomatik (Bedensel) Belirtiler',
+    subtitle: 'Neden Varoluşçu Psikanalitik Bakış?',
+    paragraphs: [
+      'Çalışmalarımda Varoluşçu-Psikanalitik kuramı temel alıyorum. Bu yaklaşımda terapist, hazır reçeteler sunan bir otorite değil; danışanın kendi iç dünyasını keşfetmesine alan açan etkin bir dinleyicidir. Terapi odası, eski örüntülerin canlı biçimde ortaya çıktığı ve güvenle çalışılabildiği bir alandır.',
+      'Yaşamın getirdiği kaygı, yalnızlık, özgürlük ve anlam arayışı gibi temel meseleler; kaçınılması gereken sorunlar değil, insanın kendi hakikatine giden kapılardır. Terapide amacımız bu kapıları kapatmak değil, ardındakileri cesaretle anlamlandırmaktır. Kişinin kendi seçimlerinin sorumluluğunu alabildiği, varoluşunu daha sahici bir yerden kurabildiği bir zemin oluşturmayı hedefliyorum.',
+      'Sessizlikler, rüyalar, dil sürçmeleri ve tekrarlayan yaşam temaları çalışmamızın temel malzemelerini oluşturur. Belirtiler (semptomlar), bilinçdışında henüz dile gelmemiş olanı duyurmaya çalışır; biz bu işaretleri birlikte tercüme ederiz.',
     ],
   },
   {
-    num: '05',
-    title: 'Seanslar Hakkında',
-    content: 'sessions',
-    sessionItems: [
-      { label: 'Süre', val: 'Seanslar 45 dakika sürer.' },
-      { label: 'Sıklık', val: 'Derin ve kalıcı bir dönüşüm için seanslar genellikle haftada bir veya iki kez olacak şekilde planlanır. Süreç, danışanın ihtiyacına göre birlikte şekillendirilir.' },
-      { label: 'Etik', val: 'Tüm süreçler tamamen gizlilik esasına ve mesleki etik ilkelere bağlı kalarak yürütülür.' },
+    id: 'egitim',
+    num: '03',
+    roman: 'III',
+    eyebrow: 'Akademik & Klinik Geçmiş',
+    title: 'Eğitim ve Deneyim',
+    paragraphs: [
+      'Lisans eğitimimi Bülent Ecevit Üniversitesi Psikoloji Bölümü’nde onur derecesiyle tamamladım. Akademik temelimi, insanın derindeki anlam arayışına ve ruhsal yapısına temas eden Varoluşçu-Psikanalitik Psikoterapi alanındaki uzmanlaşma eğitimleriyle derinleştirdim.',
+      'Klinik deneyimimi pratiğimde edindiğim tecrübelerle zenginleştirirken; etik ilkeler gereği ve mesleki derinliğimi korumak adına süpervizyon süreçlerime düzenli olarak devam etmekteyim. Benim için terapi, sadece bir teknik uygulama değil, sürekli devam eden bir öğrenme ve karşılaşma halidir.',
     ],
   },
 ];
 
+const workingAreas = [
+  { no: 'I', title: 'Anksiyete ve Kaygı Bozuklukları', desc: 'Varoluşsal kaygı, panik süreçleri, belirsizlik tahammülsüzlüğü ve içsel huzursuzluk.' },
+  { no: 'II', title: 'Depresyon ve Anlam Kaybı', desc: 'Çökkün duygudurum, isteksizlik, boşluk hissi ve yaşamla kurulan bağın zayıflaması.' },
+  { no: 'III', title: 'Travma ve TSSB', desc: 'Geçmişteki sarsıcı yaşantıların bugünkü ilişki ve benlik algısı üzerindeki izleri.' },
+  { no: 'IV', title: 'Kayıp ve Yas Süreçleri', desc: 'Sevilen birinin, bir ilişkinin ya da bir yaşam döneminin ardından tutulan yasın işlenmesi.' },
+  { no: 'V', title: 'İlişki ve Bağlanma Sorunları', desc: 'Tekrarlayan ilişki döngüleri, sınır koyma güçlükleri, terk edilme ve yakınlık korkusu.' },
+  { no: 'VI', title: 'Psikosomatik (Bedensel) Belirtiler', desc: 'Söze dökülemeyen ruhsal çatışmaların beden üzerinden ifade bulduğu süreçler.' },
+];
+
+const sessionSpecs = [
+  {
+    no: '01',
+    label: 'Seans Süresi',
+    title: '45 Dakika',
+    val: 'Her bir seans standart psikanalitik çerçeveye uygun olarak 45 dakika sürer.',
+  },
+  {
+    no: '02',
+    label: 'Seans Sıklığı',
+    title: 'Haftada 1 veya 2 Kez',
+    val: 'Derin ve kalıcı bir dönüşüm için seanslar haftada bir veya iki kez olacak şekilde, danışanın ihtiyacına göre birlikte planlanır.',
+  },
+  {
+    no: '03',
+    label: 'Çerçeve & Gizlilik',
+    title: 'Etik İlkeler',
+    val: 'Tüm görüşmeler (Çankaya, Polatlı ve Online) tam gizlilik esasına ve mesleki etik ilkelere bağlı kalarak yürütülür.',
+  },
+];
+
 export default function BenKimimClient() {
-  const [openSection, setOpenSection] = useState<string | null>('01');
-
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--sand-light)' }}>
-      {/* Page Header */}
-      <div className="page-header">
-        <div className="page-header-inner">
-          <div className="eyebrow" style={{ marginBottom: 20 }}>Psikolog • Ankara & Online</div>
-          <h1
-            style={{
-              fontFamily: 'Playfair Display, serif',
-              fontSize: 'clamp(2.8rem, 5vw, 4.5rem)',
-              fontWeight: 700,
-              color: 'white',
-              lineHeight: 1.05,
-              marginBottom: 24,
-            }}
-          >
-            Hakkımda
-          </h1>
-          <div className="gold-line" style={{ marginBottom: 24 }} />
-          <p
-            className="crimson"
-            style={{ color: 'rgba(255,255,255,0.55)', fontSize: '1.1rem', maxWidth: 560 }}
-          >
-            Varoluşçu-Psikanalitik yönelimli bir psikolog olarak, kişinin kendi iç dünyasını
-            keşfetmesine alan açmayı hedefliyorum.
-          </p>
-        </div>
-      </div>
+    <div className="ed-page">
+      {/* ── ÜST KAPAK (MASTHEAD) ── */}
+      <header className="ed-hero">
+        <div className="hx-grain" aria-hidden="true" />
+        <div className="hm-wrap">
+          <div className="ed-hero-bar">
+            <span className="ed-hero-eyebrow">Psikolog · Varoluşçu-Psikanalitik Psikoterapi</span>
+            <span className="ed-hero-rule" aria-hidden="true" />
+            <span className="ed-hero-place">Çankaya · Polatlı · Online</span>
+          </div>
 
-      <div className="container-main" style={{ paddingTop: 64, paddingBottom: 80 }}>
-        {/* Two-column layout: Photo + Intro */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(280px, 380px) 1fr',
-            gap: 56,
-            alignItems: 'start',
-            marginBottom: 72,
-          }}
-          className="ben-kimim-hero-grid"
-        >
-          {/* Photo Card */}
-          <div className="ben-kimim-sidebar" style={{ position: 'sticky', top: 90 }}>
-            <div
-              style={{
-                background: 'white',
-                borderRadius: 6,
-                overflow: 'hidden',
-                border: '1px solid rgba(201,169,110,0.2)',
-                boxShadow: '0 8px 40px rgba(10,22,40,0.1)',
-              }}
-            >
-              <div
-                style={{
-                  width: '100%',
-                  aspectRatio: '3/4',
-                  background: 'linear-gradient(160deg, var(--navy) 0%, var(--navy-light) 60%, rgba(201,169,110,0.3) 100%)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <img
-                  src="/pskfurkanmanav.jpeg"
-                  alt="Psikolog Furkan Manav"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
-                />
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 80,
-                    background: 'linear-gradient(transparent, rgba(10,22,40,0.6))',
-                  }}
-                />
-              </div>
-              <div style={{ padding: '24px 28px' }}>
-                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: 700, color: 'var(--navy)', marginBottom: 4 }}>Furkan Manav</div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--gold-dim)', marginBottom: 20 }}>Psikolog</div>
-                <div className="gold-line" style={{ width: '100%', marginBottom: 20 }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {[
-                    { icon: <GraduationCap size={15} color="var(--gold-dim)" />, text: 'Bülent Ecevit Üniversitesi' },
-                    { icon: <Heart size={15} color="var(--gold-dim)" />, text: 'Varoluşçu-Psikanalitik Terapi' },
-                    { icon: <Clock size={15} color="var(--gold-dim)" />, text: '45 dk · Haftada 1-2 seans' },
-                    { icon: <Shield size={15} color="var(--gold-dim)" />, text: 'Gizlilik & Etik' },
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.82rem', color: 'var(--muted)', fontWeight: 500 }}>
-                      {item.icon}
-                      <span>{item.text}</span>
-                    </div>
-                  ))}
+          <div className="ed-hero-grid">
+            <div>
+              <h1 className="ed-hero-title">Hakkımda</h1>
+              <p className="ed-hero-sub">
+                Varoluşçu-Psikanalitik yönelimli bir psikolog olarak, kişinin kendi iç dünyasını, bilinçdışı örüntülerini ve yaşamındaki özgün anlamı keşfetmesine alan açmayı hedefliyorum.
+              </p>
+            </div>
+            <div className="ed-hero-actions">
+              <Link href="/iletisim" className="hx-btn">
+                <span>Seans & İletişim</span>
+                <ArrowRight size={15} strokeWidth={1.6} />
+              </Link>
+              <Link href="/yazilarim" className="hx-link">
+                Yazılarımı İnceleyin
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── ANA GÖVDE (SOL SABİT PORTRE & SAĞ EDİTORYAL BÖLÜMLER) ── */}
+      <div className="hm-wrap ed-body">
+        <div className="bk-layout">
+          {/* Sol Sütun: Karanlık Oda Portre Levhası & Künye */}
+          <aside className="bk-sidebar">
+            <div className="bk-card">
+              <div className="bk-portrait-wrap">
+                <div className="hx-photo bk-photo">
+                  <img
+                    src="/pskfurkanmanav.jpeg"
+                    alt="Psikolog Furkan Manav"
+                  />
+                  <div className="hx-photo-tone" aria-hidden="true" />
                 </div>
-                <Link href="/iletisim" className="btn-gold" style={{ width: '100%', justifyContent: 'center', marginTop: 24, display: 'flex' }}>
-                  İletişime Geç
+              </div>
+
+              <div className="bk-card-body">
+                <div className="bk-card-head">
+                  <h2>Furkan Manav</h2>
+                  <span>Psikolog · Ankara & Online</span>
+                </div>
+
+                <dl className="bk-credentials">
+                  <div>
+                    <dt><GraduationCap size={14} /> Eğitim</dt>
+                    <dd>Bülent Ecevit Üniversitesi Psikoloji (Onur Derecesi)</dd>
+                  </div>
+                  <div>
+                    <dt><Heart size={14} /> Yönelim</dt>
+                    <dd>Varoluşçu-Psikanalitik Psikoterapi</dd>
+                  </div>
+                  <div>
+                    <dt><Clock size={14} /> Seans Çerçevesi</dt>
+                    <dd>45 Dakika · Haftada 1–2 Seans</dd>
+                  </div>
+                  <div>
+                    <dt><MapPin size={14} /> Çalışma Biçimi</dt>
+                    <dd>Çankaya, Polatlı & Online Görüşme</dd>
+                  </div>
+                  <div>
+                    <dt><Shield size={14} /> İlkeler</dt>
+                    <dd>Mesleki Etik, Gizlilik & Düzenli Süpervizyon</dd>
+                  </div>
+                </dl>
+
+                <nav className="bk-toc" aria-label="Sayfa Bölümleri">
+                  <span className="bk-toc-label">İçindekiler</span>
+                  <a href="#giris"><span>01</span> Giriş</a>
+                  <a href="#yaklasim"><span>02</span> Terapötik Yaklaşımım</a>
+                  <a href="#egitim"><span>03</span> Eğitim ve Deneyim</a>
+                  <a href="#calisma-alanlari"><span>04</span> Çalışma Alanları</a>
+                  <a href="#seanslar"><span>05</span> Seanslar Hakkında</a>
+                </nav>
+
+                <Link href="/iletisim" className="hm-btn-dark bk-sidebar-cta">
+                  <span>Görüşme Talebi Oluştur</span>
+                  <ArrowUpRight size={15} strokeWidth={1.6} />
                 </Link>
               </div>
             </div>
-          </div>
+          </aside>
 
-          {/* Accordion Content */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {sections.map((sec, idx) => {
-              const isOpen = openSection === sec.num;
-              return (
-                <div
-                  key={sec.num}
-                  style={{
-                    borderBottom: '1px solid rgba(201,169,110,0.18)',
-                    background: isOpen ? 'white' : 'transparent',
-                    transition: 'background 0.3s ease',
-                    borderRadius: idx === 0 ? '6px 6px 0 0' : idx === sections.length - 1 ? '0 0 6px 6px' : 0,
-                    boxShadow: isOpen ? '0 4px 24px rgba(10,22,40,0.06)' : 'none',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <button
-                    className="ben-kimim-accordion-btn"
-                    onClick={() => setOpenSection(isOpen ? null : sec.num)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 20,
-                      padding: '24px 28px',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.6rem', fontWeight: 900, color: isOpen ? 'var(--gold)' : 'rgba(201,169,110,0.3)', lineHeight: 1, minWidth: 44, transition: 'color 0.3s' }}>{sec.num}</span>
-                    <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: 700, color: isOpen ? 'var(--navy)' : 'var(--charcoal)', flex: 1, transition: 'color 0.3s' }}>{sec.title}</span>
-                    <span style={{ color: 'var(--gold-dim)', flexShrink: 0 }}>
-                      {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </span>
-                  </button>
-
-                  {isOpen && (
-                    <div style={{ padding: '0 28px 32px 92px' }} className="ben-kimim-content-pad">
-                      {sec.content === 'list' ? (
-                        <ul style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                          {sec.listItems?.map((item, i) => (
-                            <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '1rem', color: 'var(--charcoal)', fontFamily: 'Crimson Text, serif', lineHeight: 1.6 }}>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0 }} />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : sec.content === 'sessions' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                          {sec.sessionItems?.map((item, i) => (
-                            <div key={i} style={{ display: 'flex', gap: 16, padding: '16px 20px', background: 'var(--sand-light)', borderRadius: 4, borderLeft: '3px solid var(--gold)' }}>
-                              <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--gold-dim)', minWidth: 60, paddingTop: 2 }}>{item.label}</div>
-                              <div style={{ fontSize: '0.95rem', color: 'var(--charcoal)', lineHeight: 1.65, fontFamily: 'Crimson Text, serif' }}>{item.val}</div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div>
-                          {sec.content.split('\n\n').map((para, i) => (
-                            <p key={i} className="crimson" style={{ fontSize: '1.05rem', color: i === 0 ? 'var(--charcoal)' : '#444', lineHeight: 1.8, marginBottom: i < sec.content.split('\n\n').length - 1 ? 20 : 0, fontWeight: para.startsWith('Neden') ? 700 : 400 }}>{para}</p>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+          {/* Sağ Sütun: Açık Editoryal Bölümler (01 — 05) */}
+          <div className="bk-chapters">
+            {chapters.map((ch) => (
+              <article key={ch.id} id={ch.id} className="bk-chapter">
+                <div className="bk-chapter-bar">
+                  <span className="bk-chapter-no">Bölüm {ch.num}</span>
+                  <span className="bk-chapter-eyebrow">{ch.eyebrow}</span>
+                  <span className="bk-chapter-roman">{ch.roman}</span>
                 </div>
-              );
-            })}
+
+                <h2 className="bk-chapter-title">{ch.title}</h2>
+                {ch.subtitle && <p className="bk-chapter-subtitle">{ch.subtitle}</p>}
+
+                <div className="bk-chapter-prose">
+                  {ch.paragraphs.map((p, idx) => (
+                    <p key={idx}>{p}</p>
+                  ))}
+                </div>
+
+                {ch.pullQuote && (
+                  <blockquote className="bk-pullquote">
+                    <p>“{ch.pullQuote}”</p>
+                  </blockquote>
+                )}
+              </article>
+            ))}
+
+            {/* Bölüm 04: Çalışma Alanları */}
+            <article id="calisma-alanlari" className="bk-chapter">
+              <div className="bk-chapter-bar">
+                <span className="bk-chapter-no">Bölüm 04</span>
+                <span className="bk-chapter-eyebrow">Klinik Odak</span>
+                <span className="bk-chapter-roman">IV</span>
+              </div>
+
+              <h2 className="bk-chapter-title">Çalışma Alanları</h2>
+              <p className="bk-chapter-subtitle">
+                Yetişkin bireysel psikoterapi sürecinde sıklıkla çalıştığım başlıca temalar:
+              </p>
+
+              <div className="bk-areas-grid">
+                {workingAreas.map((area) => (
+                  <div key={area.no} className="bk-area-item">
+                    <span className="bk-area-no">{area.no}.</span>
+                    <div>
+                      <h3>{area.title}</h3>
+                      <p>{area.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            {/* Bölüm 05: Seanslar Hakkında */}
+            <article id="seanslar" className="bk-chapter">
+              <div className="bk-chapter-bar">
+                <span className="bk-chapter-no">Bölüm 05</span>
+                <span className="bk-chapter-eyebrow">Terapi Çerçevesi</span>
+                <span className="bk-chapter-roman">V</span>
+              </div>
+
+              <h2 className="bk-chapter-title">Seanslar Hakkında</h2>
+              <p className="bk-chapter-subtitle">
+                Terapötik sürecin işleyişi, sürekliliği ve etik sınırları:
+              </p>
+
+              <div className="bk-sessions-grid">
+                {sessionSpecs.map((sp) => (
+                  <div key={sp.no} className="bk-session-card">
+                    <div className="bk-session-top">
+                      <span>{sp.label}</span>
+                      <span>{sp.no}</span>
+                    </div>
+                    <h3>{sp.title}</h3>
+                    <p>{sp.val}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
           </div>
         </div>
 
-        {/* CTA Banner */}
-        <div className="ben-kimim-cta" style={{ background: 'var(--navy)', borderRadius: 8, padding: '52px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: -60, right: -60, width: 240, height: 240, background: 'radial-gradient(circle, rgba(201,169,110,0.14) 0%, transparent 70%)', borderRadius: '50%' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 700, color: 'white', lineHeight: 1.2 }}>Kendi hikâyenize yeni bir anlam kazandırmak için buradayım.</h2>
+        {/* Alt Çağrı Levhası */}
+        <div className="bk-bottom-banner">
+          <div>
+            <span className="bk-bottom-eyebrow">Varoluşçu · Psikanalitik Psikoterapi</span>
+            <h2>Kendi hikâyenize yeni bir anlam kazandırmak için buradayım.</h2>
           </div>
-          <div className="ben-kimim-cta-buttons" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
-            <Link href="/iletisim" className="btn-gold">İletişime Geç</Link>
-            <Link href="/forum" className="btn-ghost">Topluluğa Katıl</Link>
+          <div className="bk-bottom-actions">
+            <Link href="/iletisim" className="hx-btn">
+              <span>İletişime Geçin</span>
+              <ArrowRight size={15} strokeWidth={1.6} />
+            </Link>
+            <Link href="/forum" className="hx-link">
+              Logos Psikoloji Forumu’na Katılın
+            </Link>
           </div>
         </div>
       </div>
