@@ -532,7 +532,7 @@ export default function HomePage() {
             <div className="hm-sec-bar">
               <span className="hm-sec-label">Güncel İçerikler</span>
               <span className="hm-sec-rule" aria-hidden="true" />
-              <span className="hm-sec-meta">{latestArticles.length} makale</span>
+              <span className="hm-sec-meta">{latestArticles.length} yazı</span>
             </div>
 
             <div className="hm-header-row">
@@ -635,7 +635,7 @@ export default function HomePage() {
                       )}
 
                       <div className="hm-article-foot">
-                        <span>Makaleyi Oku</span>
+                        <span>Yazıyı Oku</span>
                         <ArrowUpRight size={16} strokeWidth={1.6} className="hm-article-arrow" />
                       </div>
                     </div>

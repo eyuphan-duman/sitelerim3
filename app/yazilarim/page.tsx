@@ -275,7 +275,7 @@ export default function YazilarimPage() {
                     )}
 
                     <div className="hm-article-foot">
-                      <span>Makaleyi Oku</span>
+                      <span>Yazıyı Oku</span>
                       <ArrowUpRight size={16} strokeWidth={1.6} className="hm-article-arrow" />
                     </div>
                   </div>
