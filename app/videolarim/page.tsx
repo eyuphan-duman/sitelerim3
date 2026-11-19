@@ -1,7 +1,7 @@
 'use client';
 // ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - YOUTUBE SHORTS ENTEGRASYONU AKTİF.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Film, Play, X, Share2, CheckCircle, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Film, Play, Pause, X, Share2, CheckCircle, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -85,15 +85,40 @@ export default function VideolarimPage() {
     }
   }, [allReels]);
 
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const dragStartYRef = useRef(0);
+  const dragStartTimeRef = useRef(0);
+  const lastWheelTime = useRef(0);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [showPlayIcon, setShowPlayIcon] = useState(false);
+
+  // Wheel event for desktop Instagram-style vertical scroll
+  const handleWheel = (e: React.WheelEvent) => {
+    const now = Date.now();
+    if (now - lastWheelTime.current < 450) return; // 450ms cooldown
+    if (e.deltaY > 35) {
+      lastWheelTime.current = now;
+      handleNextReel();
+    } else if (e.deltaY < -35) {
+      lastWheelTime.current = now;
+      handlePrevReel();
+    }
+  };
+
   const handleNextReel = () => {
     if (expandedReelIndex !== null && expandedReelIndex < allReels.length - 1) {
       setExpandedReelIndex(expandedReelIndex + 1);
+      setIsPlaying(true);
     }
   };
 
   const handlePrevReel = () => {
     if (expandedReelIndex !== null && expandedReelIndex > 0) {
       setExpandedReelIndex(expandedReelIndex - 1);
+      setIsPlaying(true);
     }
   };
 
@@ -113,36 +138,84 @@ export default function VideolarimPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [expandedReelIndex, allReels]);
 
-  // Touch Swipe Gesture Refs & Handlers for Instagram Reels Style
-  const touchStartY = useRef<number | null>(null);
-  const touchEndY = useRef<number | null>(null);
-
+  // Touch Swipe Gesture Handlers (Instagram Reels Style)
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.targetTouches[0].clientY;
-    touchEndY.current = e.targetTouches[0].clientY;
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.touches[0].clientY;
+    dragStartTimeRef.current = Date.now();
+    setIsDragging(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndY.current = e.targetTouches[0].clientY;
+    if (!isDraggingRef.current) return;
+    const currentY = e.touches[0].clientY;
+    const delta = currentY - dragStartYRef.current;
+    setDragY(delta);
   };
 
   const handleTouchEnd = () => {
-    if (touchStartY.current === null || touchEndY.current === null) return;
-    const diffY = touchStartY.current - touchEndY.current;
-    const minSwipeDistance = 50; // threshold in pixels
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    const elapsed = Date.now() - dragStartTimeRef.current;
+    finishGesture(dragY, elapsed);
+  };
 
-    if (Math.abs(diffY) > minSwipeDistance) {
-      if (diffY > 0) {
-        // Swiped UP -> Next video
-        handleNextReel();
-      } else {
-        // Swiped DOWN -> Previous video
-        handlePrevReel();
-      }
+  // Mouse Drag Handlers for Desktop
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.clientY;
+    dragStartTimeRef.current = Date.now();
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    const delta = e.clientY - dragStartYRef.current;
+    setDragY(delta);
+  };
+
+  const handleMouseUp = () => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    const elapsed = Date.now() - dragStartTimeRef.current;
+    finishGesture(dragY, elapsed);
+  };
+
+  const finishGesture = (deltaY: number, elapsed: number) => {
+    setDragY(0);
+    // Tap detection (< 10px hareket ve < 300ms) -> oynat / duraklat
+    if (Math.abs(deltaY) < 10 && elapsed < 300) {
+      togglePlay();
+      return;
     }
 
-    touchStartY.current = null;
-    touchEndY.current = null;
+    const threshold = 50; // 50px eşik değeri
+    if (deltaY < -threshold) {
+      // Parmağı yukarı kaydırma -> Sonraki Video (Instagram Reels akışı)
+      handleNextReel();
+    } else if (deltaY > threshold) {
+      // Parmağı aşağı kaydırma -> Önceki Video
+      handlePrevReel();
+    }
+  };
+
+  const togglePlay = () => {
+    const iframe = iframeRef.current;
+    const nextState = !isPlaying;
+    if (iframe && iframe.contentWindow) {
+      const command = nextState ? 'playVideo' : 'pauseVideo';
+      try {
+        iframe.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: command, args: '' }),
+          '*'
+        );
+      } catch { }
+    }
+    setIsPlaying(nextState);
+    setShowPlayIcon(true);
+    setTimeout(() => setShowPlayIcon(false), 700);
   };
 
   useEffect(() => {
@@ -353,31 +426,64 @@ export default function VideolarimPage() {
             </button>
           )}
 
-          {/* Dikey Video Çerçevesi (9:16 Sinematik Odak) */}
+          {/* Dikey Video Çerçevesi (9:16 Sinematik Odak & Instagram Jest Kontrolü) */}
           <div 
-            className="relative w-full max-w-[460px] h-full max-h-[92vh] aspect-[9/16] rounded-[24px] overflow-hidden bg-black border border-white/10 shadow-2xl flex flex-col justify-center items-center group"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            className="relative w-full max-w-[460px] h-full max-h-[92vh] aspect-[9/16] rounded-[24px] overflow-hidden bg-black border border-white/10 shadow-2xl flex flex-col justify-center items-center group select-none"
+            onWheel={handleWheel}
+            style={{
+              transform: `translate3d(0, ${dragY}px, 0)`,
+              transition: isDragging ? 'none' : 'transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            }}
           >
+            {/* Üst İlerleme ve İpucu Rozeti */}
+            <div className="absolute top-4 inset-x-0 flex justify-center pointer-events-none z-30">
+              <span className="text-[11px] text-white/70 bg-black/60 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow-lg">
+                <span className="font-semibold">{expandedReelIndex + 1} / {allReels.length}</span>
+                <span className="opacity-40">•</span>
+                <span>Aşağı / Yukarı kaydır</span>
+              </span>
+            </div>
+
+            {/* Video Oynatıcı */}
             {allReels[expandedReelIndex].youtubeId ? (
               <iframe
-                src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1`}
+                ref={iframeRef}
+                src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`}
                 title={allReels[expandedReelIndex].title}
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
-                className="w-full h-full aspect-[9/16] object-cover"
+                className="w-full h-full aspect-[9/16] object-cover pointer-events-none"
               ></iframe>
             ) : (
               <video 
                 src={allReels[expandedReelIndex].videoUrl} 
                 autoPlay 
                 loop 
-                controls
+                controls={false}
                 playsInline
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain pointer-events-none"
               />
+            )}
+
+            {/* ŞEFFAF DOKUNMATİK JEST KATMANI: Instagram Reels gibi parmakla aşağı/yukarı kaydırmayı ve dokunarak duraklatmayı sağlar */}
+            <div
+              className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing touch-none"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              title="Kaydırarak diğer videoya geçin, dokunarak duraklatın"
+            />
+
+            {/* Oynat / Duraklat Görsel Geri Bildirimi */}
+            {showPlayIcon && (
+              <div className="absolute z-30 pointer-events-none w-16 h-16 rounded-full bg-black/70 backdrop-blur-md flex items-center justify-center text-white shadow-2xl transition-all scale-110">
+                {isPlaying ? <Play size={28} fill="currentColor" /> : <Pause size={28} fill="currentColor" />}
+              </div>
             )}
 
             {/* Alt Bilgi & Doğrudan YouTube Etkileşim Barı */}
