@@ -1,7 +1,7 @@
 'use client';
 // ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - YOUTUBE SHORTS ENTEGRASYONU AKTİF.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Film, Play, Pause, X, Share2, CheckCircle, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Film, Play, Pause, X, Share2, CheckCircle, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -39,6 +39,18 @@ export default function VideolarimPage() {
   const { user } = useAuth();
   const [expandedReelIndex, setExpandedReelIndex] = useState<number | null>(null);
   const [watchedVideos, setWatchedVideos] = useState<string[]>([]);
+  const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({});
+  const [dislikedVideos, setDislikedVideos] = useState<Record<string, boolean>>({});
+
+  const toggleLike = (id: string) => {
+    setLikedVideos(prev => ({ ...prev, [id]: !prev[id] }));
+    if (dislikedVideos[id]) setDislikedVideos(prev => ({ ...prev, [id]: false }));
+  };
+
+  const toggleDislike = (id: string) => {
+    setDislikedVideos(prev => ({ ...prev, [id]: !prev[id] }));
+    if (likedVideos[id]) setLikedVideos(prev => ({ ...prev, [id]: false }));
+  };
   
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
   const [firebaseVideos, setFirebaseVideos] = useState<any[]>([]);
@@ -486,34 +498,83 @@ export default function VideolarimPage() {
               </div>
             )}
 
-            {/* Alt Bilgi & Doğrudan YouTube Etkileşim Barı */}
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-5 pt-12 flex flex-col gap-3 pointer-events-auto">
-              <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md">
+            {/* YouTube Shorts Tarzı Dikey Eylem Çubuğu (Sağ Kenar) */}
+            <div className="absolute right-3 bottom-8 z-30 flex flex-col items-center gap-4 pointer-events-auto">
+              {/* Beğen Butonu */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLike(allReels[expandedReelIndex].id);
+                }}
+                className="flex flex-col items-center gap-1 group/btn cursor-pointer"
+                title="Beğen"
+              >
+                <div className={`w-11 h-11 rounded-full backdrop-blur-md border flex items-center justify-center transition-all group-hover/btn:scale-110 active:scale-95 shadow-xl ${likedVideos[allReels[expandedReelIndex].id] ? 'bg-blue-600 border-blue-400 text-white' : 'bg-black/50 border-white/15 text-white'}`}>
+                  <ThumbsUp size={19} className={likedVideos[allReels[expandedReelIndex].id] ? 'fill-white' : ''} />
+                </div>
+                <span className="text-[11px] font-semibold text-white drop-shadow-md">Beğen</span>
+              </button>
+
+              {/* Beğenme (Dislike) Butonu */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleDislike(allReels[expandedReelIndex].id);
+                }}
+                className="flex flex-col items-center gap-1 group/btn cursor-pointer"
+                title="Beğenme"
+              >
+                <div className={`w-11 h-11 rounded-full backdrop-blur-md border flex items-center justify-center transition-all group-hover/btn:scale-110 active:scale-95 shadow-xl ${dislikedVideos[allReels[expandedReelIndex].id] ? 'bg-red-600 border-red-400 text-white' : 'bg-black/50 border-white/15 text-white'}`}>
+                  <ThumbsDown size={19} className={dislikedVideos[allReels[expandedReelIndex].id] ? 'fill-white' : ''} />
+                </div>
+                <span className="text-[11px] font-semibold text-white drop-shadow-md">Beğenme</span>
+              </button>
+
+              {/* Yorum Yap Butonu (Doğrudan YouTube Shorts Yorumlarına Bağlı) */}
+              {allReels[expandedReelIndex].youtubeId && (
+                <a
+                  href={`https://www.youtube.com/shorts/${allReels[expandedReelIndex].youtubeId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1 group/btn cursor-pointer"
+                  title="Yorum Yap"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md border border-white/15 flex items-center justify-center text-white transition-all group-hover/btn:scale-110 active:scale-95 shadow-xl">
+                    <MessageSquare size={19} />
+                  </div>
+                  <span className="text-[11px] font-semibold text-white drop-shadow-md">Yorum</span>
+                </a>
+              )}
+
+              {/* Paylaş Butonu */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShare(allReels[expandedReelIndex].title, allReels[expandedReelIndex].videoUrl);
+                }}
+                className="flex flex-col items-center gap-1 group/btn cursor-pointer"
+                title="Paylaş"
+              >
+                <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md border border-white/15 flex items-center justify-center text-white transition-all group-hover/btn:scale-110 active:scale-95 shadow-xl">
+                  <Share2 size={19} />
+                </div>
+                <span className="text-[11px] font-semibold text-white drop-shadow-md">Paylaş</span>
+              </button>
+            </div>
+
+            {/* Alt Başlık & Kanal Bilgisi (Sol Alt) */}
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent p-5 pr-20 pt-16 flex flex-col gap-1.5 pointer-events-none">
+              <span className="text-xs font-semibold text-white/80 flex items-center gap-1.5 drop-shadow">
+                <span className="w-2 h-2 rounded-full bg-red-600 inline-block" />
+                @pskfurkanmanav
+              </span>
+              <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
                 {allReels[expandedReelIndex].title}
               </h3>
-
-              <div className="flex items-center justify-between gap-3 pt-1">
-                {allReels[expandedReelIndex].youtubeId && (
-                  <a
-                    href={`https://www.youtube.com/shorts/${allReels[expandedReelIndex].youtubeId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-red-600/90 hover:bg-red-600 text-white text-xs font-semibold backdrop-blur transition-all shadow-lg"
-                    title="YouTube'da Aç (Beğen ve Yorum Yap)"
-                  >
-                    <ExternalLink size={13} />
-                    <span>YouTube'da Aç (Beğen / Yorum Yap)</span>
-                  </a>
-                )}
-
-                <button
-                  onClick={() => handleShare(allReels[expandedReelIndex].title, allReels[expandedReelIndex].videoUrl)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur transition-all ml-auto"
-                >
-                  <Share2 size={13} />
-                  <span>Paylaş</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
