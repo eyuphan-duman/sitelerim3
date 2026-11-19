@@ -590,15 +590,17 @@ export default function VideolarimPage() {
                     alt={allReels[expandedReelIndex - 1].title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1">
-                    <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
-                      @pskfurkanmanav
-                    </span>
-                    <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
-                      {allReels[expandedReelIndex - 1].title}
-                    </h3>
-                  </div>
+                  {!allReels[expandedReelIndex - 1].youtubeId && (
+                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1">
+                      <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
+                        @pskfurkanmanav
+                      </span>
+                      <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
+                        {allReels[expandedReelIndex - 1].title}
+                      </h3>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -647,16 +649,18 @@ export default function VideolarimPage() {
                     />
                   )}
 
-                  {/* Alt Başlık & Kanal Bilgisi */}
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1 pointer-events-none z-10">
-                    <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
-                      @pskfurkanmanav
-                    </span>
-                    <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
-                      {allReels[expandedReelIndex].title}
-                    </h3>
-                  </div>
+                  {/* Alt Başlık & Kanal Bilgisi (Sadece yerel Firebase videoları için; YouTube Shorts kendi kanal ve başlık etiketini gösterir) */}
+                  {!allReels[expandedReelIndex].youtubeId && (
+                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1 pointer-events-none z-10">
+                      <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
+                        @pskfurkanmanav
+                      </span>
+                      <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
+                        {allReels[expandedReelIndex].title}
+                      </h3>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -671,15 +675,17 @@ export default function VideolarimPage() {
                     alt={allReels[expandedReelIndex + 1].title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1">
-                    <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
-                      @pskfurkanmanav
-                    </span>
-                    <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
-                      {allReels[expandedReelIndex + 1].title}
-                    </h3>
-                  </div>
+                  {!allReels[expandedReelIndex + 1].youtubeId && (
+                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 pt-14 flex flex-col gap-1">
+                      <span className="text-xs font-medium text-white/75 flex items-center gap-1.5 drop-shadow">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
+                        @pskfurkanmanav
+                      </span>
+                      <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md leading-snug">
+                        {allReels[expandedReelIndex + 1].title}
+                      </h3>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
