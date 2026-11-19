@@ -20,6 +20,7 @@ import {
   Share2, Link2, MessageCircle, Upload
 } from 'lucide-react';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
+import { getArticleCoverImage } from '@/lib/articleCovers';
 import dynamic from 'next/dynamic';
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -280,9 +281,9 @@ export default function ArticleDetailClient({ id, initialArticle }: Props) {
         </header>
 
         {/* ── COVER IMAGE ── */}
-        {article.featuredImage && (
+        {getArticleCoverImage(article) && (
           <div className="yz-detail-cover-minimal">
-            <img src={article.featuredImage} alt={article.title} />
+            <img src={getArticleCoverImage(article)!} alt={article.title} />
           </div>
         )}
 

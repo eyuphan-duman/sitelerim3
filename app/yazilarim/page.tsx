@@ -11,6 +11,7 @@ import { tr } from 'date-fns/locale';
 import { ArrowUpRight, BookOpen, Plus, Search, X } from 'lucide-react';
 
 import { LOCAL_ARTICLES } from '@/data/local-articles';
+import { getArticleCoverImage } from '@/lib/articleCovers';
 
 const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
 
@@ -227,14 +228,15 @@ export default function YazilarimPage() {
               }
               const cardExcerpt = a.excerpt || (a.content ? truncateText(stripHtml(a.content), 185) : '');
               const issueNo = String(idx + 1).padStart(2, '0');
+              const coverImage = getArticleCoverImage(a);
 
               return (
                 <Link href={`/yazilarim/${a.id}`} key={a.id} className="hm-article-card ed-grid-card">
                   <div className="hm-article-media">
-                    {a.featuredImage ? (
+                    {coverImage ? (
                       <>
                         <img
-                          src={a.featuredImage}
+                          src={coverImage}
                           alt={a.title}
                           loading="lazy"
                           className="hm-article-img"

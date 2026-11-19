@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSearch } from '@/contexts/SearchContext';
 import toast from 'react-hot-toast';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
+import { getArticleCoverImage } from '@/lib/articleCovers';
 import { QUOTES } from '@/data/quotes';
 import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
 import { DEFAULT_ABOUT_SETTINGS, AboutSettings } from '@/lib/aboutSettings';
@@ -586,15 +587,16 @@ export default function HomePage() {
 
                 const cardExcerpt = a.excerpt || (a.content ? truncateText(stripHtml(a.content), 175) : '');
                 const issueNo = String(idx + 1).padStart(2, '0');
+                const coverImage = getArticleCoverImage(a);
 
                 return (
                   <Link href={`/yazilarim/${a.id}`} key={a.id} className="hm-article-card">
                     {/* Görsel veya Editoryal Monografi Kapağı */}
                     <div className="hm-article-media">
-                      {a.featuredImage ? (
+                      {coverImage ? (
                         <>
                           <img
-                            src={a.featuredImage}
+                            src={coverImage}
                             alt={a.title}
                             className="hm-article-img"
                           />

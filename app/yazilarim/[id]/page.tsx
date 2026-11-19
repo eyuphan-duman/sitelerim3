@@ -1,5 +1,6 @@
 import { cleanHtml, jsonLdString } from '@/lib/sanitizeServer';
 import { LOCAL_ARTICLES } from '@/data/local-articles';
+import { getArticleCoverImage } from '@/lib/articleCovers';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
@@ -66,7 +67,8 @@ export async function generateMetadata({ params }: { params: any }): Promise<Met
   const description = article.excerpt
     ? stripHtml(article.excerpt).slice(0, 160)
     : stripHtml(article.content).slice(0, 160);
-  const image = article.featuredImage || DEFAULT_IMAGE;
+  const coverImage = getArticleCoverImage(article);
+  const image = coverImage ? (coverImage.startsWith('http') ? coverImage : `${SITE_URL}${coverImage}`) : DEFAULT_IMAGE;
   const url = `${SITE_URL}/yazilarim/${id}`;
 
   const fullTitle = `${article.title} | Psikolog Furkan Manav`;
