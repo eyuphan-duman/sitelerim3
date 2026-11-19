@@ -46,3 +46,4 @@ export function getArticleCoverImage(article: any): string | null {
 
   return null;
 }
+
