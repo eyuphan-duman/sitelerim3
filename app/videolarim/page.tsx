@@ -1,7 +1,7 @@
 'use client';
 // ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - YOUTUBE SHORTS ENTEGRASYONU AKTİF.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Film, Play, Pause, X, Share2, CheckCircle, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Film, Play, Pause, X, Share2, CheckCircle, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -71,6 +71,17 @@ export default function VideolarimPage() {
 
   const allReels = useMemo(() => [...firebaseVideos, ...youtubeShorts], [firebaseVideos, youtubeShorts]);
 
+  const [isMuted, setIsMuted] = useState(false);
+
+  const openReel = (index: number) => {
+    const isMobile = typeof window !== 'undefined' && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768);
+    if (isMobile) {
+      setIsMuted(true);
+    }
+    setExpandedReelIndex(index);
+    setIsPlaying(true);
+  };
+
   // URL query parameter check to auto-open video
   useEffect(() => {
     if (allReels.length > 0) {
@@ -79,11 +90,31 @@ export default function VideolarimPage() {
       if (urlId) {
         const idx = allReels.findIndex(r => r.id === urlId);
         if (idx !== -1) {
-          setExpandedReelIndex(idx);
+          openReel(idx);
         }
       }
     }
   }, [allReels]);
+
+  // YouTube player state synchronization
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data && data.event === 'infoDelivery' && data.info) {
+          if (typeof data.info.playerState === 'number') {
+            if (data.info.playerState === 1) {
+              setIsPlaying(true);
+            } else if (data.info.playerState === 2) {
+              setIsPlaying(false);
+            }
+          }
+        }
+      } catch {}
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const [dragY, setDragY] = useState(0);
   const [animatingTarget, setAnimatingTarget] = useState<'next' | 'prev' | 'cancel' | null>(null);
@@ -232,13 +263,55 @@ export default function VideolarimPage() {
     finishGesture(currentDragYRef.current, elapsed);
   };
 
+  const unmuteVideo = () => {
+    setIsMuted(false);
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'unMute', args: '' }),
+          '*'
+        );
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }),
+          '*'
+        );
+      } catch {}
+    }
+  };
+
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        const command = nextMuted ? 'mute' : 'unMute';
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: command, args: '' }),
+          '*'
+        );
+        if (!nextMuted) {
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }),
+            '*'
+          );
+        }
+      } catch {}
+    }
+  };
+
   const finishGesture = (deltaY: number, elapsed: number) => {
     if (isTransitioningRef.current) return;
 
-    // Tap detection (< 10px hareket ve < 280ms) -> oynat / duraklat
+    // Tap detection (< 10px hareket ve < 280ms)
     if (Math.abs(deltaY) < 10 && elapsed < 280) {
       setDragY(0);
-      togglePlay();
+      if (isMuted) {
+        unmuteVideo();
+        toast('Ses açıldı', { icon: '🔊', duration: 1500 });
+      } else {
+        togglePlay();
+      }
       return;
     }
 
@@ -371,7 +444,7 @@ export default function VideolarimPage() {
             return (
               <div
                 key={reel.id}
-                onClick={() => setExpandedReelIndex(index)}
+                onClick={() => openReel(index)}
                 className="hm-video-card ed-video-item"
                 style={{ cursor: 'pointer' }}
               >
@@ -538,11 +611,28 @@ export default function VideolarimPage() {
                   {allReels[expandedReelIndex].youtubeId ? (
                     <iframe
                       ref={iframeRef}
-                      src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`}
+                      key={allReels[expandedReelIndex].youtubeId}
+                      src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=${isMuted ? 1 : 0}&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`}
                       title={allReels[expandedReelIndex].title}
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       allowFullScreen
+                      onLoad={() => {
+                        if (iframeRef.current && iframeRef.current.contentWindow) {
+                          try {
+                            iframeRef.current.contentWindow.postMessage(
+                              JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
+                              '*'
+                            );
+                            if (!isMuted) {
+                              iframeRef.current.contentWindow.postMessage(
+                                JSON.stringify({ event: 'command', func: 'unMute', args: '' }),
+                                '*'
+                              );
+                            }
+                          } catch {}
+                        }
+                      }}
                       className="w-full h-full aspect-[9/16] object-cover pointer-events-none"
                     />
                   ) : (
@@ -550,6 +640,7 @@ export default function VideolarimPage() {
                       src={allReels[expandedReelIndex].videoUrl}
                       autoPlay
                       loop
+                      muted={isMuted}
                       controls={false}
                       playsInline
                       className="w-full h-full object-contain pointer-events-none"
@@ -612,6 +703,26 @@ export default function VideolarimPage() {
                 {isPlaying ? <Play size={28} fill="currentColor" /> : <Pause size={28} fill="currentColor" />}
               </div>
             )}
+
+            {/* Ses Aç / Kapat Butonu (Mobil & Masaüstü) */}
+            <button
+              onClick={toggleMute}
+              className={`absolute top-4 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md transition-all shadow-lg active:scale-95 ${
+                isMuted
+                  ? 'bg-red-600/90 hover:bg-red-600 text-white animate-pulse'
+                  : 'bg-black/55 hover:bg-black/75 text-white/90 border border-white/20'
+              }`}
+              title={isMuted ? 'Sesi Aç' : 'Sesi Kapat'}
+            >
+              {isMuted ? (
+                <>
+                  <VolumeX size={16} strokeWidth={2.2} />
+                  <span className="text-xs font-semibold tracking-wide">Sesi Aç</span>
+                </>
+              ) : (
+                <Volume2 size={16} strokeWidth={2} />
+              )}
+            </button>
           </div>
         </div>
       )}
