@@ -164,7 +164,7 @@ export default function HomePage() {
           setRandomVideos(data.shorts.slice(0, 4));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -207,7 +207,7 @@ export default function HomePage() {
             return { ...p, authorPhotoURL: u.photoURL || p.authorPhotoURL, authorIsPsychologist: psych };
           }));
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -581,7 +581,7 @@ export default function HomePage() {
                 if (articleDate) {
                   try {
                     formattedDate = format(new Date(articleDate), 'd MMMM yyyy', { locale: tr });
-                  } catch {}
+                  } catch { }
                 }
 
                 const cardExcerpt = a.excerpt || (a.content ? truncateText(stripHtml(a.content), 175) : '');
