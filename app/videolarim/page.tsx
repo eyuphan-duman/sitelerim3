@@ -358,9 +358,12 @@ export default function VideolarimPage() {
           {allReels.map((reel, index) => {
             const hasWatched = watchedVideos.includes(reel.id);
             const isLocal = !!YOUTUBE_SHORTS.find(r => r.id === reel.id);
-            const thumbUrl = reel.youtubeId
-              ? `https://img.youtube.com/vi/${reel.youtubeId}/hqdefault.jpg`
+            const coverUrl = reel.youtubeId
+              ? `/video-covers/${reel.youtubeId}.jpg`
               : `${reel.videoUrl}#t=0.5`;
+            const fallbackUrl = reel.youtubeId
+              ? `https://i.ytimg.com/vi/${reel.youtubeId}/oar2.jpg`
+              : '';
 
             return (
               <div
@@ -369,24 +372,41 @@ export default function VideolarimPage() {
                 className="hm-video-card ed-video-item"
                 style={{ cursor: 'pointer' }}
               >
-                <div className="hm-video-frame">
+                <div className="hm-video-frame is-custom-cover">
                   {reel.youtubeId ? (
                     <img
-                      src={thumbUrl}
+                      src={coverUrl}
                       alt={reel.title}
-                      className="hm-video-thumb"
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                      loading="lazy"
+                      onError={(e) => {
+                        if (fallbackUrl && e.currentTarget.src !== fallbackUrl) {
+                          e.currentTarget.src = fallbackUrl;
+                        }
+                      }}
+                      className="hm-video-cover-img"
                     />
                   ) : (
-                    <video
-                      src={thumbUrl}
-                      preload="metadata"
-                      muted
-                      className="hm-video-thumb"
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                    <>
+                      <video
+                        src={coverUrl}
+                        preload="metadata"
+                        muted
+                        className="hm-video-thumb"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <div className="hm-video-overlay" aria-hidden="true" />
+                      <div className="hm-video-play" aria-hidden="true">
+                        <Play size={16} fill="currentColor" strokeWidth={1.5} style={{ marginLeft: 2 }} />
+                      </div>
+                      <div className="hm-video-bottom">
+                        <h2 className="hm-video-title">{reel.title}</h2>
+                        <span className="hm-video-cta">
+                          <span>Kaydı İzle</span>
+                          <ArrowUpRight size={14} strokeWidth={1.6} />
+                        </span>
+                      </div>
+                    </>
                   )}
-                  <div className="hm-video-overlay" aria-hidden="true" />
 
                   {hasWatched && (
                     <span className="ed-video-watched" style={{ position: 'absolute', top: 14, right: 14, zIndex: 3 }}>
@@ -403,18 +423,6 @@ export default function VideolarimPage() {
                       <X size={13} strokeWidth={2.5} />
                     </button>
                   )}
-
-                  <div className="hm-video-play" aria-hidden="true">
-                    <Play size={16} fill="currentColor" strokeWidth={1.5} style={{ marginLeft: 2 }} />
-                  </div>
-
-                  <div className="hm-video-bottom">
-                    <h2 className="hm-video-title">{reel.title}</h2>
-                    <span className="hm-video-cta">
-                      <span>Kaydı İzle</span>
-                      <ArrowUpRight size={14} strokeWidth={1.6} />
-                    </span>
-                  </div>
                 </div>
               </div>
             );

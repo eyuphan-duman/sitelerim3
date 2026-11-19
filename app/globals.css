@@ -1484,6 +1484,23 @@ body {
   transform: translateY(-4px);
 }
 
+.hm-video-frame.is-custom-cover {
+  aspect-ratio: 9 / 16;
+  padding: 0;
+}
+
+.hm-video-cover-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.hm-video-card:hover .hm-video-cover-img {
+  transform: scale(1.025);
+}
+
 .hm-video-frame {
   position: relative;
   aspect-ratio: 9 / 15;

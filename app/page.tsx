@@ -669,35 +669,27 @@ export default function HomePage() {
 
             <div className="hm-videos-grid">
               {randomVideos.map((video) => {
-                const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                const coverUrl = `/video-covers/${video.youtubeId}.jpg`;
+                const fallbackUrl = `https://i.ytimg.com/vi/${video.youtubeId}/oar2.jpg`;
                 return (
                   <Link
                     href={`/videolarim?id=${video.id}`}
                     key={video.id}
                     className="hm-video-card"
+                    aria-label={video.title}
                   >
-                    <div className="hm-video-frame">
-                      <Image
-                        src={thumbUrl}
+                    <div className="hm-video-frame is-custom-cover">
+                      <img
+                        src={coverUrl}
                         alt={video.title}
-                        fill
-                        sizes="(max-width: 768px) 80vw, (max-width: 1200px) 50vw, 25vw"
-                        style={{ objectFit: 'cover' }}
-                        className="hm-video-thumb"
+                        loading="lazy"
+                        onError={(e) => {
+                          if (e.currentTarget.src !== fallbackUrl) {
+                            e.currentTarget.src = fallbackUrl;
+                          }
+                        }}
+                        className="hm-video-cover-img"
                       />
-                      <div className="hm-video-overlay" aria-hidden="true" />
-
-                      <div className="hm-video-play" aria-hidden="true">
-                        <Play size={17} fill="currentColor" strokeWidth={1.5} style={{ marginLeft: 2 }} />
-                      </div>
-
-                      <div className="hm-video-bottom">
-                        <h3 className="hm-video-title">{video.title}</h3>
-                        <span className="hm-video-cta">
-                          <span>Kaydı İzle</span>
-                          <ArrowUpRight size={14} strokeWidth={1.6} />
-                        </span>
-                      </div>
                     </div>
                   </Link>
                 );
