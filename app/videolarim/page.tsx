@@ -1,12 +1,11 @@
 'use client';
 // ANTIGRAVITY: BU DOSYA GÜNCELLENMİŞTİR - YOUTUBE SHORTS ENTEGRASYONU AKTİF.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Film, Play, Heart, MessageCircle, Send, X, Share2, ThumbsUp, ThumbsDown, CheckCircle, ArrowRight, ArrowUpRight } from 'lucide-react';
+import { Film, Play, X, Share2, CheckCircle, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import toast from 'react-hot-toast';
-import AuthModal from '@/components/AuthModal';
 import Link from 'next/link';
 
 const YOUTUBE_SHORTS = [
@@ -36,31 +35,9 @@ const YOUTUBE_SHORTS = [
   { id: '5RqlJYyZB_E', title: "PARADOKSAL NİYET", youtubeId: '5RqlJYyZB_E' }
 ];
 
-interface CommentType {
-  id: string;
-  user: string;
-  userId: string;
-  text: string;
-  likes: number;
-  dislikes: number;
-  replies: { id: string; user: string; text: string; userId: string; }[];
-}
-
 export default function VideolarimPage() {
   const { user } = useAuth();
-  const [authOpen, setAuthOpen] = useState(false);
-
-  const [reactions, setReactions] = useState<Record<string, boolean>>({}); // ReelId -> Liked
-  const [dislikes, setDislikes] = useState<Record<string, boolean>>({}); // ReelId -> Disliked
-  const [comments, setComments] = useState<Record<string, CommentType[]>>({});
-  const [newComment, setNewComment] = useState('');
-  
   const [expandedReelIndex, setExpandedReelIndex] = useState<number | null>(null);
-  const [mobileCommentsOpen, setMobileCommentsOpen] = useState(false);
-  
-  const [replyingTo, setReplyingTo] = useState<{ reelId: string, commentId: string } | null>(null);
-  const [replyText, setReplyText] = useState('');
-
   const [watchedVideos, setWatchedVideos] = useState<string[]>([]);
   
   const ADMIN_EMAILS = ['pskfurkan.manav@gmail.com', 'furkan@furkanmanav.com'];
@@ -182,18 +159,7 @@ export default function VideolarimPage() {
     } else {
       document.body.style.overflow = 'auto';
     }
-    setMobileCommentsOpen(false);
   }, [expandedReelIndex]);
-
-  const toggleLikeReel = (id: string) => {
-    setReactions(prev => ({ ...prev, [id]: !prev[id] }));
-    if (dislikes[id]) setDislikes(prev => ({ ...prev, [id]: false }));
-  };
-
-  const toggleDislikeReel = (id: string) => {
-    setDislikes(prev => ({ ...prev, [id]: !prev[id] }));
-    if (reactions[id]) setReactions(prev => ({ ...prev, [id]: false }));
-  };
 
   const deleteVideoDoc = async (id: string, isLocal: boolean, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -212,115 +178,21 @@ export default function VideolarimPage() {
   };
 
   const handleShare = async (title: string, url: string) => {
+    const reel = expandedReelIndex !== null ? allReels[expandedReelIndex] : null;
+    const shareUrl = url || (reel?.youtubeId ? `https://youtube.com/shorts/${reel.youtubeId}` : window.location.href);
     if (navigator.share) {
       try {
-        const reel = expandedReelIndex !== null ? allReels[expandedReelIndex] : null;
         await navigator.share({
           title: title,
           text: title + ' - Psikolog Furkan Manav Videoları',
-          url: url || (reel?.youtubeId ? `https://youtube.com/shorts/${reel.youtubeId}` : window.location.href),
+          url: shareUrl,
         });
       } catch (err) {
         console.log("Shared cancelled or failed", err);
       }
     } else {
-      alert("Cihazınızın paylaşma özelliği desteklenmiyor, bağlantı kopyalandı!");
-      navigator.clipboard.writeText(window.location.href);
-    }
-  };
-
-  const submitComment = (id: string, e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || user.isAnonymous) return setAuthOpen(true);
-    if (!newComment.trim()) return;
-
-    const nComm: CommentType = {
-      id: Date.now().toString(),
-      user: user.displayName || user.email?.split('@')[0] || 'Kullanıcı',
-      userId: user.uid,
-      text: newComment,
-      likes: 0,
-      dislikes: 0,
-      replies: []
-    };
-
-    setComments(prev => ({
-      ...prev,
-      [id]: [...(prev[id] || []), nComm]
-    }));
-    setNewComment('');
-  };
-
-  const submitReply = (reelId: string, commentId: string, e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || user.isAnonymous) return setAuthOpen(true);
-    if (!replyText.trim()) return;
-
-    setComments(prev => {
-      const clone = { ...prev };
-      const reelComms = clone[reelId] ? [...clone[reelId]] : [];
-      const cIdx = reelComms.findIndex(c => c.id === commentId);
-      if (cIdx >= 0) {
-        reelComms[cIdx] = {
-          ...reelComms[cIdx],
-          replies: [...reelComms[cIdx].replies, {
-            id: Date.now().toString(),
-            user: user.displayName || user.email?.split('@')[0] || 'Kullanıcı',
-            userId: user.uid,
-            text: replyText
-          }]
-        };
-      }
-      clone[reelId] = reelComms;
-      return clone;
-    });
-
-    setReplyText('');
-    setReplyingTo(null);
-  };
-
-  const rateComment = (reelId: string, commentId: string, type: 'up' | 'down') => {
-    setComments(prev => {
-      const clone = { ...prev };
-      const rC = clone[reelId] ? [...clone[reelId]] : [];
-      const idx = rC.findIndex(c => c.id === commentId);
-      if (idx >= 0) {
-        rC[idx] = { ...rC[idx] };
-        if (type === 'up') rC[idx].likes += 1;
-        if (type === 'down') rC[idx].dislikes += 1;
-      }
-      clone[reelId] = rC;
-      return clone;
-    });
-  };
-
-  const deleteComment = (reelId: string, commentId: string) => {
-    if (confirm('Bu yorumu silmek istediğinize emin misiniz?')) {
-      setComments(prev => {
-        const clone = { ...prev };
-        clone[reelId] = (clone[reelId] || []).filter(c => c.id !== commentId);
-        return clone;
-      });
-      toast.success('Yorum silindi.');
-    }
-  };
-
-  const deleteReply = (reelId: string, commentId: string, replyId: string) => {
-    if (confirm('Bu yanıtı silmek istediğinize emin misiniz?')) {
-      setComments(prev => {
-        const clone = { ...prev };
-        const reelComms = clone[reelId] ? [...clone[reelId]] : [];
-        const cIdx = reelComms.findIndex(c => c.id === commentId);
-        if (cIdx >= 0) {
-          reelComms[cIdx] = {
-            ...reelComms[cIdx],
-            replies: reelComms[cIdx].replies.filter(r => r.id !== replyId)
-          };
-        }
-        clone[reelId] = reelComms;
-        return clone;
-      });
-      toast.success('Yanıt silindi.');
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Bağlantı kopyalandı!');
     }
   };
 
@@ -446,258 +318,100 @@ export default function VideolarimPage() {
         </div>
       </div>
 
-      {/* ─── FULLSCREEN REEL & SIDE-BY-SIDE COMMENTS ─── */}
+      {/* ─── FULLSCREEN REEL THEATER (SADE VE ODAKLANMIŞ OYNATICI) ─── */}
       {expandedReelIndex !== null && (
-        <div className="fixed inset-0 z-[2000] bg-black/95 flex items-center justify-center fade-in">
+        <div className="fixed inset-0 z-[2000] bg-black/95 flex items-center justify-center fade-in p-4">
           
+          {/* Kapat Butonu */}
           <button 
             onClick={() => setExpandedReelIndex(null)}
-            className="absolute top-6 left-6 z-[2100] w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors"
+            className="absolute top-5 right-5 z-[2100] w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors"
+            title="Kapat (Esc)"
           >
-            <X size={24} />
+            <X size={22} />
           </button>
 
-          {/* Symmetrical Dual-Pane Layout (Video Left, Comments Right) */}
-          <div className="relative w-full h-full max-w-[1200px] md:h-[90vh] md:rounded-[20px] overflow-hidden flex flex-col md:flex-row bg-[#0a0a0a] border border-white/10 shadow-2xl">
-            
-            {/* Video Pane */}
-            <div 
-              className="flex-1 relative bg-black flex flex-col justify-center h-full md:h-full group"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+          {/* Önceki Video (Desktop) */}
+          {expandedReelIndex > 0 && (
+            <button
+              onClick={handlePrevReel}
+              className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-[2100] w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full items-center justify-center text-white transition-colors"
+              title="Önceki Video (Sol / Yukarı Ok)"
             >
-               {/* Transparent gesture overlay for mobile swipe navigation (over the iframe) - pointer-events-none to prevent blocking player controls */}
-               <div className="absolute inset-0 z-10 md:hidden bg-transparent pointer-events-none" />
-               
-               {allReels[expandedReelIndex].youtubeId ? (
-                 <iframe
-                   src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1`}
-                   title={allReels[expandedReelIndex].title}
-                   frameBorder="0"
-                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                   allowFullScreen
-                   className="w-full h-full aspect-[9/16] max-h-full mx-auto"
-                 ></iframe>
-               ) : (
-                 <video 
-                    src={allReels[expandedReelIndex].videoUrl} 
-                    autoPlay 
-                    loop 
-                    controls
-                    playsInline
-                    className="w-auto h-full max-w-full mx-auto object-contain"
-                  />
-               )}
-                
+              <ChevronLeft size={24} />
+            </button>
+          )}
 
-                {/* Watch Badge */}
-                <div className="absolute top-4 right-4 pointer-events-none bg-black/50 text-white/80 text-[12px] px-3 py-1 rounded-full backdrop-blur">
-                  Daha önce izledin!
-                </div>
+          {/* Sonraki Video (Desktop) */}
+          {expandedReelIndex < allReels.length - 1 && (
+            <button
+              onClick={handleNextReel}
+              className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 z-[2100] w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full items-center justify-center text-white transition-colors"
+              title="Sonraki Video (Sağ / Aşağı Ok)"
+            >
+              <ChevronRight size={24} />
+            </button>
+          )}
 
-                {/* TikTok/Reels Style Floating Vertical Actions on the right edge of the video */}
-                <div className="absolute right-4 bottom-24 flex flex-col gap-5 z-20">
-                    <button 
-                      onClick={() => toggleLikeReel(allReels[expandedReelIndex!].id)}
-                      className="flex flex-col items-center gap-1 group/btn"
-                    >
-                      <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center flex-col transition-all group-hover/btn:scale-105 group-active/btn:scale-95 shadow-xl">
-                        <Heart size={24} className={`transition-colors ${reactions[allReels[expandedReelIndex!].id] ? 'text-red-500 fill-red-500' : 'text-white'}`} />
-                      </div>
-                      <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">{reactions[allReels[expandedReelIndex!].id] ? 1 : 0}</span>
-                    </button>
-                    
-                    <button 
-                       className="flex flex-col items-center gap-1 group/btn"
-                       onClick={() => toggleDislikeReel(allReels[expandedReelIndex!].id)}
-                    >
-                      <div className={`w-10 h-10 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center flex-col transition-all group-hover/btn:scale-105 active:scale-95 shadow-xl`}>
-                         <ThumbsDown size={20} className={`transition-colors ${dislikes[allReels[expandedReelIndex!].id] ? 'text-red-500' : 'text-white'}`} />
-                      </div>
-                      <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">{dislikes[allReels[expandedReelIndex!].id] ? 1 : 0}</span>
-                    </button>
-
-                    {/* Yorum Yap / Göster Butonu (Mobil için sağda konumlandırıldı) */}
-                    <button 
-                      onClick={() => setMobileCommentsOpen(prev => !prev)}
-                      className="flex flex-col items-center gap-1 group/btn md:hidden"
-                    >
-                      <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center flex-col transition-all group-hover/btn:scale-105 group-active/btn:scale-95 shadow-xl">
-                        <MessageCircle size={24} className="text-white" />
-                      </div>
-                      <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">
-                        {(comments[allReels[expandedReelIndex!].id] || []).length}
-                      </span>
-                    </button>
-
-                    <button 
-                      onClick={() => handleShare(allReels[expandedReelIndex!].title, allReels[expandedReelIndex!].videoUrl)}
-                      className="flex flex-col items-center gap-1 group/btn"
-                    >
-                      <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center flex-col transition-all group-hover/btn:scale-105 group-active/btn:scale-95 shadow-xl">
-                        <Share2 size={24} className="text-white" />
-                      </div>
-                      <span className="text-white text-[12px] font-bold drop-shadow-md text-shadow">Paylaş</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Backdrop for mobile comments drawer */}
-            {mobileCommentsOpen && (
-              <div 
-                onClick={() => setMobileCommentsOpen(false)}
-                className="fixed inset-0 bg-black/60 z-[2040] md:hidden transition-opacity duration-300"
+          {/* Dikey Video Çerçevesi (9:16 Sinematik Odak) */}
+          <div 
+            className="relative w-full max-w-[460px] h-full max-h-[92vh] aspect-[9/16] rounded-[24px] overflow-hidden bg-black border border-white/10 shadow-2xl flex flex-col justify-center items-center group"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {allReels[expandedReelIndex].youtubeId ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${allReels[expandedReelIndex].youtubeId}?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1`}
+                title={allReels[expandedReelIndex].title}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full h-full aspect-[9/16] object-cover"
+              ></iframe>
+            ) : (
+              <video 
+                src={allReels[expandedReelIndex].videoUrl} 
+                autoPlay 
+                loop 
+                controls
+                playsInline
+                className="w-full h-full object-contain"
               />
             )}
 
-            {/* Interactions Pane (Right Sidebar with Comments) */}
-            <div className={`
-              w-full md:w-[400px] 
-              fixed md:relative bottom-0 left-0 right-0 z-[2050] md:z-auto
-              h-[65vh] md:h-full 
-              flex flex-col border-t md:border-t-0 md:border-l border-white/10 bg-[#121212]
-              transition-all duration-300 ease-in-out rounded-t-[20px] md:rounded-t-none
-              ${mobileCommentsOpen ? 'translate-y-0 opacity-100' : 'translate-y-full md:translate-y-0 opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto'}
-            `}>
-              
-              {/* Header */}
-              <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                 <div className="text-white text-md font-bold flex items-center gap-2">
-                    <MessageCircle size={20}/>
-                    Yorumlar ({(comments[allReels[expandedReelIndex!].id] || []).length})
-                 </div>
-                 {/* Kapat butonu (Sadece mobilde çekmeceyi kapatmak için) */}
-                 <button 
-                   onClick={() => setMobileCommentsOpen(false)}
-                   className="md:hidden text-white/60 hover:text-white p-1 transition-colors"
-                 >
-                   <X size={20} />
-                 </button>
-              </div>
+            {/* Alt Bilgi & Doğrudan YouTube Etkileşim Barı */}
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-5 pt-12 flex flex-col gap-3 pointer-events-auto">
+              <h3 className="text-white text-sm md:text-base font-semibold line-clamp-2 drop-shadow-md">
+                {allReels[expandedReelIndex].title}
+              </h3>
 
-              {/* Comments List */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
-                {(comments[allReels[expandedReelIndex!].id] || []).length === 0 ? (
-                    <div className="text-center text-white/40 mt-16 font-medium text-sm">
-                       Bu videoya henüz yorum yapılmamış.<br/>Sessizliği ilk bozan sen ol!
-                    </div>
-                ) : (
-                  (comments[allReels[expandedReelIndex!].id] || []).map((c) => (
-                    <div key={c.id} className="flex gap-3">
-                      <Link href={`/forum/profil/${encodeURIComponent(c.user)}`}>
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-orange-400 flex items-center justify-center font-bold text-white text-[12px] shrink-0 cursor-pointer hover:scale-110 transition-transform">
-                          {c.user.charAt(0).toUpperCase()}
-                        </div>
-                      </Link>
-                      <div className="flex-1">
-                        <div className="font-semibold text-[13px] text-white/80">
-                          <Link href={`/forum/profil/${encodeURIComponent(c.user)}`} className="hover:text-white transition-colors cursor-pointer">
-                            {c.user}
-                          </Link>
-                          <span className="text-white/30 font-normal ml-2 text-[11px]">Az önce</span>
-                        </div>
-                        <div className="text-white text-[14px] mt-1 leading-snug">{c.text}</div>
-                        
-                        {/* Rating & Reply Actions */}
-                        <div className="flex items-center gap-4 mt-2">
-                           <button onClick={() => rateComment(allReels[expandedReelIndex!].id, c.id, 'up')} className="text-white/40 hover:text-green-400 flex items-center gap-1 text-[11px]"><ThumbsUp size={12}/> {c.likes > 0 && c.likes}</button>
-                           <button onClick={() => rateComment(allReels[expandedReelIndex!].id, c.id, 'down')} className="text-white/40 hover:text-red-400 flex items-center gap-1 text-[11px]"><ThumbsDown size={12}/> {c.dislikes > 0 && c.dislikes}</button>
-                           <button 
-                             onClick={() => setReplyingTo({ reelId: allReels[expandedReelIndex!].id, commentId: c.id })}
-                             className="text-white/40 hover:text-white/80 text-[12px] font-medium transition-colors"
-                           >
-                             Yanıtla
-                           </button>
-                           {(user?.uid === c.userId || user?.email === 'pskfurkan.manav@gmail.com') && (
-                             <button 
-                               onClick={() => deleteComment(allReels[expandedReelIndex!].id, c.id)}
-                               className="text-red-500/70 hover:text-red-500 text-[11px] font-bold transition-colors ml-auto"
-                             >
-                               SİL
-                             </button>
-                           )}
-                        </div>
-
-                        {/* Replies */}
-                        {c.replies && c.replies.length > 0 && (
-                          <div className="mt-3 pl-3 border-l-2 border-white/10 space-y-3">
-                            {c.replies.map(rep => (
-                              <div key={rep.id} className="flex gap-2 relative group">
-                                <Link href={`/forum/profil/${encodeURIComponent(rep.user)}`}>
-                                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-[10px] shrink-0 cursor-pointer hover:bg-white/30 transition-colors">
-                                    {rep.user.charAt(0).toUpperCase()}
-                                  </div>
-                                </Link>
-                                <div className="flex-1">
-                                  <div className="font-semibold text-[12px] text-white/80">
-                                    <Link href={`/forum/profil/${encodeURIComponent(rep.user)}`} className="hover:text-white transition-colors cursor-pointer">
-                                      {rep.user}
-                                    </Link>
-                                  </div>
-                                  <div className="text-white/90 text-[13px] leading-snug">{rep.text}</div>
-                                  {(user?.uid === rep.userId || user?.email === 'pskfurkan.manav@gmail.com') && (
-                                    <button 
-                                      onClick={() => deleteReply(allReels[expandedReelIndex!].id, c.id, rep.id)}
-                                      className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 text-red-500 text-[10px] font-bold"
-                                    >
-                                      SİL
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Reply Input block */}
-                        {replyingTo?.commentId === c.id && (
-                          <form onSubmit={(e) => submitReply(allReels[expandedReelIndex!].id, c.id, e)} className="mt-2 flex items-center gap-2">
-                             <input 
-                               type="text" 
-                               value={replyText} 
-                               onChange={e => setReplyText(e.target.value)} 
-                               placeholder="Yanıt ekle..." 
-                               autoFocus
-                               className="flex-1 bg-white/5 border border-white/10 rounded-full py-1.5 px-3 text-[12px] text-white outline-none"
-                             />
-                             <button type="submit" className="text-blue-400 text-[12px] font-bold">Gönder</button>
-                          </form>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Main Comment Input */}
-              <div className="p-4 border-t border-white/5 bg-black/40">
-                <form onSubmit={(e) => submitComment(allReels[expandedReelIndex!].id, e)} className="relative flex items-center">
-                  <input 
-                    type="text" 
-                    placeholder={user && !user.isAnonymous ? "Ne düşünüyorsun?" : "Yorum yapmak için giriş yap..."}
-                    className="w-full bg-white/10 border border-white/10 rounded-[20px] py-3 pl-4 pr-12 text-[14px] text-white placeholder-white/40 outline-none focus:bg-white/15 focus:border-white/20"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onClick={() => { if(!user || user.isAnonymous) setAuthOpen(true); }}
-                  />
-                  <button 
-                    type="submit" 
-                    disabled={!newComment.trim() || !user || user.isAnonymous}
-                    className="absolute right-2 top-2 bottom-2 w-9 rounded-full bg-white flex items-center justify-center text-black disabled:bg-white/20 disabled:text-white/40 hover:scale-105 active:scale-95 transition-all"
+              <div className="flex items-center justify-between gap-3 pt-1">
+                {allReels[expandedReelIndex].youtubeId && (
+                  <a
+                    href={`https://www.youtube.com/shorts/${allReels[expandedReelIndex].youtubeId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-red-600/90 hover:bg-red-600 text-white text-xs font-semibold backdrop-blur transition-all shadow-lg"
+                    title="YouTube'da Aç (Beğen ve Yorum Yap)"
                   >
-                    <Send size={15} />
-                  </button>
-                </form>
-              </div>
+                    <ExternalLink size={13} />
+                    <span>YouTube'da Aç (Beğen / Yorum Yap)</span>
+                  </a>
+                )}
 
+                <button
+                  onClick={() => handleShare(allReels[expandedReelIndex].title, allReels[expandedReelIndex].videoUrl)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur transition-all ml-auto"
+                >
+                  <Share2 size={13} />
+                  <span>Paylaş</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Required for "Üye olunmalı" restriction */}
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
 
     </div>
   );
