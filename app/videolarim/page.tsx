@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 
 const YOUTUBE_SHORTS = [
+  { id: 'vMqVipY7zVM', title: "MODERN DÜNYANIN GETİRDİĞİ PSİKOLOJİ EKOLLERİ", youtubeId: 'vMqVipY7zVM' },
   { id: 'qrttUFp0eEg', title: "DUYU HASSASİYETİ", youtubeId: 'qrttUFp0eEg' },
   { id: 'O7tneYILgkQ', title: "KAPALI HAVANIN PSİKOLOJİMİZE ETKİSİ", youtubeId: 'O7tneYILgkQ' },
   { id: '6fmxBmSzsDM', title: "TERAPİNİN ESAS BELİRLEYİCİSİ", youtubeId: '6fmxBmSzsDM' },

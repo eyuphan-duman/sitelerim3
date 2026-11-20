@@ -15,6 +15,7 @@ import { DEFAULT_HERO_SETTINGS, HeroSettings } from '@/lib/heroSettings';
 import { DEFAULT_ABOUT_SETTINGS, AboutSettings } from '@/lib/aboutSettings';
 import { calculateAge } from '@/lib/ageUtils';
 import { LOCAL_FAQ } from '@/data/local-faq';
+import CoverStudio from '@/components/admin/CoverStudio';
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
   ssr: false,
@@ -30,7 +31,7 @@ export default function AdminPage() {
   const [articles, setArticles] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   
-  const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'psychologists' | 'appointments' | 'posts' | 'faq' | 'videos' | 'messages' | 'appeals'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'cover-studio' | 'psychologists' | 'appointments' | 'posts' | 'faq' | 'videos' | 'messages' | 'appeals'>('hero');
   const [psychApplications, setPsychApplications] = useState<any[]>([]);
   const [psychFilter, setPsychFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [psychSubTab, setPsychSubTab] = useState<'users' | 'applications'>('users');
@@ -67,7 +68,7 @@ export default function AdminPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam === 'hero' || tabParam === 'about' || tabParam === 'psychologists' || tabParam === 'posts' || tabParam === 'faq' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appeals' || tabParam === 'appointments') {
+      if (tabParam === 'hero' || tabParam === 'about' || tabParam === 'cover-studio' || tabParam === 'psychologists' || tabParam === 'posts' || tabParam === 'faq' || tabParam === 'videos' || tabParam === 'messages' || tabParam === 'appeals' || tabParam === 'appointments') {
         setActiveTab(tabParam as any);
       }
     }
@@ -817,6 +818,7 @@ export default function AdminPage() {
   const MENUS = [
     { id: 'hero', label: 'Ana Sayfa Kapağı', icon: <Sliders size={18}/> },
     { id: 'about', label: 'Hakkımda Bölümü', icon: <UserCheck size={18}/> },
+    { id: 'cover-studio', label: 'Kapak Stüdyosu', icon: <Sparkles size={18}/> },
     { id: 'psychologists', label: 'Psikologlar & Yetkiler', icon: <Award size={18}/> },
     { id: 'appointments', label: 'Randevular', icon: <Calendar size={18}/> },
     { id: 'posts', label: 'Yazılarım', icon: <FileText size={18}/> },
@@ -2021,6 +2023,11 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* COVER STUDIO TAB */}
+        {activeTab === 'cover-studio' && (
+          <CoverStudio />
         )}
 
         {/* PSYCHOLOGISTS & USER ROLES TAB */}
